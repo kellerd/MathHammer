@@ -173,6 +173,8 @@ temp/
 # Test results produced by build
 TestResults.xml
 
+node_modules/
+
 # Nuget outputs
 nuget/*.nupkg
 .paket/paket.exe
