@@ -1,4 +1,4 @@
-module MathHammer.Model.View
+module MathHammer.Models.View
 
 open Fable.Core
 open Fable.Core.JsInterop

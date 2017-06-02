@@ -10,7 +10,7 @@ let init () : Model * Cmd<Msg> =
     BoxFill="#000000"
     ElementFill="#FFFFFF"
     ElementStroke="#000000"
-  }, []
+  }, Cmd.ofMsg Distribute
 
 
 let distribute offsetX offsetY models =
@@ -29,10 +29,11 @@ let distribute offsetX offsetY models =
 
 let update msg model : Model * Cmd<Msg> =
   //Don't do this every time please
-  let newModel = 
-    {
-      model with Models = distribute 0. model.OffsetY model.Models
-                         |> List.map (fun (m,x,y) -> {m with posX = x; posY = y}) 
-    }
+  
   match msg with
-  | () -> newModel, []
+  | Distribute -> 
+      let (models,modelsCmds) = 
+        distribute 0. model.OffsetY model.Models
+        |> List.map(fun(m,x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y)) m)
+        |> List.unzip
+      { model with Models = models }, Cmd.batch (modelsCmds |> List.map(fun _ -> Cmd.none))

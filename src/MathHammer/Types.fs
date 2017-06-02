@@ -5,4 +5,6 @@ type Model = {
     Defender : MathHammer.UnitList.Types.Model
 }
 
-type Msg = Unit
+type Msg = 
+    | UnitListMsg of MathHammer.UnitList.Types.Msg
+    | Swap

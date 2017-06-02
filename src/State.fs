@@ -6,6 +6,7 @@ open Elmish.Browser.UrlParser
 open Fable.Import.Browser
 open Global
 open Types
+module Dudes = MathHammer.Models.State
 
 let pageParser: Parser<Page->Page,Page> =
   oneOf [
@@ -27,12 +28,17 @@ let init result =
   let (counter, counterCmd) = Counter.State.init()
   let (home, homeCmd) = Home.State.init()
   let (mathHammer, mathHammerCmd) = MathHammer.State.init()
+  let (dude,_) = Dudes.init()
+  let attackers = [{dude with name = "Marine"}; {dude with name = "Captain"}]
+  let defenders = ['a'..'z'] |> List.map(fun c -> {dude with name = c.ToString()})
+
   let (model, cmd) =
     urlUpdate result
       { currentPage = Home
         counter = counter
         home = home
-        mathHammer = mathHammer }
+        mathHammer = { mathHammer with Attacker = {mathHammer.Attacker with Models = attackers}
+                                       Defender = {mathHammer.Defender with Models = defenders} }  }
   model, Cmd.batch [ cmd
                      Cmd.map CounterMsg counterCmd
                      Cmd.map HomeMsg homeCmd

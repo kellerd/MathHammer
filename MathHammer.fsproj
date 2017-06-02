@@ -16,9 +16,9 @@
     <Compile Include="src/Home/State.fs" />
     <Compile Include="src/Home/View.fs" />
     <!-- MathHammer -->
-    <Compile Include="src/MathHammer/Model/Types.fs" />
-    <Compile Include="src/MathHammer/Model/State.fs" />
-    <Compile Include="src/MathHammer/Model/View.fs" />
+    <Compile Include="src/MathHammer/Models/Types.fs" />
+    <Compile Include="src/MathHammer/Models/State.fs" />
+    <Compile Include="src/MathHammer/Models/View.fs" />
     <Compile Include="src/MathHammer/UnitList/Types.fs" />
     <Compile Include="src/MathHammer/UnitList/State.fs" />
     <Compile Include="src/MathHammer/UnitList/View.fs" />
