@@ -12,7 +12,8 @@ open Types
 let root model dispatch =
   let models = 
     model.Models 
-    |> List.map (fun m -> MathHammer.Models.View.root m dispatch)
+    |> Map.toList
+    |> List.map (fun (_,m) -> MathHammer.Models.View.root m (fun msg -> ModelMsg(msg,m.name) |> dispatch))
     |> g [Fill model.ElementFill ; Stroke model.ElementStroke; StrokeWidth (!^ "1")]
   g []
     (rect 

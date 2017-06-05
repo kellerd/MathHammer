@@ -3,9 +3,10 @@ module MathHammer.UnitList.State
 open Elmish
 open Types
 
-let init () : Model * Cmd<Msg> =
+let init name () : Model * Cmd<Msg> =
   {
-    Models=[]
+    Name = name    
+    Models=Map.empty<_,_>
     OffsetY=0.
     BoxFill="#000000"
     ElementFill="#FFFFFF"
@@ -32,8 +33,13 @@ let update msg model : Model * Cmd<Msg> =
   
   match msg with
   | Distribute -> 
-      let (models,modelsCmds) = 
-        distribute 0. model.OffsetY model.Models
-        |> List.map(fun(m,x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y)) m)
-        |> List.unzip
-      { model with Models = models }, Cmd.batch (modelsCmds |> List.map(fun _ -> Cmd.none))
+      let (newModels, modelsCmds) =
+        model.Models
+        |> Map.toList
+        |> distribute 0. model.OffsetY 
+        |> List.map(fun((_,m),x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y)) m)
+        |> List.fold(fun (map,cmds) (m,cmd) -> (Map.add m.name m map), cmd::cmds) (model.Models,[])
+      {model with Models = newModels}, Cmd.batch (modelsCmds)
+  | ModelMsg(msg,key) -> 
+      let (newModel, modelCmds) = model.Models.Item(key) |> MathHammer.Models.State.update msg
+      {model with Models = Map.add key newModel model.Models}, Cmd.map ModelMsg modelCmds
