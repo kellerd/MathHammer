@@ -8,7 +8,16 @@ open Types
 open Fable.Import
 
 let onClick x : IProp = OnClick(x) :> _
-
+let showAttributes (key,attr) = 
+  let showAttr = 
+        match attr with 
+        | DPlus i -> string i + "+"
+        | Dice i -> "D" + string i 
+        | Value i -> string i
+  div [ClassName "has-text-centered column"]
+      [ b  [] [str key]
+        br []
+        str showAttr ]
 let root model dispatch =
       g []
        [ circle [   Cx !^ model.posX :> IProp

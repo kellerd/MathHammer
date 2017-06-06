@@ -28,9 +28,8 @@ let init result =
   let (counter, counterCmd) = Counter.State.init()
   let (home, homeCmd) = Home.State.init()
   let (mathHammer, mathHammerCmd) = MathHammer.State.init()
-  let (dude,_) = Dudes.init()
-  let attackers = [{dude with name = "Marine";}; {dude with name = "Captain"}] |> List.map(fun x -> x.name,x) |> Map.ofList
-  let defenders = ['a'..'z'] |> List.map(fun c -> c.ToString(),{dude with name = c.ToString()})  |> Map.ofList
+  let attackers = [Dudes.initMeq "Marine"; Dudes.initMeq "Captain"] |> List.map(fun (x,_) -> x.name,x) |> Map.ofList
+  let defenders = ['a'..'z'] |> List.map(fun c -> c.ToString(),Dudes.initGeq (c.ToString())|> fst)  |> Map.ofList
 
   let (model, cmd) =
     urlUpdate result

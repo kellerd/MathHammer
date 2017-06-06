@@ -22,12 +22,12 @@ let init () : Model * Cmd<Msg> =
 
 let update msg model : Model * Cmd<Msg> =
   match msg with
-  | UnitListMsg (UnitList.Types.ModelMsg((MathHammer.Models.Types.Msg.Select), key), Some "Attacker") -> 
-    let m = model.Attacker.Models |> Map.find key
-    {model with Selected = Some m}, Cmd.none
-  | UnitListMsg (UnitList.Types.ModelMsg((MathHammer.Models.Types.Msg.Select), key), Some "Defender") -> 
-    let m = model.Defender.Models |> Map.find key
-    {model with Selected = Some m}, Cmd.none
+  | UnitListMsg (UnitList.Types.ModelMsg((MathHammer.Models.Types.Msg.Select), m), Some "Attacker") -> 
+    let m' = model.Attacker.Models |> Map.find m
+    {model with Selected = Some m'}, Cmd.none
+  | UnitListMsg (UnitList.Types.ModelMsg((MathHammer.Models.Types.Msg.Select), m), Some "Defender") -> 
+    let m' = model.Defender.Models |> Map.find m
+    {model with Selected = Some m'}, Cmd.none
   | UnitListMsg (msg, Some "Attacker")-> 
     let (ula,ulCmdsa) = UnitList.State.update msg model.Attacker
     { model with Attacker = ula }, Cmd.batch [ Cmd.map attackerMap ulCmdsa]
@@ -40,5 +40,5 @@ let update msg model : Model * Cmd<Msg> =
     let (uld,ulCmdsd) = UnitList.State.update msg model.Defender
     { model with Attacker = ula; Defender = uld }, Cmd.batch [ Cmd.map attackerMap ulCmdsa
                                                                Cmd.map defenderMap ulCmdsd  ]
-  | Swap -> { model with Attacker = { model.Defender with OffsetY = model.Attacker.OffsetY };
+  | Swap -> { model with Attacker = { model.Defender with OffsetY = model.Attacker.OffsetY }
                          Defender = { model.Attacker with OffsetY = model.Defender.OffsetY } }, Cmd.ofMsg ((fun msg -> UnitListMsg(msg, None)) UnitList.Types.Distribute)

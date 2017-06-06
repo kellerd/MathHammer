@@ -5,7 +5,7 @@ open Types
 
 let init name () : Model * Cmd<Msg> =
   {
-    Name = name    
+    Name = ""
     Models=Map.empty<_,_>
     OffsetY=0.
     BoxFill="#000000"

@@ -7,6 +7,9 @@ open Fable.Helpers.React.Props
 open Elmish.React
 open Types
 
+
+
+
 let root model dispatch =
   let drawing =   
     R.div [] 
@@ -24,7 +27,10 @@ let root model dispatch =
         let sequence = model.Selected |> Option.map (fun selected -> R.div [] [ R.str selected.name ])
         match model.Selected with 
         | None ->          titleBar "<< Select model to edit turn sequence >>"
-        | Some selected -> titleBar selected.name
+        | Some selected -> 
+          R.div [] (titleBar selected.name :: 
+                    [ R.div [ClassName "columns"] 
+                            (selected.attributes |> List.map (MathHammer.Models.View.showAttributes)) ])
         
         
   R.div [] 
