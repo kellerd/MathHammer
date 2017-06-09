@@ -24,14 +24,28 @@ let root model dispatch =
                        [ R.div [ClassName "hero-body"]
                                [ R.h1 [ClassName "title"]
                                       [ R.str text] ] ])
-        let sequence = model.Selected |> Option.map (fun selected -> R.div [] [ R.str selected.name ])
+        //let sequence = model.Selected |> Option.map (fun selected -> R.div [] [ R.str selected.name ])
         match model.Selected with 
         | None ->          titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
-          R.div [] (titleBar selected.name :: 
-                    [ R.div [ClassName "columns"] 
-                            (selected.attributes |> List.map (MathHammer.Models.View.showAttributes)) ])
-        
+             let title = titleBar selected.name
+             let (attrs,actions) = 
+                selected.attributes 
+                |> List.partition (snd >> MathHammer.Models.Types.isCharacteristic)
+             let attrDiv = 
+                attrs                 
+                |> List.map MathHammer.Models.View.showAttributes
+                |> R.div [ClassName "columns"] 
+             let (left,right) = 
+                actions
+                |> List.mapi (fun i m -> i,MathHammer.Models.View.showActions m)
+                |> List.partition (fun (i,_) -> i % 2 = 0)
+             let actionsDiv = 
+                [ left  |> List.map snd |> R.div [ClassName "column"] 
+                  right |> List.map snd |> R.div [ClassName "column"]]
+                |> R.div [ClassName "columns"] 
+             R.section [Id "selected"] (title :: attrDiv :: [actionsDiv])
+
         
   R.div [] 
         [ swap

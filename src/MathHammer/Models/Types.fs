@@ -9,6 +9,12 @@ let always x =
       member d.Sample = x
       member d.Support = Set.singleton x
       member d.Expectation(H) = H(x) }
+module Distribution = 
+    let map f (dist:Distribution<'T>) = 
+        { new Distribution<'X> with
+          member d.Sample = f (dist.Sample)
+          member d.Support = Set.map f (dist.Support)
+          member d.Expectation(H:'X->float) = dist.Expectation(f >> H) }
 let rnd = System.Random()
 let coinFlip (p : float) (d1 : Distribution<'T>) (d2 : Distribution<'T>) =
 
@@ -45,18 +51,30 @@ let weightedCases (inp : ('T * float) list) =
 let countedCases inp =
     let total = Seq.sumBy (fun (_, v) -> v) inp
     weightedCases (inp |> List.map (fun (x, v) -> (x, float v / float total)))
-
+let evenDistribution inp = 
+    inp |> List.map (fun x -> 1,x) |> countedCases
 
 type SequenceItem<'a> = 
     | Absolute of 'a
 
+type Die =
+    | D3
+    | D6
+
+
+
 type GamePrimitive = 
-    | Dice of int
+    | Dice of Die list
     | Value of int
     | DPlus of int 
+    | NoValue 
+type Action = 
+    | Characteristic of GamePrimitive
+    | Ability of GamePrimitive
+let isCharacteristic = function Characteristic x -> true | Ability x -> false
 
 
-type Model = {posX:float; posY:float; name:string; attributes:list<string*GamePrimitive> }
+type Model = {posX:float; posY:float; name:string; attributes:list<string*Action>; }
 
 
 type Msg = 

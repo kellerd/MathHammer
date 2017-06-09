@@ -9,24 +9,25 @@ let init name =
    attributes = []}
 let initMeq name =
   { (init name) with 
-     attributes = ["WS", DPlus 3;
-                   "BS", DPlus 3;
-                   "S" , Value 4;
-                   "T" , Value 4;
-                   "W" , Value 1;
-                   "A" , Value 2;
-                   "LD", Value 8;
-                   "SV", DPlus 3;]}, Cmd.none
+     attributes = ["WS", Characteristic <| DPlus 3;
+                   "BS", Characteristic <| DPlus 3;
+                   "S" , Characteristic <| Value 4;
+                   "T" , Characteristic <| Value 4;
+                   "W" , Characteristic <| Value 1;
+                   "A" , Characteristic <| Value 2;
+                   "LD", Characteristic <| Value 8;
+                   "SV", Characteristic <| DPlus 3;
+                   "Psychic", Ability (Dice [D6;D6]) ] }, Cmd.none
 let initGeq name =
   { (init name) with 
-     attributes = ["WS", DPlus 4;
-                   "BS", DPlus 4;
-                   "S" , Value 3;
-                   "T" , Value 3;
-                   "W" , Value 1;
-                   "A" , Value 1;
-                   "LD", Value 7;
-                   "SV", DPlus 5;]}, Cmd.none
+     attributes = ["WS", Characteristic <| DPlus 4;
+                   "BS", Characteristic <| DPlus 4;
+                   "S" , Characteristic <| Value 3;
+                   "T" , Characteristic <| Value 3;
+                   "W" , Characteristic <| Value 1;
+                   "A" , Characteristic <| Value 1;
+                   "LD", Characteristic <| Value 7;
+                   "SV", Characteristic <| DPlus 5;]}, Cmd.none
 
 let update msg model =
   match msg with
