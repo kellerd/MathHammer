@@ -1,20 +1,6 @@
 module MathHammer.Models.Types
 
-type Distribution<'T when 'T : comparison> =
-    abstract Sample : 'T
-    abstract Support : Set<'T>
-    abstract Expectation: ('T -> float) -> float
-let always x =
-    { new Distribution<'T> with
-      member d.Sample = x
-      member d.Support = Set.singleton x
-      member d.Expectation(H) = H(x) }
-module Distribution = 
-    let map f (dist:Distribution<'T>) = 
-        { new Distribution<'X> with
-          member d.Sample = f (dist.Sample)
-          member d.Support = Set.map f (dist.Support)
-          member d.Expectation(H:'X->float) = dist.Expectation(f >> H) }
+
 let rnd = System.Random()
 let coinFlip (p : float) (d1 : Distribution<'T>) (d2 : Distribution<'T>) =
 

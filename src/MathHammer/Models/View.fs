@@ -20,35 +20,34 @@ let dPlus plus die = dist {
       return result
 }
 
-let reduce act = 
-      match act with 
-      | Value x -> always (Pass x)
-      | DPlus x -> dPlus x d6
-      | Dice ds -> failwith "x"
-      | NoValue -> always (Fail 0)
-
-
+let showReducedActions (key, Ability act) = 
+      let reduce act = 
+            match act with 
+            | Value x -> always (Pass x)
+            | DPlus x -> dPlus x d6
+            | Dice ds -> failwith "x"
+            | NoValue -> always (Fail 0)
+      let expectations (dist:Distribution<_>) = 
+            let expect = dist.Expectation(function Pass _ -> 0xFF | Fail _ -> 0x00) |> System.Math.Round |> int
+            let colour = 
+            |> div [BackgroundColor  
+      div []
+          [ b  [] [str key; str " => "; reduce act |> expectations ]]
+let x = sprintf "%X" 0xAF
 let showActions (key, Ability act) = 
   let showAttr = 
         match act with 
-        | (DPlus i) -> string i + "+"
-        | (Dice ds) -> 
+        | DPlus i -> string i + "+"
+        | Dice ds -> 
             let (d3s,d6s) = ds |> List.partition (function D3 -> true | D6 -> false)
             let (d3len,d6len) = (List.length d3s, List.length d6s)
             (if d3len > 0 then string d3len + "D3" else "") + 
               (if d6len > 0 then string d6len + "D6" else "" )
-        | (Value i) -> string i
-        | (NoValue) -> "--"
-        | _ -> "FUCKCKX"
+        | Value i -> string i
+        | NoValue -> "--"
   div []
-      [   div []
-              [ b  [] [str key; str " : "]
-                str showAttr ]
-          div []
-              [ str " => "
-                br []
-                reduce act ]
-      ]
+      [ b [] [str key; str " : "]
+        str showAttr ]
 
 let showAttributes (key,Characteristic attr) = 
   let showAttr = 

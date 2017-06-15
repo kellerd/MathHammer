@@ -44,9 +44,12 @@ let root model dispatch =
                 [ left  |> List.map snd |> R.div [ClassName "column"] 
                   right |> List.map snd |> R.div [ClassName "column"]]
                 |> R.div [ClassName "columns"] 
-             R.section [Id "selected"] (title :: attrDiv :: [actionsDiv])
+             let reducedActions = 
+                actions
+                |> List.mapi (fun i m -> i,MathHammer.Models.View.showReducedActions m)
+                |> List.partition (fun (i,_) -> i % 2 = 0)
+             R.section [Id "selected"] [title; attrDiv; actionsDiv; R.hr []; reducedActions ]
 
-        
   R.div [] 
         [ swap
           drawing
