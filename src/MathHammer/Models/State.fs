@@ -17,7 +17,7 @@ let initMeq name =
                    "A" , Characteristic <| Value 2;
                    "LD", Characteristic <| Value 8;
                    "SV", Characteristic <| DPlus 3;
-                   "Psychic", Ability (Dice [D6;D6]) ] }, Cmd.none
+                   "Psychic", Ability (Dice(D6,2)) ] }, Cmd.none
 let initGeq name =
   { (init name) with 
      attributes = ["WS", Characteristic <| DPlus 4;
