@@ -9,25 +9,25 @@ let init name =
    attributes = []}
 let initMeq name =
   { (init name) with 
-     attributes = ["WS", Characteristic <| DPlus 3;
-                   "BS", Characteristic <| DPlus 3;
-                   "S" , Characteristic <| Value 4;
-                   "T" , Characteristic <| Value 4;
-                   "W" , Characteristic <| Value 1;
-                   "A" , Characteristic <| Value 2;
-                   "LD", Characteristic <| Value 8;
-                   "SV", Characteristic <| DPlus 3;
-                   "Psychic", Ability (Sum(D6,2)) ] }, Cmd.none
+     attributes = ["WS", Characteristic <| DPlus (D6, 3)
+                   "BS", Characteristic <| DPlus (D6, 3)
+                   "S" , Characteristic <| Value (Int(4))
+                   "T" , Characteristic <| Value (Int(4))
+                   "W" , Characteristic <| Value (Int(1))
+                   "A" , Characteristic <| Value (Int(2))
+                   "LD", Characteristic <| Value (Int(8))
+                   "SV", Characteristic <| DPlus (D6, 3)
+                   "Psychic", Ability (Sum(Dice(D6),Dice(D6))) ] }, Cmd.none
 let initGeq name =
   { (init name) with 
-     attributes = ["WS", Characteristic <| DPlus 4;
-                   "BS", Characteristic <| DPlus 4;
-                   "S" , Characteristic <| Value 3;
-                   "T" , Characteristic <| Value 3;
-                   "W" , Characteristic <| Value 1;
-                   "A" , Characteristic <| Value 1;
-                   "LD", Characteristic <| Value 7;
-                   "SV", Characteristic <| DPlus 5;]}, Cmd.none
+     attributes = ["WS", Characteristic <| DPlus (D6, 4)
+                   "BS", Characteristic <| DPlus (D6, 4)
+                   "S" , Characteristic <| Value (Int(3))
+                   "T" , Characteristic <| Value (Int(3))
+                   "W" , Characteristic <| Value (Int(1))
+                   "A" , Characteristic <| Value (Int(1))
+                   "LD", Characteristic <| Value (Int(7))
+                   "SV", Characteristic <| DPlus (D6, 5);]}, Cmd.none
 
 let update msg model =
   match msg with

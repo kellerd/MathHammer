@@ -11,10 +11,12 @@ open Probability
 let onClick x : IProp = OnClick(x) :> _
 
 
-type Result = Pass of float | Fail of float 
+type Result = Pass of float | Fail of float | List of Result list | Tuple of int * int
 let pass i = float i |> Pass
 let fail i = float i  |> Fail
-let getResult = function Pass f | Fail f -> f
+let list d = List d 
+let tuple d = Tuple d
+let getResult = function Pass f | Fail f -> Some f | _ -> None
 let dPlus plus die = dist {
       let! roll = die
       let result = 
@@ -24,20 +26,40 @@ let dPlus plus die = dist {
 }
 let d6 = uniformDistribution [1..6]
 let d3 = uniformDistribution [1..3]
-let reduce act = 
-      match act with 
-      | Value x -> always (pass x)
-      | DPlus x -> dPlus x d6
-      | Sum (d,count)  -> 
-            match d with 
-            | D3 -> takeN d3 count >>= (List.sum >> pass >> always)
-            | D6 -> takeN d6 count >>= (List.sum >> pass >> always)
-      | NoValue -> always (Fail 0.0)
+let rec reduceDie d : Distribution<_> = 
+      match d with 
+      | D3 -> d3
+      | D6 -> d6
+      | Reroll(rerolls, d) -> 
+            dist {
+                  let! roll = reduceDie d
+                  if List.contains roll rerolls then
+                        return! reduceDie d
+                  else return roll                        
+            }
+let reduceGamePrimitive = function
+      | Int i -> always i
+      | Dice d -> reduceDie d 
+let rec reduce operation = 
+      match operation with
+      | Value v -> reduceGamePrimitive v |> Probability.map pass
+      | NoValue -> fail 0 |> always
+      | Sum (a,b) -> dist {
+            let! a' = reduceGamePrimitive a
+            let! b' = reduceGamePrimitive b
+            return pass(a' + b')
+       }
+      | Many (op,count) -> 
+            dist {
+                  let! results = takeN (reduce op) count   
+                  return list results
+            }
+      | DPlus(d, moreThan) -> reduceDie d |> dPlus moreThan 
 let showProbabilitiesOfActions (key, Ability act) = 
       let probabilities (dist:Distribution<_>) = 
             let result = 
                   dist 
-                  |> List.choose(function (Pass x, prob) -> Some(x,prob) | (Fail _,_) -> None)
+                  |> List.choose(function (Pass x, prob) -> Some(x,prob) | (Fail _,_) | (Tuple _,_) | (List _,_)-> None)
                   |> List.groupBy fst
                   |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
             let total = result |> List.maxBy snd |> snd
@@ -54,9 +76,11 @@ let showProbabilitiesOfActions (key, Ability act) =
           ]
 let showReducedActions (key, Ability act) = 
       let expectations (dist:Distribution<_>) = 
-            let result = dist |> expectation (function Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000) |> int
+            let result = dist |> expectation (function Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000 | Tuple _ | List _-> float 0x000000) |> int
             let colour = sprintf "#%06X" result
-            let text = sprintf "%.2f" (dist |> expectation (function Pass x | Fail x -> float x))
+            let text = sprintf "%.2f" (dist |> List.choose (fun (result',prob) -> match result' with 
+                                                                                  | Pass x | Fail x  -> Some((result',prob))
+                                                                                  | _ -> None) |> expectation (function Pass x | Fail x -> float x | _ -> -1.))
             div [ClassName "column"; Style [Color colour]] [str text]
       section [ClassName "columns"]
           [ 
@@ -67,7 +91,7 @@ let showReducedActions (key, Ability act) =
 let showSample (key, Ability act) = 
       let sampleDistribution (dist:Distribution<_>) = 
             let result = dist |> sample 
-            let colour = (match result with | Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000) |> int
+            let colour = (match result with Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000 | Tuple _ | List _-> float 0x000000) |> int
             let colour' = sprintf "#%06X" colour
             div [ClassName "column"; Style [Color colour]] [result |> getResult |> string |> str]
       section [ClassName "columns"]
@@ -76,34 +100,40 @@ let showSample (key, Ability act) =
             div [ClassName "column"] [str " => "]
             reduce act |> sampleDistribution           
           ]
+let rec printDs d  =
+      match d with 
+      | D3 -> "D3"
+      | D6 -> "D6"
+      | Reroll (rerolls, d') -> sprintf "Reroll (%s) in %s" (List.distinct rerolls |> List.map string |> String.concat ";") (printDs d')
+let printPrimitive p = 
+      match p with
+      | Int i -> sprintf "%d" i
+      | Dice d -> printDs d 
+
 let showActions (key, Ability act) = 
-  let showAttr = 
+  let rec showAttr act = 
         match act with 
-        | DPlus i -> string i + "+"
-        | Sum (d,count)  -> 
-            let rec printDs d =
-                  match d with 
-                  | D3 -> string count + "D3"
-                  | D6 -> string count + "D6"
-                  | Reroll (rerolls, d') -> sprintf "Reroll (%s) in %s" (List.distinct rerolls |> List.map string |> String.concat ";") (printDs d')
-            printDs d
+        | Many (op,count) -> sprintf "%d%s" count (showAttr op)
+        | DPlus (d,i) -> string i + "+"
+        | Sum (a, b)  -> printPrimitive a + printPrimitive b
         | Value i -> string i
         | NoValue -> "--"
   div []
       [ b [] [str key; str " : "]
-        str showAttr ]
+        showAttr act |> str  ]
 
 let showAttributes (key,Characteristic attr) = 
-  let showAttr = 
+  let rec showAttr act = 
         match attr with 
-        | (DPlus i) -> string i + "+"
-        | (Sum (d,c)) -> string c + string d
-        | (Value i) -> string i
-        | (NoValue) -> "--"
+        | Many (op,count) -> sprintf "%d%s" count (showAttr op)
+        | DPlus (_,i) -> string i + "+"
+        | Sum (d,c) -> string c + string d
+        | Value i -> string i
+        | NoValue -> "--"
   div [ClassName "has-text-centered column"]
       [ b  [] [str key]
         br []
-        str showAttr ]
+        showAttr attr |> str  ]
 let root model dispatch =
       g []
        [ circle [   Cx !^ model.posX :> IProp

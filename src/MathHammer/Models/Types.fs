@@ -12,14 +12,19 @@ type Die =
     | D6
     | Reroll of (int list) * Die
 
-type GamePrimitive = 
-    | Sum of Die * int
-    | Value of int
-    | DPlus of int 
+type GamePrimitive =
+    | Int of int
+    | Dice of Die
+
+type Operation = 
+    | Many of Operation * int
+    | Sum of (GamePrimitive * GamePrimitive)
+    | Value of GamePrimitive
+    | DPlus of Die * int 
     | NoValue 
 type Action = 
-    | Characteristic of GamePrimitive
-    | Ability of GamePrimitive
+    | Characteristic of Operation
+    | Ability of Operation
 let isCharacteristic = function Characteristic x -> true | Ability x -> false
 
 
