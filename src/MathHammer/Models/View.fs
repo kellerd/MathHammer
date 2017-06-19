@@ -28,7 +28,7 @@ let reduce act =
       match act with 
       | Value x -> always (pass x)
       | DPlus x -> dPlus x d6
-      | Dice (d,count)  -> 
+      | Sum (d,count)  -> 
             match d with 
             | D3 -> takeN d3 count >>= (List.sum >> pass >> always)
             | D6 -> takeN d6 count >>= (List.sum >> pass >> always)
@@ -80,10 +80,13 @@ let showActions (key, Ability act) =
   let showAttr = 
         match act with 
         | DPlus i -> string i + "+"
-        | Dice (d,count)  -> 
-            match d with 
-            | D3 -> string count + "D3"
-            | D6 -> string count + "D6"
+        | Sum (d,count)  -> 
+            let rec printDs d =
+                  match d with 
+                  | D3 -> string count + "D3"
+                  | D6 -> string count + "D6"
+                  | Reroll (rerolls, d') -> sprintf "Reroll (%s) in %s" (List.distinct rerolls |> List.map string |> String.concat ";") (printDs d')
+            printDs d
         | Value i -> string i
         | NoValue -> "--"
   div []
@@ -94,7 +97,7 @@ let showAttributes (key,Characteristic attr) =
   let showAttr = 
         match attr with 
         | (DPlus i) -> string i + "+"
-        | (Dice (d,c)) -> string c + string d
+        | (Sum (d,c)) -> string c + string d
         | (Value i) -> string i
         | (NoValue) -> "--"
   div [ClassName "has-text-centered column"]

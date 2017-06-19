@@ -10,9 +10,10 @@ type SequenceItem<'a> =
 type Die =
     | D3
     | D6
+    | Reroll of (int list) * Die
 
 type GamePrimitive = 
-    | Dice of Die * int
+    | Sum of Die * int
     | Value of int
     | DPlus of int 
     | NoValue 
