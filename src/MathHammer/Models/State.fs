@@ -17,7 +17,8 @@ let initMeq name =
                    "A" , Characteristic <| Value (Int(2))
                    "LD", Characteristic <| Value (Int(8))
                    "SV", Characteristic <| DPlus (D6, 3)
-                   "Psychic", Ability (Sum(Dice(D6),Dice(D6))) ] }, Cmd.none
+                   "Psychic", Ability (Sum(Dice(D6),Dice(D6)))
+                   "Balls", Ability (Many(Value(Dice(D6)),3)) ] }, Cmd.none
 let initGeq name =
   { (init name) with 
      attributes = ["WS", Characteristic <| DPlus (D6, 4)

@@ -1,9 +1,5 @@
 module MathHammer.Models.Types
 
-
-let rnd = System.Random()
-
-
 type SequenceItem<'a> = 
     | Absolute of 'a
 

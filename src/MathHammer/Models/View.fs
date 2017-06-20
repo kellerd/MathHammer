@@ -62,12 +62,14 @@ let showProbabilitiesOfActions (key, Ability act) =
                   |> List.choose(function (Pass x, prob) -> Some(x,prob) | (Fail _,_) | (Tuple _,_) | (List _,_)-> None)
                   |> List.groupBy fst
                   |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
-            let total = result |> List.maxBy snd |> snd
-            result
-                  |> List.map (fun (f, prob) -> 
-                        let proabilityGreen = prob / total * 255.
-                        div [Style [Color (proabilityGreen |> int |> sprintf "#77%02X00")]] [str (sprintf "%f" f)])
-             |> div [ClassName "column"]            
+            match result with 
+            | [] -> str ""
+            | _ ->  let total = result |> List.maxBy snd |> snd
+                    result
+                        |> List.map (fun (f, prob) -> 
+                              let proabilityGreen = prob / total * 255.
+                              div [Style [Color (proabilityGreen |> int |> sprintf "#77%02X00")]] [str (sprintf "%f" f)])
+                    |> div [ClassName "column"]            
       section [ClassName "columns"]
           [ 
             div [ClassName "column"] [b  [] [str key]]
@@ -112,41 +114,35 @@ let printPrimitive p =
 
 let showActions (key, Ability act) = 
   let rec showAttr act = 
-      let str = "Dabd6Dd6D3D6D6D3aD3"
       let reduceD6 str  =
             (str:string).ToCharArray() 
             |> Seq.fold(fun (count,d6,(text:string)) nextChar -> 
                           match d6,nextChar with 
                           | [||], 'D'-> (1,[|'D'|],text)
                           | [||], c-> 0,[||],sprintf "%s%c" text c
-                          | [|'D'|], ('6' as n) | [|'D'|], ('3' as n)-> count,[| 'D'; n |],text
+                          | [|'D'|], ('6' as n) 
+                          | [|'D'|], ('3' as n) -> count,[| 'D'; n |],text
                           | [|'D'|], _ -> 0,[||], sprintf "%s%c%c" text 'D' nextChar
-                          | [|'D';'6'|], 'D'-> (count,[|'D';'6';'D'|],text)
-                          | [|'D';'3'|], 'D'-> (count,[|'D';'3';'D'|],text)
-                          | [|'D';'6';'D'|], '6'-> (count+1,[|'D';'6'|],text)
-                          | [|'D';'6';'D'|], '3'-> 
-                              if count = 1 then  1,[|'D';'3'|],text + "D6"
-                              else 1,[|'D';'3'|],text + count.ToString() +  "D6"
-                          | [|'D';'3';'D'|], '3'-> (count+1,[|'D';'3'|],text)
-                          | [|'D';'3';'D'|], '6'-> 
-                              if count = 1 then  (1,[|'D';'6'|],text + "D3")
-                              else (1,[|'D';'6'|],text + count.ToString() +  "D3") 
+                          | [|'D'; n |], 'D' when (n = '3' || n = '6')-> (count,[|'D';n;'D'|],text)
+                          | [|'D';n;'D'|], n2 when n = n2 -> (count+1,[|'D';n|],text)
+                          | [|'D';n;'D'|], n2 when n <> n2 && (n2 = '3' || n2 = '6') -> 
+                              if count > 1 then  1,[|'D';n2|], sprintf "%s%d%c%c" text count 'D' n
+                              else 1,[|'D';n2|], sprintf "%s%c%c" text 'D' n
                           | cs ,_ -> 
-                              if count = 1 then  0,[||], text + (System.String(cs)) + nextChar.ToString()
-                              else 0,[||],text + count.ToString() + (System.String(cs)) + nextChar.ToString()
+                              if count > 1 then  0,[||],text + count.ToString() + (System.String(cs)) + nextChar.ToString()
+                              else 0,[||], text + (System.String(cs)) + nextChar.ToString()
                           | _ ->  0,[||],text + nextChar.ToString()
                           ) (0,[||],"")
             |> (function 
                   | count, [|d;n;x|], text ->
-                        if count = 1 then  sprintf "%s%c%c%c" text d n x
-                        else sprintf "%s%d%c%c%c" text count d n x
+                        if count > 1 then  sprintf "%s%d%c%c%c" text count d n x
+                        else sprintf "%s%c%c%c" text d n x
                   | count, [|d;n;|], text ->
-                        if count = 1 then  sprintf "%s%c%c" text d n
-                        else sprintf "%s%d%c%c" text count d n 
+                        if count > 1 then  sprintf "%s%d%c%c" text count d n
+                        else sprintf "%s%c%c" text d n 
                   | _, d, text -> sprintf "%s%s" text (System.String(d)))
-      reduceD6 str
       match act with 
-      | Many (op,count) -> sprintf "%d%s" count (showAttr op)
+      | Many (op,count) -> sprintf "%d %s" count (showAttr op)
       | DPlus (d,i) -> string i + "+"
       | Sum (a, b)  -> printPrimitive a + printPrimitive b |> reduceD6
       | Value i -> string i
@@ -158,7 +154,7 @@ let showActions (key, Ability act) =
 let showAttributes (key,Characteristic attr) = 
   let rec showAttr act = 
         match attr with 
-        | Many (op,count) -> sprintf "%d%s" count (showAttr op)
+        | Many (op,count) -> sprintf "%d %s" count (showAttr op)
         | DPlus (_,i) -> string i + "+"
         | Sum (d,c) -> string c + string d
         | Value i -> string i
