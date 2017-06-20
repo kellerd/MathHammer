@@ -112,12 +112,45 @@ let printPrimitive p =
 
 let showActions (key, Ability act) = 
   let rec showAttr act = 
-        match act with 
-        | Many (op,count) -> sprintf "%d%s" count (showAttr op)
-        | DPlus (d,i) -> string i + "+"
-        | Sum (a, b)  -> printPrimitive a + printPrimitive b
-        | Value i -> string i
-        | NoValue -> "--"
+      let str = "Dabd6Dd6D3D6D6D3aD3"
+      let reduceD6 str  =
+            (str:string).ToCharArray() 
+            |> Seq.fold(fun (count,d6,(text:string)) nextChar -> 
+                          match d6,nextChar with 
+                          | [||], 'D'-> (1,[|'D'|],text)
+                          | [||], c-> 0,[||],sprintf "%s%c" text c
+                          | [|'D'|], ('6' as n) | [|'D'|], ('3' as n)-> count,[| 'D'; n |],text
+                          | [|'D'|], _ -> 0,[||], sprintf "%s%c%c" text 'D' nextChar
+                          | [|'D';'6'|], 'D'-> (count,[|'D';'6';'D'|],text)
+                          | [|'D';'3'|], 'D'-> (count,[|'D';'3';'D'|],text)
+                          | [|'D';'6';'D'|], '6'-> (count+1,[|'D';'6'|],text)
+                          | [|'D';'6';'D'|], '3'-> 
+                              if count = 1 then  1,[|'D';'3'|],text + "D6"
+                              else 1,[|'D';'3'|],text + count.ToString() +  "D6"
+                          | [|'D';'3';'D'|], '3'-> (count+1,[|'D';'3'|],text)
+                          | [|'D';'3';'D'|], '6'-> 
+                              if count = 1 then  (1,[|'D';'6'|],text + "D3")
+                              else (1,[|'D';'6'|],text + count.ToString() +  "D3") 
+                          | cs ,_ -> 
+                              if count = 1 then  0,[||], text + (System.String(cs)) + nextChar.ToString()
+                              else 0,[||],text + count.ToString() + (System.String(cs)) + nextChar.ToString()
+                          | _ ->  0,[||],text + nextChar.ToString()
+                          ) (0,[||],"")
+            |> (function 
+                  | count, [|d;n;x|], text ->
+                        if count = 1 then  sprintf "%s%c%c%c" text d n x
+                        else sprintf "%s%d%c%c%c" text count d n x
+                  | count, [|d;n;|], text ->
+                        if count = 1 then  sprintf "%s%c%c" text d n
+                        else sprintf "%s%d%c%c" text count d n 
+                  | _, d, text -> sprintf "%s%s" text (System.String(d)))
+      reduceD6 str
+      match act with 
+      | Many (op,count) -> sprintf "%d%s" count (showAttr op)
+      | DPlus (d,i) -> string i + "+"
+      | Sum (a, b)  -> printPrimitive a + printPrimitive b |> reduceD6
+      | Value i -> string i
+      | NoValue -> "--"
   div []
       [ b [] [str key; str " : "]
         showAttr act |> str  ]
