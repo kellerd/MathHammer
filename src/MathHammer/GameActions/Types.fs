@@ -24,34 +24,44 @@ type Ability = Operation
 
 type Result = Pass of float | Fail of float | List of Result list | Tuple of int * int
 
+let rec div (x,y) = 
+        match x with 
+        | Pass a -> Pass (a/y) 
+        | Fail a -> Fail (a/y) 
+        | List a -> List.map(fun r -> div(r,y)) a |> List  
+        | Tuple(a,b) -> Tuple(System.Math.Ceiling(float a * y) |> int,System.Math.Ceiling(float b * y) |> int)
 
                     
-type Result with
-    static member (+) (x,y) = 
+type Result with    
+    static member (+) (x:Result,y:float) = 
+        let rec add x y = 
+            match x with 
+            | Pass a -> Pass (a+y) 
+            | Fail a -> Fail (a+y) 
+            | List a -> List.map(fun r -> add r y) a |> List  
+            | Tuple(a,b) -> Tuple(System.Math.Ceiling(float a + y) |> int,System.Math.Ceiling(float b + y) |> int)
+        add x y             
+    static member (+) (x:Result,y:Result) = 
         let rec add = function 
                       | Pass a', Pass b' -> Pass (a' + b')
-                      | Pass a', Fail b' -> Pass (a')
-                      | Fail a', Pass b' -> Pass (b')
+                      | Pass a', Fail _ | Fail _, Pass a'  -> Pass (a')
                       | Fail a', Fail b' -> Fail (a' + b')
                       | List a', List b' -> (List.map2 (fun r1 r2 -> add (r1,r2)) a' b') |> List
+                      | Pass a', List b' | List b',Pass a' -> List.map (fun b -> b + a') b' |> List
+                      | Pass a', Tuple(a,c) | Tuple(a,c),Pass a' -> Tuple(a + int a',c + int a')
                       | Tuple(a,c),Tuple(b,d) -> Tuple(a+b,c+d)
-                      | _ -> failwith "Cannot add this type"
         add (x,y)              
-    static member (*) (x,y) = 
+    static member (*) (x:Result,y) = 
         let rec mult (x,y) = 
             match x with 
             | Pass a -> Pass (a*y) 
             | Fail a -> Fail (a*y) 
             | List a -> List.map(fun r -> mult(r,y)) a |> List  
             | Tuple(a,b) -> Tuple(System.Math.Ceiling(float a * y) |> int,System.Math.Ceiling(float b * y) |> int)
-        mult(x,y)    
-    static member (/) (x,y) = 
-        let rec mult (x,y) = 
-            match x with 
-            | Pass a -> Pass (a/y) 
-            | Fail a -> Fail (a/y) 
-            | List a -> List.map(fun r -> mult(r,y)) a |> List  
-            | Tuple(a,b) -> Tuple(System.Math.Ceiling(float a * y) |> int,System.Math.Ceiling(float b * y) |> int)
-        mult(x,y)
+        mult(x,y)   
+
+    static member (/) (x,y) = div(x,y)    
+    static member DivideByInt (x,y:int) = div(x,float y)
+    static member Zero : Result = Pass 0.
                           
 type Msg =  Unit  
