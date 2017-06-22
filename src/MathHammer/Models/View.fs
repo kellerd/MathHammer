@@ -8,7 +8,7 @@ open Types
 open Fable.Import
 open Probability
 open MathHammer.GameActions.Types
-
+open Result
 let onClick x : IProp = OnClick(x) :> _
 
 
@@ -83,22 +83,31 @@ let showProbabilitiesOfActions (key, Ability act) =
           ]
 let showAverages (key, Ability act) = 
       let expectations (dist:Distribution<_>) = 
-            let result = dist |> expectation (function Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000 | Tuple _ | List _-> float 0x000000) |> int
-            let colour = sprintf "#%06X" result
-            let rec text dist = 
-                  if List.forall(fun (d,_) -> match d with List _ -> true | _ -> false) dist then
-                        let lists = dist |> List.choose (fun (result',prob) -> match result' with | List x -> Some x | _ -> None)
-                        let totals = lists |> List.reduce (List.map2(+))
-                        let count = lists |> List.length
-                        let avgs = totals |> List.map(fun n -> n / (float count) |> always |> text) |> String.concat ";"
-                        sprintf "[%s]" avgs
-                  else sprintf "%.2f" (dist |> List.choose (fun (result',prob) -> match result' with 
-                                                                                  | Pass x | Fail x  -> Some((result',prob))
-                                                                                  | _ -> None) |> expectation (function Pass x | Fail x -> float x | _ -> -1.))
+            let colour = 
+                  dist 
+                  |> expectation (function Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000 | Tuple _ | List _-> float 0x000000) 
+                  |> int
+                  |> sprintf "#%06X" 
+            let result = dist |> List.averageBy fst
+            let rec printResult result = 
+                  match result with 
+                  | Pass x | Fail x -> sprintf "%.2f" x
+                  | List (xs) -> List.map printResult xs |> String.concat ";" |> sprintf "[%s]" 
+                  | Tuple(x,y) -> sprintf "%d,%d" x y
+            // let rec text dist = 
+            //       if List.forall(fun (d,_) -> match d with List _ -> true | _ -> false) dist then
+            //             let lists = dist |> List.choose (fun (result',prob) -> match result' with | List x -> Some x | _ -> None)
+            //             let totals = lists |> List.reduce (List.map2(+))
+            //             let count = lists |> List.length
+            //             let avgs = totals |> List.map(fun n -> n / (float count) |> always |> text) |> String.concat ";"
+            //             sprintf "[%s]" avgs
+            //       else sprintf "%.2f" (dist |> List.choose (fun (result',prob) -> match result' with 
+            //                                                                       | Pass x | Fail x  -> Some((result',prob))
+            //                                                                       | _ -> None) |> expectation (function Pass x | Fail x -> float x | _ -> -1.))
 
 
 
-            div [ClassName "column"; Style [Color colour]] [str (text dist)]
+            div [ClassName "column"; Style [Color colour]] [str (printResult result)]
       section [ClassName "columns"]
           [ 
             div [ClassName "column"] [b  [] [str key]]

@@ -21,14 +21,16 @@ type Operation =
 
 type Ability = Operation
 
+                          
+type Msg =  Unit  
 
 type Result = Pass of float | Fail of float | List of Result list | Tuple of int * int
 
-let rec div (x,y) = 
+let rec divide (x,y) = 
         match x with 
         | Pass a -> Pass (a/y) 
         | Fail a -> Fail (a/y) 
-        | List a -> List.map(fun r -> div(r,y)) a |> List  
+        | List a -> List.map(fun r -> divide(r,y)) a |> List  
         | Tuple(a,b) -> Tuple(System.Math.Ceiling(float a * y) |> int,System.Math.Ceiling(float b * y) |> int)
 
                     
@@ -60,8 +62,6 @@ type Result with
             | Tuple(a,b) -> Tuple(System.Math.Ceiling(float a * y) |> int,System.Math.Ceiling(float b * y) |> int)
         mult(x,y)   
 
-    static member (/) (x,y) = div(x,y)    
-    static member DivideByInt (x,y:int) = div(x,float y)
+    static member (/) (x,y) = divide(x,y)    
+    static member DivideByInt (x,y:int) = divide(x,float y)
     static member Zero : Result = Pass 0.
-                          
-type Msg =  Unit  
