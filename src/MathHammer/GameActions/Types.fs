@@ -32,6 +32,11 @@ let rec divide (x,y) =
         | Fail a -> Fail (a/y) 
         | List a -> List.map(fun r -> divide(r,y)) a |> List  
         | Tuple(a,b) -> Tuple(System.Math.Ceiling(float a * y) |> int,System.Math.Ceiling(float b * y) |> int)
+let rec printResult = function
+    | Pass x   -> sprintf "%.2f" x 
+    | Fail x  -> sprintf "%.2f" x
+    | List xs -> List.map printResult xs |> String.concat ";" |> sprintf "[%s]"
+    | Tuple(x,y) -> sprintf "%d,%d" x y
 
                     
 type Result with    
@@ -65,3 +70,16 @@ type Result with
     static member (/) (x,y) = divide(x,y)    
     static member DivideByInt (x,y:int) = divide(x,float y)
     static member Zero : Result = Pass 0.
+
+
+
+let resultListAverage (list:list<Result>) =
+    match list with 
+    | [] -> Result.Zero
+    | xs ->
+        let mutable sum = Result.Zero
+        let mutable count = 0
+        for x in xs do
+            sum <- x + sum
+            count <- count + 1
+        Result.DivideByInt (sum,count)

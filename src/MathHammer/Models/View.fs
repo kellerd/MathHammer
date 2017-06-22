@@ -64,7 +64,6 @@ let showProbabilitiesOfActions (key, Ability act) =
       let probabilities (dist:Distribution<_>) = 
             let result = 
                   dist 
-                  |> List.choose(function (Pass x, prob) -> Some(x,prob) | (Fail _,_) | (Tuple _,_) | (List _,_)-> None)
                   |> List.groupBy fst
                   |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
             match result with 
@@ -73,7 +72,7 @@ let showProbabilitiesOfActions (key, Ability act) =
                     result
                         |> List.map (fun (f, prob) -> 
                               let proabilityGreen = prob / total * 255.
-                              div [Style [Color (proabilityGreen |> int |> sprintf "#77%02X00")]] [str (sprintf "%f" f)])
+                              div [Style [Color (proabilityGreen |> int |> sprintf "#77%02X00")]] [str (printResult f)])
                     |> div [ClassName "column"]            
       section [ClassName "columns"]
           [ 
@@ -88,25 +87,7 @@ let showAverages (key, Ability act) =
                   |> expectation (function Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000 | Tuple _ | List _-> float 0x000000) 
                   |> int
                   |> sprintf "#%06X" 
-            let result = dist |> List.averageBy fst
-            let rec printResult result = 
-                  match result with 
-                  | Pass x | Fail x -> sprintf "%.2f" x
-                  | List (xs) -> List.map printResult xs |> String.concat ";" |> sprintf "[%s]" 
-                  | Tuple(x,y) -> sprintf "%d,%d" x y
-            // let rec text dist = 
-            //       if List.forall(fun (d,_) -> match d with List _ -> true | _ -> false) dist then
-            //             let lists = dist |> List.choose (fun (result',prob) -> match result' with | List x -> Some x | _ -> None)
-            //             let totals = lists |> List.reduce (List.map2(+))
-            //             let count = lists |> List.length
-            //             let avgs = totals |> List.map(fun n -> n / (float count) |> always |> text) |> String.concat ";"
-            //             sprintf "[%s]" avgs
-            //       else sprintf "%.2f" (dist |> List.choose (fun (result',prob) -> match result' with 
-            //                                                                       | Pass x | Fail x  -> Some((result',prob))
-            //                                                                       | _ -> None) |> expectation (function Pass x | Fail x -> float x | _ -> -1.))
-
-
-
+            let result = dist |> List.map fst |> resultListAverage
             div [ClassName "column"; Style [Color colour]] [str (printResult result)]
       section [ClassName "columns"]
           [ 
@@ -119,7 +100,7 @@ let showSample (key, Ability act) =
             let result = dist |> sample 
             let colour = (match result with Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000 | Tuple _ | List _-> float 0x000000) |> int
             let colour' = sprintf "#%06X" colour
-            div [ClassName "column"; Style [Color colour]] [result |> getResult |> string |> str]
+            div [ClassName "column"; Style[Color colour']] [printResult result |> str ]
       section [ClassName "columns"]
           [ 
             div [ClassName "column"] [b  [] [str key]]
