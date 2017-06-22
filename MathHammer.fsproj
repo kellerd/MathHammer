@@ -17,6 +17,8 @@
     <Compile Include="src/Home/View.fs" />
     <!-- MathHammer -->
     <Compile Include="src/MathHammer/Probability.fs" />
+    <Compile Include="src/MathHammer/GameActions/Types.fs" />
+    <Compile Include="src/MathHammer/GameActions/State.fs" />
     <Compile Include="src/MathHammer/Models/Types.fs" />
     <Compile Include="src/MathHammer/Models/State.fs" />
     <Compile Include="src/MathHammer/Models/View.fs" />

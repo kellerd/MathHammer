@@ -16,6 +16,7 @@ let init () : Model * Cmd<Msg> =
       Attacker = { attacker with  BoxFill="#FFEEEE"; ElementFill="#79CE0B"; ElementStroke="#396302"; }
       Defender = { defender with  BoxFill="#EEEEFF"; ElementFill="#0B79CE"; ElementStroke="#023963"; OffsetY = 50.}
       Selected = None
+      StoredActions = Map.empty<_,_>
     }
   model, Cmd.batch [ Cmd.map attackerMap attackerCmd
                      Cmd.map defenderMap defenderCmd  ]

@@ -2,6 +2,7 @@ module MathHammer.Models.State
 
 open Elmish
 open Types
+open MathHammer.GameActions.Types
 let init name =
   {posX=0.
    posY=0.
@@ -17,8 +18,9 @@ let initMeq name =
                    "A" , Characteristic <| Value (Int(2))
                    "LD", Characteristic <| Value (Int(8))
                    "SV", Characteristic <| DPlus (D6, 3)
-                   "Psychic", Ability (Sum(Dice(D6),Dice(D6)))
-                   "Balls", Ability (Many(Value(Dice(D6)),3)) ] }, Cmd.none
+                   "Psychic", Ability (Total[Value(Dice(D6));Value(Dice(D6))])
+                   "Balls", Ability (Many(Value(Dice(D6)),3))
+                   "Balls", Ability (Many(Total[Value(Dice(D6));Value(Dice(D6))],3)) ] }, Cmd.none
 let initGeq name =
   { (init name) with 
      attributes = ["WS", Characteristic <| DPlus (D6, 4)

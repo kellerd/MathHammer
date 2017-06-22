@@ -7,11 +7,11 @@ open Fable.Helpers.React.Props
 open Types
 open Fable.Import
 open Probability
+open MathHammer.GameActions.Types
 
 let onClick x : IProp = OnClick(x) :> _
 
 
-type Result = Pass of float | Fail of float | List of Result list | Tuple of int * int
 let pass i = float i |> Pass
 let fail i = float i  |> Fail
 let list d = List d 
@@ -44,11 +44,16 @@ let rec reduce operation =
       match operation with
       | Value v -> reduceGamePrimitive v |> Probability.map pass
       | NoValue -> fail 0 |> always
-      | Sum (a,b) -> dist {
-            let! a' = reduceGamePrimitive a
-            let! b' = reduceGamePrimitive b
-            return pass(a' + b')
-       }
+      | Total (ops) -> 
+            ops 
+            |> List.map reduce
+            |> List.reduce (fun a b -> 
+                  dist {
+                        let! a' = a
+                        let! b' = b
+                        return a' + b'                              
+                  }
+            )
       | Many (op,count) -> 
             dist {
                   let! results = takeN (reduce op) count   
@@ -76,14 +81,24 @@ let showProbabilitiesOfActions (key, Ability act) =
             div [ClassName "column"] [str " => "]
             reduce act |> probabilities           
           ]
-let showReducedActions (key, Ability act) = 
+let showAverages (key, Ability act) = 
       let expectations (dist:Distribution<_>) = 
             let result = dist |> expectation (function Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000 | Tuple _ | List _-> float 0x000000) |> int
             let colour = sprintf "#%06X" result
-            let text = sprintf "%.2f" (dist |> List.choose (fun (result',prob) -> match result' with 
+            let rec text dist = 
+                  if List.forall(fun (d,_) -> match d with List _ -> true | _ -> false) dist then
+                        let lists = dist |> List.choose (fun (result',prob) -> match result' with | List x -> Some x | _ -> None)
+                        let totals = lists |> List.reduce (List.map2(+))
+                        let count = lists |> List.length
+                        let avgs = totals |> List.map(fun n -> n / (float count) |> always |> text) |> String.concat ";"
+                        sprintf "[%s]" avgs
+                  else sprintf "%.2f" (dist |> List.choose (fun (result',prob) -> match result' with 
                                                                                   | Pass x | Fail x  -> Some((result',prob))
                                                                                   | _ -> None) |> expectation (function Pass x | Fail x -> float x | _ -> -1.))
-            div [ClassName "column"; Style [Color colour]] [str text]
+
+
+
+            div [ClassName "column"; Style [Color colour]] [str (text dist)]
       section [ClassName "columns"]
           [ 
             div [ClassName "column"] [b  [] [str key]]
@@ -114,37 +129,13 @@ let printPrimitive p =
 
 let showActions (key, Ability act) = 
   let rec showAttr act = 
-      let reduceD6 str  =
-            (str:string).ToCharArray() 
-            |> Seq.fold(fun (count,d6,(text:string)) nextChar -> 
-                          match d6,nextChar with 
-                          | [||], 'D'-> (1,[|'D'|],text)
-                          | [||], c-> 0,[||],sprintf "%s%c" text c
-                          | [|'D'|], ('6' as n) 
-                          | [|'D'|], ('3' as n) -> count,[| 'D'; n |],text
-                          | [|'D'|], _ -> 0,[||], sprintf "%s%c%c" text 'D' nextChar
-                          | [|'D'; n |], 'D' when (n = '3' || n = '6')-> (count,[|'D';n;'D'|],text)
-                          | [|'D';n;'D'|], n2 when n = n2 -> (count+1,[|'D';n|],text)
-                          | [|'D';n;'D'|], n2 when n <> n2 && (n2 = '3' || n2 = '6') -> 
-                              if count > 1 then  1,[|'D';n2|], sprintf "%s%d%c%c" text count 'D' n
-                              else 1,[|'D';n2|], sprintf "%s%c%c" text 'D' n
-                          | cs ,_ -> 
-                              if count > 1 then  0,[||],text + count.ToString() + (System.String(cs)) + nextChar.ToString()
-                              else 0,[||], text + (System.String(cs)) + nextChar.ToString()
-                          | _ ->  0,[||],text + nextChar.ToString()
-                          ) (0,[||],"")
-            |> (function 
-                  | count, [|d;n;x|], text ->
-                        if count > 1 then  sprintf "%s%d%c%c%c" text count d n x
-                        else sprintf "%s%c%c%c" text d n x
-                  | count, [|d;n;|], text ->
-                        if count > 1 then  sprintf "%s%d%c%c" text count d n
-                        else sprintf "%s%c%c" text d n 
-                  | _, d, text -> sprintf "%s%s" text (System.String(d)))
       match act with 
-      | Many (op,count) -> sprintf "%d %s" count (showAttr op)
+      | Many (Value(Dice(d)),i) -> sprintf "%d%s" i (printDs d)
+      | Many (v,i) -> sprintf "(%s * %d)" (showAttr v) i
       | DPlus (d,i) -> string i + "+"
-      | Sum (a, b)  -> printPrimitive a + printPrimitive b |> reduceD6
+      | Total (ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Total(%dD6)" (List.length ops)
+      | Total (ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)
+      | Total (ops)  -> sprintf "Total(%s)" (List.map showAttr ops |> String.concat " + ")
       | Value i -> string i
       | NoValue -> "--"
   div []
@@ -153,12 +144,14 @@ let showActions (key, Ability act) =
 
 let showAttributes (key,Characteristic attr) = 
   let rec showAttr act = 
-        match attr with 
-        | Many (op,count) -> sprintf "%d %s" count (showAttr op)
-        | DPlus (_,i) -> string i + "+"
-        | Sum (d,c) -> string c + string d
-        | Value i -> string i
-        | NoValue -> "--"
+      match attr with 
+      | Many (op,count) -> sprintf "%d %s" count (showAttr op)
+      | DPlus (_,i) -> string i + "+"
+      | Total (ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Total(%dD6)" (List.length ops)
+      | Total (ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)
+      | Total (ops)  -> sprintf "Total(%s)" (List.map showAttr ops |> String.concat " + ")
+      | Value i -> string i
+      | NoValue -> "--"
   div [ClassName "has-text-centered column"]
       [ b  [] [str key]
         br []

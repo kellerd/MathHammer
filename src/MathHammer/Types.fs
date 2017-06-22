@@ -1,9 +1,10 @@
 module MathHammer.Types
-
+open MathHammer.GameActions.Types
 type Model = {
     Attacker : MathHammer.UnitList.Types.Model
     Defender : MathHammer.UnitList.Types.Model
     Selected : Option<MathHammer.Models.Types.Model>
+    StoredActions : Map<string,Probability.Distribution<Result>>
 }
 
 type Msg = 

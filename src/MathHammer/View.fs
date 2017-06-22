@@ -5,7 +5,9 @@ open Fable.Core.JsInterop
 module R = Fable.Helpers.React
 open Fable.Helpers.React.Props
 open Elmish.React
+open MathHammer.Models.Types
 open Types
+let isCharacteristic = function Characteristic x -> true | Ability x -> false
 
 let root model dispatch =
     let drawing =   
@@ -42,19 +44,19 @@ let root model dispatch =
              let title = titleBar selected.name
              let (attrs,actions) = 
                  selected.attributes 
-                 |> List.partition (snd >> MathHammer.Models.Types.isCharacteristic)
+                 |> List.partition (snd >> isCharacteristic)
              let attrDiv = 
                  attrs                 
                  |> List.map MathHammer.Models.View.showAttributes
                  |> R.div [ClassName "columns"] 
              let actionsDiv = columnsOf MathHammer.Models.View.showActions actions
-             let reducedActionsDiv = columnsOf MathHammer.Models.View.showReducedActions actions
+             let averagesDiv = columnsOf MathHammer.Models.View.showAverages actions
              let probabiltiesActionsDiv = columnsOf MathHammer.Models.View.showProbabilitiesOfActions actions
              let sampleActionsDiv = columnsOf MathHammer.Models.View.showSample actions
 
              R.section [Id "selected"] [ title; attrDiv
                                          bar "Actions"; actionsDiv
-                                         bar "Averages"; reducedActionsDiv
+                                         bar "Averages"; averagesDiv
                                          bar "Probabilities"; probabiltiesActionsDiv
                                          bar "Sample"; sampleActionsDiv ]
     R.div [] [ swap; drawing; selected  ] 
