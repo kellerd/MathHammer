@@ -1,7 +1,4 @@
-module MathHammer.GameActions.Types
-
-type SequenceItem<'a> = 
-    | Absolute of 'a
+module GameActions.Primitives.Types
 
 type Die =
     | D3
@@ -50,12 +47,13 @@ type Result with
         add x y             
     static member (+) (x:Result,y:Result) = 
         let rec add = function 
-                      | Pass a', Pass b' -> Pass (a' + b')
-                      | Pass a', Fail _ | Fail _, Pass a'  -> Pass (a')
-                      | Fail a', Fail b' -> Fail (a' + b')
-                      | List a', List b' -> (List.map2 (fun r1 r2 -> add (r1,r2)) a' b') |> List
-                      | Pass a', List b' | List b',Pass a' -> List.map (fun b -> b + a') b' |> List
-                      | Pass a', Tuple(a,c) | Tuple(a,c),Pass a' -> Tuple(a + int a',c + int a')
+                      | Pass a, Pass b -> Pass (a + b)
+                      | Pass a, Fail _ | Fail _, Pass a  -> Pass (a)
+                      | Fail a, Fail b -> Fail (a + b)
+                      | List a, List b -> List.map2 (fun r1 r2 -> add (r1,r2)) a b |> List
+                      | a, List b | List b, a -> List.map (fun r1 -> add (r1,a)) b |> List
+                      | Pass a, Tuple(a',c) | Tuple(a',c),Pass a -> Tuple(a' + int a,c + int a)
+                      | Fail a, Tuple(a',c) | Tuple(a',c),Fail a -> Tuple(a',c)
                       | Tuple(a,c),Tuple(b,d) -> Tuple(a+b,c+d)
         add (x,y)              
     static member (*) (x:Result,y) = 

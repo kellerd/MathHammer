@@ -47,8 +47,8 @@ let root model dispatch =
                  |> List.partition (snd >> isCharacteristic)
              let attrDiv = 
                  attrs                 
-                 |> List.map MathHammer.Models.View.showAttributes
-                 |> R.div [ClassName "columns"] 
+                 |> List.map (fun attr -> MathHammer.Models.View.showAttributes attr dispatch)
+                 |> R.div [ClassName "columns"]  
              let actionsDiv = columnsOf MathHammer.Models.View.showActions actions
              let averagesDiv = columnsOf MathHammer.Models.View.showAverages actions
              let probabiltiesActionsDiv = columnsOf MathHammer.Models.View.showProbabilitiesOfActions actions

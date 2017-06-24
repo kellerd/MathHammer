@@ -7,7 +7,7 @@ open Fable.Helpers.React.Props
 open Types
 open Fable.Import
 open Probability
-open MathHammer.GameActions.Types
+open GameActions.Primitives.Types
 open Result
 let onClick x : IProp = OnClick(x) :> _
 
@@ -77,7 +77,7 @@ let showProbabilitiesOfActions (key, Ability act) =
       section [ClassName "columns"]
           [ 
             div [ClassName "column"] [b  [] [str key]]
-            div [ClassName "column"] [str " => "]
+            div [ClassName "column  is-narrow"] [str " => "]
             reduce act |> probabilities           
           ]
 let showAverages (key, Ability act) = 
@@ -132,20 +132,12 @@ let showActions (key, Ability act) =
       [ b [] [str key; str " : "]
         showAttr act |> str  ]
 
-let showAttributes (key,Characteristic attr) = 
-  let rec showAttr act = 
-      match attr with 
-      | Many (op,count) -> sprintf "%d %s" count (showAttr op)
-      | DPlus (_,i) -> string i + "+"
-      | Total (ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Total(%dD6)" (List.length ops)
-      | Total (ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)
-      | Total (ops)  -> sprintf "Total(%s)" (List.map showAttr ops |> String.concat " + ")
-      | Value i -> string i
-      | NoValue -> "--"
+let showAttributes (key,Characteristic attr) dispatch = 
+  
   div [ClassName "has-text-centered column"]
       [ b  [] [str key]
         br []
-        showAttr attr |> str  ]
+        GameActions.Primitives.View.root attr dispatch ]
 let root model dispatch =
       g []
        [ circle [   Cx !^ model.posX :> IProp

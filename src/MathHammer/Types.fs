@@ -1,5 +1,5 @@
 module MathHammer.Types
-open MathHammer.GameActions.Types
+open GameActions.Primitives.Types
 type Model = {
     Attacker : MathHammer.UnitList.Types.Model
     Defender : MathHammer.UnitList.Types.Model

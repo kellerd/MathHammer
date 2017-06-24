@@ -35,6 +35,7 @@ let menu currentPage =
         [ menuItem "Home" Home currentPage
           menuItem "Counter sample" Counter currentPage
           menuItem "MathHammer" MathHammer currentPage
+          menuItem "Game Actions" GameActions currentPage
           menuItem "About" Page.About currentPage ] ]
 
 let root model dispatch =
@@ -45,6 +46,7 @@ let root model dispatch =
     | Counter -> Counter.View.root model.counter (CounterMsg >> dispatch)
     | Home -> Home.View.root model.home (HomeMsg >> dispatch)
     | MathHammer -> MathHammer.View.root model.mathHammer (MathHammerMsg >> dispatch)
+    | GameActions -> GameActions.View.root model.gameActions (GameActionsMsg >> dispatch)
 
   div
     []

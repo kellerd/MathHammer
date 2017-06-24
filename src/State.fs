@@ -6,7 +6,7 @@ open Elmish.Browser.UrlParser
 open Fable.Import.Browser
 open Global
 open Types
-module Dudes = MathHammer.Models.State
+open MathHammer.Models.State
 
 let pageParser: Parser<Page->Page,Page> =
   oneOf [
@@ -14,6 +14,7 @@ let pageParser: Parser<Page->Page,Page> =
     map Counter (s "counter")
     map Home (s "home")
     map MathHammer (s "mathhammer")
+    map GameActions (s "gameactions")
   ]
 
 let urlUpdate (result: Option<Page>) model =
@@ -28,8 +29,9 @@ let init result =
   let (counter, counterCmd) = Counter.State.init()
   let (home, homeCmd) = Home.State.init()
   let (mathHammer, mathHammerCmd) = MathHammer.State.init()
-  let attackers = [Dudes.initMeq "Marine"; Dudes.initMeq "Captain"] |> List.map(fun (x,_) -> x.name,x) |> Map.ofList
-  let defenders = ['a'..'z'] |> List.map(fun c -> c.ToString(),Dudes.initGeq (c.ToString())|> fst)  |> Map.ofList
+  let (gameActions, gameActionsCmd) = GameActions.State.init()
+  let attackers = [initMeq "Marine"; initMeq "Captain"] |> List.map(fun (x,_) -> x.name,x) |> Map.ofList
+  let defenders = ['a'..'z'] |> List.map(fun c -> c.ToString(),initGeq (c.ToString())|> fst)  |> Map.ofList
 
   let (model, cmd) =
     urlUpdate result
@@ -37,11 +39,13 @@ let init result =
         counter = counter
         home = home
         mathHammer = { mathHammer with Attacker = {mathHammer.Attacker with Models = attackers}
-                                       Defender = {mathHammer.Defender with Models = defenders} }  }
+                                       Defender = {mathHammer.Defender with Models = defenders} } 
+        gameActions = gameActions                                }
   model, Cmd.batch [ cmd
                      Cmd.map CounterMsg counterCmd
                      Cmd.map HomeMsg homeCmd
-                     Cmd.map MathHammerMsg mathHammerCmd ]
+                     Cmd.map MathHammerMsg mathHammerCmd
+                     Cmd.map GameActionsMsg gameActionsCmd ]
 
 let update msg model =
   match msg with
@@ -54,3 +58,6 @@ let update msg model =
   | MathHammerMsg msg ->
       let (mathHammer, mathHammerCmd) = MathHammer.State.update msg model.mathHammer
       { model with mathHammer = mathHammer }, Cmd.map MathHammerMsg mathHammerCmd
+  | GameActionsMsg(msg) ->
+      let (gameActions, gameActionsCmd) = GameActions.State.update msg model.gameActions
+      { model with gameActions = gameActions }, Cmd.map GameActionsMsg gameActionsCmd

@@ -3,6 +3,7 @@ module Global
 type Page =
   | Home
   | MathHammer
+  | GameActions
   | Counter
   | About
 
@@ -12,3 +13,4 @@ let toHash page =
   | Counter -> "#counter"
   | Home -> "#home"
   | MathHammer -> "#mathhammer"
+  | GameActions -> "#gameactions"

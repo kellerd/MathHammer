@@ -15,10 +15,18 @@
     <Compile Include="src/Home/Types.fs" />
     <Compile Include="src/Home/State.fs" />
     <Compile Include="src/Home/View.fs" />
+    <!-- GameActions -->
+    
+    <Compile Include="src/GameActions/Primitives/Types.fs" />
+    <Compile Include="src/GameActions/Primitives/View.fs" />
+    <Compile Include="src/GameActions/GameActionsList/Types.fs" />
+    <Compile Include="src/GameActions/GameActionsList/State.fs" />
+    <Compile Include="src/GameActions/GameActionsList/View.fs" />
+    <Compile Include="src/GameActions/Types.fs" />
+    <Compile Include="src/GameActions/State.fs" />
+    <Compile Include="src/GameActions/View.fs" />
     <!-- MathHammer -->
     <Compile Include="src/MathHammer/Probability.fs" />
-    <Compile Include="src/MathHammer/GameActions/Types.fs" />
-    <Compile Include="src/MathHammer/GameActions/State.fs" />
     <Compile Include="src/MathHammer/Models/Types.fs" />
     <Compile Include="src/MathHammer/Models/State.fs" />
     <Compile Include="src/MathHammer/Models/View.fs" />

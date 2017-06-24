@@ -1,5 +1,5 @@
 module MathHammer.Models.Types
-open MathHammer.GameActions.Types
+open GameActions.Primitives.Types
 type ModelAttribute = 
     | Ability of Ability
     | Characteristic of Ability
