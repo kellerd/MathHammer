@@ -20,7 +20,7 @@ let mkRows dispatch row  =
         tr [] [
             td [] (GameActions.Primitives.View.root op dispatch :: 
                    [ a [ ClassName "button fa fa-floppy-o"
-                         OnClick (fun _ -> SaveOp(text,op) |> dispatch)  ] [str "Save"] ])
+                         OnClick (fun _ -> SaveOp(text) |> dispatch)  ] [str "Save"] ])
             td [] [
                 input [ ClassName "input"
                         Type "text"

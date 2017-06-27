@@ -4,15 +4,15 @@ open Elmish
 open Types
 open GameActions.Primitives.Types
 
-let initRow () : Row * Cmd<Msg> = 
+let initRow () : Row * Cmd<Types.Msg> = 
     New("", NoValue), Cmd.none
 
-let init () : Model * Cmd<Msg> =
+let init () : Model * Cmd<Types.Msg> =
     let readOnlyRow = ReadOnly ("D6", Total[Value(Dice(D6)); Value(Int(3))])
     ([readOnlyRow],false), Cmd.none
 
 
-let update msg model : Model * Cmd<Msg> =
+let update msg model : Model * Cmd<Types.Msg> =
     match msg,model with
     | AddRow,(rows,false) -> 
         let (newRow,newRowCmd) = initRow()
