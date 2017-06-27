@@ -17,7 +17,7 @@ let alternateRoot (model:Ability) dispatch =
         | Total (ops)  -> str ""
         | Value(Dice(i))-> str ""
         | Value(Int(i)) -> str ""
-        | NoValue -> span [Style [BorderStyle "dotted"]] []
+        | NoValue -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []
     displayOperation model  
 
 let root (model:Ability) dispatch =

@@ -8,4 +8,4 @@ open Elmish.React
 open Types
 
 let root model dispatch =
-    GameActions.GameActionsList.View.root model.Actions dispatch 
+    GameActions.GameActionsList.View.root model.Actions (GameActionListMsg >> dispatch )

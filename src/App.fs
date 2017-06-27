@@ -32,19 +32,13 @@ let menu currentPage =
         [ str "General" ]
       ul
         [ ClassName "menu-list" ]
-        [ menuItem "Home" Home currentPage
-          menuItem "Counter sample" Counter currentPage
-          menuItem "MathHammer" MathHammer currentPage
-          menuItem "Game Actions" GameActions currentPage
-          menuItem "About" Page.About currentPage ] ]
+        [ menuItem "MathHammer" MathHammer currentPage
+          menuItem "Game Actions" GameActions currentPage ] ]
 
 let root model dispatch =
 
   let pageHtml =
     function
-    | Page.About -> Info.View.root
-    | Counter -> Counter.View.root model.counter (CounterMsg >> dispatch)
-    | Home -> Home.View.root model.home (HomeMsg >> dispatch)
     | MathHammer -> MathHammer.View.root model.mathHammer (MathHammerMsg >> dispatch)
     | GameActions -> GameActions.View.root model.gameActions (GameActionsMsg >> dispatch)
 

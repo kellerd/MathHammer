@@ -56,7 +56,28 @@ let rec reduce operation =
             )
       | Many (op,count) -> 
             dist {
-                  let! results = takeN (reduce op) count   
+                  let! count' = reduce count
+                  let results = 
+                        match count with
+                        | Pass f -> takeN (reduce op) (int f)
+                        | Fail f -> takeN (reduce op) (int f)
+                        | List(counts) -> dist {
+                              let! op' = reduce op
+                              return op' * result
+
+                        }
+
+                              // List.foldBack (fun (result:Result)  (acc:Distribution<Result list>) -> dist { 
+                              //       let! results' = (multiply op result)
+                              //       let! acc' = acc
+                              //       return (List results') :: acc'
+                              //    } ) counts []
+                        | Tuple(i, i2) -> dist {
+                                    let! result1 = takeN (reduce op) i
+                                    let! result2 = takeN (reduce op) i2
+                                    return (result1 @ result2)  
+                              }  
+                  // let! results = multiply op count'
                   return list results
             }
       | DPlus(d, moreThan) -> reduceDie d |> dPlus moreThan 
@@ -120,8 +141,8 @@ let printPrimitive p =
 let showActions (key, Ability act) = 
   let rec showAttr act = 
       match act with 
-      | Many (Value(Dice(d)),i) -> sprintf "%d%s" i (printDs d)
-      | Many (v,i) -> sprintf "(%s * %d)" (showAttr v) i
+      | Many (Value(Dice(d)),Value(Int(i))) -> sprintf "%d%s" i (printDs d)
+      | Many (v,i) -> sprintf "(%s * %s)" (showAttr v) (showAttr i)
       | DPlus (d,i) -> string i + "+"
       | Total (ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Total(%dD6)" (List.length ops)
       | Total (ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)

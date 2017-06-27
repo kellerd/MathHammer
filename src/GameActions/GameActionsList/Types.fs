@@ -2,7 +2,7 @@ module GameActions.GameActionsList.Types
 open GameActions.Primitives.Types
 type Row = 
     | ReadOnly of string * Ability
-    | New of string * Ability
+    | ReadWrite of string * Ability
 
 type Model = Row list * bool
 
@@ -11,3 +11,4 @@ type Msg =
     | AddRow 
     | ChangeNewRowName of string
     | SaveOp of string
+    | EditRow of string
