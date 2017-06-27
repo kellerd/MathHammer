@@ -1,7 +1,13 @@
 module GameActions.GameActionsList.Types
+open GameActions.Primitives.Types
+type Row = 
+    | ReadOnly of string * Ability
+    | New of string * Ability
 
-type Model = (string * GameActions.Primitives.Types.Ability) list
+type Model = Row list * bool
 
-type Msg = Unit
+type Msg = 
     // | ModelMsg of MathHammer.Models.Types.Msg * string
-    // | Distribute 
+    | AddRow 
+    | ChangeNewRowName of string
+    | SaveOp of string
