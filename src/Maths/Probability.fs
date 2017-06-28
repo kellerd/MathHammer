@@ -50,7 +50,7 @@ module Probability
             let combined = List.append d1' d2' 
             combined |> normalize
         let either (d1 : Distribution<'T>) (d2 : Distribution<'T>) = coinFlip 0.5 d1 d2
-        let combine vs = List.concat vs |> normalize
+        let combine  (vs : Distribution<'T> seq) : Distribution<'T> = List.concat vs |> normalize
 
         let weightedCases (inp : ('T * float) list) =
             let rec coinFlips w l =
@@ -70,13 +70,13 @@ module Probability
         let returnM (a : 'a) : Distribution<'a> =
             always a
  
-        let bind (v : Distribution<'a>) (f : 'a -> Distribution<'b>) : Distribution<'b> =
+        let bind (f : 'a -> Distribution<'b>) (v : Distribution<'a>) : Distribution<'b> =
             [ for (a,p) in v do
               for (b,p') in f a do
               yield (b, p*p')
             ] |> normalize
-        let (>>=) f m =
-            bind f m
+        
+        let (>>=) x f = bind f x
  
         type DistrBuilder () =
             member x.Bind(m, f) = m >>= f
@@ -85,13 +85,32 @@ module Probability
             member x.Delay(f) = f ()
  
     let dist= Monad.DistrBuilder()   
-    let map f v = bind v (f >> returnM)
+    let map f = bind (f >> returnM) 
     let apply f v = 
         dist{
             let! v' = v
             let! f' = f
             return f' v'
         }
+
+    let rec traverseResultM f list =
+        // define a "cons" function
+        let cons head tail = head :: tail
+
+        // loop through the list
+        match list with
+        | [] -> 
+            // if empty, lift [] to a Result
+            returnM []
+        | head::tail ->
+            // otherwise lift the head to a Result using f
+            // then lift the tail to a Result using traverse
+            // then cons the head and tail and return it
+            f head                 >>= (fun h -> 
+            traverseResultM f tail >>= (fun t ->
+            returnM (cons h t) ))
+
+
     let rec takeN (v : Distribution<'a>) (n : int) : Distribution<'a list> =
         dist{
             if n <= 0 then return [] else
@@ -129,10 +148,10 @@ module Probability
         // combine [(uniformDistribution [1..6] );(uniformDistribution [1..3])]
         // uniformDistribution [1;2;3;4;5;6;1;2;3] |> normalize
         // [always 1; always 2;always 3 ] |> combine
-        let threeDice = nDice 3
+        let threeDice = nDice 3 
         // threeDice |> sample
-        let x = bind (always 3) nDice 
-        let y = bind x (List.sum >> always) 
+        let x = bind nDice (always 3) 
+        let y = bind (List.sum >> always) x 
 
         let z = 
             (always 3) 

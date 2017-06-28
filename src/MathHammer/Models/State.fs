@@ -7,27 +7,13 @@ open GameActions.Primitives.Types
 
 
 let hitMelee = 
-    Let(Attacker, "MeleeHits", Count[Many(Var(Attacker, "WS"), Var(Attacker, "A"))])
-
-
-
-
+    Let(Attacker, "MeleeHits", Count[Multiply(Var(Attacker, "WS"), Var(Attacker, "A"))])
 
 let init name =
     { posX=0.
       posY=0.
       name=name
       attributes = []}
-open Result
-open Probability
-let r results (f:Result -> Distribution<Result list>) = 
-// dist {
-//     let! results = 
-        
-    // return results
-    // }
-
-let result = r [Pass 1.; Pass 2.; Pass 3.] (function Pass f -> uniformDistribution ([[Pass (5. * f)]]) )
 
 let initMeq name =
     { (init name) with 
@@ -39,8 +25,8 @@ let initMeq name =
                       "A" , Characteristic <| Value (Int(2))
                       "LD", Characteristic <| Value (Int(8))
                       "SV", Characteristic <| DPlus (D6, 3)
-                      "Psychic", Ability (Total[Value(Dice(D6));Value(Dice(D6))])
-                      "Balls", Ability (Many(Value(Dice(D6)),Value(Int(3)))) ] }, Cmd.none
+                      "Psychic", Ability (Count[Value (Int 5); Value (Int 3); Value (Int 5); NoValue; DPlus (D3,2)])
+                      "Balls", Ability (Multiply(Value(Dice(D6)),Value(Dice(D6)))) ] }, Cmd.none
 let initGeq name =
     { (init name) with 
         attributes = ["WS", Characteristic <| DPlus (D6, 4)

@@ -6,12 +6,10 @@ open Fable.Helpers.React
 open Fable.Helpers.React.Props
 open Types
 open Fable.Import
-open Probability
 open GameActions.Primitives.Types
 open Result
+open Probability
 let onClick x : IProp = OnClick(x) :> _
-
-
 let pass i = float i |> Pass
 let fail i = float i  |> Fail
 let list d = List d 
@@ -42,7 +40,7 @@ let reduceGamePrimitive = function
       | Dice d -> reduceDie d 
 let rec reduce operation = 
       match operation with
-      | Value v -> reduceGamePrimitive v |> Probability.map pass
+      | Value v -> reduceGamePrimitive v |> map pass
       | NoValue -> fail 0 |> always
       | Total (ops) -> 
             ops 
@@ -54,33 +52,26 @@ let rec reduce operation =
                         return a' + b'                              
                   }
             )
-      | Many (op,count) -> 
+      | Multiply (op,op2) -> 
             dist {
-                  let! count' = reduce count
-                  let results = 
-                        match count with
-                        | Pass f -> takeN (reduce op) (int f)
-                        | Fail f -> takeN (reduce op) (int f)
-                        | List(counts) -> dist {
-                              let! op' = reduce op
-                              return op' * result
-
-                        }
-
-                              // List.foldBack (fun (result:Result)  (acc:Distribution<Result list>) -> dist { 
-                              //       let! results' = (multiply op result)
-                              //       let! acc' = acc
-                              //       return (List results') :: acc'
-                              //    } ) counts []
-                        | Tuple(i, i2) -> dist {
-                                    let! result1 = takeN (reduce op) i
-                                    let! result2 = takeN (reduce op) i2
-                                    return (result1 @ result2)  
-                              }  
-                  // let! results = multiply op count'
-                  return list results
+                  let! result1 = reduce op
+                  let! result2 = reduce op2
+                  return result1 * result2
             }
-      | DPlus(d, moreThan) -> reduceDie d |> dPlus moreThan 
+      | DPlus(d, moreThan) -> reduceDie d |> dPlus moreThan
+      | Count ops -> dist {
+            let! ds = traverseResultM reduce ops 
+            let counts =
+                 ds |> List.countBy(function | Pass _ -> pass 1 | Fail _ -> fail 1 | _ -> failwith "Cannot count these") 
+                    |> List.map(function (Pass _,count) -> pass count | (Fail _, count) -> fail count )
+            return List counts              
+            }
+      | Var(_, _) -> failwith "Not Implemented"
+      | Let(_, _, _) -> failwith "Not Implemented" 
+reduce (Value(Int(5)))      
+let ops = [Value(Int(5));Value(Int(3));Value(Int(5));NoValue; DPlus(D3, 2)]
+
+reduce (Count[Value(Int(5))])  
 let showProbabilitiesOfActions (key, Ability act) = 
       let probabilities (dist:Distribution<_>) = 
             let result = 
@@ -141,14 +132,31 @@ let printPrimitive p =
 let showActions (key, Ability act) = 
   let rec showAttr act = 
       match act with 
-      | Many (Value(Dice(d)),Value(Int(i))) -> sprintf "%d%s" i (printDs d)
-      | Many (v,i) -> sprintf "(%s * %s)" (showAttr v) (showAttr i)
-      | DPlus (d,i) -> string i + "+"
+      | Multiply (Value(Int(x)),Value(Int(y))) -> sprintf "%d" (x * y)
+      | Multiply (Value(Dice(d)),Value(Int(i))) 
+      | Multiply (Value(Int(i)),Value(Dice(d))) -> sprintf "%d * %s" i (printDs d)
+      | Multiply (v,i) -> sprintf "(%s * %s)" (showAttr v) (showAttr i)
+      | DPlus (D6,i) -> string i + "+"
+      | DPlus (D3,i) -> string i + "+ on D3"
       | Total (ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Total(%dD6)" (List.length ops)
       | Total (ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)
       | Total (ops)  -> sprintf "Total(%s)" (List.map showAttr ops |> String.concat " + ")
       | Value i -> string i
+      | Value i -> string i
       | NoValue -> "--"
+      | DPlus(Reroll(is,D6), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
+      | DPlus(Reroll(is,D3), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
+      | DPlus(Reroll(is,Reroll(is2,d)), i) -> showAttr (DPlus(Reroll(List.distinct (is @ is2),d),i))
+      | Count(ops) -> sprintf "(Passes,Fails) in (%s)" (List.map showAttr ops |> String.concat ",")
+      | Var(env, str) -> match env with 
+                           | Attacker -> sprintf "Attacker(%s)" str
+                           | Defender -> sprintf "Target(%s)" str
+                           | Global -> sprintf "Global(%s)" str
+      | Let(env, str, op) ->  
+            match env with 
+            | Attacker -> sprintf "let Attacker(%s) = %s" str  (showAttr op)
+            | Defender -> sprintf "let Target(%s) = %s" str (showAttr op)
+            | Global -> sprintf "let Global(%s) = %s" str (showAttr op)
   div []
       [ b [] [str key; str " : "]
         showAttr act |> str  ]

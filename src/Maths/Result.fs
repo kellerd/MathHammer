@@ -7,8 +7,8 @@ let rec divide (x,y) =
         | List a -> List.map(fun r -> divide(r,y)) a |> List  
         | Tuple(a,b) -> Tuple(System.Math.Ceiling(float a * y) |> int,System.Math.Ceiling(float b * y) |> int)
 let rec printResult = function
-    | Pass x   -> sprintf "%.2f" x 
-    | Fail x  -> sprintf "%.2f" x
+    | Pass x   -> sprintf "Pass %.2f" x 
+    | Fail x  -> sprintf "Fail %.2f" x
     | List xs -> List.map printResult xs |> String.concat ";" |> sprintf "[%s]"
     | Tuple(x,y) -> sprintf "%d,%d" x y
                     

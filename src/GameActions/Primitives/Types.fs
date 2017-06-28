@@ -16,9 +16,9 @@ type GamePrimitive =
 
 
 type Operation = 
-    | Many of operation:Operation * count:Operation
-    | Total of (Operation list)
-    | Count of (Operation list)
+    | Multiply of Operation * Operation
+    | Total of Operation list
+    | Count of Operation list
     | Value of GamePrimitive
     | Var of Environment * string
     | DPlus of Die * int 
