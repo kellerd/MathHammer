@@ -5,7 +5,7 @@ open Types
 open GameActions.Primitives.Types
 
 let initRow () : Row * Cmd<Types.Msg> = 
-    New("", NoValue), Cmd.none
+    ReadWrite("", NoValue), Cmd.none
 
 let init () : Model * Cmd<Types.Msg> =
     let readOnlyRow = ReadOnly ("D6", Total[Value(Dice(D6)); Value(Int(3))])
@@ -20,14 +20,16 @@ let update msg model : Model * Cmd<Types.Msg> =
     | AddRow,_ -> 
         model, Cmd.none
     | ChangeNewRowName(str),(rs,true) ->
-        let newRows = List.map(function New(_,op) -> New(str,op) | r -> r) rs
+        let newRows = List.map(function ReadWrite(_,op) -> ReadWrite(str,op) | r -> r) rs
         (newRows,true), Cmd.none
     | SaveOp (name),(rs,true) -> 
-        let newRows = List.map(function New(name',op) when name=name' -> ReadOnly(name',op) | r -> r ) rs
+        let newRows = List.map(function ReadWrite(name',op) when name=name' -> ReadOnly(name',op) | r -> r ) rs
         (newRows,false),Cmd.none
-    | (SaveOp(_) | ChangeNewRowName(_)),_->
+    | EditRow (name),(rs,false) -> 
+        let newRows = List.map(function ReadOnly(name',op) when name=name' -> ReadWrite(name',op) | r -> r ) rs
+        (newRows,true),Cmd.none 
+    | (SaveOp(_) | ChangeNewRowName(_) | EditRow(_)),_->
         model, Cmd.none
-
 
 // match msg with
 // | Distribute -> 

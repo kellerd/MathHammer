@@ -16,7 +16,7 @@ let root model dispatch =
                 [ ViewBox "0 0 100 100"; unbox ("width", "100%") ]
                 [ UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.root model.Defender (State.defenderMap >> dispatch) ] ] 
-    let swap =  R.i [ClassName "column fa fa-exchange"; OnClick (fun _ -> Swap |> dispatch) ] []
+    let swap =  R.i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
     let selected = 
         let titleBar text = 
             (R.section [ ClassName "hero is-primary  has-text-centered"]

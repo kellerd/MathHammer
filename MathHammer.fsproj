@@ -5,16 +5,6 @@
   <ItemGroup>
     <!-- Global to the app -->
     <Compile Include="src/Global.fs" />
-    <!-- Info -->
-    <Compile Include="src/Info/View.fs" />
-    <!-- Counter -->
-    <Compile Include="src/Counter/Types.fs" />
-    <Compile Include="src/Counter/State.fs" />
-    <Compile Include="src/Counter/View.fs" />
-    <!-- Home -->
-    <Compile Include="src/Home/Types.fs" />
-    <Compile Include="src/Home/State.fs" />
-    <Compile Include="src/Home/View.fs" />
     <!-- GameActions -->
     
     <Compile Include="src/GameActions/Primitives/Types.fs" />
@@ -25,8 +15,10 @@
     <Compile Include="src/GameActions/Types.fs" />
     <Compile Include="src/GameActions/State.fs" />
     <Compile Include="src/GameActions/View.fs" />
+    <!-- Maths -->
+    <Compile Include="src/Maths/Probability.fs" />
+    <Compile Include="src/Maths/Result.fs" />
     <!-- MathHammer -->
-    <Compile Include="src/MathHammer/Probability.fs" />
     <Compile Include="src/MathHammer/Models/Types.fs" />
     <Compile Include="src/MathHammer/Models/State.fs" />
     <Compile Include="src/MathHammer/Models/View.fs" />
