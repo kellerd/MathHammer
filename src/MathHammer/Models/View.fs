@@ -63,15 +63,12 @@ let rec reduce operation =
             let! ds = traverseResultM reduce ops 
             let counts =
                  ds |> List.countBy(function | Pass _ -> pass 1 | Fail _ -> fail 1 | _ -> failwith "Cannot count these") 
-                    |> List.map(function (Pass _,count) -> pass count | (Fail _, count) -> fail count )
+                    |> List.map(function (Pass _,count) -> pass count | (Fail _, count) -> fail count | _ -> failwith "Cannot count these")
             return List counts              
             }
       | Var(_, _) -> failwith "Not Implemented"
       | Let(_, _, _) -> failwith "Not Implemented" 
-reduce (Value(Int(5)))      
-let ops = [Value(Int(5));Value(Int(3));Value(Int(5));NoValue; DPlus(D3, 2)]
-
-reduce (Count[Value(Int(5))])  
+ 
 let showProbabilitiesOfActions (key, Ability act) = 
       let probabilities (dist:Distribution<_>) = 
             let result = 

@@ -7,13 +7,17 @@ open Fable.Helpers.React.Props
 open Elmish.React
 open MathHammer.Models.Types
 open Types
+open GameActions.Primitives.Types
+  
 let isCharacteristic = function Characteristic x -> true | Ability x -> false
 
 let root model dispatch =
+    let (boardX,boardY) = model.Board |> fun (x,y) -> ft.ToMM(x),ft.ToMM(y)
+
     let drawing =   
         R.div [] 
             [R.svg 
-                [ ViewBox "0 0 100 100"; unbox ("width", "100%") ]
+                [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", sprintf "%d" boardX); unbox ("height", sprintf "%d" boardY) ]
                 [ UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.root model.Defender (State.defenderMap >> dispatch) ] ] 
     let swap =  R.i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []

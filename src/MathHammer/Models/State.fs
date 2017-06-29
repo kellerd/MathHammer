@@ -13,7 +13,10 @@ let init name =
     { posX=0.
       posY=0.
       name=name
-      attributes = []}
+      attributes = []
+      size = 28<mm>
+      shootingRange = NoValue
+      meleeRange = NoValue}
 
 let initMeq name =
     { (init name) with 

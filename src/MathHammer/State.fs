@@ -2,11 +2,12 @@ module MathHammer.State
 
 open Elmish
 open Types
-
+open GameActions.Primitives.Types
+  
 let attackerMap msg = UnitListMsg(msg, Some "Attacker")
 let defenderMap msg = UnitListMsg(msg, Some "Defender")
 
-let init () : Model * Cmd<Msg> =
+let init () : Model * Cmd<Types.Msg> =
   let (attacker,attackerCmd) = MathHammer.UnitList.State.init "Attacker" () 
   let (defender,defenderCmd) = MathHammer.UnitList.State.init "Defender" () 
   
@@ -16,12 +17,13 @@ let init () : Model * Cmd<Msg> =
       Attacker = { attacker with  BoxFill="#FFEEEE"; ElementFill="#79CE0B"; ElementStroke="#396302"; }
       Defender = { defender with  BoxFill="#EEEEFF"; ElementFill="#0B79CE"; ElementStroke="#023963"; OffsetY = 50.}
       Selected = None
+      Board = 6<ft>,4<ft>
       StoredActions = Map.empty<_,_>
     }
   model, Cmd.batch [ Cmd.map attackerMap attackerCmd
                      Cmd.map defenderMap defenderCmd  ]
 
-let update msg model : Model * Cmd<Msg> =
+let update msg model : Model * Cmd<Types.Msg> =
   match msg with
   | UnitListMsg (UnitList.Types.ModelMsg((MathHammer.Models.Types.Msg.Select), m), Some "Attacker") -> 
     let m' = model.Attacker.Models |> Map.find m

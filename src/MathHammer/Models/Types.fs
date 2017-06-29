@@ -5,8 +5,11 @@ type ModelAttribute =
     | Characteristic of Ability
 type Model = { posX:float
                posY:float 
-               name:string 
-               attributes:list<string*ModelAttribute> }
+               name:string
+               size:int<mm>
+               attributes:list<string*ModelAttribute>
+               shootingRange:Operation
+               meleeRange:Operation }
 
 
 type Msg = 
