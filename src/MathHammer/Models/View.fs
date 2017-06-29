@@ -59,7 +59,8 @@ let rec reduce operation =
                   return result1 * result2
             }
       | DPlus(d, moreThan) -> reduceDie d |> dPlus moreThan
-      | Count ops -> dist {
+      | Count ops -> 
+            dist {
             let! ds = traverseResultM reduce ops 
             let counts =
                  ds |> List.countBy(function | Pass _ -> pass 1 | Fail _ -> fail 1 | _ -> failwith "Cannot count these") 
@@ -168,7 +169,7 @@ let root model dispatch =
       g []
        [ circle [   Cx !^ model.posX :> IProp
                     Cy !^ model.posY :> IProp
-                    R !^ "3" :> IProp
+                    R !^ (model.size |> float) :> IProp
                     OnClick (fun mouseEvt -> Select |> dispatch) :> IProp] []
          text [     TextAnchor "middle"
                     X (!^ model.posX)

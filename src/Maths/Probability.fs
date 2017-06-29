@@ -32,17 +32,14 @@ module Probability
     [<AutoOpen>]
     module internal Operations =
  
-        let normalize (v : Distribution<'a>) =
-            let dict = new System.Collections.Generic.Dictionary<_,_>()
-            let get a = if dict.ContainsKey a then dict.[a] else 0.0
-            let add (a,p) = dict.[a] <- get a + p
-            v |> List.iter add
-            let totVal = Seq.sum dict.Values
-            dict |> Seq.map (fun kvp -> 
-                    if totVal > 1.0 then (kvp.Key, kvp.Value / totVal)
-                    else (kvp.Key, kvp.Value))
-                 |> List.ofSeq
-            
+        let normalize (v : Distribution<'a>) : (Distribution<'a>) =
+            let total = v |> Seq.sumBy snd
+            v 
+            |> Seq.groupBy fst 
+            |> Seq.map (fun (k,vals) -> 
+                if total > 1.0 then k,Seq.sumBy snd vals / total
+                else k,Seq.sumBy snd vals)
+            |> Seq.toList
         let coinFlip (pFirst : float) (d1 : Distribution<'T>) (d2 : Distribution<'T>) = 
             if pFirst < 0.0 || pFirst > 1.0 then failwith "invalid probability in coinFlip"
             let d1' = d1 |> List.map (fun (a,prob) -> a,prob * pFirst) 
@@ -87,30 +84,27 @@ module Probability
     let dist= Monad.DistrBuilder()   
     let map f = bind (f >> returnM) 
     let apply f v = 
-        dist{
+        dist {
             let! v' = v
             let! f' = f
             return f' v'
         }
 
-    let rec traverseResultM f list =
+    let traverseResultM f list =
         // define a "cons" function
         let cons head tail = head :: tail
 
-        // loop through the list
-        match list with
-        | [] -> 
-            // if empty, lift [] to a Result
-            returnM []
-        | head::tail ->
-            // otherwise lift the head to a Result using f
-            // then lift the tail to a Result using traverse
-            // then cons the head and tail and return it
-            f head                 >>= (fun h -> 
-            traverseResultM f tail >>= (fun t ->
+        // right fold over the list
+        let initState = returnM []
+        let folder head tail = 
+            f head >>= (fun h -> 
+            tail >>= (fun t ->
             returnM (cons h t) ))
 
+        List.foldBack folder list initState 
 
+        
+    let sequenceResultM x = traverseResultM id x
     let rec takeN (v : Distribution<'a>) (n : int) : Distribution<'a list> =
         dist{
             if n <= 0 then return [] else
