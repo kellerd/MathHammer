@@ -15,7 +15,7 @@ let init () : Model * Cmd<Types.Msg> =
     
     { 
       Attacker = { attacker with  BoxFill="#FFEEEE"; ElementFill="#79CE0B"; ElementStroke="#396302"; }
-      Defender = { defender with  BoxFill="#EEEEFF"; ElementFill="#0B79CE"; ElementStroke="#023963"; OffsetY = 50.}
+      Defender = { defender with  BoxFill="#EEEEFF"; ElementFill="#0B79CE"; ElementStroke="#023963"; OffsetY = ft.ToMM 2<ft>; }
       Selected = None
       Board = 6<ft>,4<ft>
       StoredActions = Map.empty<_,_>

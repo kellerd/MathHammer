@@ -174,10 +174,10 @@ let root model dispatch =
          text [     TextAnchor "middle"
                     X (!^ model.posX)
                     Y (!^ (model.posY + 7.))
-                    StrokeWidth (!^ ".1")
+                    StrokeWidth (!^ ".5")
                     Fill "#000000"
                     Stroke "#000000"
-                    FontSize !^ "4"    ] 
+                    FontSize !^ "25"    ] 
                [ str model.name]
        ]
 
