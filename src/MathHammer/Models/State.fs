@@ -10,17 +10,21 @@ let hitMelee =
     Let(Attacker, "MeleeHits", Count[Multiply(Var(Attacker, "WS"), Var(Attacker, "A"))])
 
 let init name =
-    { posX=0.
-      posY=0.
-      name=name
-      attributes = []
-      size = 28<mm>
-      shootingRange = NoValue
-      meleeRange = NoValue}
+    { PosX=0.
+      PosY=0.
+      Name=name
+      Attributes = []
+      Size = 28<mm>
+      Scale = "scale(1,1)"
+      ShootingRange = NoValue
+      MeleeRange = NoValue}
 
 let initMeq name =
     { (init name) with 
-        attributes = ["WS", Characteristic <| DPlus (D6, 3)
+        //ShootingRange = Value(Int(24)) 
+        MeleeRange = Total[Value(Int(7));Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))]
+        Attributes = ["M",  Characteristic <| Value(Int(6))
+                      "WS", Characteristic <| DPlus (D6, 3)
                       "BS", Characteristic <| DPlus (D6, 3)
                       "S" , Characteristic <| Value (Int(4))
                       "T" , Characteristic <| Value (Int(4))
@@ -32,7 +36,8 @@ let initMeq name =
                       "Balls", Ability (Multiply(Value(Dice(D6)),Value(Dice(D6)))) ] }, Cmd.none
 let initGeq name =
     { (init name) with 
-        attributes = ["WS", Characteristic <| DPlus (D6, 4)
+        Attributes = ["M",  Characteristic <| Value(Int(5))
+                      "WS", Characteristic <| DPlus (D6, 4)
                       "BS", Characteristic <| DPlus (D6, 4)
                       "S" , Characteristic <| Value (Int(3))
                       "T" , Characteristic <| Value (Int(3))
@@ -43,5 +48,5 @@ let initGeq name =
 
 let update msg model =
     match msg with
-    | ChangePosition (x,y) -> {model with posX = x; posY = y}, Cmd.none
+    | ChangePosition (x,y,scale) -> {model with PosX = x; PosY = y; Scale=scale}, Cmd.none
     | Select _ -> model, Cmd.none

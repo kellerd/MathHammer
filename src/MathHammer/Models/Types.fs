@@ -3,15 +3,16 @@ open GameActions.Primitives.Types
 type ModelAttribute = 
     | Ability of Ability
     | Characteristic of Ability
-type Model = { posX:float
-               posY:float 
-               name:string
-               size:int<mm>
-               attributes:list<string*ModelAttribute>
-               shootingRange:Operation
-               meleeRange:Operation }
+type Model = { PosX:float
+               PosY:float 
+               Name:string
+               Scale:string
+               Size:int<mm>
+               Attributes:list<string*ModelAttribute>
+               ShootingRange:Operation
+               MeleeRange:Operation }
 
 
 type Msg = 
-    | ChangePosition of float * float
+    | ChangePosition of float * float * string
     | Select

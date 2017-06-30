@@ -7,6 +7,7 @@ type Model = {
     DeploymentFill:string
     ElementFill:string
     ElementStroke:string
+    Scale : string
     Name : string
     Width : int<mm>
     Height : int<mm>

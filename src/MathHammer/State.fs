@@ -14,8 +14,8 @@ let init () : Model * Cmd<Types.Msg> =
   let model : Model = 
     
     { 
-      Attacker = { attacker with  BoxFill="#FFEEEE"; ElementFill="#79CE0B"; ElementStroke="#396302"; }
-      Defender = { defender with  BoxFill="#EEEEFF"; ElementFill="#0B79CE"; ElementStroke="#023963"; OffsetY = ft.ToMM 2<ft>; }
+      Attacker = { attacker with  BoxFill="#FFCCCC"; ElementFill="#79CE0B"; ElementStroke="#396302"; }
+      Defender = { defender with  BoxFill="#CCCCFF"; ElementFill="#0B79CE"; ElementStroke="#023963"; OffsetY = ft.ToMM 2<ft>; Scale="scale(1,-1)" }
       Selected = None
       Board = 6<ft>,4<ft>
       StoredActions = Map.empty<_,_>
@@ -43,5 +43,6 @@ let update msg model : Model * Cmd<Types.Msg> =
     let (uld,ulCmdsd) = UnitList.State.update msg model.Defender
     { model with Attacker = ula; Defender = uld }, Cmd.batch [ Cmd.map attackerMap ulCmdsa
                                                                Cmd.map defenderMap ulCmdsd  ]
-  | Swap -> { model with Attacker = { model.Defender with OffsetY = model.Attacker.OffsetY }
-                         Defender = { model.Attacker with OffsetY = model.Defender.OffsetY } }, Cmd.ofMsg ((fun msg -> UnitListMsg(msg, None)) UnitList.Types.Distribute)
+  | Swap -> { model with Attacker = { model.Attacker with Models = model.Defender.Models}  
+                         Defender = { model.Defender with Models = model.Attacker.Models} 
+                         Selected = None }, Cmd.ofMsg ((fun msg -> UnitListMsg(msg, None)) UnitList.Types.Distribute)

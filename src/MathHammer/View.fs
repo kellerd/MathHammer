@@ -17,7 +17,7 @@ let root model dispatch =
     let drawing =   
         R.div [] 
             [R.svg 
-                [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", sprintf "%d" boardX); unbox ("height", sprintf "%d" boardY) ]
+                [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
                 [ UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.root model.Defender (State.defenderMap >> dispatch) ] ] 
     let swap =  R.i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
@@ -45,9 +45,9 @@ let root model dispatch =
         match model.Selected with 
         | None ->  titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
-             let title = titleBar selected.name
+             let title = titleBar selected.Name
              let (attrs,actions) = 
-                 selected.attributes 
+                 selected.Attributes 
                  |> List.partition (snd >> isCharacteristic)
              let attrDiv = 
                  attrs                 
