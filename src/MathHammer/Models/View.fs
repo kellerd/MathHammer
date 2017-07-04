@@ -221,18 +221,19 @@ let rangeStops rangeOperation env =
             | Fail _,_ | _,0.0 -> stopPercent i length, "#FF0000", "0.0"
             | Pass range,_ -> stopPercent i length, percentGreen (inch.ToMM(int range * 1<inch>)), opacity prob
             | _ -> failwith "invalid range calculation")  
-    minRange,maxRange, 
-    stopsPercentGreenAndOpacity  
-    |> List.map(fun (offset,stopcolor,opacity) -> 
+    env,
+    (minRange,maxRange, 
+     stopsPercentGreenAndOpacity  
+     |> List.map(fun (offset,stopcolor,opacity) -> 
                         stop [ Offset !^ offset
                                StopColor stopcolor
-                               StopOpacity !^ opacity ] [])
+                               StopOpacity !^ opacity ] []))
 
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
             [ g   [ Transform model.Scale ] display ]
 
-let rangeRoot model dispatch =
+let rangeRoot env model dispatch =
       let ranges id (min:int<mm>,max:int<mm>,stops) = 
             g [] 
               [   defs  [] 
@@ -240,15 +241,12 @@ let rangeRoot model dispatch =
                                            stops ]
                   circle [Fill <| sprintf "url(#%s)" id
                           R !^ (float max)] [] ]
-      [ rangeStops model.MeleeRange 
-        rangeStops model.ShootingRange ]                          
-      |> List.fold (fun (env,acc) f -> let (newEnv,newElement) = f env
-                                       (newEnv,newElement::acc)) (model.Environment,[])  
-                                                   
-      groupFor model [
-            ranges "meleeRanges" <| rangeStops env model.MeleeRange
-            ranges "shootingRange" <| rangeStops env model.ShootingRange
-      ]
+      [ "meleeRanges",rangeStops model.MeleeRange 
+        "shootingRange",rangeStops model.ShootingRange ]                          
+      |> List.fold (fun (env,acc) (name,f) -> 
+            let (newEnv,newElement) = ranges name (f env)
+            (newEnv,newElement::acc)) (env,[])  
+      |> groupFor model 
 let root model dispatch =
       let modelDisplay = 
             [ circle   [ R !^ (model.Size / 2 |> float) :> IProp
