@@ -36,6 +36,7 @@ let initMeq name =
                       "Balls", Ability (Multiply(Value(Dice(D6)),Value(Dice(D6)))) ] }, Cmd.none
 let initGeq name =
     { (init name) with 
+        ShootingRange = Total[Value(Int(6))]
         Attributes = ["M",  Characteristic <| Value(Int(5))
                       "WS", Characteristic <| DPlus (D6, 4)
                       "BS", Characteristic <| DPlus (D6, 4)

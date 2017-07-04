@@ -18,7 +18,11 @@ let root model dispatch =
         R.div [] 
             [R.svg 
                 [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
-                [ UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
+                [ UnitList.View.rootBoard model.Attacker (State.attackerMap >> dispatch)
+                  UnitList.View.rootBoard model.Defender (State.attackerMap >> dispatch)
+                  UnitList.View.rootRanges model.Attacker (State.attackerMap >> dispatch)
+                  UnitList.View.rootRanges model.Defender (State.defenderMap >> dispatch) 
+                  UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.root model.Defender (State.defenderMap >> dispatch) ] ] 
     let swap =  R.i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
     let selected = 

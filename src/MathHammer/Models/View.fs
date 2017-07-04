@@ -38,39 +38,64 @@ let rec reduceDie d : Distribution<_> =
 let reduceGamePrimitive = function
       | Int i -> always i
       | Dice d -> reduceDie d 
-let rec reduce operation = 
+let rec reduce env operation = 
+      let (attackers,defenders,globals) = env
       match operation with
-      | Value v -> reduceGamePrimitive v |> map pass
-      | NoValue -> fail 0 |> always
-      | Total (ops) -> 
-            ops 
-            |> List.map reduce
-            |> List.reduce (fun a b -> 
-                  dist {
-                        let! a' = a
-                        let! b' = b
+      | Value v -> env,reduceGamePrimitive v |> map pass
+      | NoValue -> env,always (fail 0)
+      | Total ([]) -> env,always (pass 0)
+      | Total (op::rest) -> 
+            let state = reduce env op
+            rest 
+            |> List.fold (fun (env1,reduced1) op -> 
+                  let (env2,reduced2) = reduce env op
+                  env2, dist {
+                        let! a' = reduced1
+                        let! b' = reduced2
                         return a' + b'                              
-                  }
-            )
+                  }) state
       | Multiply (op,op2) -> 
+            let (env1,reduced1) = reduce env op
+            let (env2,reduced2) = reduce env1 op2
+            env2,
             dist {
-                  let! result1 = reduce op
-                  let! result2 = reduce op2
+
+                  let! result1 = reduced1
+                  let! result2 = reduced2
                   return result1 * result2
             }
-      | DPlus(d, moreThan) -> reduceDie d |> dPlus moreThan
-      | Count ops -> 
-            dist {
-            let! ds = traverseResultM reduce ops 
-            let counts =
-                 ds |> List.countBy(function | Pass _ -> pass 1 | Fail _ -> fail 1 | _ -> failwith "Cannot count these") 
-                    |> List.map(function (Pass _,count) -> pass count | (Fail _, count) -> fail count | _ -> failwith "Cannot count these")
-            return List counts              
-            }
-      | Var(_, _) -> failwith "Not Implemented"
-      | Let(_, _, _) -> failwith "Not Implemented" 
- 
-let showProbabilitiesOfActions (key, Ability act) = 
+      | DPlus(d, moreThan) -> env,reduceDie d |> dPlus moreThan
+      | Count ([]) -> env,always (pass 0)
+      | Count (op::rest) -> 
+            let toCount (env1,result) =
+                  env1, dist {
+                        let! result = result 
+                        return match result with | Pass _ -> List [pass 1; fail 0] | Fail _ -> List [pass 0; fail 1] | _ -> failwith "Cannot count these" 
+                  }
+            let state = reduce env op |> toCount
+            rest 
+            |> List.fold (fun (env1,reduced1) op -> 
+                  let (env2,reduced2) = reduce env1 op |> toCount
+                  env2,dist {
+                        let! count1 = reduced1
+                        let! count2 = reduced2 
+                        return count1 + count2
+                  }                  
+            ) state
+      | Var(Attacker, var) -> env,(Map.tryFind var attackers |> Option.defaultValue (reduce env NoValue |> snd) )
+      | Var(Defender, var) -> env,Map.tryFind var defenders |> Option.defaultValue (reduce env NoValue |> snd)
+      | Var(Global, var) -> env,Map.tryFind var globals |> Option.defaultValue (reduce env NoValue |> snd )
+      | Let(Attacker, var, op) -> 
+            let ((attackers',defenders',globals'),result) = reduce env op
+            (Map.add var result attackers, defenders',globals'),result
+      | Let(Defender, var, op) -> 
+            let ((attackers',defenders',globals'),result) = reduce env op
+            (Map.add var result attackers, defenders',globals'),result
+      | Let(Global, var, op) -> 
+            let ((attackers',defenders',globals'),result) = reduce env op
+            (Map.add var result attackers, defenders',globals'),result
+
+let showProbabilitiesOfActions env (key, Ability act) = 
       let probabilities (dist:Distribution<_>) = 
             let result = 
                   dist 
@@ -88,9 +113,9 @@ let showProbabilitiesOfActions (key, Ability act) =
           [ 
             div [ClassName "column"] [b  [] [str key]]
             div [ClassName "column  is-narrow"] [str " => "]
-            reduce act |> probabilities           
+            reduce env act |> snd |> probabilities           
           ]
-let showAverages (key, Ability act) = 
+let showAverages env (key, Ability act) = 
       let expectations (dist:Distribution<_>) = 
             let colour = 
                   dist 
@@ -103,9 +128,9 @@ let showAverages (key, Ability act) =
           [ 
             div [ClassName "column"] [b  [] [str key]]
             div [ClassName "column"] [str " => "]
-            reduce act |> expectations           
+            reduce env act |> snd |> expectations           
           ]
-let showSample (key, Ability act) = 
+let showSample env (key, Ability act) = 
       let sampleDistribution (dist:Distribution<_>) = 
             let result = dist |> sample 
             let colour = (match result with Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000 | Tuple _ | List _-> float 0x000000) |> int
@@ -115,7 +140,7 @@ let showSample (key, Ability act) =
           [ 
             div [ClassName "column"] [b  [] [str key]]
             div [ClassName "column"] [str " => "]
-            reduce act |> sampleDistribution           
+            reduce env act |> snd |> sampleDistribution           
           ]
 let rec printDs d  =
       match d with 
@@ -166,8 +191,8 @@ let showAttributes (key,Characteristic attr) dispatch =
         br []
         GameActions.Primitives.View.root attr dispatch ]
 
-let rangeStops rangeOperation = 
-    let meleeRange = reduce rangeOperation
+let rangeStops rangeOperation env = 
+    let (env',meleeRange) = reduce env rangeOperation
     let length = List.length meleeRange
     let minRange, maxRange,minProbability,maxProbability =
         meleeRange 
@@ -203,8 +228,11 @@ let rangeStops rangeOperation =
                                StopColor stopcolor
                                StopOpacity !^ opacity ] [])
 
-let root model dispatch =
+let groupFor model display = 
+      g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
+            [ g   [ Transform model.Scale ] display ]
 
+let rangeRoot model dispatch =
       let ranges id (min:int<mm>,max:int<mm>,stops) = 
             g [] 
               [   defs  [] 
@@ -212,23 +240,28 @@ let root model dispatch =
                                            stops ]
                   circle [Fill <| sprintf "url(#%s)" id
                           R !^ (float max)] [] ]
+      [ rangeStops model.MeleeRange 
+        rangeStops model.ShootingRange ]                          
+      |> List.fold (fun (env,acc) f -> let (newEnv,newElement) = f env
+                                       (newEnv,newElement::acc)) (model.Environment,[])  
+                                                   
+      groupFor model [
+            ranges "meleeRanges" <| rangeStops env model.MeleeRange
+            ranges "shootingRange" <| rangeStops env model.ShootingRange
+      ]
+let root model dispatch =
       let modelDisplay = 
-            (ranges "meleeRanges" <| rangeStops model.MeleeRange)
-            :: (ranges "shootingRange" <| rangeStops model.ShootingRange)
-            :: circle   [ R !^ (model.Size / 2 |> float) :> IProp
-                          OnClick (fun mouseEvt -> Select |> dispatch) :> IProp] []
-            :: [text     [ TextAnchor "middle"
-                           Y !^ 50.
-                           StrokeWidth (!^ ".5")
-                           Fill "#000000"
-                           Stroke "#000000"
-                           FontSize !^ "25"    ] 
-                         [ str model.Name ]]
+            [ circle   [ R !^ (model.Size / 2 |> float) :> IProp
+                         OnClick (fun mouseEvt -> Select |> dispatch) :> IProp] []
+              text     [ TextAnchor "middle"
+                         Y !^ 50.
+                         StrokeWidth (!^ ".5")
+                         Fill "#000000"
+                         Stroke "#000000"
+                         FontSize !^ "25"    ] 
+                         [ str model.Name ] ]
             //
             
             
-      g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
-            [ g   [ Transform model.Scale ]
-                  modelDisplay 
-            ]
+      groupFor model modelDisplay
 
