@@ -1,5 +1,6 @@
 module MathHammer.UnitList.Types
 open GameActions.Primitives.Types
+open Result
 type Model = {
     OffsetY:int<mm>
     Models:Map<string,MathHammer.Models.Types.Model>

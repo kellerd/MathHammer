@@ -13,3 +13,4 @@ type Model = { PosX:float
 type Msg = 
     | ChangePosition of float * float * string
     | Select
+    | Let of Environment * string * Probability.Distribution<Result.Result>

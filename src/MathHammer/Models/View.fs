@@ -10,90 +10,11 @@ open GameActions.Primitives.Types
 open Result
 open Probability
 let onClick x : IProp = OnClick(x) :> _
-let pass i = float i |> Pass
-let fail i = float i  |> Fail
 let list d = List d 
 let tuple d = Tuple d
 let getResult = function Pass f | Fail f -> Some f | _ -> None
-let dPlus plus die = dist {
-      let! roll = die
-      let result = 
-            if roll >= plus then pass roll
-            else fail roll
-      return result
-}
-let d6 = uniformDistribution [1..6]
-let d3 = uniformDistribution [1..3]
-let rec reduceDie d : Distribution<_> = 
-      match d with 
-      | D3 -> d3
-      | D6 -> d6
-      | Reroll(rerolls, d) -> 
-            dist {
-                  let! roll = reduceDie d
-                  if List.contains roll rerolls then
-                        return! reduceDie d
-                  else return roll                        
-            }
-let reduceGamePrimitive = function
-      | Int i -> always i
-      | Dice d -> reduceDie d 
-let rec reduce env operation = 
-      let (attackers,defenders,globals) = env
-      match operation with
-      | Value v -> env,reduceGamePrimitive v |> map pass
-      | NoValue -> env,always (fail 0)
-      | Total ([]) -> env,always (pass 0)
-      | Total (op::rest) -> 
-            let state = reduce env op
-            rest 
-            |> List.fold (fun (env1,reduced1) op -> 
-                  let (env2,reduced2) = reduce env op
-                  env2, dist {
-                        let! a' = reduced1
-                        let! b' = reduced2
-                        return a' + b'                              
-                  }) state
-      | Multiply (op,op2) -> 
-            let (env1,reduced1) = reduce env op
-            let (env2,reduced2) = reduce env1 op2
-            env2,
-            dist {
 
-                  let! result1 = reduced1
-                  let! result2 = reduced2
-                  return result1 * result2
-            }
-      | DPlus(d, moreThan) -> env,reduceDie d |> dPlus moreThan
-      | Count ([]) -> env,always (pass 0)
-      | Count (op::rest) -> 
-            let toCount (env1,result) =
-                  env1, dist {
-                        let! result = result 
-                        return match result with | Pass _ -> List [pass 1; fail 0] | Fail _ -> List [pass 0; fail 1] | _ -> failwith "Cannot count these" 
-                  }
-            let state = reduce env op |> toCount
-            rest 
-            |> List.fold (fun (env1,reduced1) op -> 
-                  let (env2,reduced2) = reduce env1 op |> toCount
-                  env2,dist {
-                        let! count1 = reduced1
-                        let! count2 = reduced2 
-                        return count1 + count2
-                  }                  
-            ) state
-      | Var(Attacker, var) -> env,(Map.tryFind var attackers |> function Some v -> v | None -> reduce env NoValue |> snd )
-      | Var(Defender, var) -> env,(Map.tryFind var defenders |> function Some v -> v | None -> reduce env NoValue |> snd )
-      | Var(Global, var) -> env,(Map.tryFind var globals |> function Some v -> v | None -> reduce env NoValue |> snd )
-      | Let(Attacker, var, op) -> 
-            let ((attackers',defenders',globals'),result) = reduce env op
-            (Map.add var result attackers, defenders',globals'),result
-      | Let(Defender, var, op) -> 
-            let ((attackers',defenders',globals'),result) = reduce env op
-            (Map.add var result attackers, defenders',globals'),result
-      | Let(Global, var, op) -> 
-            let ((attackers',defenders',globals'),result) = reduce env op
-            (Map.add var result attackers, defenders',globals'),result
+
 
 let showProbabilitiesOfActions env (key, operation) = 
       let probabilities (dist:Distribution<_>) = 

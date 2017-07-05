@@ -16,7 +16,7 @@ let isCharacteristic = function
 
 let root model dispatch =
     let (boardX,boardY) = model.Board |> fun (x,y) -> ft.ToMM(x),ft.ToMM(y)
-    let env = (Map.empty<_,_>,Map.empty<_,_>,Map.empty<_,_>)
+    let env = Map.empty<_,_>
     let drawing =   
         R.div [] 
             [R.svg 
@@ -49,7 +49,7 @@ let root model dispatch =
                  |> List.partition (fun (i,_) -> i % 2 = 0)
                  |> toColumns                
         //let sequence = model.Selected |> Option.map (fun selected -> R.div [] [ R.str selected.name ])
-        match model.Selected with 
+        match model.SelectedAttacker with 
         | None ->  titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
              let title = titleBar selected.Name
@@ -60,11 +60,10 @@ let root model dispatch =
                  attrs                 
                  |> List.map (fun attr -> MathHammer.Models.View.showAttributes attr dispatch)
                  |> R.div [ClassName "columns"]  
-             let env = (Map.empty<_,_>,Map.empty<_,_>,Map.empty<_,_>)
              let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 
-             let averagesDiv = columnsOf (MathHammer.Models.View.showAverages env) actions
-             let probabiltiesActionsDiv = columnsOf (MathHammer.Models.View.showProbabilitiesOfActions env) actions
-             let sampleActionsDiv = columnsOf (MathHammer.Models.View.showSample env) actions
+             let averagesDiv = columnsOf (MathHammer.Models.View.showAverages model.Environment) actions
+             let probabiltiesActionsDiv = columnsOf (MathHammer.Models.View.showProbabilitiesOfActions model.Environment) actions
+             let sampleActionsDiv = columnsOf (MathHammer.Models.View.showSample model.Environment) actions
 
              R.section [Id "selected"] [ title; attrDiv
                                          bar "Actions"; actionsDiv

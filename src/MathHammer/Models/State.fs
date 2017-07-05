@@ -51,3 +51,4 @@ let update msg model =
     match msg with
     | ChangePosition (x,y,scale) -> {model with PosX = x; PosY = y; Scale=scale}, Cmd.none
     | Select _ -> model, Cmd.none
+    | Msg.Let _ ->  model, Cmd.none
