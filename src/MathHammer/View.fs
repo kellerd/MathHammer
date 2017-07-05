@@ -9,7 +9,10 @@ open MathHammer.Models.Types
 open Types
 open GameActions.Primitives.Types
   
-let isCharacteristic = function Characteristic x -> true | Ability x -> false
+let isCharacteristic = function 
+                        | Value(_)            | NoValue             | DPlus(_) 
+                        | Let(_, _, Value(_)) | Let(_, _, DPlus(_)) | Let(_, _, DPlus(_)) -> true
+                        | _ -> false
 
 let root model dispatch =
     let (boardX,boardY) = model.Board |> fun (x,y) -> ft.ToMM(x),ft.ToMM(y)
@@ -58,7 +61,7 @@ let root model dispatch =
                  |> List.map (fun attr -> MathHammer.Models.View.showAttributes attr dispatch)
                  |> R.div [ClassName "columns"]  
              let env = (Map.empty<_,_>,Map.empty<_,_>,Map.empty<_,_>)
-             let actionsDiv = columnsOf MathHammer.Models.View.showActions actions
+             let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 
              let averagesDiv = columnsOf (MathHammer.Models.View.showAverages env) actions
              let probabiltiesActionsDiv = columnsOf (MathHammer.Models.View.showProbabilitiesOfActions env) actions
              let sampleActionsDiv = columnsOf (MathHammer.Models.View.showSample env) actions

@@ -82,9 +82,9 @@ let rec reduce env operation =
                         return count1 + count2
                   }                  
             ) state
-      | Var(Attacker, var) -> env,(Map.tryFind var attackers |> Option.defaultValue (reduce env NoValue |> snd) )
-      | Var(Defender, var) -> env,Map.tryFind var defenders |> Option.defaultValue (reduce env NoValue |> snd)
-      | Var(Global, var) -> env,Map.tryFind var globals |> Option.defaultValue (reduce env NoValue |> snd )
+      | Var(Attacker, var) -> env,(Map.tryFind var attackers |> function Some v -> v | None -> reduce env NoValue |> snd )
+      | Var(Defender, var) -> env,(Map.tryFind var defenders |> function Some v -> v | None -> reduce env NoValue |> snd )
+      | Var(Global, var) -> env,(Map.tryFind var globals |> function Some v -> v | None -> reduce env NoValue |> snd )
       | Let(Attacker, var, op) -> 
             let ((attackers',defenders',globals'),result) = reduce env op
             (Map.add var result attackers, defenders',globals'),result
@@ -95,7 +95,7 @@ let rec reduce env operation =
             let ((attackers',defenders',globals'),result) = reduce env op
             (Map.add var result attackers, defenders',globals'),result
 
-let showProbabilitiesOfActions env (key, Ability act) = 
+let showProbabilitiesOfActions env (key, operation) = 
       let probabilities (dist:Distribution<_>) = 
             let result = 
                   dist 
@@ -113,9 +113,9 @@ let showProbabilitiesOfActions env (key, Ability act) =
           [ 
             div [ClassName "column"] [b  [] [str key]]
             div [ClassName "column  is-narrow"] [str " => "]
-            reduce env act |> snd |> probabilities           
+            reduce env operation |> snd |> probabilities           
           ]
-let showAverages env (key, Ability act) = 
+let showAverages env (key, operation) = 
       let expectations (dist:Distribution<_>) = 
             let colour = 
                   dist 
@@ -128,9 +128,9 @@ let showAverages env (key, Ability act) =
           [ 
             div [ClassName "column"] [b  [] [str key]]
             div [ClassName "column"] [str " => "]
-            reduce env act |> snd |> expectations           
+            reduce env operation |> snd |> expectations           
           ]
-let showSample env (key, Ability act) = 
+let showSample env (key, operation) = 
       let sampleDistribution (dist:Distribution<_>) = 
             let result = dist |> sample 
             let colour = (match result with Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000 | Tuple _ | List _-> float 0x000000) |> int
@@ -140,7 +140,7 @@ let showSample env (key, Ability act) =
           [ 
             div [ClassName "column"] [b  [] [str key]]
             div [ClassName "column"] [str " => "]
-            reduce env act |> snd |> sampleDistribution           
+            reduce env operation |> snd |> sampleDistribution           
           ]
 let rec printDs d  =
       match d with 
@@ -152,44 +152,18 @@ let printPrimitive p =
       | Int i -> sprintf "%d" i
       | Dice d -> printDs d 
 
-let showActions (key, Ability act) = 
-  let rec showAttr act = 
-      match act with 
-      | Multiply (Value(Int(x)),Value(Int(y))) -> sprintf "%d" (x * y)
-      | Multiply (Value(Dice(d)),Value(Int(i))) 
-      | Multiply (Value(Int(i)),Value(Dice(d))) -> sprintf "%d * %s" i (printDs d)
-      | Multiply (v,i) -> sprintf "(%s * %s)" (showAttr v) (showAttr i)
-      | DPlus (D6,i) -> string i + "+"
-      | DPlus (D3,i) -> string i + "+ on D3"
-      | Total (ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Total(%dD6)" (List.length ops)
-      | Total (ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)
-      | Total (ops)  -> sprintf "Total(%s)" (List.map showAttr ops |> String.concat " + ")
-      | Value i -> string i
-      | Value i -> string i
-      | NoValue -> "--"
-      | DPlus(Reroll(is,D6), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
-      | DPlus(Reroll(is,D3), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
-      | DPlus(Reroll(is,Reroll(is2,d)), i) -> showAttr (DPlus(Reroll(List.distinct (is @ is2),d),i))
-      | Count(ops) -> sprintf "(Passes,Fails) in (%s)" (List.map showAttr ops |> String.concat ",")
-      | Var(env, str) -> match env with 
-                           | Attacker -> sprintf "Attacker(%s)" str
-                           | Defender -> sprintf "Target(%s)" str
-                           | Global -> sprintf "Global(%s)" str
-      | Let(env, str, op) ->  
-            match env with 
-            | Attacker -> sprintf "let Attacker(%s) = %s" str  (showAttr op)
-            | Defender -> sprintf "let Target(%s) = %s" str (showAttr op)
-            | Global -> sprintf "let Global(%s) = %s" str (showAttr op)
+let showActions dispatch (key, operation)  = 
+  
   div []
       [ b [] [str key; str " : "]
-        showAttr act |> str  ]
+        GameActions.Primitives.View.root operation dispatch  ]
 
-let showAttributes (key,Characteristic attr) dispatch = 
+let showAttributes (key, operation) dispatch = 
   
   div [ClassName "has-text-centered column"]
       [ b  [] [str key]
         br []
-        GameActions.Primitives.View.root attr dispatch ]
+        GameActions.Primitives.View.root operation dispatch ]
 
 let rangeStops rangeOperation env = 
     let (env',meleeRange) = reduce env rangeOperation
@@ -244,9 +218,11 @@ let rangeRoot env model dispatch =
       [ "meleeRanges",rangeStops model.MeleeRange 
         "shootingRange",rangeStops model.ShootingRange ]                          
       |> List.fold (fun (env,acc) (name,f) -> 
-            let (newEnv,newElement) = ranges name (f env)
-            (newEnv,newElement::acc)) (env,[])  
-      |> groupFor model 
+            let (newEnv,rangeStops) = f env
+
+            
+            (newEnv,ranges name rangeStops::acc)) (env,[])  
+      |> snd |> groupFor model 
 let root model dispatch =
       let modelDisplay = 
             [ circle   [ R !^ (model.Size / 2 |> float) :> IProp

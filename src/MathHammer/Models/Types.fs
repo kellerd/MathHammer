@@ -1,14 +1,11 @@
 module MathHammer.Models.Types
 open GameActions.Primitives.Types
-type ModelAttribute = 
-    | Ability of Ability
-    | Characteristic of Ability
 type Model = { PosX:float
                PosY:float 
                Name:string
                Scale:string
                Size:int<mm>
-               Attributes:list<string*ModelAttribute>
+               Attributes:list<string*Operation>
                ShootingRange:Operation
                MeleeRange:Operation }
 

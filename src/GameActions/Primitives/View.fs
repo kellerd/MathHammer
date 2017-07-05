@@ -20,8 +20,8 @@ let alternateRoot (model:Ability) dispatch =
         | NoValue -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []
         | Count(_) -> str ""
         | Value(_) ->     str ""
-        | Var(_, _) ->    str ""
-        | Let(_, _, _) -> str ""
+        | Var(_) ->    str ""
+        | Let(_) -> str ""
     displayOperation model  
 
 let root (model:Ability) dispatch =
@@ -46,8 +46,9 @@ let root (model:Ability) dispatch =
                            | Global -> sprintf "Global(%s)" str
         | Let(env, str, op) ->  
             match env with 
-            | Attacker -> sprintf "let Attacker(%s) = %s" str  (displayOperation op)
-            | Defender -> sprintf "let Target(%s) = %s" str (displayOperation op)
-            | Global -> sprintf "let Global(%s) = %s" str (displayOperation op)
+            
+            | Attacker -> sprintf "%s"  (displayOperation op)
+            | Defender -> sprintf "%s" (displayOperation op)
+            | Global -> sprintf "%s" (displayOperation op)
     displayOperation model  
     |> str

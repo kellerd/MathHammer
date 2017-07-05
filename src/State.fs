@@ -25,8 +25,8 @@ let urlUpdate (result: Option<Page>) model =
 let init result =
   let (mathHammer, mathHammerCmd) = MathHammer.State.init()
   let (gameActions, gameActionsCmd) = GameActions.State.init()
-  let attackers = [initMeq "Marine"; initMeq "Captain"] |> List.map(fun (x,_) -> x.Name,{x with Scale = mathHammer.Attacker.Scale}) |> Map.ofList
-  let defenders = ['a'..'z'] |> List.map(fun c -> c.ToString(), { (fst <| initGeq (c.ToString())) with Scale = mathHammer.Defender.Scale})  |> Map.ofList
+  let attackers = [initMeq "Marine" GameActions.Primitives.Types.Attacker; initMeq "Captain" GameActions.Primitives.Types.Attacker] |> List.map(fun (x,_) -> x.Name,{x with Scale = mathHammer.Attacker.Scale}) |> Map.ofList
+  let defenders = ['a'..'z'] |> List.map(fun c -> c.ToString(), { (fst <| initGeq (c.ToString()) GameActions.Primitives.Types.Defender) with Scale = mathHammer.Defender.Scale})  |> Map.ofList
 
   let (model, cmd) =
     urlUpdate result
