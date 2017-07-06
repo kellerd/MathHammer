@@ -23,7 +23,7 @@ let init () : Model * Cmd<Types.Msg> =
     model, Cmd.batch [ Cmd.map attackerMap attackerCmd
                        Cmd.map defenderMap defenderCmd
                        Cmd.ofMsg RebindEnvironment ]
-open Probability
+open Distribution
 open Result
 
 let pass i = float i |> Pass
@@ -54,7 +54,7 @@ let reduceGamePrimitive = function
                        
 let rec reduce env operation = 
       match operation with
-      | Value v -> env,reduceGamePrimitive v |> Probability.map pass
+      | Value v -> env,reduceGamePrimitive v |> Distribution.map pass
       | NoValue -> env,always (fail 0)
       | Total ([]) -> env,always (pass 0)
       | Total (op::rest) -> 
@@ -131,4 +131,8 @@ let update msg model : Model * Cmd<Types.Msg> =
         | Some defender -> 
             {model with Environment = defender.Attributes |> List.fold (fun env (name,op) -> reduce env op |> fst) model.Environment}, Cmd.none
 
-    | BindAttacker -> failwith "Not Implemented"
+    | BindAttacker -> 
+        match model.SelectedAttacker with 
+        | None -> model, Cmd.none
+        | Some attacker -> 
+            {model with Environment = attacker.Attributes |> List.fold (fun env (name,op) -> reduce env op |> fst) model.Environment}, Cmd.none

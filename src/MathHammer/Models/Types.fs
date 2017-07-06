@@ -1,6 +1,6 @@
 module MathHammer.Models.Types
 open GameActions.Primitives.Types
-open Probability
+open Distribution 
 open Result
 type Model = { PosX:float
                PosY:float 
@@ -15,4 +15,4 @@ type Model = { PosX:float
 type Msg = 
     | ChangePosition of float * float * string
     | Select
-    | Let of Environment * string * Probability.Distribution<Result.Result>
+    | Let of Environment * string * Distribution<Result>

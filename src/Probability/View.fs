@@ -2,6 +2,7 @@ module Probability.View
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
 open Result
+open Distribution
 let showProbabilitiesOfActions (key,dist) = 
       let probabilities (dist:Distribution<_>) = 
             let result = 
@@ -10,11 +11,12 @@ let showProbabilitiesOfActions (key,dist) =
                   |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
             match result with 
             | [] -> str ""
-            | _ ->  let total = result |> List.maxBy snd |> snd
+            | _ ->  let max = result |> List.maxBy snd |> snd
+                    let total = result |> List.sumBy snd 
                     result
                         |> List.map (fun (f, prob) -> 
-                              let proabilityGreen = prob / total * 255.
-                              div [Style [Color (proabilityGreen |> int |> sprintf "#77%02X00")]] [str (printResult f)])
+                              let percentageGreen = prob / max 
+                              div [Style [Color (percentageGreen * 255. |> int |> sprintf "#77%02X00")]] [str (printResult f); str <| sprintf " %.2f%%" (prob / total)])
                     |> div [ClassName "column"]            
       section [ClassName "columns"]
           [ 
@@ -29,7 +31,7 @@ let showAverages (key, dist) =
                   |> expectation (function Pass _ -> float 0x00FF00  | Fail _ -> float 0xFF0000 | Tuple _ | List _-> float 0x000000) 
                   |> int
                   |> sprintf "#%06X" 
-            let result = dist |> List.map fst |> resultListAverage
+            let result = dist |> List.sumBy (fun (v,probability) -> v * probability)
             div [ClassName "column"; Style [Color colour]] [str (printResult result)]
       section [ClassName "columns"]
           [ 

@@ -1,4 +1,4 @@
-module Probability 
+module Distribution 
     open System
     type Probability = double
     type Distribution<'a> = ('a * Probability) list
@@ -179,4 +179,4 @@ module Probability
                            (defensive |> List.sort)
                     |> List.sumBy (fun (o,d) -> if d >= o then 0 else 1)
                 return sprintf "%d:%d" (2-defensivLosses) defensivLosses
-            } |> printDistribution    
+            } 

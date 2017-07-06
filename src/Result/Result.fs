@@ -58,7 +58,7 @@ type Result with
 
     static member (/) (x,y) = divide(x,y)    
     static member DivideByInt (x,y:int) = divide(x,float y)
-    static member Zero : Result = Pass 0.
+    static member Zero : Result = Fail 0.
 
 let resultListAverage (list:list<Result>) =
     match list with 

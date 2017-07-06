@@ -7,7 +7,7 @@
     <Compile Include="src/Global.fs" />
     <!-- Maths -->
     <Compile Include="src/Result/Result.fs" />
-    <Compile Include="src/Probability/Probability.fs" />
+    <Compile Include="src/Probability/Distribution.fs" />
     <Compile Include="src/Probability/View.fs" />
     <!-- GameActions -->
     <Compile Include="src/GameActions/Primitives/Types.fs" />

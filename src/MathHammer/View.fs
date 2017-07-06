@@ -62,6 +62,7 @@ let root model dispatch =
                  |> List.map (fun attr -> MathHammer.Models.View.showAttributes attr dispatch)
                  |> div [ClassName "columns"]  
              let evaluatedActions = actions |> List.choose (fun (name,_) -> Map.tryFind (Attacker,name) model.Environment |> Option.map(fun dist -> name,dist))
+             printfn "%A" ( model.Environment |> Map.toList )
              let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 
              let averagesDiv = columnsOf Probability.View.showAverages evaluatedActions
              let probabiltiesActionsDiv = columnsOf Probability.View.showProbabilitiesOfActions evaluatedActions

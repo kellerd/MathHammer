@@ -8,7 +8,7 @@ open Types
 open Fable.Import
 open GameActions.Primitives.Types
 open Result
-open Probability
+open Distribution
 let onClick x : IProp = OnClick(x) :> _
 let list d = List d 
 let tuple d = Tuple d
