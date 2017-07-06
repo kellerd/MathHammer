@@ -2,7 +2,7 @@ module MathHammer.View
 
 open Fable.Core
 open Fable.Core.JsInterop
-module R = Fable.Helpers.React
+open Fable.Helpers.React
 open Fable.Helpers.React.Props
 open Elmish.React
 open MathHammer.Models.Types
@@ -16,39 +16,40 @@ let isCharacteristic = function
 
 let root model dispatch =
     let (boardX,boardY) = model.Board |> fun (x,y) -> ft.ToMM(x),ft.ToMM(y)
-    let env = Map.empty<_,_>
     let drawing =   
-        R.div [] 
-            [R.svg 
+        div [] 
+            [svg 
                 [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
                 [ UnitList.View.rootBoard model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.rootBoard model.Defender (State.attackerMap >> dispatch)
-                  UnitList.View.rootRanges env model.Attacker (State.attackerMap >> dispatch)
-                  UnitList.View.rootRanges env model.Defender (State.defenderMap >> dispatch) 
+                  UnitList.View.rootRanges "MeleeRanges" model.Attacker (fun m -> State.reduce model.Environment m.MeleeRange |> snd)
+                  UnitList.View.rootRanges "MeleeRanges" model.Defender (fun m -> State.reduce model.Environment m.MeleeRange |> snd)
+                  UnitList.View.rootRanges "ShootingRanges" model.Attacker (fun m -> State.reduce model.Environment m.ShootingRange |> snd)
+                  UnitList.View.rootRanges "ShootingRanges" model.Defender (fun m -> State.reduce model.Environment m.ShootingRange |> snd)
                   UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.root model.Defender (State.defenderMap >> dispatch) ] ] 
-    let swap =  R.i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
+    let swap =  i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
     let selected = 
         let titleBar text = 
-            (R.section [ ClassName "hero is-primary  has-text-centered"]
-                       [ R.div [ClassName "hero-body"]
-                               [ R.h1 [ClassName "title"]
-                                      [ R.str text] ] ])
+            (section [ ClassName "hero is-primary  has-text-centered"]
+                       [ div [ClassName "hero-body"]
+                               [ h1 [ClassName "title"]
+                                      [ str text] ] ])
         let bar text = 
-            (R.section [ ClassName "hero has-text-centered"]
-                       [ R.div [ClassName "hero-body"]
-                               [ R.h1 [ClassName "title"]
-                                      [ R.str text ] ] ])
+            (section [ ClassName "hero has-text-centered"]
+                       [ div [ClassName "hero-body"]
+                               [ h1 [ClassName "title"]
+                                      [ str text ] ] ])
         let columnsOf f items =                                       
             let toColumns (left,right) = 
                 [left;right]
-                |> List.map (List.map snd >> R.div [ClassName "column"])
-                |> R.div [ClassName "columns"] 
+                |> List.map (List.map snd >> div [ClassName "column"])
+                |> div [ClassName "columns"] 
             items
                  |> List.mapi (fun i m -> i,f m)
                  |> List.partition (fun (i,_) -> i % 2 = 0)
                  |> toColumns                
-        //let sequence = model.Selected |> Option.map (fun selected -> R.div [] [ R.str selected.name ])
+        //let sequence = model.Selected |> Option.map (fun selected -> div [] [ str selected.name ])
         match model.SelectedAttacker with 
         | None ->  titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
@@ -59,15 +60,16 @@ let root model dispatch =
              let attrDiv = 
                  attrs                 
                  |> List.map (fun attr -> MathHammer.Models.View.showAttributes attr dispatch)
-                 |> R.div [ClassName "columns"]  
+                 |> div [ClassName "columns"]  
+             let evaluatedActions = actions |> List.choose (fun (name,_) -> Map.tryFind (Attacker,name) model.Environment |> Option.map(fun dist -> name,dist))
              let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 
-             let averagesDiv = columnsOf (MathHammer.Models.View.showAverages model.Environment) actions
-             let probabiltiesActionsDiv = columnsOf (MathHammer.Models.View.showProbabilitiesOfActions model.Environment) actions
-             let sampleActionsDiv = columnsOf (MathHammer.Models.View.showSample model.Environment) actions
+             let averagesDiv = columnsOf Probability.View.showAverages evaluatedActions
+             let probabiltiesActionsDiv = columnsOf Probability.View.showProbabilitiesOfActions evaluatedActions
+             let sampleActionsDiv = columnsOf Probability.View.showSample evaluatedActions
 
-             R.section [Id "selected"] [ title; attrDiv
-                                         bar "Actions"; actionsDiv
-                                         bar "Averages"; averagesDiv
-                                         bar "Probabilities"; probabiltiesActionsDiv
-                                         bar "Sample"; sampleActionsDiv ]
-    R.div [] [ swap; drawing; selected  ] 
+             section [Id "selected"] [ title; attrDiv
+                                       bar "Actions"; actionsDiv
+                                       bar "Averages"; averagesDiv
+                                       bar "Probabilities"; probabiltiesActionsDiv
+                                       bar "Sample"; sampleActionsDiv ]
+    div [] [ swap; drawing; selected  ] 

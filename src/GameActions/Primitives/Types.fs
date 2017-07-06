@@ -25,7 +25,6 @@ type Operation =
     | NoValue 
     | Let of Environment * string * Operation
 
-type Ability = Operation
 type [<Measure>] ft 
 and [<Measure>] inch
 and [<Measure>] mm

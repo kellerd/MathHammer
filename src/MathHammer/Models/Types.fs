@@ -1,5 +1,7 @@
 module MathHammer.Models.Types
 open GameActions.Primitives.Types
+open Probability
+open Result
 type Model = { PosX:float
                PosY:float 
                Name:string

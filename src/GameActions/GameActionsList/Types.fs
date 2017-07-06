@@ -1,8 +1,8 @@
 module GameActions.GameActionsList.Types
 open GameActions.Primitives.Types
 type Row = 
-    | ReadOnly of string * Ability
-    | ReadWrite of string * Ability
+    | ReadOnly of string * Operation
+    | ReadWrite of string * Operation
 
 type Model = Row list * bool
 

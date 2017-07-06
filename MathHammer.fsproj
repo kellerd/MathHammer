@@ -5,8 +5,11 @@
   <ItemGroup>
     <!-- Global to the app -->
     <Compile Include="src/Global.fs" />
+    <!-- Maths -->
+    <Compile Include="src/Result/Result.fs" />
+    <Compile Include="src/Probability/Probability.fs" />
+    <Compile Include="src/Probability/View.fs" />
     <!-- GameActions -->
-    
     <Compile Include="src/GameActions/Primitives/Types.fs" />
     <Compile Include="src/GameActions/Primitives/View.fs" />
     <Compile Include="src/GameActions/GameActionsList/Types.fs" />
@@ -15,9 +18,7 @@
     <Compile Include="src/GameActions/Types.fs" />
     <Compile Include="src/GameActions/State.fs" />
     <Compile Include="src/GameActions/View.fs" />
-    <!-- Maths -->
-    <Compile Include="src/Maths/Probability.fs" />
-    <Compile Include="src/Maths/Result.fs" />
+    <!-- Result -->
     <!-- MathHammer -->
     <Compile Include="src/MathHammer/Models/Types.fs" />
     <Compile Include="src/MathHammer/Models/State.fs" />

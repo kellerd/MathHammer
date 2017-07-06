@@ -30,11 +30,11 @@ let rootBoard model dispatch =
                 ]
             ]
         ]
-let rootRanges env model dispatch = 
+let rootRanges name model reduceRange = 
     let distances = 
         model.Models 
         |> Map.toList
-        |> List.map (fun (_,m) -> MathHammer.Models.View.rangeRoot env m (fun msg -> ModelMsg(msg,m.Name) |> dispatch))
+        |> List.map (fun (_,m) -> MathHammer.Models.View.rangeRoot m name (reduceRange m))
         |> g  [ Stroke model.ElementStroke; StrokeWidth (!^ "1") ]
     g   [SVGAttr.Transform <| sprintf "translate(0,%d)" (model.OffsetY * 2) ]
         [ g  [SVGAttr.Transform model.Scale ] [ distances ] ]

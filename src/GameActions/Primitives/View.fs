@@ -7,7 +7,7 @@ open Fable.Helpers.React.Props
 open Types
 
 
-let alternateRoot (model:Ability) dispatch =
+let alternateRoot model dispatch =
     let rec displayOperation operation = 
         match operation with 
         | Multiply (op,op2) -> str ""
@@ -24,7 +24,7 @@ let alternateRoot (model:Ability) dispatch =
         | Let(_) -> str ""
     displayOperation model  
 
-let root (model:Ability) dispatch =
+let root model dispatch =
     let rec displayOperation operation = 
         match operation with 
         | Multiply (op,op2) -> sprintf "%s * %s" (displayOperation op) (displayOperation op2)
@@ -52,3 +52,4 @@ let root (model:Ability) dispatch =
             | Global -> sprintf "%s" (displayOperation op)
     displayOperation model  
     |> str
+
