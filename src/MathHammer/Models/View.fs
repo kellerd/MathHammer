@@ -9,6 +9,7 @@ open Fable.Import
 open GameActions.Primitives.Types
 open Result
 open Distribution
+open Probability.View
 let onClick x : IProp = OnClick(x) :> _
 let list d = List d 
 let tuple d = Tuple d
@@ -26,7 +27,6 @@ let showAttributes (key, operation) dispatch =
           [ b  [] [str key]
             br []
             GameActions.Primitives.View.root operation dispatch ]
-
 let rangeStops (dist:Distribution<_>)  = 
     let length = List.length dist
     let minRange, maxRange,minProbability,maxProbability =
@@ -44,24 +44,32 @@ let rangeStops (dist:Distribution<_>)  =
     let stopPercent i length = float (i + 1) / float length |> sprintf "%.2f"
     let percentGreen (range:int<mm>) =
         if maxRange - minRange = 0<mm> then "#00FF00"
-        else (1. - (float (range - minRange) / float(maxRange - minRange))) * 255. |> int  |>  sprintf "#77%02X00"
-    let opacity prob = 
-        if maxProbability - minProbability = 0.0 then 1.0
-        else (prob - minProbability) / (maxProbability - minProbability) 
-        |> sprintf "%.2f"
+        else colour <| (1. - (float (range - minRange) / float(maxRange - minRange))) * 255. 
+
     let stopsPercentGreenAndOpacity = 
-        dist 
-        |> List.mapi (fun i (range,prob) -> 
-            match range,prob with 
-            | Fail _,_ | _,0.0 -> stopPercent i length, "#FF0000", "0.0"
-            | Pass range,_ -> stopPercent i length, percentGreen (inch.ToMM(int range * 1<inch>)), opacity prob
-            | _ -> failwith "invalid range calculation")  
-    (minRange,maxRange, 
-     stopsPercentGreenAndOpacity  
-     |> List.map(fun (offset,stopcolor,opacity) -> 
+        let stops = 
+            dist 
+            |> List.toArray
+            |> Array.mapi (fun i (range,prob) -> 
+                match range,prob with 
+                | Fail _,_ | _,0.0 -> (stopPercent i length, colour 255.), 0.0
+                | Pass range,_ -> (stopPercent i length, percentGreen (inch.ToMM(int range * 1<inch>))), (opacity minProbability maxProbability prob)
+                | _ -> failwith "invalid range calculation") 
+        for i in Array.length stops - 1 .. 1 do
+            let ((stopPercent,green),opacity) = stops.[i-1]
+            let lastOpacity = snd stops.[i]
+            stops.[i-1] <- ((stopPercent,green),opacity+lastOpacity)
+            
+        stops 
+        |> List.ofArray 
+        |> Distribution.Operations.countedCases 
+        |> List.map(fun ((offset:string,stopcolor:string),opacity:float) -> 
                         stop [ Offset !^ offset
                                StopColor stopcolor
-                               StopOpacity !^ opacity ] []))
+                               StopOpacity !^ opacity ] [])
+        
+    (minRange,maxRange, stopsPercentGreenAndOpacity)
+     
 
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]

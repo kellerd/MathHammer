@@ -58,7 +58,7 @@ module Distribution
             coinFlips 0.0 inp
         let countedCases inp =
             let total = Seq.sumBy (fun (_, v) -> v) inp
-            weightedCases (inp |> List.map (fun (x, v) -> (x, float v / float total)))            
+            weightedCases (inp |> List.map (fun (x, v) -> (x, v / total)))            
 
             
 
