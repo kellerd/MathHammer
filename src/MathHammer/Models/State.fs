@@ -7,7 +7,9 @@ open GameActions.Primitives.Types
 
 
 let hitMelee = 
-    Let(Attacker, "Melee", Let(Attacker, "MeleeHits", Count[Multiply(Var(Attacker, "WS"), Var(Attacker, "A"))]))
+    Let(Attacker, "Melee", Let(Attacker, "MeleeHits", Count[Product[Var(Attacker, "WS"); Var(Attacker, "A")]]))
+let shotsMelee = 
+    Let(Attacker, "Shots", Let(Attacker, "Shots", Count[Product[Var(Attacker, "A"); Var(Attacker, "A")]]))
 
 let init name =
     { PosX=0.
@@ -33,7 +35,8 @@ let initMeq name env =
                       "LD", Let(env, "LD", Value (Int(8)))
                       "SV", Let(env, "SV", DPlus (D6, 3))
                       "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Total[Value(Dice(D6));Value(Dice(D6))])) 
-                      "Melee", hitMelee] }, Cmd.none
+                      "Melee", hitMelee
+                      "Shots",shotsMelee ] }, Cmd.none
 let initGeq name env =
     { (init name) with 
         ShootingRange = Total[Value(Int(6))]

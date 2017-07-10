@@ -67,16 +67,17 @@ let rec reduce env operation =
                         let! b' = reduced2
                         return a' + b'                              
                   }) state
-      | Multiply (op,op2) -> 
-            let (env1,reduced1) = reduce env op
-            let (env2,reduced2) = reduce env1 op2
-            env2,
-            dist {
-
-                  let! result1 = reduced1
-                  let! result2 = reduced2
-                  return result1 * result2
-            }
+      | Product ([]) -> env,always (pass 0)
+      | Product (op::rest) -> 
+            let state = reduce env op
+            rest 
+            |> List.fold (fun (env1,reduced1) op -> 
+                  let (env2,reduced2) = reduce env op
+                  env2, dist {
+                        let! a' = reduced1
+                        let! b' = reduced2
+                        return a' * b'                              
+                  }) state
       | DPlus(d, moreThan) -> env,reduceDie d |> dPlus moreThan
       | Count ([]) -> env,always (pass 0)
       | Count (op::rest) -> 
@@ -86,15 +87,17 @@ let rec reduce env operation =
                         return match result with | Pass _ -> List [pass 1; fail 0] | Fail _ -> List [pass 0; fail 1] | _ -> failwith "Cannot count these" 
                   }
             let state = reduce env op |> toCount
-            rest 
-            |> List.fold (fun (env1,reduced1) op -> 
-                  let (env2,reduced2) = reduce env1 op |> toCount
-                  env2,dist {
-                        let! count1 = reduced1
-                        let! count2 = reduced2 
-                        return count1 + count2
-                  }                  
-            ) state
+            let (env,r) = 
+                  rest 
+                  |> List.fold (fun (env1,reduced1) op -> 
+                        let (env2,reduced2) = reduce env1 op |> toCount
+                        env2,dist {
+                              let! count1 = reduced1
+                              let! count2 = reduced2 
+                              return count1 + count2
+                        }                  
+                  ) state
+            env,r  |> List.map (fun (List counts, prob) -> counts |> List.filter(function Pass c | Fail c when c <> 0. -> true | _ -> false) |> List,prob)                 
       | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> reduce env NoValue |> snd )
       | Let(scope, var, op) -> 
             let (newEnv,result) = reduce env op

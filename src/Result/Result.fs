@@ -51,8 +51,8 @@ type Result with
                         for b' in b do
                             yield List [a';b']] |> List
               | a, List b | List b, a -> List.map (fun r1 -> mult (r1,a)) b |> List
-              | Pass a, Tuple(a',c) | Tuple(a',c),Pass a -> Tuple(a' * int a,c * int a)
-              | Fail a, Tuple(a',c) | Tuple(a',c),Fail a -> Tuple(a',c)
+              | Pass a, Tuple(a',c) | Tuple(a',c),Pass a -> List.init a' (fun _ -> Pass a) |> List
+              | Fail c, Tuple(_,c') | Tuple(_,c'),Fail c -> List.init c' (fun _ -> Fail c) |> List
               | Tuple(a,c),Tuple(b,d) -> Tuple(a*b,c*d)
         mult(x,y) 
 

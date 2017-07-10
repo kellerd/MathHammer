@@ -53,16 +53,14 @@ let rangeStops (dist:Distribution<_>)  =
             |> Array.mapi (fun i (range,prob) -> 
                 match range,prob with 
                 | Fail _,_ | _,0.0 -> (stopPercent i length, colour 255.), 0.0
-                | Pass range,_ -> (stopPercent i length, percentGreen (inch.ToMM(int range * 1<inch>))), (opacity minProbability maxProbability prob)
+                | Pass range,_ -> (stopPercent i length, percentGreen (inch.ToMM(int range * 1<inch>))), prob
                 | _ -> failwith "invalid range calculation") 
-        for i in Array.length stops - 1 .. 1 do
-            let ((stopPercent,green),opacity) = stops.[i-1]
-            let lastOpacity = snd stops.[i]
-            stops.[i-1] <- ((stopPercent,green),opacity+lastOpacity)
-            
-        stops 
+            |> Array.rev
+        stops
+        |> Array.scan (fun ((_,_),lastProb) ((stopPercent,green),prob) -> ((stopPercent,green),prob+lastProb)) (("0.00","#000000"), 0.0)                          
         |> List.ofArray 
-        |> Distribution.Operations.countedCases 
+        |> List.skip 1
+        |> List.sortByDescending snd
         |> List.map(fun ((offset:string,stopcolor:string),opacity:float) -> 
                         stop [ Offset !^ offset
                                StopColor stopcolor

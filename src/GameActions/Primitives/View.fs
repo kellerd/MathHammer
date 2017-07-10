@@ -10,7 +10,7 @@ open Types
 let alternateRoot model dispatch =
     let rec displayOperation operation = 
         match operation with 
-        | Multiply (op,op2) -> str ""
+        | Product (ops) -> str ""
         | DPlus (_,i) -> str ""
         | Total (ops) when List.distinct ops = [Value(Dice(D3))] -> str ""
         | Total (ops) when List.distinct ops = [Value(Dice(D6))] -> str ""
@@ -27,7 +27,9 @@ let alternateRoot model dispatch =
 let root model dispatch =
     let rec displayOperation operation = 
         match operation with 
-        | Multiply (op,op2) -> sprintf "%s * %s" (displayOperation op) (displayOperation op2)
+        | Product (ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Product(%dD6)" (List.length ops)
+        | Product (ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Product(%dD3)" (List.length ops)
+        | Product (ops)  -> sprintf "Product(%s)" (List.map displayOperation ops |> String.concat " + ")
         | Total (ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Total(%dD6)" (List.length ops)
         | Total (ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)
         | Total (ops)  -> sprintf "Total(%s)" (List.map displayOperation ops |> String.concat " + ")

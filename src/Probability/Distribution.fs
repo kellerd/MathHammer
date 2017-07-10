@@ -112,13 +112,16 @@ module Distribution
             let! rest = takeN v (n-1)
             return (wert::rest)
         }
-    let permute d1 d2 = 
+    let pair d1 d2 = 
         dist{
             let! d1' = d1
             let! d2' = d2
             return d1', d2'
         }
 
+    let cartesian (xs:Distribution<_>) (ys:Distribution<_>) = 
+        xs |> List.collect (fun (x,px) -> ys |> List.map (fun (y,py) -> (x,y), (px*py)) |> normalize) |> normalize
+      
     module Example =
         let singleDice : Distribution<int> = uniformDistribution [1..6] 
         let ``Point 5 expectation`` = 

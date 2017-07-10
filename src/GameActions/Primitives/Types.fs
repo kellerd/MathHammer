@@ -16,7 +16,8 @@ type GamePrimitive =
 
 
 type Operation = 
-    | Multiply of Operation * Operation
+    | Unfold of Operation * Operation
+    | Product of Operation list
     | Total of Operation list
     | Count of Operation list
     | Value of GamePrimitive
