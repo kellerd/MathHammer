@@ -81,8 +81,7 @@ let rangeStops dist =
         |> Array.scan (fun ((_,_),lastProb) ((stopPercent,green),prob) -> ((stopPercent,green),prob+lastProb)) (("0.00","#000000"), 0.0)                          
         |> List.ofArray 
         |> List.skip 1
-        |> List.rev          
-        |> Distribution.Operations.countedCases 
+        |> List.map 
     (minRange,maxRange, stopsPercentGreenAndOpacity)
      
 rangeStops dist
