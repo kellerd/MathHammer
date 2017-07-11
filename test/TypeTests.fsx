@@ -39,6 +39,7 @@ let hitMelee =
 let A = Let(Attacker, "A", Value(Int(6)))
 let WS = Let(Attacker, "WS", DPlus(D6,3))
 let Psychic = Let(Attacker, "Psychic", Total[Value(Dice(D6));Value(Dice(D6))])
+let Psychic = Let(Attacker, "Product", Product[Value(Dice(D6));Value(Dice(D6))])
 let result = reduce Map.empty<_,_> Psychic |> snd
 
 open Distribution
@@ -109,12 +110,14 @@ let x = Let(Global, "x", DPlus(D6,3))
 let a = Let(Global, "a", Value(Int(3)))
 let (env,r) = reduce Map.empty<_,_> x
 let (env2,r2) = reduce env a
+
+let passes = Count[Var(Global,"x")]
 // let (env3,r3) = reduce env2 (Repeat(Var(Global,"x"),Var(Global,"a")))
 // r3
+let total = Total[passes;passes;passes]
 
-let tots = Count[Unfold(Var(Global,"a"),DPlus(D6,3))]
-reduce env2 tots |> snd
-reduce env2 x |> snd
-reduce env2 (Product[x;tots])
+reduce env2 passes |> snd
+reduce env2 total |> snd
+reduce env2 (Product[passes;passes;passes])
 
 List.init (int 3.) (fun _ -> Pass 1.) |> uniformDistribution

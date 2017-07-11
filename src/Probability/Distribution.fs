@@ -161,7 +161,12 @@ module Distribution
                 diceValues |> List.filter ((=) 6)
                     |> (fun l -> List.length l >= 2)
             nDice 4 >? gotTwoSixes
- 
+        let ``probability of 3 attacks at 3+`` =
+            let gotN n (diceValues : int list) : bool =
+                diceValues |> List.filter (fun n -> n >= 3)
+                    |> (fun l -> List.length l = n)
+            let test n = (n,nDice 3 >? gotN n)
+            test 0,test 1, test 2, test 3
         let ``probability you get out in parcheesi`` =
             dist{
                 let! w1 = singleDice
