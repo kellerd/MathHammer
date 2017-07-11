@@ -8,6 +8,7 @@
     <!-- Maths -->
     <Compile Include="src/Result/Result.fs" />
     <Compile Include="src/Probability/Distribution.fs" />
+    <Compile Include="src/Probability/Determinism.fs" />
     <Compile Include="src/Probability/View.fs" />
     <!-- GameActions -->
     <Compile Include="src/GameActions/Primitives/Types.fs" />

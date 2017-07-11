@@ -15,4 +15,4 @@ type Model = { PosX:float
 type Msg = 
     | ChangePosition of float * float * string
     | Select
-    | Let of Environment * string * Distribution<Result>
+    | Let of Scope * string * Distribution<Result>

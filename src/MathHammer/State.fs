@@ -51,52 +51,55 @@ let rec reduceDie d : Distribution<_> =
 let reduceGamePrimitive = function
       | Int i -> always i
       | Dice d -> reduceDie d 
-                       
-let rec reduce env operation = 
+open Determinism      
+
+let rec unfold callback env op op2  = 
+      let (env,times) = reduce env op2  
+      let newTimes = 
+            times |> Distribution.map(fun times' ->
+                        let newOps = 
+                              match times' with  
+                              | Tuple(n,_) -> List.init n (fun _ -> op) 
+                              | Pass x -> List.init (int x)  (fun _ -> op) 
+                              | Fail x -> List.init (int x) (fun _ -> op) 
+                              | List xs -> 
+                                    let n = List.fold (fun c elem -> match elem with Pass _ -> c + 1 | Fail _ -> c | Tuple(x,_) -> c + x | List _ -> failwith "Cannot count these") 0 xs
+                                    List.init n  (fun _ -> op) 
+                        reduce env (callback(OpList newOps))
+            ) 
+      match newTimes |> fromDistribution with 
+      | NoResult -> reduce env NoValue             
+      | Deterministic d -> d
+      | NonDeterministic _ -> reduce env NoValue  
+and fold folder env = function
+| [] -> (env,always (pass 0))
+| op::rest -> 
+      let state = reduce env op
+      rest 
+      |> List.fold (fun (env1,reduced1) op -> 
+            let (env2,reduced2) = reduce env1 op
+            env2, dist {
+                  let! a' = reduced1
+                  let! b' = reduced2
+                  return folder a' b'                              
+            }) state
+and reduce (env:Environment) operation = 
       match operation with
-      | Value v -> env,reduceGamePrimitive v |> Distribution.map pass
-      | NoValue -> env,always (fail 0)
-      | Total ([]) -> env,always (pass 0)
-      | Total (op::rest) -> 
-            let state = reduce env op
-            rest 
-            |> List.fold (fun (env1,reduced1) op -> 
-                  let (env2,reduced2) = reduce env op
-                  env2, dist {
-                        let! a' = reduced1
-                        let! b' = reduced2
-                        return a' + b'                              
-                  }) state
-      | Product ([]) -> env,always (pass 0)
-      | Product (op::rest) -> 
-            let state = reduce env op
-            rest 
-            |> List.fold (fun (env1,reduced1) op -> 
-                  let (env2,reduced2) = reduce env op
-                  env2, dist {
-                        let! a' = reduced1
-                        let! b' = reduced2
-                        return a' * b'                              
-                  }) state
+      | Value v -> (env,reduceGamePrimitive v |> Distribution.map pass) 
+      | NoValue -> (env,always (fail 0)) 
+      | Total (OpList ops) -> fold (+) env ops
+      | Total (Unfold(op,op2)) -> unfold Total env op op2 
+      | Product (Unfold(op,op2)) -> unfold Product env op op2 
+      | Count (Unfold(op,op2)) -> unfold Count env op op2 
+      | Product (OpList ops) -> fold (*) env ops
       | DPlus(d, moreThan) -> env,reduceDie d |> dPlus moreThan
-      | Count ([]) -> env,always (pass 0)
-      | Count (op::rest) -> 
-            let toCount (env1,result) =
-                  env1, dist {
-                        let! result = result 
-                        return match result with | Pass _ -> List [pass 1; fail 0] | Fail _ -> List [pass 0; fail 1] | _ -> failwith "Cannot count these" 
-                  }
-            let state = reduce env op |> toCount
-            let (env,r) = 
-                  rest 
-                  |> List.fold (fun (env1,reduced1) op -> 
-                        let (env2,reduced2) = reduce env1 op |> toCount
-                        env2,dist {
-                              let! count1 = reduced1
-                              let! count2 = reduced2 
-                              return count1 + count2
-                        }                  
-                  ) state
+      | Count (OpList ops) -> 
+            let addCounts r1 r2 =
+                  let toCount result =  
+                        match result with | Pass _ -> Tuple (1,0) | Fail _ ->  Tuple(0,1) | _ -> failwith "Cannot count these" 
+                  toCount r1 + toCount r2                        
+            let (env,r) = fold addCounts env ops 
+            printDistribution r;
             env,r  |> List.map (fun (List counts, prob) -> counts |> List.filter(function Pass c | Fail c when c <> 0. -> true | _ -> false) |> List,prob)                 
       | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> reduce env NoValue |> snd )
       | Let(scope, var, op) -> 

@@ -8,7 +8,7 @@ let initRow () : Row * Cmd<Types.Msg> =
     ReadWrite("", NoValue), Cmd.none
 
 let init () : Model * Cmd<Types.Msg> =
-    let readOnlyRow = ReadOnly ("D6", Total[Value(Dice(D6)); Value(Int(3))])
+    let readOnlyRow = ReadOnly ("D6", Total <| OpList [Value(Dice(D6)); Value(Int(3))])
     ([readOnlyRow],false), Cmd.none
 
 

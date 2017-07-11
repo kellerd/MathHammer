@@ -5,7 +5,7 @@ type Die =
     | D6
     | Reroll of (int list) * Die
     
-type Environment =
+type Scope =
     | Attacker
     | Defender
     | Global
@@ -14,18 +14,18 @@ type GamePrimitive =
     | Int of int
     | Dice of Die
 
-
 type Operation = 
-    | Unfold of Operation * Operation
-    | Product of Operation list
-    | Total of Operation list
-    | Count of Operation list
+    | Product of ManyOp
+    | Total of ManyOp
+    | Count of ManyOp
     | Value of GamePrimitive
-    | Var of Environment * string
+    | Var of Scope * string
     | DPlus of Die * int 
     | NoValue 
-    | Let of Environment * string * Operation
-
+    | Let of Scope * string * Operation
+and ManyOp =
+    | OpList of Operation list
+    | Unfold of Operation * Operation
 type [<Measure>] ft 
 and [<Measure>] inch
 and [<Measure>] mm

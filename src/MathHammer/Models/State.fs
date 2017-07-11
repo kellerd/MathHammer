@@ -7,9 +7,9 @@ open GameActions.Primitives.Types
 
 
 let hitMelee = 
-    Let(Attacker, "Melee", Let(Attacker, "MeleeHits", Count[Product[Var(Attacker, "WS"); Var(Attacker, "A")]]))
+    Let(Attacker, "Melee", Let(Attacker, "MeleeHits", Count <| OpList [Product <| OpList [Var(Attacker, "WS"); Var(Attacker, "A")]]))
 let shotsMelee = 
-    Let(Attacker, "Shots", Let(Attacker, "Shots", Count[Product[Var(Attacker, "A"); Var(Attacker, "A")]]))
+    Let(Attacker, "Shots", Let(Attacker, "Shots", Count <| OpList [Product <| OpList [Var(Attacker, "A"); Var(Attacker, "A")]]))
 
 let init name =
     { PosX=0.
@@ -24,7 +24,7 @@ let init name =
 let initMeq name env =
     { (init name) with 
         //ShootingRange = Value(Int(24)) 
-        MeleeRange = Total[Value(Int(7));Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))]
+        MeleeRange = Total <| OpList [Value(Int(7));Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))]
         Attributes = ["M",  Let(env, "M",  Value(Int(6)))
                       "WS", Let(env, "WS", DPlus (D6, 3))
                       "BS", Let(env, "BS", DPlus (D6, 3))
@@ -34,12 +34,12 @@ let initMeq name env =
                       "A" , Let(env, "A" , Value (Int(2)))
                       "LD", Let(env, "LD", Value (Int(8)))
                       "SV", Let(env, "SV", DPlus (D6, 3))
-                      "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Total[Value(Dice(D6));Value(Dice(D6))])) 
+                      "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Total <| OpList [Value(Dice(D6));Value(Dice(D6))])) 
                       "Melee", hitMelee
                       "Shots",shotsMelee ] }, Cmd.none
 let initGeq name env =
     { (init name) with 
-        ShootingRange = Total[Value(Int(6))]
+        ShootingRange = Total <| OpList [Value(Int(6))]
         Attributes = ["M",  Let(env, "M",  Value(Int(5)))
                       "WS", Let(env, "WS", DPlus (D6, 4))
                       "BS", Let(env, "BS", DPlus (D6, 4))

@@ -12,8 +12,8 @@ let alternateRoot model dispatch =
         match operation with 
         | Product (ops) -> str ""
         | DPlus (_,i) -> str ""
-        | Total (ops) when List.distinct ops = [Value(Dice(D3))] -> str ""
-        | Total (ops) when List.distinct ops = [Value(Dice(D6))] -> str ""
+        | Total (OpList(ops)) when List.distinct ops = [Value(Dice(D3))] -> str ""
+        | Total (OpList(ops)) when List.distinct ops = [Value(Dice(D6))] -> str ""
         | Total (ops)  -> str ""
         | Value(Dice(i))-> str ""
         | Value(Int(i)) -> str ""
@@ -25,14 +25,18 @@ let alternateRoot model dispatch =
     displayOperation model  
 
 let root model dispatch =
-    let rec displayOperation operation = 
+    let rec displayManyOp ops =
+        match ops with
+        | OpList ops -> List.map displayOperation ops |> String.concat " + "
+        | Unfold (op,op2) -> sprintf "%s, %s times" (displayOperation op) (displayOperation op2)
+    and displayOperation operation = 
         match operation with 
-        | Product (ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Product(%dD6)" (List.length ops)
-        | Product (ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Product(%dD3)" (List.length ops)
-        | Product (ops)  -> sprintf "Product(%s)" (List.map displayOperation ops |> String.concat " + ")
-        | Total (ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Total(%dD6)" (List.length ops)
-        | Total (ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)
-        | Total (ops)  -> sprintf "Total(%s)" (List.map displayOperation ops |> String.concat " + ")
+        | Product (OpList(ops)) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Product(%dD6)" (List.length ops)
+        | Product (OpList(ops)) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Product(%dD3)" (List.length ops)
+        | Product (ops)  -> sprintf "Product(%s)" (displayManyOp ops)
+        | Total (OpList(ops)) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Total(%dD6)" (List.length ops)
+        | Total (OpList(ops)) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)
+        | Total (ops)  -> sprintf "Total(%s)" (displayManyOp ops)
         | Value(Dice(i))-> string i
         | Value(Int(i)) -> string i
         | NoValue -> "--"
@@ -41,7 +45,7 @@ let root model dispatch =
         | DPlus(Reroll(is,D6), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
         | DPlus(Reroll(is,D3), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
         | DPlus(Reroll(is,Reroll(is2,d)), i) -> displayOperation (DPlus(Reroll(List.distinct (is @ is2),d),i))
-        | Count(ops) -> sprintf "(Passes,Fails) in (%s)" (List.map displayOperation ops |> String.concat ",")
+        | Count(ops) -> sprintf "(Passes,Fails) in (%s)" (displayManyOp ops)
         | Var(env, str) -> match env with 
                            | Attacker -> sprintf "Attacker(%s)" str
                            | Defender -> sprintf "Target(%s)" str

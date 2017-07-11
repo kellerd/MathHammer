@@ -29,59 +29,51 @@ module Distribution
     let (>?) a b = calcProbabilityOfEvent b a
 
 
-    [<AutoOpen>]
-    module internal Operations =
- 
-        let normalize (v : Distribution<'a>) : (Distribution<'a>) =
-            let total = v |> Seq.sumBy snd
-            v 
-            |> Seq.groupBy fst 
-            |> Seq.map (fun (k,vals) -> 
-                if total > 1.0 then k,Seq.sumBy snd vals / total
-                else k,Seq.sumBy snd vals)
-            |> Seq.toList
-        let coinFlip (pFirst : float) (d1 : Distribution<'T>) (d2 : Distribution<'T>) = 
-            if pFirst < 0.0 || pFirst > 1.0 then failwith "invalid probability in coinFlip"
-            let d1' = d1 |> List.map (fun (a,prob) -> a,prob * pFirst) 
-            let d2' = d2 |> List.map (fun (b,prob) -> b,prob * (1.0 - pFirst)) 
-            let combined = List.append d1' d2' 
-            combined |> normalize
-        let either (d1 : Distribution<'T>) (d2 : Distribution<'T>) = coinFlip 0.5 d1 d2
-        let combine  (vs : Distribution<'T> seq) : Distribution<'T> = List.concat vs |> normalize
+    let normalize (v : Distribution<'a>) : (Distribution<'a>) =
+        let total = v |> Seq.sumBy snd
+        v 
+        |> Seq.groupBy fst 
+        |> Seq.map (fun (k,vals) -> 
+            if total > 1.0 then k,Seq.sumBy snd vals / total
+            else k,Seq.sumBy snd vals)
+        |> Seq.toList
+    let coinFlip (pFirst : float) (d1 : Distribution<'T>) (d2 : Distribution<'T>) = 
+        if pFirst < 0.0 || pFirst > 1.0 then failwith "invalid probability in coinFlip"
+        let d1' = d1 |> List.map (fun (a,prob) -> a,prob * pFirst) 
+        let d2' = d2 |> List.map (fun (b,prob) -> b,prob * (1.0 - pFirst)) 
+        let combined = List.append d1' d2' 
+        combined |> normalize
+    let either (d1 : Distribution<'T>) (d2 : Distribution<'T>) = coinFlip 0.5 d1 d2
+    let combine  (vs : Distribution<'T> seq) : Distribution<'T> = List.concat vs |> normalize
 
-        let weightedCases (inp : ('T * float) list) =
-            let rec coinFlips w l =
-                match l with
-                | [] -> failwith "no coinFlips"
-                | [(d, _)] -> always d
-                | (d, p) :: rest -> coinFlip (p / (1.0 - w)) (always d) (coinFlips (w + p) rest)
-            coinFlips 0.0 inp
-        let countedCases inp =
-            let total = Seq.sumBy (fun (_, v) -> v) inp
-            weightedCases (inp |> List.map (fun (x, v) -> (x, v / total)))            
+    let weightedCases (inp : ('T * float) list) =
+        let rec coinFlips w l =
+            match l with
+            | [] -> failwith "no coinFlips"
+            | [(d, _)] -> always d
+            | (d, p) :: rest -> coinFlip (p / (1.0 - w)) (always d) (coinFlips (w + p) rest)
+        coinFlips 0.0 inp
+    let countedCases inp =
+        let total = Seq.sumBy (fun (_, v) -> v) inp
+        weightedCases (inp |> List.map (fun (x, v) -> (x, v / total)))            
+    let returnM (a : 'a) : Distribution<'a> =
+        always a
 
-            
+    let bind (f : 'a -> Distribution<'b>) (v : Distribution<'a>) : Distribution<'b> =
+        [ for (a,p) in v do
+          for (b,p') in f a do
+          yield (b, p*p')
+        ] |> normalize
+    
+    let (>>=) x f = bind f x
 
-    [<AutoOpen>]
-    module Monad =
-        let returnM (a : 'a) : Distribution<'a> =
-            always a
+    type DistrBuilder () =
+        member x.Bind(m, f) = m >>= f
+        member x.Return(v) = returnM v
+        member x.ReturnFrom(v) = v
+        member x.Delay(f) = f ()
  
-        let bind (f : 'a -> Distribution<'b>) (v : Distribution<'a>) : Distribution<'b> =
-            [ for (a,p) in v do
-              for (b,p') in f a do
-              yield (b, p*p')
-            ] |> normalize
-        
-        let (>>=) x f = bind f x
- 
-        type DistrBuilder () =
-            member x.Bind(m, f) = m >>= f
-            member x.Return(v) = returnM v
-            member x.ReturnFrom(v) = v
-            member x.Delay(f) = f ()
- 
-    let dist= Monad.DistrBuilder()   
+    let dist= DistrBuilder()   
     let map f = bind (f >> returnM) 
     let apply f v = 
         dist {
