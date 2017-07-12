@@ -61,9 +61,16 @@ let total2 = Total threepassestwo
 reduce env2 passes |> snd
 reduce env2 total |> snd
 reduce env2 total2 |> snd
-reduce env2 (Product <| OpList [passes;passes;passes])
+let three = Value(Int(3))
+reduce env2 (Product <| OpList [passes;passes]) |> snd
+
+
+open Distribution.Example
+open Distribution
 
 
 let op2 = Var(Global, "a")
 
-reduce env2 op2 
+let d6 =  DPlus (D6, 3)
+
+reduce env2 (Count <| OpList [Product <| OpList [d6;three]])

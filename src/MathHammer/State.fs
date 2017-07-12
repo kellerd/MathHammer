@@ -71,11 +71,9 @@ let rec unfold callback env op op2  =
       | NoResult -> reduce env NoValue             
       | Deterministic d -> d
       | NonDeterministic _ -> reduce env NoValue  
-and fold folder env = function
-| [] -> (env,always (pass 0))
-| op::rest -> 
-      let state = reduce env op
-      rest 
+and fold folder env state ops =
+      let state = (env,always state)
+      ops 
       |> List.fold (fun (env1,reduced1) op -> 
             let (env2,reduced2) = reduce env1 op
             env2, dist {
@@ -87,20 +85,18 @@ and reduce (env:Environment) operation =
       match operation with
       | Value v -> (env,reduceGamePrimitive v |> Distribution.map pass) 
       | NoValue -> (env,always (fail 0)) 
-      | Total (OpList ops) -> fold (+) env ops
-      | Total (Unfold(op,op2)) -> unfold Total env op op2 
-      | Product (Unfold(op,op2)) -> unfold Product env op op2 
-      | Count (Unfold(op,op2)) -> unfold Count env op op2 
-      | Product (OpList ops) -> fold (*) env ops
       | DPlus(d, moreThan) -> env,reduceDie d |> dPlus moreThan
+      | Total (Unfold(op,op2)) -> unfold Total env op op2 
+      | Total (OpList ops) -> fold (+) env (pass 0) ops 
+      | Product (Unfold(op,op2)) -> unfold Product env op op2 
+      | Product (OpList ops) -> fold (*) env (pass 1) ops
+      | Count (Unfold(op,op2)) -> unfold Count env op op2 
       | Count (OpList ops) -> 
             let addCounts r1 r2 =
                   let toCount result =  
-                        match result with | Pass _ -> Tuple (1,0) | Fail _ ->  Tuple(0,1) | _ -> failwith "Cannot count these" 
-                  toCount r1 + toCount r2                        
-            let (env,r) = fold addCounts env ops 
-            printDistribution r;
-            env,r  |> List.map (fun (List counts, prob) -> counts |> List.filter(function Pass c | Fail c when c <> 0. -> true | _ -> false) |> List,prob)                 
+                        match result with | Pass _ -> Tuple (1,0) | Fail _ ->  Tuple(0,1) | Tuple _ as x -> x | _ -> failwith "Cannot count these" 
+                  r1 + toCount r2                        
+            fold addCounts env (Tuple(0,0)) ops 
       | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> reduce env NoValue |> snd )
       | Let(scope, var, op) -> 
             let (newEnv,result) = reduce env op

@@ -5,9 +5,9 @@ open Types
 open GameActions.Primitives.Types
 
 
-
+let wsTest = Count(OpList[Var(Attacker, "WS")])
 let hitMelee = 
-    Let(Attacker, "Melee", Let(Attacker, "MeleeHits", Count <| OpList [Product <| OpList [Var(Attacker, "WS"); Var(Attacker, "A")]]))
+    Let(Attacker, "Melee", Let(Attacker, "MeleeHits", Total(Unfold(wsTest, Var(Attacker, "A")))))
 let shotsMelee = 
     Let(Attacker, "Shots", Let(Attacker, "Shots", Count <| OpList [Product <| OpList [Var(Attacker, "A"); Var(Attacker, "A")]]))
 
