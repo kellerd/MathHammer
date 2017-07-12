@@ -26,13 +26,11 @@ let init () : Model * Cmd<Types.Msg> =
 open Distribution
 open Result
 
-let pass i = float i |> Pass
-let fail i = float i  |> Fail
 let dPlus plus die = dist {
       let! roll = die
       let result = 
-            if roll >= plus then pass roll
-            else fail roll
+            if roll >= plus then Pass roll
+            else Fail roll
       return result
 }
 let d6 = uniformDistribution [1..6]
@@ -71,7 +69,7 @@ let rec unfold callback env op op2  =
       | NoResult -> reduce env NoValue             
       | Deterministic d -> d
       | NonDeterministic _ -> reduce env NoValue  
-and fold folder env state ops =
+and fold (folder: Result<int>->Result<int>->Result<int>) env state ops =
       let state = (env,always state)
       ops 
       |> List.fold (fun (env1,reduced1) op -> 
@@ -83,19 +81,19 @@ and fold folder env state ops =
             }) state
 and reduce (env:Environment) operation = 
       match operation with
-      | Value v -> (env,reduceGamePrimitive v |> Distribution.map pass) 
-      | NoValue -> (env,always (fail 0)) 
+      | Value v -> (env,reduceGamePrimitive v |> Distribution.map Pass) 
+      | NoValue -> (env,always (Fail 0)) 
       | DPlus(d, moreThan) -> env,reduceDie d |> dPlus moreThan
       | Total (Unfold(op,op2)) -> unfold Total env op op2 
-      | Total (OpList ops) -> fold (+) env (pass 0) ops 
+      | Total (OpList ops) -> fold (Result.add) env (Pass 0) ops 
       | Product (Unfold(op,op2)) -> unfold Product env op op2 
-      | Product (OpList ops) -> fold (*) env (pass 1) ops
+      | Product (OpList ops) -> fold (Result.mult) env (Pass 1) ops
       | Count (Unfold(op,op2)) -> unfold Count env op op2 
       | Count (OpList ops) -> 
             let addCounts r1 r2 =
                   let toCount result =  
                         match result with | Pass _ -> Tuple (1,0) | Fail _ ->  Tuple(0,1) | Tuple _ as x -> x | _ -> failwith "Cannot count these" 
-                  r1 + toCount r2                        
+                  Result.add r1 (toCount r2)                      
             fold addCounts env (Tuple(0,0)) ops 
       | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> reduce env NoValue |> snd )
       | Let(scope, var, op) -> 

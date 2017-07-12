@@ -73,4 +73,4 @@ let op2 = Var(Global, "a")
 
 let d6 =  DPlus (D6, 3)
 
-reduce env2 (Count <| OpList [Product <| OpList [d6;three]])
+reduce env2 (Product <| OpList [d6;three])

@@ -11,11 +11,6 @@ open Result
 open Distribution
 open Probability.View
 let onClick x : IProp = OnClick(x) :> _
-let list d = List d 
-let tuple d = Tuple d
-let getResult = function Pass f | Fail f -> Some f | _ -> None
-
-
 
 let showActions dispatch (key, operation)  = 
       div [] 
@@ -31,9 +26,10 @@ let rangeStops (dist:Distribution<_>)  =
     let length = List.length dist
     let minRange, maxRange,minProbability,maxProbability =
         dist 
+        |> Distribution.map (Result.map ((*) 1<inch>))
         |> List.fold (fun (currMinRange,currMaxRange,currMin,currMax) (range,prob) -> 
             min currMinRange range, max currMaxRange range,
-            min currMin prob, max currMax prob ) (Pass (28.<ft> * 12.<inch/ft> |> float),Pass 0.,1.,0.)
+            min currMin prob, max currMax prob ) (Pass (28<ft> * 12<inch/ft>),Pass 0<inch>,1.,0.)
         |> function 
            | (Pass minRange, Pass maxRange,minProbability,maxProbability) ->
                 inch.ToMM(int minRange * 1<inch>), inch.ToMM(int maxRange * 1<inch>),minProbability,maxProbability

@@ -2,7 +2,7 @@ module MathHammer.Types
 open Result
 open GameActions.Primitives.Types
 open Distribution
-type Environment = Map<(Scope*string),Distribution<Result>>
+type Environment = Map<(Scope*string),Distribution<Result<int>>>
 type Model = {
     Attacker : MathHammer.UnitList.Types.Model
     Defender : MathHammer.UnitList.Types.Model

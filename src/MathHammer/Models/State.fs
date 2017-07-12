@@ -23,7 +23,7 @@ let init name =
 
 let initMeq name env =
     { (init name) with 
-        //ShootingRange = Value(Int(24)) 
+        //ShootingRange = Value(Int(24))
         MeleeRange = Total <| OpList [Value(Int(7));Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))]
         Attributes = ["M",  Let(env, "M",  Value(Int(6)))
                       "WS", Let(env, "WS", DPlus (D6, 3))
@@ -34,12 +34,13 @@ let initMeq name env =
                       "A" , Let(env, "A" , Value (Int(2)))
                       "LD", Let(env, "LD", Value (Int(8)))
                       "SV", Let(env, "SV", DPlus (D6, 3))
+                      "MeleeRange", Let(env, "MeleeRange", Total <| OpList [Var(env,"M");Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))])
                       "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Total <| OpList [Value(Dice(D6));Value(Dice(D6))])) 
                       "Melee", hitMelee
                       "Shots",shotsMelee ] }, Cmd.none
 let initGeq name env =
-    { (init name) with 
-        ShootingRange = Total <| OpList [Value(Int(6))]
+    { (init name) with
+        ShootingRange = Total <| OpList [Value(Int(6))] 
         Attributes = ["M",  Let(env, "M",  Value(Int(5)))
                       "WS", Let(env, "WS", DPlus (D6, 4))
                       "BS", Let(env, "BS", DPlus (D6, 4))
@@ -48,7 +49,8 @@ let initGeq name env =
                       "W" , Let(env, "W" , Value (Int(1)))
                       "A" , Let(env, "A" , Value (Int(1)))
                       "LD", Let(env, "LD", Value (Int(7)))
-                      "SV", Let(env, "SV", DPlus (D6, 5))]}, Cmd.none
+                      "SV", Let(env, "SV", DPlus (D6, 5))
+                      "ShootingRange", Let(env, "ShootingRange", Total <| OpList [Value(Int(6))])] }, Cmd.none
 
 let update msg model =
     match msg with

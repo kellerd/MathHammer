@@ -4,32 +4,32 @@ module Distribution
     type Distribution<'a> = ('a * Probability) list
     type Event<'a> = 'a -> bool
  
-    let printDistribution (v : Distribution<'a>) =
+    let printDistribution (v : Distribution<_>) =
         let negate x = -x
         v |> List.sortBy (snd >> negate) |> List.iter (fun (a,p) -> printfn "%A: %.2f%%" a (p * 100.0))
-    let always (a : 'a) : Distribution<'a> =
+    let always (a : 'a) : Distribution<_> =
         [a, 1.0]
-    let never (a : 'a) : Distribution<'a> =
+    let never (a : 'a) : Distribution<_> =
         [a, 0.0]
-    let expectation (predicate:'a -> float) (v : Distribution<'a>) : float = 
+    let expectation (predicate:'a -> float) (v : Distribution<_>) : float = 
         List.foldBack (fun  (a,prob) acc -> acc + predicate a * prob) v 0.0
     let rnd = System.Random()
-    let sample (v : Distribution<'a>)  = 
+    let sample (v : Distribution<_>)  = 
         let prob = rnd.NextDouble()
         v |> Seq.scan (fun (p,acc) (n,prob) -> Some n, acc + prob )  (None, 0.0) 
         |> Seq.pairwise
         |> Seq.pick(fun ((_,p1),(a,p2)) -> if prob >= p1 && prob < p2 then a else None)
-    let uniformDistribution (ls : 'a list) =
+    let uniformDistribution (ls : 'a list) : Distribution<_> =
         let ws = 1.0 / float (List.length ls)
         List.map (fun l -> (l, ws)) ls
-    let calcProbabilityOfEvent (e : Event<'a>) (vs : Distribution<'a>) : Probability =
+    let calcProbabilityOfEvent (e : Event<'a>) (vs : Distribution<_>) : Probability =
         vs |> List.filter (fst >> e)
            |> List.sumBy snd
  
     let (>?) a b = calcProbabilityOfEvent b a
 
 
-    let normalize (v : Distribution<'a>) : (Distribution<'a>) =
+    let normalize (v : Distribution<_>) : (Distribution<_>) =
         let total = v |> Seq.sumBy snd
         v 
         |> Seq.groupBy fst 
@@ -56,10 +56,10 @@ module Distribution
     let countedCases inp =
         let total = Seq.sumBy (fun (_, v) -> v) inp
         weightedCases (inp |> List.map (fun (x, v) -> (x, v / total)))            
-    let returnM (a : 'a) : Distribution<'a> =
+    let returnM (a : 'a) : Distribution<_> =
         always a
 
-    let bind (f : 'a -> Distribution<'b>) (v : Distribution<'a>) : Distribution<'b> =
+    let bind (f : 'a -> Distribution<'b>) (v : Distribution<_>) : Distribution<'b> =
         [ for (a,p) in v do
           for (b,p') in f a do
           yield (b, p*p')
@@ -97,7 +97,7 @@ module Distribution
 
         
     let sequenceResultM x = traverseResultM id x
-    let rec takeN (v : Distribution<'a>) (n : int) : Distribution<'a list> =
+    let rec takeN (v : Distribution<_>) (n : int) : Distribution<'a list> =
         dist{
             if n <= 0 then return [] else
             let! wert = v

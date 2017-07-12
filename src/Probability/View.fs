@@ -4,7 +4,8 @@ open Fable.Helpers.React.Props
 open Result
 open Distribution
 
-let rec passFailToExpectation = function Pass _ -> float 0xFF  | Fail _ -> float 0x00 | List xs -> List.averageBy passFailToExpectation xs | Tuple _ -> float 0xFF
+let rec passFailToExpectation = function Pass _ -> float 0xFF  | Fail _ -> float 0x00 | List xs -> List.averageBy passFailToExpectation xs | Tuple (x,y) -> if x + y = 0. then float 0xFF
+                                                                                                                                                            else (x / (x + y) ) * float 0xFF
 let normalize minX maxX low high x =
       (high - low) * ( (x - minX) / (maxX - minX) ) + low
 let normalizeBy by mapping low high xs =
@@ -31,12 +32,12 @@ let showProbabilitiesOfActions (key,dist) =
                     let min = result |> List.minBy snd |> snd
                     let total = result |> List.sumBy snd 
                     result
-                        |> List.map (fun (f, prob) -> 
-                              let greenValue = passFailToExpectation f
+                        |> List.map (fun (r, prob) -> 
+                              let greenValue = Result.map float r |> passFailToExpectation
                               //let percentageGreen = prob / max * 255.
                               let alpha = opacity min max prob
                               //let colour = sprintf "#%02X%02X00" (0xFF - System.Convert.ToInt32 percentageGreen) (System.Convert.ToInt32(percentageGreen))
-                              div [Style [Color (colourA greenValue alpha)]] [str (printResult f); str <| sprintf " %.2f%%" (prob / total)])
+                              div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.2f%%" (prob / total)])
                     |> div [ClassName "column"]            
       section [ClassName "columns"]
           [ 
@@ -46,25 +47,33 @@ let showProbabilitiesOfActions (key,dist) =
           ]
 
 let showAverages (key, dist) = 
-      let expectations (dist:Distribution<_>) = 
+      let expectations dist = 
             let colour = 
                   dist 
                   |> expectation passFailToExpectation 
                   |> colour
-            let result = dist |> List.sumBy (fun (v,probability) -> v * probability)
-            div [ClassName "column"; Style [Color colour]] [str (printResult result)]
+            let result = dist |> List.fold (fun sum (v,probability) -> Result.mult v (Pass probability) |> Result.add sum ) (Fail 0.)
+            // match result with 
+            // | Pass x   -> printf "Pass %.2f" x 
+            // | Fail x   -> printf "Fail %.2f" x     
+            // | List _ -> printf "List"  
+            // | Tuple(x,y) ->  printf "Pass %.2f" x 
+            //      |> List.sumBy (fun (v,probability) -> Result.mult v (Pass probability))
+            div [ClassName "column"; Style [Color colour]] 
+                [ str <| printResultF result]
+                //[str (printResultF result)]
       section [ClassName "columns"]
           [ 
             div [ClassName "column"] [b  [] [str key]]
             div [ClassName "column"] [str " => "]
-            dist |> expectations           
+            dist |> Distribution.map(Result.map float) |> expectations           
           ]
 
 let showSample (key, dist) = 
-      let sampleDistribution (dist:Distribution<_>) = 
+      let sampleDistribution dist = 
             let result = dist |> sample 
-            let colour' = passFailToExpectation result |> colour
-            div [ClassName "column"; Style[Color colour']] [printResult result |> str ]
+            let colour' = result  |> Result.map float |> passFailToExpectation  |> colour
+            div [ClassName "column"; Style[Color colour']] [printResultD result |> str ]
       section [ClassName "columns"]
           [ 
             div [ClassName "column"] [b  [] [str key]]
