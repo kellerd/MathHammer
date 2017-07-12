@@ -22,10 +22,10 @@ let root model dispatch =
                 [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
                 [ UnitList.View.rootBoard model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.rootBoard model.Defender (State.attackerMap >> dispatch)
-                  UnitList.View.rootRanges "MeleeRanges" model.Attacker (fun m -> State.reduce model.Environment m.MeleeRange |> snd)
-                  UnitList.View.rootRanges "MeleeRanges" model.Defender (fun m -> State.reduce model.Environment m.MeleeRange |> snd)
-                  UnitList.View.rootRanges "ShootingRanges" model.Attacker (fun m -> State.reduce model.Environment m.ShootingRange |> snd)
-                  UnitList.View.rootRanges "ShootingRanges" model.Defender (fun m -> State.reduce model.Environment m.ShootingRange |> snd)
+                  UnitList.View.rootRanges "MeleeRanges" model.Attacker (fun m -> State.reduce m.Environment m.MeleeRange |> snd)
+                  UnitList.View.rootRanges "MeleeRanges" model.Defender (fun m -> State.reduce m.Environment m.MeleeRange |> snd)
+                  UnitList.View.rootRanges "ShootingRanges" model.Attacker (fun m -> State.reduce m.Environment m.ShootingRange |> snd)
+                  UnitList.View.rootRanges "ShootingRanges" model.Defender (fun m -> State.reduce m.Environment m.ShootingRange |> snd)
                   UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.root model.Defender (State.defenderMap >> dispatch) ] ] 
     let swap =  i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
