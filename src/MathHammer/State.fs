@@ -33,14 +33,16 @@ let update msg model : Model * Cmd<Types.Msg> =
     | UnitListMsg (UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Let(Global,name,dist), _), _) -> 
         {model with Environment = Map.add name dist model.Environment}, Cmd.none
     | UnitListMsg (UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Select, m), Some "Attacker") -> 
-        {model with SelectedAttacker = model.Attacker.Models |> Map.tryFind m}, Cmd.ofMsg RebindEnvironment
+        {model with SelectedAttacker = Some m}, Cmd.ofMsg RebindEnvironment
     | UnitListMsg (UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Select, m), Some "Defender") -> 
-        {model with SelectedDefender = model.Defender.Models |> Map.tryFind m}, Cmd.ofMsg RebindEnvironment
+        {model with SelectedDefender = Some m}, Cmd.ofMsg RebindEnvironment
     | UnitListMsg (msg, Some "Attacker")-> 
         let (ula,ulCmdsa) = UnitList.State.update msg model.Attacker
+        printfn "Binding model attacker %A"  msg
         { model with Attacker = ula }, Cmd.batch [ Cmd.map attackerMap ulCmdsa]
     | UnitListMsg (msg, Some "Defender")-> 
         let (uld,ulCmdsd) = UnitList.State.update msg model.Defender
+        printfn "Binding model defender %A"  msg
         { model with Defender = uld }, Cmd.batch [ Cmd.map defenderMap ulCmdsd]
     | UnitListMsg (msg, Some _)-> failwith "No list of that name"
     | UnitListMsg (msg, None) -> 
@@ -59,8 +61,16 @@ let update msg model : Model * Cmd<Types.Msg> =
     | BindDefender -> 
         match model.SelectedDefender with 
         | None -> model, Cmd.none
-        | Some defender -> model, Cmd.batch <| rebindMsg Defender defenderMap model.SelectedDefender
+        | Some defender -> 
+            model, (model.SelectedDefender
+            |> Option.bind (fun key -> Map.tryFind key model.Defender.Models) 
+            |> rebindMsg Defender defenderMap 
+            |> Cmd.batch)
     | BindAttacker -> 
         match model.SelectedAttacker with 
         | None -> model, Cmd.none
-        | Some attacker -> model, Cmd.batch <| rebindMsg Attacker attackerMap model.SelectedAttacker
+        | Some attacker -> 
+            model, (model.SelectedAttacker
+            |> Option.bind (fun key -> Map.tryFind key model.Attacker.Models) 
+            |> rebindMsg Attacker attackerMap 
+            |> Cmd.batch)

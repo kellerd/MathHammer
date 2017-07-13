@@ -19,14 +19,10 @@ let init name =
       Attributes = []
       Size = 28<mm>
       Scale = "scale(1,1)"
-      Environment = Map.empty<_,_>
-      ShootingRange = NoValue
-      MeleeRange = NoValue}
+      Environment = Map.empty<_,_>}
 
 let initMeq name env =
     { (init name) with 
-        //ShootingRange = Value(Int(24))
-        MeleeRange = Total <| OpList [Value(Int(7));Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))]
         Attributes = ["M",  Let(env, "M",  Value(Int(6)))
                       "WS", Let(env, "WS", DPlus (D6, 3))
                       "BS", Let(env, "BS", DPlus (D6, 3))
@@ -42,7 +38,6 @@ let initMeq name env =
                       "Shots",shotsMelee ] }, Cmd.none
 let initGeq name env =
     { (init name) with
-        ShootingRange = Total <| OpList [Value(Int(6))] 
         Attributes = ["M",  Let(env, "M",  Value(Int(5)))
                       "WS", Let(env, "WS", DPlus (D6, 4))
                       "BS", Let(env, "BS", DPlus (D6, 4))
@@ -133,6 +128,7 @@ let update msg model =
       | Select _ -> model, Cmd.none
       | Msg.Let _ ->  model, Cmd.none
       | Rebind scope -> 
+            printfn "Got msg to rebind"
             let (newEnv,cmdMap) = 
                   model.Attributes |> List.fold (fun env (name,op) -> reduce env op |> fst) Map.empty<_,_>
                  |> Map.partition (fun (scope',_) _ -> scope = scope')

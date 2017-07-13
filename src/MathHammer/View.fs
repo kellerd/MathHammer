@@ -21,11 +21,11 @@ let root model dispatch =
             [svg 
                 [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
                 [ UnitList.View.rootBoard model.Attacker (State.attackerMap >> dispatch)
-                  UnitList.View.rootBoard model.Defender (State.attackerMap >> dispatch)
-                  UnitList.View.rootRanges "MeleeRanges" model.Attacker (fun m -> State.reduce m.Environment m.MeleeRange |> snd)
-                  UnitList.View.rootRanges "MeleeRanges" model.Defender (fun m -> State.reduce m.Environment m.MeleeRange |> snd)
-                  UnitList.View.rootRanges "ShootingRanges" model.Attacker (fun m -> State.reduce m.Environment m.ShootingRange |> snd)
-                  UnitList.View.rootRanges "ShootingRanges" model.Defender (fun m -> State.reduce m.Environment m.ShootingRange |> snd)
+                  UnitList.View.rootBoard model.Defender (State.defenderMap >> dispatch)
+                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges' model.Attacker (Attacker,"MeleeRanges")) |> opt
+                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges' model.Defender (Defender,"MeleeRanges")) |> opt
+                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges' model.Attacker (Attacker,"ShootingRanges")) |> opt
+                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges' model.Defender (Defender,"ShootingRanges")) |> opt
                   UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.root model.Defender (State.defenderMap >> dispatch) ] ] 
     let swap =  i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
@@ -50,7 +50,7 @@ let root model dispatch =
                  |> List.partition (fun (i,_) -> i % 2 = 0)
                  |> toColumns                
         //let sequence = model.Selected |> Option.map (fun selected -> div [] [ str selected.name ])
-        match model.SelectedAttacker with 
+        match model.SelectedAttacker |> Option.bind (fun name -> Map.tryFind name model.Attacker.Models) with 
         | None ->  titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
              let title = titleBar selected.Name
@@ -61,7 +61,7 @@ let root model dispatch =
                  attrs                 
                  |> List.map (fun attr -> MathHammer.Models.View.showAttributes attr dispatch)
                  |> div [ClassName "columns"]  
-             let evaluatedActions = actions |> List.choose (fun (name,_) -> model.SelectedAttacker |> Option.bind(fun m -> Map.tryFind (Attacker,name) m.Environment) |> Option.map(fun dist -> name,dist))
+             let evaluatedActions = actions |> List.choose (fun (name,_) -> Map.tryFind (Attacker,name) selected.Environment |> Option.map(fun dist -> name,dist))
              printfn "%A" ( model.Environment |> Map.toList )
              let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 
              let averagesDiv = columnsOf Probability.View.showAverages evaluatedActions

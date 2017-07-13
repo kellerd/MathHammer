@@ -9,9 +9,7 @@ type Model = { PosX:float
                Scale:string
                Size:int<mm>
                Attributes:list<string*Operation>
-               Environment:Environment
-               ShootingRange:Operation
-               MeleeRange:Operation }
+               Environment:Environment }
 
 
 type Msg = 

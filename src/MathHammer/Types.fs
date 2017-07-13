@@ -6,8 +6,8 @@ type Model = {
     Attacker : MathHammer.UnitList.Types.Model
     Defender : MathHammer.UnitList.Types.Model
     Board : int<ft> * int<ft>
-    SelectedAttacker : Option<MathHammer.Models.Types.Model>
-    SelectedDefender : Option<MathHammer.Models.Types.Model>
+    SelectedAttacker : Option<string>
+    SelectedDefender : Option<string>
     Environment : Map<string,Distribution<Result<int>>>
 }
 

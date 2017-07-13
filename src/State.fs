@@ -21,12 +21,24 @@ let urlUpdate (result: Option<Page>) model =
     model,Navigation.modifyUrl (toHash model.currentPage)
   | Some page ->
       { model with currentPage = page }, []
-
+open GameActions.Primitives.Types
 let init result =
   let (mathHammer, mathHammerCmd) = MathHammer.State.init()
   let (gameActions, gameActionsCmd) = GameActions.State.init()
-  let attackers = [initMeq "Marine" GameActions.Primitives.Types.Attacker; initMeq "Captain" GameActions.Primitives.Types.Attacker] |> List.map(fun (x,_) -> x.Name,{x with Scale = mathHammer.Attacker.Scale}) |> Map.ofList
-  let defenders = ['a'..'z'] |> List.map(fun c -> c.ToString(), { (fst <| initGeq (c.ToString()) GameActions.Primitives.Types.Defender) with Scale = mathHammer.Defender.Scale})  |> Map.ofList
+  let mapScale scope scale = 
+    List.map (fun x -> x scope)
+    >> List.mapi 
+        (fun i (x : MathHammer.Models.Types.Model,_) -> 
+          x.Name, {x with Attributes = 
+                            x.Attributes
+                            |> List.map (function (k,Let(env,_,_)) when k = "A" -> "A", (Let(env, "A" , Value (Int(i + 3)))) | x -> x)
+                          Scale = scale} )
+    >> Map.ofList
+
+
+  let attackers = [initMeq "Marine"; initMeq "Captain" ] 
+                  |> mapScale GameActions.Primitives.Types.Attacker mathHammer.Attacker.Scale
+  let defenders = ['a'..'z'] |> List.map (string >> initGeq)  |> mapScale GameActions.Primitives.Types.Defender mathHammer.Defender.Scale 
 
   let (model, cmd) =
     urlUpdate result
