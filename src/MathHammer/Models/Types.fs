@@ -16,6 +16,6 @@ type Model = { PosX:float
 
 type Msg = 
     | ChangePosition of float * float * string
-    | Rebind
+    | Rebind of Scope
     | Select
     | Let of Scope * string * Distribution<Result<int>>

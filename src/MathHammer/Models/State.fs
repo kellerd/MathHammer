@@ -128,7 +128,13 @@ and reduce (env:Environment) operation =
             Map.add (scope,var) result newEnv, result
 
 let update msg model =
-    match msg with
-    | ChangePosition (x,y,scale) -> {model with PosX = x; PosY = y; Scale=scale}, Cmd.none
-    | Select _ -> model, Cmd.none
-    | Msg.Let _ ->  model, Cmd.none
+      match msg with
+      | ChangePosition (x,y,scale) -> {model with PosX = x; PosY = y; Scale=scale}, Cmd.none
+      | Select _ -> model, Cmd.none
+      | Msg.Let _ ->  model, Cmd.none
+      | Rebind scope -> 
+            let (newEnv,cmdMap) = 
+                  model.Attributes |> List.fold (fun env (name,op) -> reduce env op |> fst) Map.empty<_,_>
+                 |> Map.partition (fun (scope',_) _ -> scope = scope')
+            let cmds = cmdMap |> Map.toList |> List.map (fun ((scope,name),result) -> Cmd.ofMsg (Msg.Let(scope,name,result)))
+            { model with Environment = newEnv }, Cmd.batch cmds

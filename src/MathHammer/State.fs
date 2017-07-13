@@ -5,7 +5,11 @@ open Types
 open GameActions.Primitives.Types
 let attackerMap msg = UnitListMsg(msg, Some "Attacker")
 let defenderMap msg = UnitListMsg(msg, Some "Defender")
-
+let rebindMsg scope map = 
+    Option.map (fun (m : Models.Types.Model) -> UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Rebind scope, m.Name)
+                                                |> map
+                                                |> Cmd.ofMsg )
+    >> Option.toList
 let init () : Model * Cmd<Types.Msg> =
     let (attacker,attackerCmd) = MathHammer.UnitList.State.init "Attacker" () 
     let (defender,defenderCmd) = MathHammer.UnitList.State.init "Defender" () 
@@ -26,6 +30,8 @@ let init () : Model * Cmd<Types.Msg> =
 
 let update msg model : Model * Cmd<Types.Msg> =
     match msg with
+    | UnitListMsg (UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Let(Global,name,dist), _), _) -> 
+        {model with Environment = Map.add name dist model.Environment}, Cmd.none
     | UnitListMsg (UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Select, m), Some "Attacker") -> 
         {model with SelectedAttacker = model.Attacker.Models |> Map.tryFind m}, Cmd.ofMsg RebindEnvironment
     | UnitListMsg (UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Select, m), Some "Defender") -> 
@@ -44,23 +50,17 @@ let update msg model : Model * Cmd<Types.Msg> =
                                                                    Cmd.map defenderMap ulCmdsd ]
     | Swap -> { model with Attacker = { model.Attacker with Models = Map.map (fun k m -> {m with Attributes = List.map(function (name,Let(Defender,str,op)) -> name,Let(Attacker,str,op) | op -> op ) m.Attributes    } ) model.Defender.Models}    
                            Defender = { model.Defender with Models = Map.map (fun k m -> {m with Attributes = List.map(function (name,Let(Attacker,str,op)) -> name,Let(Defender,str,op) | op -> op ) m.Attributes    } ) model.Attacker.Models} 
-                           SelectedAttacker = None }, Cmd.ofMsg ((fun msg -> UnitListMsg(msg, None)) UnitList.Types.Distribute)
-    | RebindEnvironment ->
-            let msgOp map = 
-                Option.map (fun (m : Models.Types.Model) -> UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Rebind, m.Name)
-                                                            |> map
-                                                            |> Cmd.ofMsg )
-                >> Option.toList
-        
-            {model with Environment = Map.empty<_,_>}, Cmd.batch (msgOp defenderMap model.SelectedDefender @ msgOp attackerMap model.SelectedAttacker) 
+                           SelectedAttacker = None }, 
+                           Cmd.batch [ Cmd.ofMsg ((fun msg -> UnitListMsg(msg, None)) UnitList.Types.Distribute)
+                                       Cmd.ofMsg RebindEnvironment ]
+    | RebindEnvironment ->      
+            {model with Environment = Map.empty<_,_>}, Cmd.batch [ Cmd.ofMsg BindDefender
+                                                                   Cmd.ofMsg BindAttacker ]
     | BindDefender -> 
         match model.SelectedDefender with 
         | None -> model, Cmd.none
-        | Some defender -> 
-            {model with Environment = defender.Attributes |> List.fold (fun env (name,op) -> reduce env op |> fst) model.Environment}, Cmd.none
-
+        | Some defender -> model, Cmd.batch <| rebindMsg Defender defenderMap model.SelectedDefender
     | BindAttacker -> 
         match model.SelectedAttacker with 
         | None -> model, Cmd.none
-        | Some attacker -> 
-            {model with Environment = attacker.Attributes |> List.fold (fun env (name,op) -> reduce env op |> fst) model.Environment}, Cmd.none
+        | Some attacker -> model, Cmd.batch <| rebindMsg Attacker attackerMap model.SelectedAttacker

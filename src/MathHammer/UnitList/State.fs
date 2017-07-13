@@ -48,8 +48,8 @@ let update msg model : Model * Cmd<Msg> =
                 |> Map.toList
                 |> distribute model.Width model.Height model.Deployment
                 |> List.map(fun((_,m),x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y,model.Scale)) m)
-                |> List.fold(fun (map,cmds) (m,cmd) -> (Map.add m.Name m map), cmd::cmds) (model.Models,[])
+                |> List.fold(fun (map,cmds) (m,cmd) -> (Map.add m.Name m map), (Cmd.map (fun msg -> ModelMsg(msg,m.Name)) cmd)::cmds) (model.Models,[])
             {model with Models = newModels}, Cmd.batch (modelsCmds)
     | ModelMsg(msg,key) -> 
             let (newModel, modelCmds) = model.Models.Item(key) |> MathHammer.Models.State.update msg
-            {model with Models = Map.add key newModel model.Models}, Cmd.map ModelMsg modelCmds
+            {model with Models = Map.add key newModel model.Models}, Cmd.map (fun msg -> ModelMsg(msg,key)) modelCmds
