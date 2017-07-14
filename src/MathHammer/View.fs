@@ -22,10 +22,10 @@ let root model dispatch =
                 [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
                 [ UnitList.View.rootBoard model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.rootBoard model.Defender (State.defenderMap >> dispatch)
-                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges' model.Attacker (Attacker,"MeleeRanges")) |> opt
-                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges' model.Defender (Defender,"MeleeRanges")) |> opt
-                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges' model.Attacker (Attacker,"ShootingRanges")) |> opt
-                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges' model.Defender (Defender,"ShootingRanges")) |> opt
+                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker (Attacker,"MeleeRange")) |> opt
+                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender (Defender,"MeleeRange")) |> opt
+                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker (Attacker,"ShootingRange")) |> opt
+                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender (Defender,"ShootingRange")) |> opt
                   UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.root model.Defender (State.defenderMap >> dispatch) ] ] 
     let swap =  i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []

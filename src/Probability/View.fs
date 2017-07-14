@@ -16,7 +16,7 @@ let normalizeBy by mapping low high xs =
 
 let opacity minProbability maxProbability prob = 
     if maxProbability - minProbability = 0.0 then 1.0
-    else normalize minProbability maxProbability 0.5 1. prob
+    else normalize minProbability maxProbability 0.6 1. prob
 let colourA (greenValue:float) alpha = sprintf "rgba(%d,%d,0,%f)" (0xFF - System.Convert.ToInt32 greenValue) (System.Convert.ToInt32(greenValue)) alpha
 let colour (greenValue:float) = sprintf "#%02X%02X00" (0xFF - System.Convert.ToInt32 greenValue) (System.Convert.ToInt32(greenValue)) 
 
@@ -42,7 +42,6 @@ let showProbabilitiesOfActions (key,dist) =
       section [ClassName "columns"]
           [ 
             div [ClassName "column"] [b  [] [str key]]
-            div [ClassName "column  is-narrow"] [str " => "]
             dist |> probabilities           
           ]
 
@@ -65,7 +64,6 @@ let showAverages (key, dist) =
       section [ClassName "columns"]
           [ 
             div [ClassName "column"] [b  [] [str key]]
-            div [ClassName "column"] [str " => "]
             dist |> Distribution.map(Result.map float) |> expectations           
           ]
 
@@ -77,6 +75,5 @@ let showSample (key, dist) =
       section [ClassName "columns"]
           [ 
             div [ClassName "column"] [b  [] [str key]]
-            div [ClassName "column"] [str " => "]
             dist |> sampleDistribution           
           ]  

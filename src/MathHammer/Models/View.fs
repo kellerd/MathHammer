@@ -68,7 +68,7 @@ let rangeStops (dist:Distribution<_>)  =
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
             [ g   [ Transform model.Scale ] display ]
-let rangeRoot' (scope,name) model =
+let rangeRoot (scope,name) model =
     let dist = Map.tryFind (scope,name) model.Environment
     let ranges id (min:int<mm>,max:int<mm>,stops) = 
         g [] 
@@ -84,16 +84,6 @@ let rangeRoot' (scope,name) model =
         >> ranges name
         >> List.singleton
         >> groupFor model )
-let rangeRoot model name dist =
-    let ranges id (min:int<mm>,max:int<mm>,stops) = 
-        g [] 
-          [   defs  [] 
-                    [ radialGradient [ Id id ]
-                                       stops ]
-              circle [Fill <| sprintf "url(#%s)" id
-                      R !^ (float max)] [] ]
-    [ ranges name <| rangeStops dist]  
-    |> groupFor model 
 let root model dispatch =
       let modelDisplay = 
             [ circle   [ R !^ (model.Size / 2 |> float) :> IProp

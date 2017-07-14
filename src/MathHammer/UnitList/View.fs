@@ -30,21 +30,13 @@ let rootBoard model dispatch =
                 ]
             ]
         ]
-let rootRanges' model key name = 
+let rootRanges model key name = 
     Map.tryFind name model.Models
-    |> Option.bind (MathHammer.Models.View.rangeRoot' key)
+    |> Option.bind (MathHammer.Models.View.rangeRoot key)
     |> Option.map (fun distance -> 
         g   [SVGAttr.Transform <| sprintf "translate(0,%d)" (model.OffsetY * 2) ]
             [ g  [SVGAttr.Transform model.Scale ] [ g  [ Stroke model.ElementStroke; StrokeWidth (!^ "1") ] [ distance ] ] ])
 
-let rootRanges name model reduceRange = 
-    let distances = 
-        model.Models 
-        |> Map.toList
-        |> List.map (fun (_,m) -> MathHammer.Models.View.rangeRoot m name (reduceRange m))
-        |> g  [ Stroke model.ElementStroke; StrokeWidth (!^ "1") ]
-    g   [SVGAttr.Transform <| sprintf "translate(0,%d)" (model.OffsetY * 2) ]
-        [ g  [SVGAttr.Transform model.Scale ] [ distances ] ]
 let root model dispatch =
     let models = 
         model.Models 
