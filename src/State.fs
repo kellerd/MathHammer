@@ -31,7 +31,7 @@ let init result =
         (fun i (x : MathHammer.Models.Types.Model,_) -> 
           x.Name, {x with Attributes = 
                             x.Attributes
-                            |> List.map (function (k,Let(env,_,_)) when k = "A" -> "A", (Let(env, "A" , Value (Int(i + 3)))) | x -> x)
+                            |> Map.map (fun k -> function Let(env,_,_) when k = "A" -> Let(env, "A" , Value (Int(i + 3))) | x -> x)
                           Scale = scale} )
     >> Map.ofList
 
@@ -50,11 +50,21 @@ let init result =
                      Cmd.map MathHammerMsg mathHammerCmd
                      Cmd.map GameActionsMsg gameActionsCmd ]
 
+open GameActions.GameActionsList.Types
+
+let mathHammerUpdate msg model =
+  let (mathHammer, mathHammerCmd) = MathHammer.State.update msg model.mathHammer
+  { model with mathHammer = mathHammer }, Cmd.map MathHammerMsg mathHammerCmd
+
 let update msg model =
   match msg with
+  | MathHammerMsg (MathHammer.Types.RebindEnvironment as msg) ->
+    let operations = model.gameActions.Actions |> fst |> List.map (function ReadWrite(str,op) -> str,op | ReadOnly (str,op) -> str,op) |> Map.ofList
+    mathHammerUpdate msg {model with mathHammer = {model.mathHammer with GlobalOperations = operations }}
   | MathHammerMsg msg ->
-      let (mathHammer, mathHammerCmd) = MathHammer.State.update msg model.mathHammer
-      { model with mathHammer = mathHammer }, Cmd.map MathHammerMsg mathHammerCmd
+      mathHammerUpdate msg model
   | GameActionsMsg(msg) ->
       let (gameActions, gameActionsCmd) = GameActions.State.update msg model.gameActions
-      { model with gameActions = gameActions }, Cmd.map GameActionsMsg gameActionsCmd
+      let rebindCmd = Cmd.ofMsg (MathHammer.Types.RebindEnvironment)
+      { model with gameActions = gameActions }, Cmd.batch [ Cmd.map MathHammerMsg rebindCmd
+                                                            Cmd.map GameActionsMsg gameActionsCmd]

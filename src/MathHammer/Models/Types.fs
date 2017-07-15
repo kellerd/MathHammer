@@ -8,7 +8,7 @@ type Model = { PosX:float
                Name:string
                Scale:string
                Size:int<mm>
-               Attributes:list<string*Operation>
+               Attributes:Map<string,Operation>
                Environment:Environment }
 
 

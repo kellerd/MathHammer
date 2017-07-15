@@ -56,9 +56,10 @@ let root model dispatch =
              let title = titleBar selected.Name
              let (attrs,actions) = 
                  selected.Attributes 
-                 |> List.partition (snd >> isCharacteristic)
+                 |> Map.partition (fun _ -> isCharacteristic)
+                 |> fun (x,y) -> Map.toList x, Map.toList y
              let attrDiv = 
-                 attrs                 
+                 attrs  
                  |> List.map (fun attr -> MathHammer.Models.View.showAttributes attr dispatch)
                  |> div [ClassName "columns"]  
              let evaluatedActions = actions |> List.choose (fun (name,_) -> Map.tryFind (Attacker,name) selected.Environment |> Option.map(fun dist -> name,dist))

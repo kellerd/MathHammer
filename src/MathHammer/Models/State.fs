@@ -16,7 +16,7 @@ let init name =
     { PosX=0.
       PosY=0.
       Name=name
-      Attributes = []
+      Attributes = Map.empty<_,_>
       Size = 28<mm>
       Scale = "scale(1,1)"
       Environment = Map.empty<_,_>}
@@ -35,7 +35,7 @@ let initMeq name env =
                       "MeleeRange", Let(env, "MeleeRange", Total <| OpList [Var(env,"M");Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))])
                       "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Total <| OpList [Value(Dice(D6));Value(Dice(D6))])) 
                       "Melee", hitMelee
-                      "Shots",shotsMelee ] }, Cmd.none
+                      "Shots",shotsMelee ] |> Map.ofList }, Cmd.none
 let initGeq name env =
     { (init name) with
         Attributes = ["M",  Let(env, "M",  Value(Int(5)))
@@ -47,7 +47,7 @@ let initGeq name env =
                       "A" , Let(env, "A" , Value (Int(1)))
                       "LD", Let(env, "LD", Value (Int(7)))
                       "SV", Let(env, "SV", DPlus (D6, 5))
-                      "ShootingRange", Let(env, "ShootingRange", Total <| OpList [Value(Int(6))])] }, Cmd.none
+                      "ShootingRange", Let(env, "ShootingRange", Total <| OpList [Value(Int(6))])]  |> Map.ofList }, Cmd.none
 let dPlus plus die = dist {
       let! roll = die
       let result = 
@@ -130,7 +130,8 @@ let update msg model =
       | Rebind scope -> 
             printfn "Got msg to rebind"
             let (newEnv,cmdMap) = 
-                  model.Attributes |> List.fold (fun env (name,op) -> reduce env op |> fst) Map.empty<_,_>
-                 |> Map.partition (fun (scope',_) _ -> scope = scope')
+                  model.Attributes 
+                  |> Map.fold (fun env _ -> reduce env >> fst) Map.empty<_,_>
+                  |> Map.partition (fun (scope',_) _ -> scope = scope')
             let cmds = cmdMap |> Map.toList |> List.map (fun ((scope,name),result) -> Cmd.ofMsg (Msg.Let(scope,name,result)))
             { model with Environment = newEnv }, Cmd.batch cmds
