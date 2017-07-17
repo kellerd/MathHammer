@@ -9,12 +9,13 @@ type Model = {
     SelectedAttacker : Option<string>
     SelectedDefender : Option<string>
     Environment : Map<string,Distribution<Result<int>>>
+    GlobalOperations : Map<string,Operation>
 }
 
 type Msg = 
     | UnitListMsg of MathHammer.UnitList.Types.Msg * string option
     | Swap
-    | RebindEnvironment
+    | RebindEnvironment 
     | BindDefender
     | BindAttacker
 

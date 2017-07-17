@@ -23,6 +23,7 @@ let init () : Model * Cmd<Types.Msg> =
             SelectedAttacker = None
             SelectedDefender = None
             Board = 6<ft>,4<ft>
+            GlobalOperations = Map.empty<_,_>
         }
     model, Cmd.batch [ Cmd.map attackerMap attackerCmd
                        Cmd.map defenderMap defenderCmd
@@ -50,14 +51,18 @@ let update msg model : Model * Cmd<Types.Msg> =
         let (uld,ulCmdsd) = UnitList.State.update msg model.Defender
         { model with Attacker = ula; Defender = uld }, Cmd.batch [ Cmd.map attackerMap ulCmdsa
                                                                    Cmd.map defenderMap ulCmdsd ]
-    | Swap -> { model with Attacker = { model.Attacker with Models = Map.map (fun k m -> {m with Attributes = List.map(function (name,Let(Defender,str,op)) -> name,Let(Attacker,str,op) | op -> op ) m.Attributes    } ) model.Defender.Models}    
-                           Defender = { model.Defender with Models = Map.map (fun k m -> {m with Attributes = List.map(function (name,Let(Attacker,str,op)) -> name,Let(Defender,str,op) | op -> op ) m.Attributes    } ) model.Attacker.Models} 
+    | Swap -> { model with Attacker = { model.Attacker with Models = Map.map (fun k m -> {m with Attributes = Map.map(fun name -> function Let(Defender,str,op) -> Let(Attacker,str,op) | op -> op ) m.Attributes    } ) model.Defender.Models}    
+                           Defender = { model.Defender with Models = Map.map (fun k m -> {m with Attributes = Map.map(fun name -> function Let(Attacker,str,op) -> Let(Defender,str,op) | op -> op ) m.Attributes    } ) model.Attacker.Models} 
                            SelectedAttacker = None }, 
                            Cmd.batch [ Cmd.ofMsg ((fun msg -> UnitListMsg(msg, None)) UnitList.Types.Distribute)
                                        Cmd.ofMsg RebindEnvironment ]
     | RebindEnvironment ->      
-            {model with Environment = Map.empty<_,_>}, Cmd.batch [ Cmd.ofMsg BindDefender
-                                                                   Cmd.ofMsg BindAttacker ]
+        let environment = 
+            model.GlobalOperations 
+            |> Map.fold(fun env _ op -> MathHammer.Models.State.reduce env op |> fst) Map.empty<_,_>
+            |> Map.partition (fun (scope,_) _ -> scope = Global)
+        {model with Environment = Map.empty<_,_>}, Cmd.batch [ Cmd.ofMsg BindDefender
+                                                               Cmd.ofMsg BindAttacker ]
     | BindDefender -> 
         match model.SelectedDefender with 
         | None -> model, Cmd.none
