@@ -1,6 +1,7 @@
 module MathHammer.Types
 open Result
 open GameActions.Primitives.Types
+open MathHammer.Models.Types
 open Distribution
 type Model = {
     Attacker : MathHammer.UnitList.Types.Model
@@ -8,8 +9,8 @@ type Model = {
     Board : int<ft> * int<ft>
     SelectedAttacker : Option<string>
     SelectedDefender : Option<string>
-    Environment : Map<string,Distribution<Result<int>>>
-    GlobalOperations : Map<string,Operation>
+    Environment : Environment
+    GlobalOperations : Map<string,Order*Operation>
 }
 
 type Msg = 

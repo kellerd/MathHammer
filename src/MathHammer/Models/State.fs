@@ -32,22 +32,30 @@ let initMeq name env =
                       "A" , Let(env, "A" , Value (Int(2)))
                       "LD", Let(env, "LD", Value (Int(8)))
                       "SV", Let(env, "SV", DPlus (D6, 3))
+                      "Test", Let(env,"Test", Var(Attacker, "WS"))
+                      "MeleeRange", Let(env, "MeleeRange", Total <| OpList [Var(env,"M");Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))])
+                      "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Total <| OpList [Value(Dice(D6));Value(Dice(D6))]))
+                      "Melee",  hitMelee
+                      "Shots", shotsMelee ] 
+                      |> List.mapi(fun i (k,op) -> k,(i,op)) |> Map.ofList }, Cmd.none
+let initGeq name env =
+    { (init name) with
+        Attributes = ["M",  Let(env, "M",  Value(Int(6)))
+                      "WS", Let(env, "WS", DPlus (D6, 3))
+                      "BS", Let(env, "BS", DPlus (D6, 3))
+                      "S" , Let(env, "S" , Value (Int(4)))
+                      "T" , Let(env, "T" , Value (Int(4)))
+                      "W" , Let(env, "W" , Value (Int(1)))
+                      "A" , Let(env, "A" , Value (Int(2)))
+                      "LD", Let(env, "LD", Value (Int(8)))
+                      "SV", Let(env, "SV", DPlus (D6, 3))
+                      "Test", Let(env,"Test", Var(Attacker, "WS"))
                       "MeleeRange", Let(env, "MeleeRange", Total <| OpList [Var(env,"M");Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))])
                       "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Total <| OpList [Value(Dice(D6));Value(Dice(D6))])) 
                       "Melee", hitMelee
-                      "Shots",shotsMelee ] |> Map.ofList }, Cmd.none
-let initGeq name env =
-    { (init name) with
-        Attributes = ["M",  Let(env, "M",  Value(Int(5)))
-                      "WS", Let(env, "WS", DPlus (D6, 4))
-                      "BS", Let(env, "BS", DPlus (D6, 4))
-                      "S" , Let(env, "S" , Value (Int(3)))
-                      "T" , Let(env, "T" , Value (Int(3)))
-                      "W" , Let(env, "W" , Value (Int(1)))
-                      "A" , Let(env, "A" , Value (Int(1)))
-                      "LD", Let(env, "LD", Value (Int(7)))
-                      "SV", Let(env, "SV", DPlus (D6, 5))
-                      "ShootingRange", Let(env, "ShootingRange", Total <| OpList [Value(Int(6))])]  |> Map.ofList }, Cmd.none
+                      "Shots", shotsMelee
+                      "ShootingRange", Let(env, "ShootingRange", Total <| OpList [Value(Int(6))])]
+                      |> List.mapi(fun i (k,op) -> k,(i,op)) |> Map.ofList }, Cmd.none
 let dPlus plus die = dist {
       let! roll = die
       let result = 
@@ -122,16 +130,39 @@ and reduce (env:Environment) operation =
             let (newEnv,result) = reduce env op
             Map.add (scope,var) result newEnv, result
 
+let rec subst = function
+| arg, s, Var (scope,v) -> if (scope,v) = s then arg else Var (scope,v)
+| arg, s, App (f, a) -> App(subst (arg,s,f), subst (arg,s,a))
+| arg, s, Lam (sc, p, x) -> if (sc,p) = s then Lam (sc,p,x) else Lam(sc,p, subst(arg,s,x))
+
+type ExprResult = Normal | Next of Operation
+
+let rec reduce' = function
+| App (Lam(sc,p,x),a) -> Next (subst (a, (sc,p), x))
+| Var _ -> Normal
+| Lam (sc,p, x) -> 
+      match reduce' x with 
+      | Normal -> Normal
+      | Next nx -> Next(Lam (sc,p,nx))
+| App (f, a) -> 
+      match reduce' f with 
+      | Next nf -> Next (App (nf, a))
+      | Normal ->     
+            match reduce' a with   
+            | Next na -> Next (App (f, na))
+            | Normal -> Normal              
+
+
 let update msg model =
       match msg with
       | ChangePosition (x,y,scale) -> {model with PosX = x; PosY = y; Scale=scale}, Cmd.none
       | Select _ -> model, Cmd.none
       | Msg.Let _ ->  model, Cmd.none
-      | Rebind scope -> 
-            printfn "Got msg to rebind"
-            let (newEnv,cmdMap) = 
+      | Rebind (scope,initial) -> 
+            let newEnv = 
                   model.Attributes 
-                  |> Map.fold (fun env _ -> reduce env >> fst) Map.empty<_,_>
-                  |> Map.partition (fun (scope',_) _ -> scope = scope')
-            let cmds = cmdMap |> Map.toList |> List.map (fun ((scope,name),result) -> Cmd.ofMsg (Msg.Let(scope,name,result)))
+                  |> Map.toList
+                  |> List.sortBy (fun (_,(ord,_)) -> ord)
+                  |> List.fold(fun env -> snd >> snd >> reduce env >> fst) initial
+            let cmds = newEnv |> Map.filter (fun (scope,name) _ -> scope = Global) |> Map.toList |> List.map (fun ((scope,name),result) -> Cmd.ofMsg (Msg.Let(scope,name,result)))
             { model with Environment = newEnv }, Cmd.batch cmds

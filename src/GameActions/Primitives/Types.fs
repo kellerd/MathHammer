@@ -20,6 +20,8 @@ type Operation =
     | Count of ManyOp
     | Value of GamePrimitive
     | Var of Scope * string
+    | App of f:Operation * value:Operation
+    | Lam of Scope * param:string * body:Operation
     | DPlus of Die * int 
     | NoValue 
     | Let of Scope * string * Operation

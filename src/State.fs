@@ -31,7 +31,7 @@ let init result =
         (fun i (x : MathHammer.Models.Types.Model,_) -> 
           x.Name, {x with Attributes = 
                             x.Attributes
-                            |> Map.map (fun k -> function Let(env,_,_) when k = "A" -> Let(env, "A" , Value (Int(i + 3))) | x -> x)
+                            |> Map.map (fun k -> function i,Let(env,_,_) when k = "A" -> i,Let(env, "A" , Value (Int(i + 3))) | i,x -> i,x)
                           Scale = scale} )
     >> Map.ofList
 
@@ -59,7 +59,7 @@ let mathHammerUpdate msg model =
 let update msg model =
   match msg with
   | MathHammerMsg (MathHammer.Types.RebindEnvironment as msg) ->
-    let operations = model.gameActions.Actions |> fst |> List.map (function ReadWrite(str,op) -> str,op | ReadOnly (str,op) -> str,op) |> Map.ofList
+    let operations = model.gameActions.Actions |> fst |> List.mapi (fun i -> function ReadWrite(str,op) -> str,(i,op) | ReadOnly (str,op) -> str,(i,op)) |> Map.ofList
     mathHammerUpdate msg {model with mathHammer = {model.mathHammer with GlobalOperations = operations }}
   | MathHammerMsg msg ->
       mathHammerUpdate msg model
