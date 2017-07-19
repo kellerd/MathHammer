@@ -168,6 +168,29 @@ let rename all (t, s, x) =
         | Let(sc,v,op) -> match halp op with 
                           | Renamed ro -> Renamed(Let(sc,v,ro))
                           | _ -> Fine
+        | Call(DPlus _)-> Fine
+        | Value _ -> Fine
+        | Call (Total (Unfold(op,op2))) -> 
+                match halp op with
+                | Renamed rop -> Renamed (Call (Total (Unfold(rop,op2))))
+                | _ ->
+                    match halp op2 with
+                        | Renamed rop2 -> Renamed (Call (Total (Unfold(op,rop2))))
+                        | _ -> Fine
+        | Call (Product (Unfold(op,op2))) -> 
+                match halp op with
+                | Renamed rop -> Renamed (Call (Product (Unfold(rop,op2))))
+                | _ ->
+                    match halp op2 with
+                        | Renamed rop2 -> Renamed (Call (Product (Unfold(op,rop2))))
+                        | _ -> Fine
+        | Call (Count (Unfold(op,op2))) -> 
+                match halp op with
+                | Renamed rop -> Renamed (Call (Count (Unfold(rop,op2))))
+                | _ ->
+                    match halp op2 with
+                        | Renamed rop2 -> Renamed (Call (Count (Unfold(op,rop2))))
+                        | _ -> Fine
 
     match halp x,s with
         | Renamed x,(sc,s) -> Renamed (App (Lam (sc, s, x), t))
