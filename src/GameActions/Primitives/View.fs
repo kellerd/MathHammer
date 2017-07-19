@@ -11,14 +11,19 @@ let rec displayManyOp ops =
     match ops with
     | OpList ops -> List.map unparse ops |> String.concat " + "
     | Unfold (op,op2) -> sprintf "%s, %s times" (unparse op) (unparse op2)
-and unparse operation = 
-    match operation with 
+and call func = 
+    match func with 
     | Product (OpList(ops)) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Product(%dD6)" (List.length ops)
     | Product (OpList(ops)) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Product(%dD3)" (List.length ops)
     | Product (ops)  -> sprintf "Product(%s)" (displayManyOp ops)
     | Total (OpList(ops)) when List.distinct ops = [Value(Dice(D6))] -> sprintf "Total(%dD6)" (List.length ops)
     | Total (OpList(ops)) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)
     | Total (ops)  -> sprintf "Total(%s)" (displayManyOp ops)
+    | Count(ops) -> sprintf "(Passes,Fails) in (%s)" (displayManyOp ops)
+    
+and unparse operation = 
+    match operation with 
+    | Call (f) -> call f
     | Value(Dice(i))-> string i
     | Value(Int(i)) -> string i
     | Value(NoValue) -> "--"
@@ -27,12 +32,11 @@ and unparse operation =
     | DPlus(Reroll(is,D6), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
     | DPlus(Reroll(is,D3), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
     | DPlus(Reroll(is,Reroll(is2,d)), i) -> unparse (DPlus(Reroll(List.distinct (is @ is2),d),i))
-    | Count(ops) -> sprintf "(Passes,Fails) in (%s)" (displayManyOp ops)
     | Var (scope,v) -> sprintf "%A.%s" scope v
     | Lam(sc,p,x) -> sprintf "fun %s -> %s" p (unparse x)
     | App(Lam(sc,p,x),a) -> paren (unparse (Lam(sc,p,x))) + " " + argstring a
     | App(f,a) -> unparse f + " " + argstring a
-    | Let(env, str, op) ->  sprintf "%A.%s = %s" env str (unparse op)
+    | Let(env, str, op) ->  sprintf "%s" (unparse op)
 and argstring = function 
     | Var (scope,v) -> sprintf "%A.%s" scope v
     | x -> paren (unparse x) 
@@ -40,15 +44,15 @@ and argstring = function
 let alternateRoot model dispatch =
     let rec displayOperation operation = 
         match operation with 
-        | Product (ops) -> str ""
         | DPlus (_,i) -> str ""
-        | Total (OpList(ops)) when List.distinct ops = [Value(Dice(D3))] -> str ""
-        | Total (OpList(ops)) when List.distinct ops = [Value(Dice(D6))] -> str ""
-        | Total (ops)  -> str ""
+        | Call(Product (ops)) -> str ""
+        | Call(Total (OpList(ops))) when List.distinct ops = [Value(Dice(D3))] -> str ""
+        | Call(Total (OpList(ops))) when List.distinct ops = [Value(Dice(D6))] -> str ""
+        | Call(Total (ops)) -> str ""
         | Value(Dice(i))-> str ""
         | Value(Int(i)) -> str ""
         | Value(NoValue) -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []
-        | Count(_) -> str ""
+        | Call(Count(_)) -> str ""
         | Value(_) ->     str ""
         | Var(_) ->    str ""
         | Let(_) -> str ""

@@ -6,11 +6,11 @@ open GameActions.Primitives.Types
 open Distribution
 open Result
 
-let wsTest = Count(OpList[Var(Attacker, "WS")])
+let wsTest = Call <| Count(OpList[Var(Attacker, "WS")])
 let hitMelee = 
-    Let(Attacker, "Melee", Let(Attacker, "MeleeHits", Total(Unfold(wsTest, Var(Attacker, "A")))))
+    Let(Attacker, "Melee", Let(Attacker, "MeleeHits", Call <| Total(Unfold(wsTest, Var(Attacker, "A")))))
 let shotsMelee = 
-    Let(Attacker, "Shots", Let(Attacker, "Shots", Count <| OpList [Product <| OpList [Var(Attacker, "A"); Var(Attacker, "A")]]))
+    Let(Attacker, "Shots", Let(Attacker, "Shots", Call(Count <| OpList [Call (Product <| OpList [Var(Attacker, "A"); Var(Attacker, "A")])])))
 
 let init name =
     { PosX=0.
@@ -33,8 +33,8 @@ let initMeq name env =
                       "LD", Let(env, "LD", Value (Int(8)))
                       "SV", Let(env, "SV", DPlus (D6, 3))
                       "Test", Let(env,"Test", Var(Attacker, "WS"))
-                      "MeleeRange", Let(env, "MeleeRange", Total <| OpList [Var(env,"M");Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))])
-                      "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Total <| OpList [Value(Dice(D6));Value(Dice(D6))]))
+                      "MeleeRange", Let(env, "MeleeRange", Call (Total <| OpList [Var(env,"M");Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))]))
+                      "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Call(Total <| OpList [Value(Dice(D6));Value(Dice(D6))])))
                       "Melee",  hitMelee
                       "Shots", shotsMelee ] 
                       |> List.mapi(fun i (k,op) -> k,(i,op)) |> Map.ofList }, Cmd.none
@@ -50,11 +50,11 @@ let initGeq name env =
                       "LD", Let(env, "LD", Value (Int(8)))
                       "SV", Let(env, "SV", DPlus (D6, 3))
                       "Test", Let(env,"Test", Var(Attacker, "WS"))
-                      "MeleeRange", Let(env, "MeleeRange", Total <| OpList [Var(env,"M");Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))])
-                      "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Total <| OpList [Value(Dice(D6));Value(Dice(D6))])) 
+                      "MeleeRange", Let(env, "MeleeRange", Call(Total <| OpList [Var(env,"M");Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))]))
+                      "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Call(Total <| OpList [Value(Dice(D6));Value(Dice(D6))])) )
                       "Melee", hitMelee
                       "Shots", shotsMelee
-                      "ShootingRange", Let(env, "ShootingRange", Total <| OpList [Value(Int(6))])]
+                      "ShootingRange", Let(env, "ShootingRange", Call(Total <| OpList [Value(Int(6))]))]
                       |> List.mapi(fun i (k,op) -> k,(i,op)) |> Map.ofList }, Cmd.none
 let dPlus plus die = dist {
       let! roll = die
@@ -110,21 +110,24 @@ and fold (folder: Result<int>->Result<int>->Result<int>) env state ops =
                   let! b' = reduced2
                   return folder a' b'                              
             }) state
-and reduce (env:Environment) (operation:Operation) = 
-      match operation with
-      | Value v -> (env,reduceGamePrimitive v) 
-      | DPlus(d, moreThan) -> env,reduceDie d |> dPlus moreThan
-      | Total (Unfold(op,op2)) -> unfold Total env op op2 
+and call env func =
+      match func with 
+      | Total (Unfold(op,op2)) -> unfold (Total >> Call) env op op2 
       | Total (OpList ops) -> fold (Result.add) env (Pass 0) ops 
-      | Product (Unfold(op,op2)) -> unfold Product env op op2 
+      | Product (Unfold(op,op2)) -> unfold (Product >> Call) env op op2 
       | Product (OpList ops) -> fold (Result.mult) env (Pass 1) ops
-      | Count (Unfold(op,op2)) -> unfold Count env op op2 
+      | Count (Unfold(op,op2)) -> unfold (Count >> Call) env op op2 
       | Count (OpList ops) -> 
             let addCounts r1 r2 =
                   let toCount result =  
                         match result with | Pass _ -> Tuple (1,0) | Fail _ ->  Tuple(0,1) | Tuple _ as x -> x | _ -> failwith "Cannot count these" 
                   Result.add r1 (toCount r2)                      
             fold addCounts env (Tuple(0,0)) ops 
+and reduce (env:Environment) (operation:Operation) = 
+      match operation with
+      | Value v -> (env,reduceGamePrimitive v) 
+      | DPlus(d, moreThan) -> env,reduceDie d |> dPlus moreThan
+      | Call(func) -> call env func
       | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> reduce env (Value(NoValue)) |> snd )
       | Let(scope, var, op) -> 
             let (newEnv,result) = reduce env op

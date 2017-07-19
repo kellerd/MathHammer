@@ -16,19 +16,17 @@ type GamePrimitive =
     | Dice of Die
 
 type Operation = 
-    | Product of ManyOp
-    | Total of ManyOp
-    | Count of ManyOp
+    | Call of Call
     | Value of GamePrimitive
     | Var of Scope * string
     | App of f:Operation * value:Operation
     | Lam of Scope * param:string * body:Operation
     | DPlus of Die * int 
     | Let of Scope * string * Operation
-// and Call = 
-//     | Product of ManyOp
-//     | Total of ManyOp
-//     | Count of ManyOp
+and Call = 
+    | Product of ManyOp
+    | Total of ManyOp
+    | Count of ManyOp
 and ManyOp =
     | OpList of Operation list
     | Unfold of Operation * Operation
