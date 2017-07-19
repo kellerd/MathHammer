@@ -81,14 +81,33 @@ let reduceGamePrimitive = function
       | Dice d -> reduceDie d  |> Distribution.map Pass
       | NoValue -> always 0  |> Distribution.map Fail
 open Determinism      
-let rec subst = function
-| arg, s, Var (scope,v) -> if (scope,v) = s then arg else Var (scope,v)
-| arg, s, App (f, a) -> App(subst (arg,s,f), subst (arg,s,a))
-| arg, s, Lam (sc, p, x) -> if (sc,p) = s then Lam (sc,p,x) else Lam(sc,p, subst(arg,s,x))
+let rec subst arg s = function
+      | Var (scope,v) -> if (scope,v) = s then arg else Var (scope,v)
+      | App (f, a) -> App(subst arg s f, subst arg s a)
+      | Lam (sc, p, x) -> if (sc,p) = s then Lam (sc,p,x) else Lam(sc,p, subst arg s x)
+      | Call(Total(OpList ops)) -> List.map (subst arg s) ops |> OpList |> Total |> Call
+      | Call(Count(OpList ops)) -> List.map (subst arg s) ops |> OpList |> Count |> Call
+      | Call(Product(OpList ops)) -> List.map (subst arg s) ops |> OpList |> Product |> Call
+      | Call(Total(Unfold(op,op2))) -> Call(Total(Unfold(subst arg s op, subst arg s op2)))
+      | Call(Count(Unfold(op,op2)))  -> Call(Count(Unfold(subst arg s op, subst arg s op2))) 
+      | Call(Product(Unfold(op,op2)))  -> Call(Product(Unfold(subst arg s op, subst arg s op2)))
+      | Call(DPlus _ ) as op -> op
+      | Value _ as op -> op
+      | Let(sc, v, op) -> Let(sc,v,subst arg s op)
+
 let rec allIds = function
     | Var (sc, v) -> Set.singleton (sc,v)
     | Lam (sc, p, x) -> Set.add (sc,p) (allIds x)
     | App (f, a) -> Set.union (allIds f) (allIds a)
+    | Call(Total(OpList ops)) 
+    | Call(Count(OpList ops))  
+    | Call(Product(OpList ops)) -> List.fold(fun s op -> op |> allIds |> Set.union s) Set.empty<_> ops 
+    | Call(DPlus _ ) -> Set.empty<_>
+    | Call(Total(Unfold(op,op2)))
+    | Call(Count(Unfold(op,op2)))  
+    | Call(Product(Unfold(op,op2)))  -> Set.union (allIds op) (allIds op2)
+    | Value(_) -> Set.empty<_>
+    | Let(sc, n, op) -> allIds op |> Set.add (sc,n)
 
 let freeIds x =
     let rec halp bound = function
@@ -145,7 +164,10 @@ let rename all (t, s, x) =
             then Fine
             else
                 let (sc,newP) = uniqueId all (sc,p)
-                Renamed (Lam (sc, newP, subst (Var (sc,newP), (sc,p), b)))
+                Renamed (Lam (sc, newP, subst (Var (sc,newP)) (sc,p) b))
+        | Let(sc,v,op) -> match halp op with 
+                          | Renamed ro -> Renamed(Let(sc,v,ro))
+                          | _ -> Fine
 
     match halp x,s with
         | Renamed x,(sc,s) -> Renamed (App (Lam (sc, s, x), t))
