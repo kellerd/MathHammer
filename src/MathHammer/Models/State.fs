@@ -137,20 +137,88 @@ let rec subst = function
 
 type ExprResult = Normal | Next of Operation
 
-let rec reduce' = function
-| App (Lam(sc,p,x),a) -> Next (subst (a, (sc,p), x))
-| Var _ -> Normal
-| Lam (sc,p, x) -> 
-      match reduce' x with 
-      | Normal -> Normal
-      | Next nx -> Next(Lam (sc,p,nx))
-| App (f, a) -> 
-      match reduce' f with 
-      | Next nf -> Next (App (nf, a))
-      | Normal ->     
-            match reduce' a with   
-            | Next na -> Next (App (f, na))
-            | Normal -> Normal              
+
+let rec allIds = function
+    | Var (sc, v) -> Set.singleton (sc,v)
+    | Lam (sc, p, x) -> Set.add (sc,p) (allIds x)
+    | App (f, a) -> Set.union (allIds f) (allIds a)
+
+let freeIds x =
+    let rec halp bound = function
+        | Var (sc, v) -> if Set.contains (sc,v) bound then Set.empty else Set.singleton (sc,v)
+        | Lam (sc,p, x) -> halp (Set.add (sc,p) bound) x
+        | App (f, a) -> Set.union (halp bound f) (halp bound a)
+    halp Set.empty x
+type ConflictResult =
+    | Fine
+    | Renamed of Operation
+
+let isDigit c = match c with | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' -> true | _ -> false 
+let idNum (s:string) =
+    let rec halp i =
+        if i = -1 || not (isDigit s.[i])
+        then i
+        else halp (i - 1)
+    let stop = s.Length - 1
+    let res = halp stop
+    if res = stop
+    then s, 1
+    else s.[0 .. res], int(s.[res + 1 .. stop])
+
+let uniqueId taken (sc,s) =
+    let prefix, start = idNum s
+    let rec halp i =
+        let newId = sc,(prefix + string(i))
+        if Set.contains newId taken
+        then halp (i + 1)
+        else newId
+    halp (start + 1)
+let rename all (t, s, x) =
+    let free = freeIds t
+    let rec halp = function
+        | Var (sc, v) -> Fine
+        | App (f, a) ->
+            match halp f with
+                | Renamed rf -> Renamed (App (rf, a))
+                | _ ->
+                    match halp a with
+                        | Renamed ra -> Renamed (App (f, ra))
+                        | _ -> Fine
+        | Lam (sc, p, b) ->
+            if ((sc, p) = s) || (not (Set.contains s (freeIds b))) || (not (Set.contains (sc, p) free))
+            then Fine
+            else
+                let (sc,newP) = uniqueId all (sc,p)
+                Renamed (Lam (sc, newP, subst (Var (sc,newP), (sc,p), b)))
+
+    match halp x,s with
+        | Renamed x,(sc,s) -> Renamed (App (Lam (sc, s, x), t))
+        | _ -> Fine
+
+let reduce'' x =
+      let all = allIds x
+      let rec halp = function
+            | Var _ -> Normal
+            | App (Lam (sc, p, b), a) ->
+                  let redex = a, (sc,p), b
+                  match rename all redex with
+                      | Renamed x -> Next x
+                      | Fine -> Next (subst redex)
+            | App (f, a) ->
+                  match halp f with
+                      | Next rf -> Next (App (rf, a))
+                      | _ ->
+                          match halp a with
+                              | Next ra -> Next (App (f, ra))
+                              | _ -> Normal
+            | Lam (sc, p, b) ->
+                  match halp b with
+                      | Next b -> Next (Lam (sc, p, b))
+                      | _ -> Normal
+      halp x
+
+
+
 
 
 let update msg model =
