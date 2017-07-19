@@ -58,12 +58,12 @@ let root model dispatch =
                  selected.Attributes 
                  |> Map.partition (fun _ -> snd >> isCharacteristic)
                  |> fun (x,y) -> Map.toList x, Map.toList y
+                 |> fun (x,y) -> (List.sortBy (snd >> fst) x), (List.sortBy (snd >> fst) y)
              let attrDiv = 
                  attrs  
                  |> List.map (fun (key,(_,op)) -> MathHammer.Models.View.showAttributes (key,op) dispatch)
                  |> div [ClassName "columns"]  
              let evaluatedActions = actions |> List.choose (fun (name,_) -> Map.tryFind (Attacker,name) selected.Environment |> Option.map(fun dist -> name,dist))
-             printfn "%A" ( model.Environment |> Map.toList )
              let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 
              let averagesDiv = columnsOf Probability.View.showAverages evaluatedActions
              let probabiltiesActionsDiv = columnsOf Probability.View.showProbabilitiesOfActions evaluatedActions
