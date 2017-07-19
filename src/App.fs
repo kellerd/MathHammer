@@ -71,7 +71,7 @@ Program.mkProgram init update root
 //-:cnd
 #if DEBUG
 |> Program.withConsoleTrace
-//|> Program.withDebugger
+//|> Program.withDebuggerAt (Debugger.Remote("localhost",8097))
 #endif
 //+:cnd
 |> Program.run
