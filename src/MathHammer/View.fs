@@ -10,8 +10,8 @@ open Types
 open GameActions.Primitives.Types
   
 let isCharacteristic = function 
-                        | Value(NoValue)            | Value(_)             | DPlus(_) 
-                        | Let(_, _, Value(_)) | Let(_, _, DPlus(_)) | Let(_, _, DPlus(_)) -> true
+                        | Value(NoValue)            | Value(_)             | Call(DPlus(_) )
+                        | Let(_, _, Value(_)) | Let(_, _, Call(DPlus(_))) | Let(_, _, Call(DPlus(_))) -> true
                         | _ -> false
 
 let root model dispatch =

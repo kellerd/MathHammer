@@ -21,12 +21,13 @@ type Operation =
     | Var of Scope * string
     | App of f:Operation * value:Operation
     | Lam of Scope * param:string * body:Operation
-    | DPlus of Die * int 
     | Let of Scope * string * Operation
 and Call = 
     | Product of ManyOp
     | Total of ManyOp
     | Count of ManyOp
+    | DPlus of Die * int 
+    
 and ManyOp =
     | OpList of Operation list
     | Unfold of Operation * Operation

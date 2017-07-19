@@ -29,6 +29,12 @@ let inline mult x y =
         | Fail c, Tuple(a',c') | Tuple(a',c'),Fail c -> Tuple(c * a', c * c')
         | Tuple(a,c),Tuple(b,d) -> Tuple(a * b,c * d)
     mult x y   
+let inline count x y = 
+    let addCounts r1 r2 =
+          let toCount result =  
+                match result with | Pass _ -> Tuple (1,0) | Fail _ ->  Tuple(0,1) | Tuple _ as x -> x | _ -> failwith "Cannot count these" 
+          add r1 (toCount r2)  
+    addCounts x y          
 // type Result< ^a when ^a: (static member Zero : ^a)> with
 //     static member inline(+) (x,y) = add x y
 //     static member inline(*) (x,y) = mult x y

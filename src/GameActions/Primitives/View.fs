@@ -20,6 +20,11 @@ and call func =
     | Total (OpList(ops)) when List.distinct ops = [Value(Dice(D3))] -> sprintf "Total(%dD3)" (List.length ops)
     | Total (ops)  -> sprintf "Total(%s)" (displayManyOp ops)
     | Count(ops) -> sprintf "(Passes,Fails) in (%s)" (displayManyOp ops)
+    | DPlus (D6,i) -> string i + "+"
+    | DPlus (D3,i) -> string i + "+ on D3"
+    | DPlus(Reroll(is,D6), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
+    | DPlus(Reroll(is,D3), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
+    | DPlus(Reroll(is,Reroll(is2,d)), i) -> unparse <| Call(DPlus(Reroll(List.distinct (is @ is2),d),i))
     
 and unparse operation = 
     match operation with 
@@ -27,11 +32,6 @@ and unparse operation =
     | Value(Dice(i))-> string i
     | Value(Int(i)) -> string i
     | Value(NoValue) -> "--"
-    | DPlus (D6,i) -> string i + "+"
-    | DPlus (D3,i) -> string i + "+ on D3"
-    | DPlus(Reroll(is,D6), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
-    | DPlus(Reroll(is,D3), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
-    | DPlus(Reroll(is,Reroll(is2,d)), i) -> unparse (DPlus(Reroll(List.distinct (is @ is2),d),i))
     | Var (scope,v) -> sprintf "%A.%s" scope v
     | Lam(sc,p,x) -> sprintf "fun %s -> %s" p (unparse x)
     | App(Lam(sc,p,x),a) -> paren (unparse (Lam(sc,p,x))) + " " + argstring a
@@ -44,7 +44,7 @@ and argstring = function
 let alternateRoot model dispatch =
     let rec displayOperation operation = 
         match operation with 
-        | DPlus (_,i) -> str ""
+        | Call(DPlus (_,i)) -> str ""
         | Call(Product (ops)) -> str ""
         | Call(Total (OpList(ops))) when List.distinct ops = [Value(Dice(D3))] -> str ""
         | Call(Total (OpList(ops))) when List.distinct ops = [Value(Dice(D6))] -> str ""

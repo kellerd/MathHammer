@@ -24,14 +24,14 @@ let init name =
 let initMeq name env =
     { (init name) with 
         Attributes = ["M",  Let(env, "M",  Value(Int(6)))
-                      "WS", Let(env, "WS", DPlus (D6, 3))
-                      "BS", Let(env, "BS", DPlus (D6, 3))
+                      "WS", Let(env, "WS", Call(DPlus (D6, 3)))
+                      "BS", Let(env, "BS", Call(DPlus (D6, 3)))
                       "S" , Let(env, "S" , Value (Int(4)))
                       "T" , Let(env, "T" , Value (Int(4)))
                       "W" , Let(env, "W" , Value (Int(1)))
                       "A" , Let(env, "A" , Value (Int(2)))
                       "LD", Let(env, "LD", Value (Int(8)))
-                      "SV", Let(env, "SV", DPlus (D6, 3))
+                      "SV", Let(env, "SV", Call(DPlus (D6, 3)))
                       "Test", Let(env,"Test", Var(Attacker, "WS"))
                       "MeleeRange", Let(env, "MeleeRange", Call (Total <| OpList [Var(env,"M");Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))]))
                       "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Call(Total <| OpList [Value(Dice(D6));Value(Dice(D6))])))
@@ -41,14 +41,14 @@ let initMeq name env =
 let initGeq name env =
     { (init name) with
         Attributes = ["M",  Let(env, "M",  Value(Int(6)))
-                      "WS", Let(env, "WS", DPlus (D6, 3))
-                      "BS", Let(env, "BS", DPlus (D6, 3))
+                      "WS", Let(env, "WS", Call(DPlus (D6, 3)))
+                      "BS", Let(env, "BS", Call(DPlus (D6, 3)))
                       "S" , Let(env, "S" , Value (Int(4)))
                       "T" , Let(env, "T" , Value (Int(4)))
                       "W" , Let(env, "W" , Value (Int(1)))
                       "A" , Let(env, "A" , Value (Int(2)))
                       "LD", Let(env, "LD", Value (Int(8)))
-                      "SV", Let(env, "SV", DPlus (D6, 3))
+                      "SV", Let(env, "SV", Call(DPlus (D6, 3)))
                       "Test", Let(env,"Test", Var(Attacker, "WS"))
                       "MeleeRange", Let(env, "MeleeRange", Call(Total <| OpList [Var(env,"M");Value(Dice(D6));Value(Dice(D6));Value(Dice(D6))]))
                       "Psychic", Let(env, "Psychic", Let(env, "PsychicResult", Call(Total <| OpList [Value(Dice(D6));Value(Dice(D6))])) )
@@ -81,66 +81,10 @@ let reduceGamePrimitive = function
       | Dice d -> reduceDie d  |> Distribution.map Pass
       | NoValue -> always 0  |> Distribution.map Fail
 open Determinism      
-
-let rec unfold callback env op op2  = 
-      let (env,times) = reduce env op2  
-      let newTimes = 
-            times |> Distribution.map(fun times' ->
-                        let newOps = 
-                              match times' with  
-                              | Tuple(n,_) -> List.init n (fun _ -> op) 
-                              | Pass x -> List.init (int x)  (fun _ -> op) 
-                              | Fail x -> List.init (int x) (fun _ -> op) 
-                              | List xs -> 
-                                    let n = List.fold (fun c elem -> match elem with Pass _ -> c + 1 | Fail _ -> c | Tuple(x,_) -> c + x | List _ -> failwith "Cannot count these") 0 xs
-                                    List.init n  (fun _ -> op) 
-                        reduce env (callback(OpList newOps))
-            ) 
-      match newTimes |> fromDistribution with 
-      | NoResult -> reduce env (Value(NoValue))           
-      | Deterministic d -> d
-      | NonDeterministic _ -> reduce env (Value(NoValue))
-and fold (folder: Result<int>->Result<int>->Result<int>) env state ops =
-      let state = (env,always state)
-      ops 
-      |> List.fold (fun (env1,reduced1) op -> 
-            let (env2,reduced2) = reduce env1 op
-            env2, dist {
-                  let! a' = reduced1
-                  let! b' = reduced2
-                  return folder a' b'                              
-            }) state
-and call env func =
-      match func with 
-      | Total (Unfold(op,op2)) -> unfold (Total >> Call) env op op2 
-      | Total (OpList ops) -> fold (Result.add) env (Pass 0) ops 
-      | Product (Unfold(op,op2)) -> unfold (Product >> Call) env op op2 
-      | Product (OpList ops) -> fold (Result.mult) env (Pass 1) ops
-      | Count (Unfold(op,op2)) -> unfold (Count >> Call) env op op2 
-      | Count (OpList ops) -> 
-            let addCounts r1 r2 =
-                  let toCount result =  
-                        match result with | Pass _ -> Tuple (1,0) | Fail _ ->  Tuple(0,1) | Tuple _ as x -> x | _ -> failwith "Cannot count these" 
-                  Result.add r1 (toCount r2)                      
-            fold addCounts env (Tuple(0,0)) ops 
-and reduce (env:Environment) (operation:Operation) = 
-      match operation with
-      | Value v -> (env,reduceGamePrimitive v) 
-      | DPlus(d, moreThan) -> env,reduceDie d |> dPlus moreThan
-      | Call(func) -> call env func
-      | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> reduce env (Value(NoValue)) |> snd )
-      | Let(scope, var, op) -> 
-            let (newEnv,result) = reduce env op
-            Map.add (scope,var) result newEnv, result
-
 let rec subst = function
 | arg, s, Var (scope,v) -> if (scope,v) = s then arg else Var (scope,v)
 | arg, s, App (f, a) -> App(subst (arg,s,f), subst (arg,s,a))
 | arg, s, Lam (sc, p, x) -> if (sc,p) = s then Lam (sc,p,x) else Lam(sc,p, subst(arg,s,x))
-
-type ExprResult = Normal | Next of Operation
-
-
 let rec allIds = function
     | Var (sc, v) -> Set.singleton (sc,v)
     | Lam (sc, p, x) -> Set.add (sc,p) (allIds x)
@@ -151,6 +95,15 @@ let freeIds x =
         | Var (sc, v) -> if Set.contains (sc,v) bound then Set.empty else Set.singleton (sc,v)
         | Lam (sc,p, x) -> halp (Set.add (sc,p) bound) x
         | App (f, a) -> Set.union (halp bound f) (halp bound a)
+        | Call(Total(OpList ops)) 
+        | Call(Count(OpList ops))  
+        | Call(Product(OpList ops)) -> List.fold(halp) bound ops 
+        | Call(DPlus _ ) -> bound
+        | Call(Total(Unfold(op,op2)))
+        | Call(Count(Unfold(op,op2)))  
+        | Call(Product(Unfold(op,op2)))  -> Set.union (halp bound op) (halp bound op2)
+        | Value(_) -> bound
+        | Let(sc, _, op) -> halp bound op
     halp Set.empty x
 type ConflictResult =
     | Fine
@@ -198,27 +151,77 @@ let rename all (t, s, x) =
         | Renamed x,(sc,s) -> Renamed (App (Lam (sc, s, x), t))
         | _ -> Fine
 
-let reduce'' x =
-      let all = allIds x
-      let rec halp = function
-            | Var _ -> Normal
-            | App (Lam (sc, p, b), a) ->
-                  let redex = a, (sc,p), b
-                  match rename all redex with
-                      | Renamed x -> Next x
-                      | Fine -> Next (subst redex)
-            | App (f, a) ->
-                  match halp f with
-                      | Next rf -> Next (App (rf, a))
-                      | _ ->
-                          match halp a with
-                              | Next ra -> Next (App (f, ra))
-                              | _ -> Normal
-            | Lam (sc, p, b) ->
-                  match halp b with
-                      | Next b -> Next (Lam (sc, p, b))
-                      | _ -> Normal
-      halp x
+type ExprResult<'a> = Normal of 'a | Next of Operation
+
+let rec unfold callback op op2 env = 
+      let (env,times) = reduce env op2  
+      let newTimes = 
+            times |> Distribution.map(fun times' ->
+                        let newOps = 
+                              match times' with  
+                              | Tuple(n,_) -> List.init n (fun _ -> op) 
+                              | Pass x -> List.init (int x)  (fun _ -> op) 
+                              | Fail x -> List.init (int x) (fun _ -> op) 
+                              | List xs -> 
+                                    let n = List.fold (fun c elem -> match elem with Pass _ -> c + 1 | Fail _ -> c | Tuple(x,_) -> c + x | List _ -> failwith "Cannot count these") 0 xs
+                                    List.init n  (fun _ -> op) 
+                        reduce env (Call(callback(OpList newOps)))
+            ) 
+      match newTimes |> fromDistribution with 
+      | NoResult -> reduce env (Value(NoValue))           
+      | Deterministic d -> d
+      | NonDeterministic _ -> reduce env (Value(NoValue))
+and fold  (folder: Result<int>->Result<int>->Result<int>)  state ops env =
+      let state = (env,always state)
+      ops 
+      |> List.fold (fun (env1,reduced1) op -> 
+            let (env2,reduced2) = reduce env1 op
+            env2, dist {
+                  let! a' = reduced1
+                  let! b' = reduced2
+                  return folder a' b'                              
+            }) state
+and doManyOp  ops (unfoldf) (foldf) state = 
+      match ops with 
+      | Unfold (op,op2) -> unfold unfoldf op op2
+      | OpList (ops) -> fold foldf state ops
+and call func =
+      match func with 
+      | Total (manyOp) -> doManyOp manyOp Total (Result.add) (Pass 0)
+      | Product (manyOp) -> doManyOp manyOp Product (Result.mult) (Pass 1)
+      | Count (manyOp) -> doManyOp manyOp Count (Result.count) (Tuple(0,0))
+      | DPlus(d, moreThan) -> fun env -> env,reduceDie d |> dPlus moreThan
+and reduce (env:Environment) (operation:Operation) = 
+      //let all = allIds operation
+      match operation with
+      | Value v -> (env,reduceGamePrimitive v) 
+      | Call(func) -> call func env
+      | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> reduce env (Value(NoValue)) |> snd )
+      | Let(scope, var, op) -> 
+            let (newEnv,result) = reduce env op
+            Map.add (scope,var) result newEnv, result
+
+
+// let reduce'' x =
+//       let rec halp = function
+//             | Var _ -> Normal
+//             | App (Lam (sc, p, b), a) ->
+//                   let redex = a, (sc,p), b
+//                   match rename all redex with
+//                       | Renamed x -> Next x
+//                       | Fine -> Next (subst redex)
+//             | App (f, a) ->
+//                   match halp f with
+//                       | Next rf -> Next (App (rf, a))
+//                       | _ ->
+//                           match halp a with
+//                               | Next ra -> Next (App (f, ra))
+//                               | _ -> Normal
+//             | Lam (sc, p, b) ->
+//                   match halp b with
+//                       | Next b -> Next (Lam (sc, p, b))
+//                       | _ -> Normal
+//       halp x
 
 
 
