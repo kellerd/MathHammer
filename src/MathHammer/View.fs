@@ -10,7 +10,7 @@ open Types
 open GameActions.Primitives.Types
   
 let isCharacteristic = function 
-                        | Value(_)            | NoValue             | DPlus(_) 
+                        | Value(NoValue)            | Value(_)             | DPlus(_) 
                         | Let(_, _, Value(_)) | Let(_, _, DPlus(_)) | Let(_, _, DPlus(_)) -> true
                         | _ -> false
 

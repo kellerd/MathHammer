@@ -21,7 +21,7 @@ and unparse operation =
     | Total (ops)  -> sprintf "Total(%s)" (displayManyOp ops)
     | Value(Dice(i))-> string i
     | Value(Int(i)) -> string i
-    | NoValue -> "--"
+    | Value(NoValue) -> "--"
     | DPlus (D6,i) -> string i + "+"
     | DPlus (D3,i) -> string i + "+ on D3"
     | DPlus(Reroll(is,D6), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
@@ -47,7 +47,7 @@ let alternateRoot model dispatch =
         | Total (ops)  -> str ""
         | Value(Dice(i))-> str ""
         | Value(Int(i)) -> str ""
-        | NoValue -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []
+        | Value(NoValue) -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []
         | Count(_) -> str ""
         | Value(_) ->     str ""
         | Var(_) ->    str ""

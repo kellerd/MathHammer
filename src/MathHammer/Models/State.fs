@@ -77,8 +77,9 @@ let rec reduceDie d : Distribution<_> =
                   else return roll                        
             }
 let reduceGamePrimitive = function
-      | Int i -> always i
-      | Dice d -> reduceDie d 
+      | Int i -> always i |> Distribution.map Pass
+      | Dice d -> reduceDie d  |> Distribution.map Pass
+      | NoValue -> always 0  |> Distribution.map Fail
 open Determinism      
 
 let rec unfold callback env op op2  = 
@@ -96,9 +97,9 @@ let rec unfold callback env op op2  =
                         reduce env (callback(OpList newOps))
             ) 
       match newTimes |> fromDistribution with 
-      | NoResult -> reduce env NoValue             
+      | NoResult -> reduce env (Value(NoValue))           
       | Deterministic d -> d
-      | NonDeterministic _ -> reduce env NoValue  
+      | NonDeterministic _ -> reduce env (Value(NoValue))
 and fold (folder: Result<int>->Result<int>->Result<int>) env state ops =
       let state = (env,always state)
       ops 
@@ -109,10 +110,9 @@ and fold (folder: Result<int>->Result<int>->Result<int>) env state ops =
                   let! b' = reduced2
                   return folder a' b'                              
             }) state
-and reduce (env:Environment) operation = 
+and reduce (env:Environment) (operation:Operation) = 
       match operation with
-      | Value v -> (env,reduceGamePrimitive v |> Distribution.map Pass) 
-      | NoValue -> (env,always (Fail 0)) 
+      | Value v -> (env,reduceGamePrimitive v) 
       | DPlus(d, moreThan) -> env,reduceDie d |> dPlus moreThan
       | Total (Unfold(op,op2)) -> unfold Total env op op2 
       | Total (OpList ops) -> fold (Result.add) env (Pass 0) ops 
@@ -125,7 +125,7 @@ and reduce (env:Environment) operation =
                         match result with | Pass _ -> Tuple (1,0) | Fail _ ->  Tuple(0,1) | Tuple _ as x -> x | _ -> failwith "Cannot count these" 
                   Result.add r1 (toCount r2)                      
             fold addCounts env (Tuple(0,0)) ops 
-      | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> reduce env NoValue |> snd )
+      | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> reduce env (Value(NoValue)) |> snd )
       | Let(scope, var, op) -> 
             let (newEnv,result) = reduce env op
             Map.add (scope,var) result newEnv, result

@@ -5,7 +5,7 @@ open Types
 open GameActions.Primitives.Types
 
 let initRow () : Row * Cmd<Types.Msg> = 
-    ReadWrite("", NoValue), Cmd.none
+    ReadWrite("", Value(NoValue)), Cmd.none
 
 let init () : Model * Cmd<Types.Msg> =
     let readOnlyRow = ReadOnly ("D6", Let(Global, "HighFive", Total <| OpList [Value(Dice(D6)); Value(Int(3))]))
