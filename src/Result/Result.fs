@@ -25,8 +25,8 @@ let inline mult x y =
                 for b' in b do
                     yield List [a';b']] |> List
         | a, List bs | List bs, a -> List.map (fun b -> mult a b) bs |> List
-        | Pass a, Tuple(a',c) | Tuple(a',c),Pass a -> Tuple(a * a',c)
-        | Fail c, Tuple(a',c') | Tuple(a',c'),Fail c -> Tuple(a',c * c')
+        | Pass a, Tuple(a',c') | Tuple(a',c'),Pass a -> Tuple(a * a', a * c')
+        | Fail c, Tuple(a',c') | Tuple(a',c'),Fail c -> Tuple(c * a', c * c')
         | Tuple(a,c),Tuple(b,d) -> Tuple(a * b,c * d)
     mult x y   
 // type Result< ^a when ^a: (static member Zero : ^a)> with
