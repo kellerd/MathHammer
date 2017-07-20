@@ -13,20 +13,20 @@ type Scope =
 type GamePrimitive =
     | Int of int
     | NoValue 
+    | DPlus of Die * int 
     | Dice of Die
 
 type Operation = 
-    | Call of Call
+    | Call of Call * ManyOp
     | Value of GamePrimitive
     | Var of Scope * string
     | App of f:Operation * value:Operation
     | Lam of Scope * param:string * body:Operation
     | Let of Scope * string * Operation
 and Call = 
-    | Product of ManyOp
-    | Total of ManyOp
-    | Count of ManyOp
-    | DPlus of Die * int 
+    | Product
+    | Total
+    | Count
     
 and ManyOp =
     | OpList of Operation list
