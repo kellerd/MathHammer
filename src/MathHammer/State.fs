@@ -51,7 +51,8 @@ let update msg model : Model * Cmd<Types.Msg> =
                                                                    Cmd.map defenderMap ulCmdsd ]
     | Swap -> { model with Attacker = { model.Attacker with Models = Map.map (fun k m -> {m with Attributes = Map.map(fun name -> function i,Let(Defender,str,op) -> i,Let(Attacker,str,op) | i,op -> i,op ) m.Attributes    } ) model.Defender.Models}    
                            Defender = { model.Defender with Models = Map.map (fun k m -> {m with Attributes = Map.map(fun name -> function i,Let(Attacker,str,op) -> i,Let(Defender,str,op) | i,op -> i,op ) m.Attributes    } ) model.Attacker.Models} 
-                           SelectedAttacker = None }, 
+                           SelectedAttacker = None
+                           SelectedDefender = None }, 
                            Cmd.batch [ Cmd.ofMsg ((fun msg -> UnitListMsg(msg, None)) UnitList.Types.Distribute)
                                        Cmd.ofMsg RebindEnvironment ]
     | RebindEnvironment ->      
@@ -59,7 +60,7 @@ let update msg model : Model * Cmd<Types.Msg> =
             model.GlobalOperations 
             |> Map.toList
             |> List.sortBy (fun (_,(ord,_)) -> ord)
-            |> List.fold(fun env -> snd >> snd >> MathHammer.Models.State.reduce env >> fst) Map.empty<_,_>
+            |> List.fold(fun env -> snd >> snd >> MathHammer.Models.State.evalOp env >> fst) Map.empty<_,_>
         {model with Environment = environment}, Cmd.batch [ Cmd.ofMsg BindDefender
                                                             Cmd.ofMsg BindAttacker ]
     | BindDefender -> 

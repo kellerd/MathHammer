@@ -15,9 +15,9 @@ type GamePrimitive =
     | NoValue 
     | DPlus of Die * int 
     | Dice of Die
-
-type Operation = 
-    | Call of Call * ManyOp
+    | ManyOp of ManyOp
+and Operation = 
+    | Call of Call
     | Value of GamePrimitive
     | Var of Scope * string
     | App of f:Operation * value:Operation
@@ -27,10 +27,12 @@ and Call =
     | Product
     | Total
     | Count
-    
 and ManyOp =
     | OpList of Operation list
     | Unfold of Operation * Operation
+
+type NormalizedOperation = Normal | Next of Operation    
+
 type [<Measure>] ft 
 and [<Measure>] inch
 and [<Measure>] mm

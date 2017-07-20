@@ -13,13 +13,14 @@ let rec displayManyOp ops =
     | OpList(ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "%dD3" (List.length ops)
     | OpList ops -> List.map unparse ops |> String.concat " + "
     | Unfold (op,op2) -> sprintf "%s, %s times" (unparse op) (unparse op2)
-and unparseCall func ops = 
+and unparseCall func = 
     match func with 
-    | Count -> sprintf "(Passes,Fails) in (%s)" (displayManyOp ops)
-    | _  -> sprintf "%A(%s)" func (displayManyOp ops)
+    | Count -> sprintf "(Passes,Fails) in " 
+    | _  -> sprintf "%A" func 
 and unparseValue = function   
     | Dice(i) -> string i
     | Int(i) -> string i
+    | ManyOp(m) -> sprintf "(%s)" <|displayManyOp m
     | NoValue -> "--"
     | DPlus (D6,i) -> string i + "+"
     | DPlus (D3,i) -> string i + "+ on D3"
@@ -28,7 +29,7 @@ and unparseValue = function
     | DPlus(Reroll(is,Reroll(is2,d)), i) -> unparse <| Value(DPlus(Reroll(List.distinct (is @ is2),d),i)) 
 and unparse operation = 
     match operation with 
-    | Call (f,ops) -> unparseCall f ops
+    | Call f -> unparseCall f
     | Value(v)-> unparseValue v
     | Var (scope,v) -> sprintf "%A.%s" scope v
     | Lam(sc,p,x) -> sprintf "fun %s -> %s" p (unparse x)
@@ -42,15 +43,15 @@ and argstring = function
 let alternateRoot model dispatch =
     let rec displayOperation operation = 
         match operation with 
+        | Value(ManyOp(OpList(ops)))  when List.distinct ops = [Value(Dice(D3))] -> str ""
+        | Value(ManyOp(OpList(ops)))  when List.distinct ops = [Value(Dice(D6))] -> str ""
         | Value(DPlus (_,i)) -> str ""
-        | Call(Product,ops) -> str ""
-        | Call(Total, (OpList(ops))) when List.distinct ops = [Value(Dice(D3))] -> str ""
-        | Call(Total, (OpList(ops))) when List.distinct ops = [Value(Dice(D6))] -> str ""
-        | Call(Total, (ops)) -> str ""
+        | Call Product -> str ""
+        | Call Total  -> str ""
         | Value(Dice(i))-> str ""
         | Value(Int(i)) -> str ""
         | Value(NoValue) -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []
-        | Call(Count,_) -> str ""
+        | Call Count -> str ""
         | Value(_) ->     str ""
         | Var(_) ->    str ""
         | Let(_) -> str ""
