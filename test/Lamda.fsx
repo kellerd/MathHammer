@@ -1,4 +1,23 @@
-#load "LoadModules.fsx"
+#r "../packages/Fable.Core/lib/netstandard1.6/Fable.Core.dll"
+#r "../packages/Fable.Elmish/lib/netstandard1.6/Fable.Elmish.dll"
+#r "../packages/Fable.Elmish.React/lib/netstandard1.6/Fable.Elmish.React.dll"
+#r "../packages/Fable.Elmish.Browser/lib/netstandard1.6/Fable.Elmish.Browser.dll"
+#r "../packages/Fable.React/lib/netstandard1.6/Fable.React.dll"
+#load "../src/Result/Result.fs"
+#load "../src/Probability/Distribution.fs"
+#load "../src/Probability/Determinism.fs"
+#load "../src/Probability/View.fs"
+#load "../src/GameActions/Primitives/Types.fs"
+#load "../src/GameActions/Primitives/State.fs"
+#load "../src/GameActions/Primitives/View.fs"
+#load "../src/GameActions/GameActionsList/Types.fs"
+#load "../src/GameActions/GameActionsList/State.fs"
+#load "../src/GameActions/GameActionsList/View.fs"
+#load "../src/GameActions/Types.fs"
+#load "../src/GameActions/State.fs"
+#load "../src/GameActions/View.fs"
+#load "../src/MathHammer/Models/Types.fs"
+#load "../src/MathHammer/Models/State.fs"
 
 open GameActions.Primitives.Types
 open MathHammer.Models.State
@@ -6,20 +25,20 @@ open GameActions.Primitives.View
 
 
 //zero = fun f -> fun x -> x
-let zero = Lam(Global,"f",Lam(Global,"x", Var(Global,"x")))
+let zero = Lam("f",Lam("x", Var("x")))
 normalizeOp zero
-normalizeOp (App(zero,(Var(Global,"g"))))
-let one = Lam(Global,"f",Lam(Global,"x", App(Var(Global,"f"),Var(Global,"x"))))
-let two = Lam(Global, "f", Lam(Global,"x",App(Var(Global,"f"),App(Var(Global,"f"),Var(Global,"x")))))
+normalizeOp (App(zero,(Var("g"))))
+let one = Lam("f",Lam("x", App(Var("f"),Var("x"))))
+let two = Lam( "f", Lam("x",App(Var("f"),App(Var("f"),Var("x")))))
 
 let (|%>) x f = App(f,x)
 
 normalizeOp one
-Var(Global,"h") |%> (Var(Global,"g") |%> zero) |> normalizeOp
-Var(Global,"h") |%> (Var(Global,"g") |%> one) |> normalizeOp
-Var(Global,"h") |%> (Var(Global,"g") |%> two) |> normalizeOp
-normalizeOp (App(one,(Var(Global,"g"))))
-normalizeOp (App(App(one,(Var(Global,"g"))),Var(Global,"7")))
+Var("h") |%> (Var("g") |%> zero) |> normalizeOp
+Var("h") |%> (Var("g") |%> one) |> normalizeOp
+Var("h") |%> (Var("g") |%> two) |> normalizeOp
+normalizeOp (App(one,(Var("g"))))
+normalizeOp (App(App(one,(Var("g"))),Var("7")))
 allIds one
 
 <@let zero' (f:int->int) (x:int) = x
@@ -35,13 +54,13 @@ freeIds two
 zero |> normalizeOp |> unparse
 one |> normalizeOp |> unparse
 two |> normalizeOp |> unparse
-Var(Global,"h") |%> (Var(Global,"g") |%> zero) |> normalizeOp |> unparse
-Var(Global,"h") |%> (Var(Global,"g") |%> one)  |> normalizeOp  |> unparse
-Var(Global,"h") |%> (Var(Global,"g") |%> two)  |> normalizeOp  |> unparse
+Var("h") |%> (Var("g") |%> zero) |> normalizeOp |> unparse
+Var("h") |%> (Var("g") |%> one)  |> normalizeOp  |> unparse
+Var("h") |%> (Var("g") |%> two)  |> normalizeOp  |> unparse
 
-let appliedTwo = Var(Global,"h") |%> (Var(Global,"g") |%> two)
-let count ops = Call(Count,OpList ops)
-let count' ops = Call (Count, Unfold ops)
+let appliedTwo = Var("h") |%> (Var("g") |%> two)
+let count ops = App(Call Count,Value(ManyOp(OpList ops)))
+let count' ops = App(Call Count,Value(ManyOp(Unfold ops)))
 
 let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo] |> normalizeOp
 let normalizedSecond = count [appliedTwo;appliedTwo;appliedTwo] |> normalizeOp

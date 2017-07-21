@@ -2,7 +2,7 @@ module MathHammer.Models.Types
 open GameActions.Primitives.Types
 open Distribution 
 open Result
-type Environment = Map<(Scope*string),Operation>
+type Environment = Map<string,Operation>
 type Order = int
 type Model = { PosX:float
                PosY:float 
@@ -15,6 +15,6 @@ type Model = { PosX:float
 
 type Msg = 
     | ChangePosition of float * float * string
-    | Rebind of Scope * Environment
+    | Rebind of Environment
     | Select
-    | Let of Scope * string * Operation
+    | Let of string * Operation

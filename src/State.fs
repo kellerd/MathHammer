@@ -25,20 +25,19 @@ open GameActions.Primitives.Types
 let init result =
   let (mathHammer, mathHammerCmd) = MathHammer.State.init()
   let (gameActions, gameActionsCmd) = GameActions.State.init()
-  let mapScale scope scale = 
-    List.map (fun x -> x scope)
-    >> List.mapi 
+  let mapScale scale = 
+    List.mapi 
         (fun i (x : MathHammer.Models.Types.Model,_) -> 
           x.Name, {x with Attributes = 
                             x.Attributes
-                            |> Map.map (fun k -> function order,Let(env,_,_) when k = "A" -> order,Let(env, "A" , Value (Int(i + 3))) | order,x -> order,x)
+                            |> Map.map (fun k -> function order,Let("A",Value (Int(i)),op) -> order,Let("A" , Value (Int(i + 3)),op) | order,x -> order,x)
                           Scale = scale} )
     >> Map.ofList
 
 
   let attackers = [initMeq "Marine"; initMeq "Captain" ] 
-                  |> mapScale GameActions.Primitives.Types.Attacker mathHammer.Attacker.Scale
-  let defenders = ['a'..'z'] |> List.map (string >> initGeq)  |> mapScale GameActions.Primitives.Types.Defender mathHammer.Defender.Scale 
+                  |> mapScale mathHammer.Attacker.Scale
+  let defenders = ['a'..'z'] |> List.map (string >> initGeq)  |> mapScale mathHammer.Defender.Scale 
 
   let (model, cmd) =
     urlUpdate result

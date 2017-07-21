@@ -32,13 +32,13 @@ and unparse operation =
     match operation with 
     | Call f -> unparseCall f
     | Value(v)-> unparseValue v
-    | Var (scope,v) -> sprintf "%A.%s" scope v
-    | Lam(sc,p,x) -> sprintf "fun %s -> %s" p (unparse x)
-    | App(Lam(sc,p,x),a) -> paren (unparse (Lam(sc,p,x))) + " " + argstring a
+    | Var (v) -> sprintf "%s" v
+    | Lam(p,x) -> sprintf "fun %s -> %s" p (unparse x)
+    | App(Lam(p,x),a) -> paren (unparse (Lam(p,x))) + " " + argstring a
     | App(f,a) -> unparse f + " " + argstring a
-    | Let(env, str, op) ->  sprintf "%s" (unparse op)
+    | Let(str, v, inner) ->  sprintf "%s" (unparse v)
 and argstring = function 
-    | Var (scope,v) -> sprintf "%A.%s" scope v
+    | Var (v) -> sprintf "%s" v
     | x -> paren (unparse x) 
 
 let alternateRoot model dispatch =
@@ -57,7 +57,7 @@ let alternateRoot model dispatch =
         | Var(_) ->    str ""
         | Let(_) -> str ""
         | App(f, value) -> str ""
-        | Lam(_, param, body) -> str ""
+        | Lam(param, body) -> str ""
     displayOperation model  
 
 let root model dispatch =

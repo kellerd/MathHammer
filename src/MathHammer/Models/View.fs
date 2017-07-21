@@ -69,8 +69,8 @@ let rangeStops (dist:Distribution<_>)  =
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
             [ g   [ Transform model.Scale ] display ]
-let rangeRoot (scope,name) model =
-    let dist = Map.tryFind (scope,name) model.Environment
+let rangeRoot name model =
+    let dist = Map.tryFind name model.Environment
     let ranges id (min:int<mm>,max:int<mm>,stops) = 
         g [] 
           [   defs  [] 

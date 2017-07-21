@@ -5,11 +5,6 @@ type Die =
     | D6
     | Reroll of (int list) * Die
     
-type Scope =
-    | Attacker
-    | Defender
-    | Global
-
 type GamePrimitive =
     | Int of int
     | NoValue 
@@ -20,10 +15,10 @@ type GamePrimitive =
 and Operation = 
     | Call of Call
     | Value of GamePrimitive
-    | Var of Scope * string
+    | Var of string
     | App of f:Operation * value:Operation
-    | Lam of Scope * param:string * body:Operation
-    | Let of Scope * string * Operation
+    | Lam of param:string * body:Operation
+    | Let of string * value:Operation * body:Operation
 and Call = 
     | Product
     | Total
@@ -32,7 +27,7 @@ and ManyOp =
     | OpList of Operation list
     | Unfold of Operation * Operation
 let rec (|IsDistribution|_|) = function
-    | Value(Dist(d)) | Let(_,_,IsDistribution(d)) -> Some d
+    | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
     | _ -> None
 type NormalizedOperation = Normal | Next of Operation    
 

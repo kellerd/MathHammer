@@ -8,6 +8,7 @@
 #load "../src/Probability/Determinism.fs"
 #load "../src/Probability/View.fs"
 #load "../src/GameActions/Primitives/Types.fs"
+#load "../src/GameActions/Primitives/State.fs"
 #load "../src/GameActions/Primitives/View.fs"
 #load "../src/GameActions/GameActionsList/Types.fs"
 #load "../src/GameActions/GameActionsList/State.fs"

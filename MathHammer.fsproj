@@ -12,6 +12,7 @@
     <Compile Include="src/Probability/View.fs" />
     <!-- GameActions -->
     <Compile Include="src/GameActions/Primitives/Types.fs" />
+    <Compile Include="src/GameActions/Primitives/State.fs" />
     <Compile Include="src/GameActions/Primitives/View.fs" />
     <Compile Include="src/GameActions/GameActionsList/Types.fs" />
     <Compile Include="src/GameActions/GameActionsList/State.fs" />
@@ -19,7 +20,6 @@
     <Compile Include="src/GameActions/Types.fs" />
     <Compile Include="src/GameActions/State.fs" />
     <Compile Include="src/GameActions/View.fs" />
-    <!-- Result -->
     <!-- MathHammer -->
     <Compile Include="src/MathHammer/Models/Types.fs" />
     <Compile Include="src/MathHammer/Models/State.fs" />

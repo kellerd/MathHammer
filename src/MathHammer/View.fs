@@ -22,10 +22,10 @@ let root model dispatch =
                 [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
                 [ UnitList.View.rootBoard model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.rootBoard model.Defender (State.defenderMap >> dispatch)
-                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker (Attacker,"MeleeRange")) |> opt
-                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender (Defender,"MeleeRange")) |> opt
-                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker (Attacker,"ShootingRange")) |> opt
-                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender (Defender,"ShootingRange")) |> opt
+                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("MeleeRange")) |> opt
+                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("MeleeRange")) |> opt
+                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("ShootingRange")) |> opt
+                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("ShootingRange")) |> opt
                   UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
                   UnitList.View.root model.Defender (State.defenderMap >> dispatch) ] ] 
     let swap =  i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
@@ -67,7 +67,7 @@ let root model dispatch =
                 actions 
                 |> List.choose 
                     ( fun (name,_) -> 
-                        Map.tryFind (Attacker,name) selected.Environment 
+                        Map.tryFind (name) selected.Environment 
                         |> Option.bind(|IsDistribution|_|)
                         |> Option.map(fun dist -> name,dist) )
              let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 

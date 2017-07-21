@@ -3,38 +3,9 @@ module MathHammer.Models.State
 open Elmish
 open Types
 open GameActions.Primitives.Types
+open GameActions.Primitives.State
 open Distribution
 open Result
-
-let get sc v = Var (sc, v)
-let single op = Value(ManyOp(List.singleton op |> OpList))
-let opList ops = Value(ManyOp(OpList ops))
-let unfoldOp op op2 =  Value(ManyOp(Unfold(op,op2)))
-let call f op = App(Call f, op)
-let count v = v |> call Count
-let total v = v |> call Total
-let product v = v |> call Product
-
-let wsTest = get Attacker "WS" |> single |> count
-let bind sc v op = Let(sc,v,op)
-
-let hitMelee = 
-    get Attacker "A"
-    |> unfoldOp wsTest 
-    |> total 
-    |> bind Attacker "MeleeHits"
-    |> bind Attacker "Melee"
-
-let shotsMelee = 
-    [Var(Attacker, "A"); Var(Attacker, "A")]
-    |> opList 
-    |> product
-    |> single
-    |> count
-
-let dPlus d v = Value(DPlus(d,v))
-let vInt i = Value(Int(i))
-let d6 = Value(Dice(D6))
 
 let init name =
     { PosX=0.
@@ -45,40 +16,38 @@ let init name =
       Scale = "scale(1,1)"
       Environment = Map.empty<_,_>}
 
-let initMeq name env =
+let initMeq name =
     { (init name) with 
-        Attributes = ["M",  vInt 6 |> bind env "M" 
-                      "WS", dPlus D6 3 |> bind env "WS" 
-                      "BS", dPlus D6 3 |> bind env "BS" 
-                      "S" , vInt 4 |> bind env "S" 
-                      "T" , vInt 4 |> bind env "T" 
-                      "W" , vInt 1 |> bind env "W" 
-                      "A" , vInt 1 |> bind env "A" 
-                      "LD", vInt 8 |> bind env "LD" 
-                      "SV", dPlus D6 3 |> bind env "SV" 
-                      "Test", get Attacker "WS" |> bind env "Test" 
-                      "MeleeRange", [get env "M";d6;d6;d6] |> opList |> total |> bind env "MeleeRange"
-                      "Psychic", [d6;d6] |> opList |> total |> bind env "Psychic"
-                      "Melee",  hitMelee
-                      "Shots", shotsMelee ] 
+        Attributes = []
+        // Attributes = ["M",  vInt 6 |> bindVar env "M" 
+        //               "WS", dPlus D6 3 |> bindVar env "WS" 
+        //               "BS", dPlus D6 3 |> bindVar env "BS" 
+        //               "S" , vInt 4 |> bindVar env "S" 
+        //               "T" , vInt 4 |> bindVar env "T" 
+        //               "W" , vInt 1 |> bindVar env "W" 
+        //               "A" , vInt 1 |> bindVar env "A" 
+        //               "LD", vInt 8 |> bindVar env "LD" 
+        //               "SV", dPlus D6 3 |> bindVar env "SV" 
+        //               "MeleeRange", meleeRange
+        //               "ChargeRange", chargeRange
+        //               "PsychicTest", psychicTest ] 
                       |> List.mapi(fun i (k,op) -> k,(i,op)) |> Map.ofList }, Cmd.none
-let initGeq name env =
+let initGeq name =
     { (init name) with
-        Attributes = ["M",  vInt 6 |> bind env "M" 
-                      "WS", dPlus D6 3 |> bind env "WS" 
-                      "BS", dPlus D6 3 |> bind env "BS" 
-                      "S" , vInt 4 |> bind env "S" 
-                      "T" , vInt 4 |> bind env "T" 
-                      "W" , vInt 1 |> bind env "W" 
-                      "A" , vInt 1 |> bind env "A" 
-                      "LD", vInt 8 |> bind env "LD" 
-                      "SV", dPlus D6 3 |> bind env "SV" 
-                      "Test", get Attacker "WS" |> bind env "Test" 
-                      "MeleeRange", [get env "M";d6;d6;d6] |> opList |> total |> bind env "MeleeRange"
-                      "Psychic", [d6;d6] |> opList |> total |> bind env "Psychic"
-                      "Melee",  hitMelee
-                      "Shots", shotsMelee
-                      "ShootingRange", vInt 6 |> single |> total |> bind env "ShootingRange" ] 
+        Attributes = []
+        //              ["M",  vInt 6 |> bindVar env "M" 
+        //               "WS", dPlus D6 4 |> bindVar env "WS" 
+        //               "BS", dPlus D6 4 |> bindVar env "BS" 
+        //               "S" , vInt 3 |> bindVar env "S" 
+        //               "T" , vInt 3 |> bindVar env "T" 
+        //               "W" , vInt 1 |> bindVar env "W" 
+        //               "A" , vInt 1 |> bindVar env "A" 
+        //               "LD", vInt 7 |> bindVar env "LD" 
+        //               "SV", dPlus D6 5 |> bindVar env "SV" 
+        //               "MeleeRange", meleeRange
+        //               "ChargeRange", chargeRange
+        //               "PsychicTest", psychicTest
+        //               "ShootingRange", vInt 6 |> single |> total |> bindVar env "ShootingRange" ] 
                       |> List.mapi(fun i (k,op) -> k,(i,op)) |> Map.ofList }, Cmd.none
 let dPlusTest plus die = dist {
       let! roll = die
@@ -87,12 +56,10 @@ let dPlusTest plus die = dist {
             else Fail roll
       return result
 }
-let d6d = uniformDistribution [1..6]
-let d3d = uniformDistribution [1..3]
 let rec evalDie d : Distribution<_> = 
       match d with 
-      | D3 -> d3d
-      | D6 -> d6d
+      | D3 -> uniformDistribution [1..3]
+      | D6 -> uniformDistribution [1..6]
       | Reroll(rerolls, d) -> 
             dist {
                   let! roll = evalDie d
@@ -102,29 +69,29 @@ let rec evalDie d : Distribution<_> =
             }
      
 let rec subst arg s = function
-      | Var (scope,v) -> if (scope,v) = s then arg else Var (scope,v)
+      | Var (v) -> if (v) = s then arg else Var (v)
       | App (f, a) -> App(subst arg s f, subst arg s a)
-      | Lam (sc, p, x) -> if (sc,p) = s then Lam (sc,p,x) else Lam(sc,p, subst arg s x)
+      | Lam (p, x) -> if p = s then Lam (p,x) else Lam(p, subst arg s x)
       | Value( ManyOp( OpList ops)) -> Value( ManyOp(List.map (subst arg s) ops |> OpList))
       | Value( ManyOp(Unfold(op,op2)))  ->  Value( ManyOp(Unfold(subst arg s op, subst arg s op2)))
       | Value (DPlus _ ) as op -> op
       | Value _ as op -> op
-      | Let (sc, v, op) -> Let(sc,v,subst arg s op)
+      | Let (n, v, op) -> Let(n, subst arg s v, subst arg s op)
       | Call _ as op -> op
 
 let rec allIds = function
-    | Var (sc, v) -> Set.singleton (sc,v)
-    | Lam (sc, p, x) -> Set.add (sc,p) (allIds x)
+    | Var (v) -> Set.singleton v
+    | Lam (p, x) -> Set.add p (allIds x)
     | App (f, a) -> Set.union (allIds f) (allIds a)
     | Value( ManyOp( OpList ops))  -> List.fold(fun s op -> op |> allIds |> Set.union s) Set.empty<_> ops 
     | Value( ManyOp(Unfold(op,op2)))  -> Set.union (allIds op) (allIds op2)
     | Call _ | Value _ -> Set.empty<_>
-    | Let (sc, n, op) -> allIds op |> Set.add (sc,n)
+    | Let (n, v, op) -> allIds op |> Set.add n
 
 let freeIds x =
     let rec halp bound = function
-        | Var (sc, v) -> if Set.contains (sc,v) bound then Set.empty else Set.singleton (sc,v)
-        | Lam (sc,p, x) -> halp (Set.add (sc,p) bound) x
+        | Var (v) -> if Set.contains v bound then Set.empty else Set.singleton v
+        | Lam (p, x) -> halp (Set.add p bound) x
         | App (f, a) -> Set.union (halp bound f) (halp bound a)
         | Value( ManyOp( OpList ops)) -> List.fold(halp) bound ops 
         | Value( ManyOp(Unfold(op,op2)))  -> Set.union (halp bound op) (halp bound op2)
@@ -147,10 +114,10 @@ let idNum (s:string) =
     then s, 1
     else s.[0 .. res], int(s.[res + 1 .. stop])
 
-let uniqueId taken (sc,s) =
+let uniqueId taken s =
     let prefix, start = idNum s
     let rec halp i =
-        let newId = sc,(prefix + string(i))
+        let newId = (prefix + string(i))
         if Set.contains newId taken
         then halp (i + 1)
         else newId
@@ -158,7 +125,7 @@ let uniqueId taken (sc,s) =
 let rename all (t, s, x) =
     let free = freeIds t
     let rec halp = function
-        | Var (sc, v) -> Fine
+        | Var (v) -> Fine
         | App (f, a) ->
             match halp f with
             | Renamed rf -> Renamed (App (rf, a))
@@ -166,12 +133,12 @@ let rename all (t, s, x) =
                 match halp a with
                 | Renamed ra -> Renamed (App (f, ra))
                 | _ -> Fine
-        | Lam (sc, p, b) ->
-            if ((sc, p) = s) || (not (Set.contains s (freeIds b))) || (not (Set.contains (sc, p) free))
+        | Lam (p, b) ->
+            if ((p) = s) || (not (Set.contains s (freeIds b))) || (not (Set.contains (p) free))
             then Fine
             else
-                let (sc,newP) = uniqueId all (sc,p)
-                Renamed (Lam (sc, newP, subst (Var (sc,newP)) (sc,p) b))
+                let newP = uniqueId all p
+                Renamed (Lam (newP, subst (Var newP) p b))
         | Let(sc,v,op) -> match halp op with 
                           | Renamed ro -> Renamed(Let(sc,v,ro))
                           | _ -> Fine
@@ -203,18 +170,18 @@ let rename all (t, s, x) =
             | _ -> Fine
 
     match halp x,s with
-        | Renamed x,(sc,s) -> Renamed (App (Lam (sc, s, x), t))
+        | Renamed x,s -> Renamed (App (Lam (s, x), t))
         | _ -> Fine
 let normalizeOp op = 
     let all = freeIds op
     let rec reduce = function
         | Var _ -> Normal
         | Call _ -> Normal
-        | App (Lam (sc, p, b), a) ->
-              let redex = a, (sc,p), b
+        | App (Lam (p, b), a) ->
+              let redex = a, p, b
               match rename all redex with
                   | Renamed x -> Next x
-                  | Fine -> Next (subst a (sc,p) b)
+                  | Fine -> Next (subst a p b)
         | App (f, a) ->
               match reduce f with
                   | Next rf -> Next (App (rf, a))
@@ -222,9 +189,9 @@ let normalizeOp op =
                       match reduce a with
                           | Next ra -> Next (App (f, ra))
                           | _ -> Normal
-        | Lam (sc, p, b) ->
+        | Lam (p, b) ->
               match reduce b with
-                  | Next b -> Next (Lam (sc, p, b))
+                  | Next b -> Next (Lam (p, b))
                   | _ -> Normal
         | Value(ManyOp(Unfold(op,op2))) -> 
             match reduce op with
@@ -244,10 +211,13 @@ let normalizeOp op =
                 Next (Value(ManyOp(OpList rops)))
             else Normal
         | Value _ -> Normal
-        | Let(sc, b, a) -> 
-            match reduce a with
-            | Next a -> Next (Lam (sc, b, a))
-            | _ -> Normal
+        | Let(s, v, op) -> 
+            match reduce v with
+            | Next rv -> Next ( Let(s, rv, op))
+            | _ -> 
+                match reduce op with
+                | Next rop -> Next ( Let(s, v, rop))
+                | _ -> Normal
     Seq.unfold 
         (function Next rop -> Some (rop, reduce rop) | Normal -> None) 
         (Next op)
@@ -304,15 +274,15 @@ and evalCall func  =
     | Product -> func,(Result.mult),Value(Dist (always (Pass 1)))
     | Count -> func,(Result.count), Value(Dist (always (Tuple(0,0))))
 
-and evalOp (env:Environment) (operation:Operation) : Environment*Operation= 
+and evalOp (env:Environment) (operation:Operation) : Environment * Operation= 
       //let all = allIds operation
       match operation with
       | Value v -> env, Value(evalGamePrimitive v)
       | Call f -> env, Value(NoValue)
-      | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> Value(NoValue) )
-      | Let(scope, var, op) -> 
-            let (newEnv,result) = evalOp env op
-            Map.add (scope,var) result newEnv, result
+      | Var (var)  -> env,(Map.tryFind (var) env |> function Some v -> v | None -> Value(NoValue) )
+      | Let(str, var, op) -> 
+            let (newEnv,result) = evalOp env var
+            evalOp (Map.add (str) result newEnv) result
       | App (Call f, Value(ManyOp(ops))) -> evalCall f |> doManyOp ops env
       | App (Call f, Value(v)) ->  evalOp env (App (Call f, Value(ManyOp(OpList[Value(v)]))))
       | Lam _ -> env, Value(NoValue)
@@ -324,11 +294,11 @@ let update msg model =
       | ChangePosition (x,y,scale) -> {model with PosX = x; PosY = y; Scale=scale}, Cmd.none
       | Select _ -> model, Cmd.none
       | Msg.Let _ ->  model, Cmd.none
-      | Rebind (scope,initial) -> 
+      | Rebind (initial) -> 
             let newEnv = 
                   model.Attributes 
                   |> Map.toList
                   |> List.sortBy (fun (_,(ord,_)) -> ord)
-                  |> List.fold(fun env -> snd >> snd >> evalOp env >> fst) initial
-            let cmds = newEnv |> Map.filter (fun (scope,name) _ -> scope = Global) |> Map.toList |> List.map (fun ((scope,name),result) -> Cmd.ofMsg (Msg.Let(scope,name,result)))
+                  |> List.fold(fun env -> snd >> snd >> normalizeOp >> evalOp env >> fst) initial
+            let cmds = newEnv |> Map.toList |> List.map (fun (name,result) -> Cmd.ofMsg (Msg.Let(name,result)))
             { model with Environment = newEnv }, Cmd.batch cmds
