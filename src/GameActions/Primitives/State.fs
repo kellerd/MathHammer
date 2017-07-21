@@ -15,6 +15,7 @@ let bindOp v op inBody = Operation.Let(v,op, inBody)
 let lam s op = Lam (s,op)
 let (|~>) o v = bindVal v o
 let (>>=) o v = bindOp v o
+let (|%>) x f = App(f,x)
 
 let d6 = Value(Dice(D6))
 
@@ -27,16 +28,30 @@ let hitResults =
 
 let chargeRange =
     [d6;d6] |> opList |> total
-    >>= "ChargeRange"
+    |~> "ChargeRange"
 
 let meleeRange = 
     [ get "M" 
-      get "Attacker" |> chargeRange] 
+      chargeRange ] 
     |> opList 
     |> total 
     |~>  "MeleeRange"
+      
 
 let psychicTest = [d6;d6] |> opList |> total |~> "PsychicTest"
+let attacker = 
+    Let("M",vInt 6, Let("MeleeRange", Let("Total", App(Call Total, Value(ManyOp(OpList[get "M"; vInt 12]))), Var "Total"), Value(ManyOp(OpList [get "M";get "MeleeRange"]))))
+<@
+ let Attacker = 
+    let M = 6
+    let MeleeRange = M + 12
+    let total = List.sum [M;MeleeRange]
+    [M;MeleeRange;total]
+ Attacker @>
+
+
+
+
 
 // let meq = 
 //     emptyOp

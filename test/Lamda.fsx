@@ -21,6 +21,7 @@
 
 open GameActions.Primitives.Types
 open MathHammer.Models.State
+open GameActions.Primitives.State
 open GameActions.Primitives.View
 
 
@@ -31,7 +32,6 @@ normalizeOp (App(zero,(Var("g"))))
 let one = Lam("f",Lam("x", App(Var("f"),Var("x"))))
 let two = Lam( "f", Lam("x",App(Var("f"),App(Var("f"),Var("x")))))
 
-let (|%>) x f = App(f,x)
 
 normalizeOp one
 Var("h") |%> (Var("g") |%> zero) |> normalizeOp
@@ -112,3 +112,5 @@ let countOfOneXIsOneX x =
     printf "Is %A = %A" d expected
     d = expected
 countOfOneXIsOneX 6  
+
+
