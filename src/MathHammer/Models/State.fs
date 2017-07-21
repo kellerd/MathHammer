@@ -264,29 +264,38 @@ and evalGamePrimitive = function
       | NoValue -> always 0  |> Distribution.map Fail  |> Dist
       | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Dist
       | op -> op
-and doManyOp  ops env (unfoldf,foldf,state:Operation) = 
+and doManyOp  ops env unfoldf foldf state = 
       match ops with 
-      | Unfold (op,op2) -> unfold unfoldf op op2 env
-      | OpList (ops) -> fold foldf state ops env
-and evalCall func  =
+      | Value(ManyOp(Unfold (op,op2))) -> unfold unfoldf op op2 env
+      | Value(ManyOp(OpList (ops))) -> fold foldf state ops env
+      | Value _ as v -> doManyOp  (Value(ManyOp(OpList [v]))) env unfoldf foldf state
+and evalCall func v env  =
+    let many = doManyOp v env func
     match func with 
-    | Total -> func,(Result.add), Value(Dist (always (Pass 0)))
-    | Product -> func,(Result.mult),Value(Dist (always (Pass 1)))
-    | Count -> func,(Result.count), Value(Dist (always (Tuple(0,0))))
-
+    | Total -> 
+        Value(Dist (always (Pass 0))) 
+        |> many Result.add 
+    | Product -> 
+        Value(Dist (always (Pass 1)))
+        |> many Result.mult 
+    | Count -> 
+        Value(Dist (always (Tuple(0,0))))
+        |> many Result.count 
 and evalOp (env:Environment) (operation:Operation) : Environment * Operation= 
       //let all = allIds operation
       match operation with
       | Value v -> env, Value(evalGamePrimitive v)
-      | Call f -> env, Value(NoValue)
+      | Call f -> env, Call f
       | Var (var)  -> env,(Map.tryFind (var) env |> function Some v -> v | None -> Value(NoValue) )
       | Let(str, var, op) -> 
             let (newEnv,result) = evalOp env var
-            evalOp (Map.add (str) result newEnv) result
-      | App (Call f, Value(ManyOp(ops))) -> evalCall f |> doManyOp ops env
-      | App (Call f, Value(v)) ->  evalOp env (App (Call f, Value(ManyOp(OpList[Value(v)]))))
+            evalOp (Map.add (str) result newEnv) op
       | Lam _ -> env, Value(NoValue)
-      | App(f, value) -> failwith "Not Implemented"     
+      | App(f, value) -> 
+           let (env1,call) = evalOp env f
+           match call, evalOp env1 value with 
+           | (Call f),(env2,v) -> evalCall f v env2 
+           | _ -> failwith "Cannot apply to something not a function"
 
 
 let update msg model =
