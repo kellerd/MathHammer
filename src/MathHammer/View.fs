@@ -63,7 +63,13 @@ let root model dispatch =
                  attrs  
                  |> List.map (fun (key,(_,op)) -> MathHammer.Models.View.showAttributes (key,op) dispatch)
                  |> div [ClassName "columns"]  
-             let evaluatedActions = actions |> List.choose (fun (name,_) -> Map.tryFind (Attacker,name) selected.Environment |> Option.map(fun dist -> name,dist))
+             let evaluatedActions = 
+                actions 
+                |> List.choose 
+                    ( fun (name,_) -> 
+                        Map.tryFind (Attacker,name) selected.Environment 
+                        |> Option.bind(|IsDistribution|_|)
+                        |> Option.map(fun dist -> name,dist) )
              let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 
              let averagesDiv = columnsOf Probability.View.showAverages evaluatedActions
              let probabiltiesActionsDiv = columnsOf Probability.View.showProbabilitiesOfActions evaluatedActions

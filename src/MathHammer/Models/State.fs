@@ -178,6 +178,7 @@ let rename all (t, s, x) =
         | Value (DPlus(_)) 
         | Value (Dice(_)) 
         | Value (Int(_)) 
+        | Value (Dist(_)) 
         | Value (NoValue) -> Fine 
         | Call _ -> Fine
         | Value (ManyOp(Unfold(op,op2))) -> 
@@ -254,8 +255,10 @@ let normalizeOp op =
 
 open Determinism 
 let rec unfold f op op2 env = 
-      let (env,times) = evalOp env op2  
-      let newTimes = 
+    let (env,times) = evalOp env op2  
+    let newTimes = 
+        match times with 
+        | Value(Dist(times)) ->
             times |> Distribution.map(fun times' ->
                         let newOps = 
                               match times' with  
@@ -267,48 +270,52 @@ let rec unfold f op op2 env =
                                     List.init n  (fun _ -> op) 
                         evalOp env (App(Call f, Value(ManyOp(OpList newOps))))
             ) 
-      match newTimes |> fromDistribution with 
-      | NoResult -> evalOp env (Value(NoValue))           
-      | Deterministic d -> d
-      | NonDeterministic _ -> evalOp env (Value(NoValue))
-and fold  (folder: Result<int>->Result<int>->Result<int>)  state ops env =
-      let state = (env,always state)
+        | _ -> always (env,Value(NoValue))
+    match newTimes |> fromDistribution with 
+    | NoResult -> evalOp env (Value(NoValue))           
+    | Deterministic d -> d
+    | NonDeterministic _ -> evalOp env (Value(NoValue))
+and fold folder state ops env =
       ops 
       |> List.fold (fun (env1,reduced1) op -> 
             let (env2,reduced2) = evalOp env1 op
-            env2, dist {
-                  let! a' = reduced1
-                  let! b' = reduced2
-                  return folder a' b'                              
-            }) state
+            match reduced1,reduced2 with 
+            | Value(Dist reduced1),Value(Dist reduced2) -> 
+                env2, (dist {
+                      let! a' = reduced1
+                      let! b' = reduced2
+                      return folder a' b'                             
+                } |> Dist |> Value)
+            | _ -> env2,Value(NoValue)
+            ) (env,state)
 and evalGamePrimitive = function
-      | Int i -> always i |> Distribution.map Pass
-      | Dice d -> evalDie d  |> Distribution.map Pass
-      | NoValue -> always 0  |> Distribution.map Fail
-      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan
-      | ManyOp(_) -> failwith "Not Implemented"
-and doManyOp  ops env (unfoldf,foldf,state) = 
+      | Int i -> always i |> Distribution.map Pass  |> Dist
+      | Dice d -> evalDie d  |> Distribution.map Pass  |> Dist 
+      | NoValue -> always 0  |> Distribution.map Fail  |> Dist
+      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Dist
+      | op -> op
+and doManyOp  ops env (unfoldf,foldf,state:Operation) = 
       match ops with 
       | Unfold (op,op2) -> unfold unfoldf op op2 env
       | OpList (ops) -> fold foldf state ops env
 and evalCall func  =
     match func with 
-    | Total -> func,(Result.add),(Pass 0)
-    | Product -> func,(Result.mult),(Pass 1)
-    | Count -> func,(Result.count),(Tuple(0,0))
+    | Total -> func,(Result.add), Value(Dist (always (Pass 0)))
+    | Product -> func,(Result.mult),Value(Dist (always (Pass 1)))
+    | Count -> func,(Result.count), Value(Dist (always (Tuple(0,0))))
 
-and evalOp (env:Environment) (operation:Operation) = 
+and evalOp (env:Environment) (operation:Operation) : Environment*Operation= 
       //let all = allIds operation
       match operation with
-      | Value v -> env,evalGamePrimitive v 
-      | Call f -> env, evalGamePrimitive (NoValue)  
-      | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> evalOp env (Value(NoValue)) |> snd )
+      | Value v -> env, Value(evalGamePrimitive v)
+      | Call f -> env, Value(NoValue)
+      | Var (scope,var)  -> env,(Map.tryFind (scope,var) env |> function Some v -> v | None -> Value(NoValue) )
       | Let(scope, var, op) -> 
             let (newEnv,result) = evalOp env op
             Map.add (scope,var) result newEnv, result
-      | App (Call f, Value(ManyOp(ops))) ->  (evalCall f |> doManyOp ops env)
+      | App (Call f, Value(ManyOp(ops))) -> evalCall f |> doManyOp ops env
       | App (Call f, Value(v)) ->  evalOp env (App (Call f, Value(ManyOp(OpList[Value(v)]))))
-      | Lam _ -> env, evalGamePrimitive (NoValue)
+      | Lam _ -> env, Value(NoValue)
       | App(f, value) -> failwith "Not Implemented"     
 
 

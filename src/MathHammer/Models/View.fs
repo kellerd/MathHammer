@@ -65,6 +65,7 @@ let rangeStops (dist:Distribution<_>)  =
     (minRange,maxRange, stopsPercentGreenAndOpacity)
      
 
+
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
             [ g   [ Transform model.Scale ] display ]
@@ -79,6 +80,7 @@ let rangeRoot (scope,name) model =
                       R !^ (float max)] [] ]
 
     dist
+    |> Option.bind(|IsDistribution|_|)
     |> Option.map 
         (rangeStops 
         >> ranges name

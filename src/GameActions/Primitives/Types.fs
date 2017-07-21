@@ -15,6 +15,7 @@ type GamePrimitive =
     | NoValue 
     | DPlus of Die * int 
     | Dice of Die
+    | Dist of Distribution.Distribution<Result.Result<int>>
     | ManyOp of ManyOp
 and Operation = 
     | Call of Call
@@ -30,7 +31,9 @@ and Call =
 and ManyOp =
     | OpList of Operation list
     | Unfold of Operation * Operation
-
+let rec (|IsDistribution|_|) = function
+    | Value(Dist(d)) | Let(_,_,IsDistribution(d)) -> Some d
+    | _ -> None
 type NormalizedOperation = Normal | Next of Operation    
 
 type [<Measure>] ft 

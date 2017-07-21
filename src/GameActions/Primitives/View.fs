@@ -20,6 +20,7 @@ and unparseCall func =
 and unparseValue = function   
     | Dice(i) -> string i
     | Int(i) -> string i
+    | Dist(d) -> "distribution"
     | ManyOp(m) -> sprintf "(%s)" <|displayManyOp m
     | NoValue -> "--"
     | DPlus (D6,i) -> string i + "+"
