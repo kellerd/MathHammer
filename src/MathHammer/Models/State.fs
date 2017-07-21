@@ -175,6 +175,11 @@ let rename all (t, s, x) =
         | Let(sc,v,op) -> match halp op with 
                           | Renamed ro -> Renamed(Let(sc,v,ro))
                           | _ -> Fine
+        | Value (DPlus(_)) 
+        | Value (Dice(_)) 
+        | Value (Int(_)) 
+        | Value (NoValue) -> Fine 
+        | Call _ -> Fine
         | Value (ManyOp(Unfold(op,op2))) -> 
             match halp op with
             | Renamed rop -> Renamed (Value (ManyOp(Unfold(rop,op2))))
@@ -203,6 +208,7 @@ let normalizeOp op =
     let all = freeIds op
     let rec reduce = function
         | Var _ -> Normal
+        | Call _ -> Normal
         | App (Lam (sc, p, b), a) ->
               let redex = a, (sc,p), b
               match rename all redex with
@@ -245,11 +251,7 @@ let normalizeOp op =
         (function Next rop -> Some (rop, reduce rop) | Normal -> None) 
         (Next op)
     |> Seq.last
-let evalGamePrimitive = function
-      | Int i -> always i |> Distribution.map Pass
-      | Dice d -> evalDie d  |> Distribution.map Pass
-      | NoValue -> always 0  |> Distribution.map Fail
-      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan
+
 open Determinism 
 let rec unfold f op op2 env = 
       let (env,times) = evalOp env op2  
@@ -279,16 +281,21 @@ and fold  (folder: Result<int>->Result<int>->Result<int>)  state ops env =
                   let! b' = reduced2
                   return folder a' b'                              
             }) state
-and doManyOp  ops (unfoldf) (foldf) state = 
+and evalGamePrimitive = function
+      | Int i -> always i |> Distribution.map Pass
+      | Dice d -> evalDie d  |> Distribution.map Pass
+      | NoValue -> always 0  |> Distribution.map Fail
+      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan
+      | ManyOp(_) -> failwith "Not Implemented"
+and doManyOp  ops env (unfoldf,foldf,state) = 
       match ops with 
-      | Unfold (op,op2) -> unfold unfoldf op op2
-      | OpList (ops) -> fold foldf state ops
-and evalCall func manyOp =
+      | Unfold (op,op2) -> unfold unfoldf op op2 env
+      | OpList (ops) -> fold foldf state ops env
+and evalCall func  =
     match func with 
-    | Total -> (Result.add),(Pass 0)
-    | Product -> (Result.mult),(Pass 1)
-    | Count -> (Result.count),(Tuple(0,0))
-    ||> doManyOp manyOp func 
+    | Total -> func,(Result.add),(Pass 0)
+    | Product -> func,(Result.mult),(Pass 1)
+    | Count -> func,(Result.count),(Tuple(0,0))
 
 and evalOp (env:Environment) (operation:Operation) = 
       //let all = allIds operation
@@ -299,8 +306,10 @@ and evalOp (env:Environment) (operation:Operation) =
       | Let(scope, var, op) -> 
             let (newEnv,result) = evalOp env op
             Map.add (scope,var) result newEnv, result
-      | App (Call f, Value(ManyOp(ops))) -> evalCall f ops env    
-      | Lam _ -> env, evalGamePrimitive (NoValue)     
+      | App (Call f, Value(ManyOp(ops))) ->  (evalCall f |> doManyOp ops env)
+      | App (Call f, Value(v)) ->  evalOp env (App (Call f, Value(ManyOp(OpList[Value(v)]))))
+      | Lam _ -> env, evalGamePrimitive (NoValue)
+      | App(f, value) -> failwith "Not Implemented"     
 
 
 let update msg model =
