@@ -224,7 +224,7 @@ let normalizeOp op =
     |> Seq.last
 
 open Determinism 
-let rec unfold f op op2 env = 
+let rec unfold op op2 env = 
     let (env,times) = evalOp env op2  
     let newTimes = 
         match times with 
@@ -238,14 +238,14 @@ let rec unfold f op op2 env =
                               | List xs -> 
                                     let n = List.fold (fun c elem -> match elem with Pass _ -> c + 1 | Fail _ -> c | Tuple(x,_) -> c + x | List _ -> failwith "Cannot count these") 0 xs
                                     List.init n  (fun _ -> op) 
-                        evalOp env (App(Call f, Value(ManyOp(OpList newOps))))
+                        evalOp env (Value(ManyOp(OpList newOps)))
             ) 
         | _ -> always (env,Value(NoValue))
     match newTimes |> fromDistribution with 
     | NoResult -> evalOp env (Value(NoValue))           
     | Deterministic d -> d
     | NonDeterministic _ -> evalOp env (Value(NoValue))
-and fold folder state ops env =
+and fold folder env ops state =
       ops 
       |> List.fold (fun (env1,reduced1) op -> 
             let (env2,reduced2) = evalOp env1 op
@@ -258,33 +258,39 @@ and fold folder state ops env =
                 } |> Dist |> Value)
             | _ -> env2,Value(NoValue)
             ) (env,state)
-and evalGamePrimitive = function
-      | Int i -> always i |> Distribution.map Pass  |> Dist
-      | Dice d -> evalDie d  |> Distribution.map Pass  |> Dist 
-      | NoValue -> always 0  |> Distribution.map Fail  |> Dist
-      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Dist
-      | op -> op
-and doManyOp  ops env unfoldf foldf state = 
-      match ops with 
-      | Value(ManyOp(Unfold (op,op2))) -> unfold unfoldf op op2 env
-      | Value(ManyOp(OpList (ops))) -> fold foldf state ops env
-      | Value _ as v -> doManyOp  (Value(ManyOp(OpList [v]))) env unfoldf foldf state
+and evalGamePrimitive env = function
+      | Int i -> env, always i |> Distribution.map Pass  |> Dist |> Value
+      | Dice d -> env, evalDie d  |> Distribution.map Pass  |> Dist |> Value
+      | NoValue -> env, always 0  |> Distribution.map Fail  |> Dist |> Value
+      | DPlus(d, moreThan) -> env, evalDie d |> dPlusTest moreThan |> Dist |> Value
+      | Dist d -> env, Dist d |> Value
+      | ManyOp(Unfold (op,op2)) -> unfold op op2 env
+      | ManyOp(OpList ops) -> 
+        let state = env,[]
+        let newEnv,newOps = 
+            ops
+            |> List.fold(fun (env,acc) op -> let newEnv,newOp = evalOp env op
+                                             newEnv,(newOp::acc)) state 
+        newEnv, (newOps |> List.rev |> OpList |> ManyOp |> Value)
 and evalCall func v env  =
-    let many = doManyOp v env func
-    match func with 
-    | Total -> 
-        Value(Dist (always (Pass 0))) 
-        |> many Result.add 
-    | Product -> 
+    match func,v with 
+    | Total, Value(ManyOp(OpList(ops))) -> 
+        Value(Dist (always (Pass 0)))
+        |> fold Result.add env ops
+    | Product, Value(ManyOp(OpList(ops))) -> 
         Value(Dist (always (Pass 1)))
-        |> many Result.mult 
-    | Count -> 
+        |> fold Result.mult  env ops
+    | Count, Value(ManyOp(OpList(ops))) -> 
         Value(Dist (always (Tuple(0,0))))
-        |> many Result.count 
+        |> fold Result.count  env ops
+    | Total, Value _
+    | Product,  Value _ 
+    | Count,  Value _ -> evalCall func (Value(ManyOp(OpList [v]))) env
+    | _ -> failwith "Cannot call this function with these parameters"
 and evalOp (env:Environment) (operation:Operation) : Environment * Operation= 
       //let all = allIds operation
       match operation with
-      | Value v -> env, Value(evalGamePrimitive v)
+      | Value v -> evalGamePrimitive env v 
       | Call f -> env, Call f
       | Var (var)  -> env,(Map.tryFind (var) env |> function Some v -> v | None -> Value(NoValue) )
       | Let(str, var, op) -> 

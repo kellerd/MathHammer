@@ -42,9 +42,6 @@ let three = Value(Int(3))
 evalOp env2 (call Product <| opList [passes;passes]) |> snd
 
 
-open Distribution.Example
-open Distribution
-
 let op2 = get "A"
 
 let d6 =  DPlus (D6, 3)
@@ -53,5 +50,5 @@ evalOp env2 (call Product <| opList [Value(d6);three])
 
 
 let attacker = 
-    Let("M",vInt 6, Let("MeleeRange", Let("Total", App(Call Total, Value(ManyOp(OpList[get "M"; vInt 12]))), Var "Total"), Value(ManyOp(OpList [get "M";get "MeleeRange";get "Total"]))))
-attacker |> normalizeOp |> evalOp Map.empty<_,_> |> snd
+    Let("M",vInt 6, Let("MeleeRange", Let("Total", App(Call Total, Value(ManyOp(OpList[get "M"; vInt 12]))), Var "Total"), get "Total"))
+attacker |> normalizeOp |> evalOp Map.empty<_,_> 

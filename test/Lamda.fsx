@@ -1,23 +1,4 @@
-#r "../packages/Fable.Core/lib/netstandard1.6/Fable.Core.dll"
-#r "../packages/Fable.Elmish/lib/netstandard1.6/Fable.Elmish.dll"
-#r "../packages/Fable.Elmish.React/lib/netstandard1.6/Fable.Elmish.React.dll"
-#r "../packages/Fable.Elmish.Browser/lib/netstandard1.6/Fable.Elmish.Browser.dll"
-#r "../packages/Fable.React/lib/netstandard1.6/Fable.React.dll"
-#load "../src/Result/Result.fs"
-#load "../src/Probability/Distribution.fs"
-#load "../src/Probability/Determinism.fs"
-#load "../src/Probability/View.fs"
-#load "../src/GameActions/Primitives/Types.fs"
-#load "../src/GameActions/Primitives/State.fs"
-#load "../src/GameActions/Primitives/View.fs"
-#load "../src/GameActions/GameActionsList/Types.fs"
-#load "../src/GameActions/GameActionsList/State.fs"
-#load "../src/GameActions/GameActionsList/View.fs"
-#load "../src/GameActions/Types.fs"
-#load "../src/GameActions/State.fs"
-#load "../src/GameActions/View.fs"
-#load "../src/MathHammer/Models/Types.fs"
-#load "../src/MathHammer/Models/State.fs"
+#load "LoadModules.fsx"
 
 open GameActions.Primitives.Types
 open MathHammer.Models.State
@@ -73,13 +54,15 @@ let normalizedSecond' = count'  (appliedTwo,appliedTwo) |> normalizeOp
 normalizedFirst' = normalizedSecond'
 
 let v = Value(Int(3))
+//Let x = 3 returns 3 as well as binding to environment
 let retValueIsSame v f =
     let evaled = Let("x", v ,Var ("x")) |> f |> evalOp Map.empty<_,_> |> snd
     let evaled' = v |> f |> evalOp Map.empty<_,_> |> snd
     evaled = evaled'
 retValueIsSame v id
 retValueIsSame v normalizeOp
-
+//Let x = some number in
+//x + some other number
 let addition x y  =    
     let v = Value(Int(x))
     let (Value(Dist(d))) =
@@ -90,7 +73,8 @@ let addition x y  =
     printf "Is %A = %A" d expected
     d = expected
 addition 3 9    
-
+//Let x = 6
+//Total of x is 6
 let totalOfXIsX x = 
     let v = Value(Int(x))
     let (Value(Dist(d))) =
@@ -101,7 +85,7 @@ let totalOfXIsX x =
     printf "Is %A = %A" d expected
     d = expected
 totalOfXIsX 6  
-
+//Count of one passed result is 1
 let countOfOneXIsOneX x = 
     let v = Value(Int(x))
     let (Value(Dist(d))) =
