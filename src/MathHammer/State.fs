@@ -57,10 +57,9 @@ let update msg model : Model * Cmd<Types.Msg> =
                                        Cmd.ofMsg RebindEnvironment ]
     | RebindEnvironment ->      
         let environment = 
+            let initial = Map.empty<_,_>
             model.GlobalOperations 
-            |> Map.toList
-            |> List.sortBy (fun (_,(ord,_)) -> ord)
-            |> List.fold(fun env -> snd >> snd >> MathHammer.Models.State.normalizeOp >> MathHammer.Models.State.evalOp env >> fst) Map.empty<_,_>
+            |> Map.map(fun _ (ord,op) -> op |> MathHammer.Models.State.normalizeOp |>  MathHammer.Models.State.evalOp initial) 
         {model with Environment = environment}, Cmd.batch [ Cmd.ofMsg BindDefender
                                                             Cmd.ofMsg BindAttacker ]
     | BindDefender -> 

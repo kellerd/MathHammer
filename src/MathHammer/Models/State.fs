@@ -225,7 +225,7 @@ let normalizeOp op =
 
 open Determinism 
 let rec unfold op op2 env = 
-    let (env,times) = evalOp env op2  
+    let times = evalOp env op2  
     let newTimes = 
         match times with 
         | Value(Dist(times)) ->
@@ -240,38 +240,37 @@ let rec unfold op op2 env =
                                     List.init n  (fun _ -> op) 
                         evalOp env (Value(ManyOp(OpList newOps)))
             ) 
-        | _ -> always (env,Value(NoValue))
+        | _ -> always <| Value(NoValue)
     match newTimes |> fromDistribution with 
     | NoResult -> evalOp env (Value(NoValue))           
     | Deterministic d -> d
     | NonDeterministic _ -> evalOp env (Value(NoValue))
 and fold folder env ops state =
       ops 
-      |> List.fold (fun (env1,reduced1) op -> 
-            let (env2,reduced2) = evalOp env1 op
+      |> List.fold (fun reduced1 op -> 
+            let reduced2 = evalOp env op
             match reduced1,reduced2 with 
             | Value(Dist reduced1),Value(Dist reduced2) -> 
-                env2, (dist {
+                dist {
                       let! a' = reduced1
                       let! b' = reduced2
                       return folder a' b'                             
-                } |> Dist |> Value)
-            | _ -> env2,Value(NoValue)
-            ) (env,state)
+                } |> Dist |> Value
+            | _ -> Value(NoValue)
+            ) state
 and evalGamePrimitive env = function
-      | Int i -> env, always i |> Distribution.map Pass  |> Dist |> Value
-      | Dice d -> env, evalDie d  |> Distribution.map Pass  |> Dist |> Value
-      | NoValue -> env, always 0  |> Distribution.map Fail  |> Dist |> Value
-      | DPlus(d, moreThan) -> env, evalDie d |> dPlusTest moreThan |> Dist |> Value
-      | Dist d -> env, Dist d |> Value
+      | Int i -> always i |> Distribution.map Pass  |> Dist |> Value
+      | Dice d -> evalDie d  |> Distribution.map Pass  |> Dist |> Value
+      | NoValue -> always 0  |> Distribution.map Fail  |> Dist |> Value
+      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Dist |> Value
+      | Dist d -> Dist d |> Value
       | ManyOp(Unfold (op,op2)) -> unfold op op2 env
       | ManyOp(OpList ops) -> 
-        let state = env,[]
-        let newEnv,newOps = 
             ops
-            |> List.fold(fun (env,acc) op -> let newEnv,newOp = evalOp env op
-                                             newEnv,(newOp::acc)) state 
-        newEnv, (newOps |> List.rev |> OpList |> ManyOp |> Value)
+            |> List.fold(fun acc op -> let newOp = evalOp env op
+                                       (newOp::acc)) [] 
+            |> List.rev 
+            |> OpList |> ManyOp |> Value
 and evalCall func v env  =
     match func,v with 
     | Total, Value(ManyOp(OpList(ops))) -> 
@@ -287,20 +286,19 @@ and evalCall func v env  =
     | Product,  Value _ 
     | Count,  Value _ -> evalCall func (Value(ManyOp(OpList [v]))) env
     | _ -> failwith "Cannot call this function with these parameters"
-and evalOp (env:Environment) (operation:Operation) : Environment * Operation= 
+and evalOp (env:Environment) (operation:Operation) = 
       //let all = allIds operation
       match operation with
       | Value v -> evalGamePrimitive env v 
-      | Call f -> env, Call f
-      | Var (var)  -> env,(Map.tryFind (var) env |> function Some v -> v | None -> Value(NoValue) )
+      | Call f -> Call f
+      | Var (var)  -> Map.tryFind (var) env |> function Some v -> v | None -> Value(NoValue)
       | Let(str, var, op) -> 
-            let (newEnv,result) = evalOp env var
-            evalOp (Map.add (str) result newEnv) op
-      | Lam _ -> env, Value(NoValue)
+            let result = evalOp env var
+            evalOp (Map.add (str) result env) op
+      | Lam _ -> Value(NoValue)
       | App(f, value) -> 
-           let (env1,call) = evalOp env f
-           match call, evalOp env1 value with 
-           | (Call f),(env2,v) -> evalCall f v env2 
+           match evalOp env f, evalOp env value with 
+           | (Call f),v -> evalCall f v env 
            | _ -> failwith "Cannot apply to something not a function"
 
 
@@ -311,9 +309,8 @@ let update msg model =
       | Msg.Let _ ->  model, Cmd.none
       | Rebind (initial) -> 
             let newEnv = 
-                  model.Attributes 
-                  |> Map.toList
-                  |> List.sortBy (fun (_,(ord,_)) -> ord)
-                  |> List.fold(fun env -> snd >> snd >> normalizeOp >> evalOp env >> fst) initial
-            let cmds = newEnv |> Map.toList |> List.map (fun (name,result) -> Cmd.ofMsg (Msg.Let(name,result)))
+                  model.Attributes
+                  |> Map.map(fun _ (ord,op) -> op |> normalizeOp |> evalOp initial) 
+            //let cmds = newEnv |> Map.toList |> List.map (fun (name,result) -> Cmd.ofMsg (Msg.Let(name,result)))
+            let cmds = []
             { model with Environment = newEnv }, Cmd.batch cmds

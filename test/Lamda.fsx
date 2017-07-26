@@ -56,8 +56,8 @@ normalizedFirst' = normalizedSecond'
 let v = Value(Int(3))
 //Let x = 3 returns 3 as well as binding to environment
 let retValueIsSame v f =
-    let evaled = Let("x", v ,Var ("x")) |> f |> evalOp Map.empty<_,_> |> snd
-    let evaled' = v |> f |> evalOp Map.empty<_,_> |> snd
+    let evaled = Let("x", v ,Var ("x")) |> f |> evalOp Map.empty<_,_> 
+    let evaled' = v |> f |> evalOp Map.empty<_,_> 
     evaled = evaled'
 retValueIsSame v id
 retValueIsSame v normalizeOp
@@ -68,7 +68,6 @@ let addition x y  =
     let (Value(Dist(d))) =
         Let("x", v ,App(Call Total, Value(ManyOp(OpList[Value(Int(y));Var ("x")])))) 
         |> evalOp Map.empty<_,_>
-        |> snd
     let expected = Distribution.always (Result.Pass (x + y))
     printf "Is %A = %A" d expected
     d = expected
@@ -80,7 +79,6 @@ let totalOfXIsX x =
     let (Value(Dist(d))) =
         Let("x", v ,App(Call Total, v)) 
         |> evalOp Map.empty<_,_>
-        |> snd
     let expected = Distribution.always (Result.Pass (x))
     printf "Is %A = %A" d expected
     d = expected
@@ -91,7 +89,6 @@ let countOfOneXIsOneX x =
     let (Value(Dist(d))) =
         Let("x", v ,App(Call Count, v)) 
         |> evalOp Map.empty<_,_>
-        |> snd
     let expected = Distribution.always (Result.Tuple (1,0))
     printf "Is %A = %A" d expected
     d = expected

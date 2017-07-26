@@ -24,31 +24,35 @@ open MathHammer.Types
 
 let x = dPlus D6 3 |~> "x"
 let a = vInt 3 |~> "a"
-let (env,r) = evalOp Map.empty<_,_> x
-let (env2,r2) = evalOp env a
+let env = Map.empty<_,_>
+let r = evalOp Map.empty<_,_> x
+let r2 = evalOp env a
 
-let passes = call Count <| opList [get "x"] 
+let passes = lam "x" <| (call Count <| opList [get "x"]) 
 // let (env3,r3) = evalOp env2 (Repeat(Var(Global,"x"),Var(Global,"a")))
 // r3
-let threepasses = [passes;passes;passes]
-let threepassestwo = unfoldOp passes (get "a")
-let total = call Total <| opList threepasses
-let total2 = call Total <|  threepassestwo
-
-evalOp env2 passes |> snd
-evalOp env2 total |> snd
-evalOp env2 total2 |> snd
-let three = Value(Int(3))
-evalOp env2 (call Product <| opList [passes;passes]) |> snd
+x |%> passes |> normalizeOp |> evalOp Map.empty<_,_>
 
 
-let op2 = get "A"
+// let threepasses = [passes;passes;passes]
+// let threepassestwo = unfoldOp passes (get "a")
+// let total = call Total <| opList threepasses
+// let total2 = call Total <|  threepassestwo
 
-let d6 =  DPlus (D6, 3)
+// evalOp env passes 
+// evalOp env total 
+// evalOp env total2 
+// let three = Value(Int(3))
+// evalOp env2 (call Product <| opList [passes;passes]) |> snd
 
-evalOp env2 (call Product <| opList [Value(d6);three])
+
+// let op2 = get "A"
+
+// let d6 =  DPlus (D6, 3)
+
+// evalOp env2 (call Product <| opList [Value(d6);three])
 
 
-let attacker = 
-    Let("M",vInt 6, Let("MeleeRange", Let("Total", App(Call Total, Value(ManyOp(OpList[get "M"; vInt 12]))), Var "Total"), get "Total"))
-attacker |> normalizeOp |> evalOp Map.empty<_,_> 
+// let attacker = 
+//     Let("M",vInt 6, Let("MeleeRange", Let("Total", App(Call Total, Value(ManyOp(OpList[get "M"; vInt 12]))), Var "Total"), get "Total"))
+// attacker |> normalizeOp |> evalOp Map.empty<_,_> 
