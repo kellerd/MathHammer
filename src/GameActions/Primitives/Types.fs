@@ -7,10 +7,11 @@ type Die =
     
 type GamePrimitive =
     | Int of int
+    | Str of string
     | NoValue 
     | DPlus of Die * int 
     | Dice of Die
-    | Dist of Distribution.Distribution<Result.Result<int>>
+    | Dist of Distribution.Distribution<Result.Result<GamePrimitive>>
     | ManyOp of ManyOp
 and Operation = 
     | Call of Call
@@ -29,6 +30,19 @@ and ManyOp =
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
     | _ -> None
+
+let add x y = 
+    match (x,y) with 
+    | NoValue,z | z,NoValue -> z
+    | Int(a),Int(b) -> Int(a+b)
+    | Str(a),Str(b) -> Str(a+b)
+    | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
+    | _ -> failwith "Cannot add these two primitives"
+
+type GamePrimitive with 
+    static member inline(+) (x,y) = add x y
+        
+        
 type NormalizedOperation = Normal | Next of Operation    
 
 type [<Measure>] ft 

@@ -232,12 +232,19 @@ let rec unfold op op2 env =
             times |> Distribution.map(fun times' ->
                         let newOps = 
                               match times' with  
-                              | Tuple(n,_) -> List.init n (fun _ -> op) 
-                              | Pass x -> List.init (int x)  (fun _ -> op) 
-                              | Fail x -> List.init (int x) (fun _ -> op) 
+                              | Tuple(Int(n),_) 
+                              | Pass (Int(n)) 
+                              | Fail (Int(n)) -> List.init n (fun _ -> op) 
                               | List xs -> 
-                                    let n = List.fold (fun c elem -> match elem with Pass _ -> c + 1 | Fail _ -> c | Tuple(x,_) -> c + x | List _ -> failwith "Cannot count these") 0 xs
+                                    let n = 
+                                        List.fold (fun c elem -> 
+                                                    match elem with 
+                                                    | Pass _ -> c + 1 
+                                                    | Fail _ -> c 
+                                                    | Tuple(Int(x),_) -> c + x 
+                                                    | _ -> failwith "Cannot unfold by these types of values") 0 xs
                                     List.init n  (fun _ -> op) 
+                              | _ -> failwith "Cannot unfold by these types of values"
                         evalOp env (Value(ManyOp(OpList newOps)))
             ) 
         | _ -> always <| Value(NoValue)
@@ -259,10 +266,10 @@ and fold folder env ops state =
             | _ -> Value(NoValue)
             ) state
 and evalGamePrimitive env = function
-      | Int i -> always i |> Distribution.map Pass  |> Dist |> Value
-      | Dice d -> evalDie d  |> Distribution.map Pass  |> Dist |> Value
-      | NoValue -> always 0  |> Distribution.map Fail  |> Dist |> Value
-      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Dist |> Value
+      | Int i -> always i  |> Distribution.map (Int >> Pass)  |> Dist |> Value
+      | Dice d -> evalDie d  |> Distribution.map (Int >> Pass)  |> Dist |> Value
+      | NoValue -> always NoValue  |> Distribution.map (Fail)  |> Dist |> Value
+      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Distribution.map(Result.map(Int)) |> Dist |> Value
       | Dist d -> Dist d |> Value
       | ManyOp(Unfold (op,op2)) -> unfold op op2 env
       | ManyOp(OpList ops) -> 
