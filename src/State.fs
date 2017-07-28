@@ -30,7 +30,7 @@ let init result =
         (fun i (x : MathHammer.Models.Types.Model,_) -> 
           x.Name, {x with Attributes = 
                             x.Attributes
-                            |> Map.map (fun k -> function order,Let("A",Value (Int(i)),op) -> order,Let("A" , Value (Int(i + 3)),op) | order,x -> order,x)
+                            |> Map.map (fun k -> function Let("A",Value (Int(i)),op) -> Let("A" , Value (Int(i + 3)),op) | x -> x)
                           Scale = scale} )
     >> Map.ofList
 

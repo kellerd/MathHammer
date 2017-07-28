@@ -12,7 +12,7 @@ open Distribution
 open Probability.View
 let onClick x : IProp = OnClick(x) :> _
 
-let showActions dispatch (key, (_,operation))  = 
+let showActions dispatch (key, operation)  = 
       div [] 
           [ b [] [str key; str " : "]
             GameActions.Primitives.View.root operation dispatch ]

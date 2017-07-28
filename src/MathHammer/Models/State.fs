@@ -18,7 +18,7 @@ let init name =
 
 let initMeq name =
     { (init name) with 
-        Attributes = []
+        Attributes = Map.empty<_,_>
         // Attributes = ["M",  vInt 6 |> bindVar env "M" 
         //               "WS", dPlus D6 3 |> bindVar env "WS" 
         //               "BS", dPlus D6 3 |> bindVar env "BS" 
@@ -31,10 +31,10 @@ let initMeq name =
         //               "MeleeRange", meleeRange
         //               "ChargeRange", chargeRange
         //               "PsychicTest", psychicTest ] 
-                      |> List.mapi(fun i (k,op) -> k,(i,op)) |> Map.ofList }, Cmd.none
+        }, Cmd.none
 let initGeq name =
     { (init name) with
-        Attributes = []
+        Attributes = Map.empty<_,_>
         //              ["M",  vInt 6 |> bindVar env "M" 
         //               "WS", dPlus D6 4 |> bindVar env "WS" 
         //               "BS", dPlus D6 4 |> bindVar env "BS" 
@@ -48,7 +48,7 @@ let initGeq name =
         //               "ChargeRange", chargeRange
         //               "PsychicTest", psychicTest
         //               "ShootingRange", vInt 6 |> single |> total |> bindVar env "ShootingRange" ] 
-                      |> List.mapi(fun i (k,op) -> k,(i,op)) |> Map.ofList }, Cmd.none
+        }, Cmd.none
 let dPlusTest plus die = dist {
       let! roll = die
       let result = 
@@ -310,7 +310,8 @@ let update msg model =
       | Rebind (initial) -> 
             let newEnv = 
                   model.Attributes
-                  |> Map.map(fun _ (ord,op) -> op |> normalizeOp |> evalOp initial) 
+                  |> Map.map (fun _ -> normalizeOp >> evalOp initial)
+
             //let cmds = newEnv |> Map.toList |> List.map (fun (name,result) -> Cmd.ofMsg (Msg.Let(name,result)))
             let cmds = []
             { model with Environment = newEnv }, Cmd.batch cmds

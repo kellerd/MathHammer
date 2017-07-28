@@ -56,12 +56,12 @@ let root model dispatch =
              let title = titleBar selected.Name
              let (attrs,actions) = 
                  selected.Attributes 
-                 |> Map.partition (fun _ -> snd >> isCharacteristic)
+                 |> Map.partition (fun _ -> isCharacteristic)
                  |> fun (x,y) -> Map.toList x, Map.toList y
-                 |> fun (x,y) -> (List.sortBy (snd >> fst) x), (List.sortBy (snd >> fst) y)
+                 |> fun (x,y) -> (List.sortBy (snd) x), (List.sortBy (snd) y)
              let attrDiv = 
                  attrs  
-                 |> List.map (fun (key,(_,op)) -> MathHammer.Models.View.showAttributes (key,op) dispatch)
+                 |> List.map (fun (key,op) -> MathHammer.Models.View.showAttributes (key,op) dispatch)
                  |> div [ClassName "columns"]  
              let evaluatedActions = 
                 actions 
