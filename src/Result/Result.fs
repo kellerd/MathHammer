@@ -47,8 +47,8 @@ let inline map f x =
             | Fail a -> Fail (f a) 
             | List a -> List.map (map f) a |> List  
             | Tuple(a,b) -> Tuple(f a,f b)
-    map f x       
-         
+    map f x     
+
 let rec printResultF = 
         function
         | Pass x   -> sprintf "Pass %.2f" x 

@@ -281,10 +281,18 @@ and evalGamePrimitive env = function
 and evalCall func v env  =
     match func,v with 
     | Total, Value(ManyOp(OpList(ops))) -> 
-        Value(Dist (always (Pass 0)))
+        Int 0
+        |> Pass
+        |> always 
+        |> Dist
+        |> Value 
         |> fold Result.add env ops
     | Product, Value(ManyOp(OpList(ops))) -> 
-        Value(Dist (always (Pass 1)))
+        Int 1
+        |> Pass
+        |> always 
+        |> Dist
+        |> Value 
         |> fold Result.mult  env ops
     | Count, Value(ManyOp(OpList(ops))) -> 
         Value(Dist (always (Tuple(0,0))))
