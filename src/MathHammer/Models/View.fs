@@ -26,7 +26,7 @@ let rangeStops (dist:Distribution<_>)  =
     let length = List.length dist
     let minRange, maxRange,minProbability,maxProbability =
         dist 
-        |> Distribution.map (Result.map ((*) 1<inch>))
+        |> Distribution.choose (function IntResult (i) -> Result.map ((*) 1<inch>) i |> Some | _ -> None)
         |> List.fold (fun (currMinRange,currMaxRange,currMin,currMax) (range,prob) -> 
             min currMinRange range, max currMaxRange range,
             min currMin prob, max currMax prob ) (Pass (28<ft> * 12<inch/ft>),Pass 0<inch>,1.,0.)
@@ -48,8 +48,8 @@ let rangeStops (dist:Distribution<_>)  =
             |> List.toArray
             |> Array.mapi (fun i (range,prob) -> 
                 match range,prob with 
-                | Fail _,_ | _,0.0 -> (stopPercent i length, colour 255.), 0.0
-                | Pass range,_ -> (stopPercent i length, percentGreen (inch.ToMM(int range * 1<inch>))), prob
+                | Result(Fail _),_ | _,0.0 -> (stopPercent i length, colour 255.), 0.0
+                | Result(Pass (Int(range))),_ -> (stopPercent i length, percentGreen (inch.ToMM(int range * 1<inch>))), prob
                 | _ -> failwith "invalid range calculation") 
             |> Array.rev
         stops
@@ -64,7 +64,46 @@ let rangeStops (dist:Distribution<_>)  =
         
     (minRange,maxRange, stopsPercentGreenAndOpacity)
      
+let showProbabilitiesOfActions (key,dist) = 
+      let probabilities (dist:Distribution<GamePrimitive>) = 
+            let result = 
+                  dist 
+                  |> List.groupBy fst
+                  |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
+            match result with 
+            | [] -> str ""
+            | _ ->  let max = result |> List.maxBy snd |> snd
+                    let min = result |> List.minBy snd |> snd
+                    let total = result |> List.sumBy snd 
+                    result
+                        |> List.map (fun (r, prob) -> 
+                              match r with 
+                              | IntResult r -> 
+                                  let greenValue = Result.map float r |> passFailToExpectation
+                                  //let percentageGreen = prob / max * 255.
+                                  let alpha = opacity min max prob
+                                  //let colour = sprintf "#%02X%02X00" (0xFF - System.Convert.ToInt32 percentageGreen) (System.Convert.ToInt32(percentageGreen))
+                                  div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.2f%%" (prob / total)]
+                              | v -> div [] [GameActions.Primitives.View.unparseValue v |> str; str <| sprintf " %.2f%%" (prob / total)])
+                    |> div [ClassName "column"]            
+      section [ClassName "columns"]
+          [ 
+            div [ClassName "column"] [b  [] [str key]]
+            dist |> probabilities           
+          ]
 
+let showSample (key, dist) = 
+      let sampleDistribution dist = 
+            match sample dist with 
+            | IntResult result -> 
+                let colour' = result  |> Result.map float |> passFailToExpectation  |> colour
+                div [ClassName "column"; Style[Color colour']] [printResultD result |> str ]
+            | v -> div [ClassName "column";] [GameActions.Primitives.View.unparseValue v |> str]
+      section [ClassName "columns"]
+          [ 
+            div [ClassName "column"] [b  [] [str key]]
+            dist |> sampleDistribution           
+          ]        
 
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]

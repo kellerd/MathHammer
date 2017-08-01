@@ -94,8 +94,7 @@ module Distribution
             returnM (cons h t) ))
 
         List.foldBack folder list initState 
-
-        
+    let choose f (xs : Distribution<_>) : Distribution<_> = List.choose (fun (a,p) -> f a |> Option.map (fun a' -> a',p) ) xs   
     let sequenceResultM x = traverseResultM id x
     let rec takeN (v : Distribution<_>) (n : int) : Distribution<'a list> =
         dist{

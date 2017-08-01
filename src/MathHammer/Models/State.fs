@@ -124,7 +124,44 @@ let uniqueId taken s =
     halp (start + 1)
 let rename all (t, s, x) =
     let free = freeIds t
-    let rec halp = function
+    let rec halpGP = function 
+        | DPlus(_) 
+        | Dice(_) 
+        | Int(_) 
+        | Dist(_) 
+        | NoValue 
+        | Str(_) ->  Fine
+        | Result(_) -> failwith "Not Implemented"
+        | Pair(gp, gp2) -> 
+            match halpGP gp with 
+            | Fine ->
+                match halpGP gp2 with
+                | Fine -> Fine
+                | Renamed (Value(ManyOp(rop2))) -> Renamed(Value(Pair(gp,ManyOp(rop2))))
+                | Renamed(_) -> failwith "Not Implemented"
+            | Renamed (Value(ManyOp(rop))) -> Renamed(Value(Pair(ManyOp(rop),gp2)))
+            | Renamed(_) -> failwith "Not Implemented"
+        | ManyOp(Unfold(op,op2)) ->
+            match halp op with
+            | Renamed rop -> Renamed (Value (ManyOp(Unfold(rop,op2))))
+            | _ ->
+                match halp op2 with
+                | Renamed rop2 -> Renamed (Value(ManyOp(Unfold(op,rop2))))
+                | _ -> Fine
+        | ManyOp(OpList ops) -> 
+            ops 
+            |> List.map (fun op -> op, halp op)
+            |> List.fold (fun state (op,rop) -> 
+                          match state,rop with
+                          | Renamed(Value (ManyOp(OpList ops))),_ -> Renamed(Value (ManyOp(OpList (op::ops))))
+                          | Renamed (_) as r,_ -> r
+                          | Fine,Renamed rop -> Renamed(Value (ManyOp(OpList [rop])))
+                          | Fine,Fine -> Fine) Fine 
+            |> function 
+            | Renamed(Value (ManyOp(OpList ops))) -> Renamed(Value (ManyOp(OpList <| List.rev ops)))
+            | Renamed (_) as r -> r   
+            | _ -> Fine
+    and halp = function
         | Var (v) -> Fine
         | App (f, a) ->
             match halp f with
@@ -142,32 +179,8 @@ let rename all (t, s, x) =
         | Let(sc,v,op) -> match halp op with 
                           | Renamed ro -> Renamed(Let(sc,v,ro))
                           | _ -> Fine
-        | Value (DPlus(_)) 
-        | Value (Dice(_)) 
-        | Value (Int(_)) 
-        | Value (Dist(_)) 
-        | Value (NoValue) -> Fine 
         | Call _ -> Fine
-        | Value (ManyOp(Unfold(op,op2))) -> 
-            match halp op with
-            | Renamed rop -> Renamed (Value (ManyOp(Unfold(rop,op2))))
-            | _ ->
-                match halp op2 with
-                | Renamed rop2 -> Renamed (Value(ManyOp(Unfold(op,rop2))))
-                | _ -> Fine
-        | Value (ManyOp(OpList ops)) -> 
-            ops 
-            |> List.map (fun op -> op, halp op)
-            |> List.fold (fun state (op,rop) -> 
-                          match state,rop with
-                          | Renamed(Value (ManyOp(OpList ops))),_ -> Renamed(Value (ManyOp(OpList (op::ops))))
-                          | Renamed (_) as r,_ -> r
-                          | Fine,Renamed rop -> Renamed(Value (ManyOp(OpList [rop])))
-                          | Fine,Fine -> Fine) Fine 
-            |> function 
-            | Renamed(Value (ManyOp(OpList ops))) -> Renamed(Value (ManyOp(OpList <| List.rev ops)))
-            | Renamed (_) as r -> r   
-            | _ -> Fine
+        | Value v -> halpGP v
 
     match halp x,s with
         | Renamed x,s -> Renamed (App (Lam (s, x), t))
@@ -232,10 +245,10 @@ let rec unfold op op2 env =
             times |> Distribution.map(fun times' ->
                         let newOps = 
                               match times' with  
-                              | Tuple(Int(n),_) 
-                              | Pass (Int(n)) 
-                              | Fail (Int(n)) -> List.init n (fun _ -> op) 
-                              | List xs -> 
+                              | Result(Tuple(Int(n),_))
+                              | Result(Pass (Int(n)))
+                              | Result(Fail (Int(n))) -> List.init n (fun _ -> op) 
+                              | Result(List xs) -> 
                                     let n = 
                                         List.fold (fun c elem -> 
                                                     match elem with 
@@ -266,10 +279,10 @@ and fold folder env ops state =
             | _ -> Value(NoValue)
             ) state
 and evalGamePrimitive env = function
-      | Int i -> always i  |> Distribution.map (Int >> Pass)  |> Dist |> Value
-      | Dice d -> evalDie d  |> Distribution.map (Int >> Pass)  |> Dist |> Value
-      | NoValue -> always NoValue  |> Distribution.map (Fail)  |> Dist |> Value
-      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Distribution.map(Result.map(Int)) |> Dist |> Value
+      | Int _ as i -> always i  |> Distribution.map (Pass >> Result)  |> Dist |> Value
+      | Dice d -> evalDie d  |> Distribution.map (Int >> Pass >> Result)  |> Dist |> Value
+      | NoValue -> always NoValue  |> Distribution.map (Fail >> Result)  |> Dist |> Value
+      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Distribution.map(Result.map(Int) >> Result) |> Dist |> Value
       | Dist d -> Dist d |> Value
       | ManyOp(Unfold (op,op2)) -> unfold op op2 env
       | ManyOp(OpList ops) -> 
@@ -278,25 +291,36 @@ and evalGamePrimitive env = function
                                        (newOp::acc)) [] 
             |> List.rev 
             |> OpList |> ManyOp |> Value
+      | Str _ as s -> always s  |> Distribution.map (Pass >> Result) |> Dist |> Value
+      | Result _ as r -> always r |> Dist |> Value
 and evalCall func v env  =
     match func,v with 
     | Total, Value(ManyOp(OpList(ops))) -> 
         Int 0
         |> Pass
+        |> Result
         |> always 
         |> Dist
         |> Value 
-        |> fold Result.add env ops
+        |> fold (+) env ops
     | Product, Value(ManyOp(OpList(ops))) -> 
         Int 1
         |> Pass
+        |> Result
         |> always 
         |> Dist
         |> Value 
-        |> fold Result.mult  env ops
+        |> fold (*) env ops
     | Count, Value(ManyOp(OpList(ops))) -> 
-        Value(Dist (always (Tuple(0,0))))
-        |> fold Result.count  env ops
+        let toCount result = 
+            match result with | Result(Pass _) -> Result(Tuple (Int(1),Int(0))) | Result(Fail _) ->  Result(Tuple(Int(0),(Int(1)))) | Result(Tuple _) as x -> x | _ -> failwith "Cannot count these" 
+        let zero = 0 |> Int 
+        Tuple(zero,zero) 
+        |> Result 
+        |> always 
+        |> Dist 
+        |> Value
+        |> fold (fun r1 r2 -> toCount r1 + toCount r2)  env ops
     | Total, Value _
     | Product,  Value _ 
     | Count,  Value _ -> evalCall func (Value(ManyOp(OpList [v]))) env

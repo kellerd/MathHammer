@@ -20,30 +20,7 @@ let opacity minProbability maxProbability prob =
 let colourA (greenValue:float) alpha = sprintf "rgba(%d,%d,0,%f)" (0xFF - System.Convert.ToInt32 greenValue) (System.Convert.ToInt32(greenValue)) alpha
 let colour (greenValue:float) = sprintf "#%02X%02X00" (0xFF - System.Convert.ToInt32 greenValue) (System.Convert.ToInt32(greenValue)) 
 
-let showProbabilitiesOfActions (key,dist) = 
-      let probabilities (dist:Distribution<_>) = 
-            let result = 
-                  dist 
-                  |> List.groupBy fst
-                  |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
-            match result with 
-            | [] -> str ""
-            | _ ->  let max = result |> List.maxBy snd |> snd
-                    let min = result |> List.minBy snd |> snd
-                    let total = result |> List.sumBy snd 
-                    result
-                        |> List.map (fun (r, prob) -> 
-                              let greenValue = Result.map float r |> passFailToExpectation
-                              //let percentageGreen = prob / max * 255.
-                              let alpha = opacity min max prob
-                              //let colour = sprintf "#%02X%02X00" (0xFF - System.Convert.ToInt32 percentageGreen) (System.Convert.ToInt32(percentageGreen))
-                              div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.2f%%" (prob / total)])
-                    |> div [ClassName "column"]            
-      section [ClassName "columns"]
-          [ 
-            div [ClassName "column"] [b  [] [str key]]
-            dist |> probabilities           
-          ]
+
 
 let showAverages (key, dist) = 
       let expectations dist = 
@@ -67,13 +44,3 @@ let showAverages (key, dist) =
             dist |> Distribution.map(Result.map float) |> expectations           
           ]
 
-let showSample (key, dist) = 
-      let sampleDistribution dist = 
-            let result = dist |> sample 
-            let colour' = result  |> Result.map float |> passFailToExpectation  |> colour
-            div [ClassName "column"; Style[Color colour']] [printResultD result |> str ]
-      section [ClassName "columns"]
-          [ 
-            div [ClassName "column"] [b  [] [str key]]
-            dist |> sampleDistribution           
-          ]  

@@ -53,31 +53,36 @@ let root model dispatch =
         match model.SelectedAttacker |> Option.bind (fun name -> Map.tryFind name model.Attacker.Models) with 
         | None ->  titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
-             let title = titleBar selected.Name
-             let (attrs,actions) = 
-                 selected.Attributes 
-                 |> Map.partition (fun _ -> isCharacteristic)
-                 |> fun (x,y) -> Map.toList x, Map.toList y
-                 |> fun (x,y) -> (List.sortBy (snd) x), (List.sortBy (snd) y)
-             let attrDiv = 
-                 attrs  
-                 |> List.map (fun (key,op) -> MathHammer.Models.View.showAttributes (key,op) dispatch)
-                 |> div [ClassName "columns"]  
-             let evaluatedActions = 
+            let title = titleBar selected.Name
+            let (attrs,actions) = 
+                selected.Attributes 
+                |> Map.partition (fun _ -> isCharacteristic)
+                |> fun (x,y) -> Map.toList x, Map.toList y
+                |> fun (x,y) -> (List.sortBy (snd) x), (List.sortBy (snd) y)
+            let attrDiv = 
+                attrs  
+                |> List.map (fun (key,op) -> MathHammer.Models.View.showAttributes (key,op) dispatch)
+                |> div [ClassName "columns"]  
+            let evaluatedActions = 
                 actions 
                 |> List.choose 
                     ( fun (name,_) -> 
                         Map.tryFind (name) selected.Environment 
                         |> Option.bind(|IsDistribution|_|)
                         |> Option.map(fun dist -> name,dist) )
-             let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 
-             let averagesDiv = columnsOf Probability.View.showAverages evaluatedActions
-             let probabiltiesActionsDiv = columnsOf Probability.View.showProbabilitiesOfActions evaluatedActions
-             let sampleActionsDiv = columnsOf Probability.View.showSample evaluatedActions
+            let intActions = 
+                evaluatedActions
+                |> List.choose (fun (name,dist) -> match Distribution.choose (function IntResult (i) -> Some i | _ -> None) dist with
+                                                   | [] -> None
+                                                   | dist -> Some (name,dist))                     
+            let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 
+            let averagesDiv = columnsOf Probability.View.showAverages intActions
+            let probabiltiesActionsDiv = columnsOf MathHammer.Models.View.showProbabilitiesOfActions evaluatedActions
+            let sampleActionsDiv = columnsOf MathHammer.Models.View.showSample evaluatedActions
 
-             section [Id "selected"] [ title; attrDiv
-                                       bar "Actions"; actionsDiv
-                                       bar "Averages"; averagesDiv
-                                       bar "Probabilities"; probabiltiesActionsDiv
-                                       bar "Sample"; sampleActionsDiv ]
+            section [Id "selected"] [ title; attrDiv
+                                      bar "Actions"; actionsDiv
+                                      bar "Averages"; averagesDiv
+                                      bar "Probabilities"; probabiltiesActionsDiv
+                                      bar "Sample"; sampleActionsDiv ]
     div [] [ swap; drawing; selected  ] 

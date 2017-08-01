@@ -17,6 +17,11 @@ and unparseCall func =
     match func with 
     | Count -> sprintf "(Passes,Fails) in " 
     | _  -> sprintf "%A" func 
+and unparseResult = function 
+    | Result.Pass(v) -> sprintf "Pass: %s" (unparseValue v)
+    | Result.Fail(v) -> sprintf "Fail: %s" (unparseValue v)
+    | Result.Tuple(v,v2) -> sprintf "(%s,%s)" (unparseValue v) (unparseValue v2)
+    | Result.List(vs) -> sprintf "[%s]" (List.map (unparseResult) vs |> String.concat ";")    
 and unparseValue = function   
     | Dice(i) -> string i
     | Int(i) -> string i
@@ -27,7 +32,10 @@ and unparseValue = function
     | DPlus (D3,i) -> string i + "+ on D3"
     | DPlus(Reroll(is,D6), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
     | DPlus(Reroll(is,D3), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is))
-    | DPlus(Reroll(is,Reroll(is2,d)), i) -> unparse <| Value(DPlus(Reroll(List.distinct (is @ is2),d),i)) 
+    | DPlus(Reroll(is,Reroll(is2,d)), i) -> unparse <| Value(DPlus(Reroll(List.distinct (is @ is2),d),i))
+    | Str s -> s
+    | Result(r) -> unparseResult r
+    | Pair(v,v2) ->  sprintf "(%s,%s)" (unparseValue v) (unparseValue v2)
 and unparse operation = 
     match operation with 
     | Call f -> unparseCall f

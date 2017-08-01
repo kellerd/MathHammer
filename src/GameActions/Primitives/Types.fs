@@ -1,18 +1,19 @@
 module GameActions.Primitives.Types
+open Result    
 
 type Die =
     | D3
     | D6
     | Reroll of (int list) * Die
-    
 type GamePrimitive =
     | Int of int
     | Str of string
+    | Result of Result<GamePrimitive>
     | Pair of GamePrimitive * GamePrimitive
     | NoValue 
     | DPlus of Die * int 
     | Dice of Die
-    | Dist of Distribution.Distribution<Result.Result<GamePrimitive>>
+    | Dist of Distribution.Distribution<GamePrimitive>
     | ManyOp of ManyOp
 and Operation = 
     | Call of Call
@@ -32,6 +33,19 @@ let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
     | _ -> None
 
+let (|IntResult|_|) = function 
+    | Int(i) 
+    | Result(Pass(Int(i))) -> Pass i |> Some 
+    | Result(Fail(Int(i))) -> Fail i |> Some
+    | Str(_) -> None
+    | Result(_) -> None
+    | Pair _ -> None
+    | NoValue -> Fail 0 |> Some
+    | DPlus _ -> None
+    | Dice(_) -> None
+    | Dist(_) -> None
+    | ManyOp(_) -> None 
+
 let add x y = 
     match (x,y) with 
     | NoValue,z | z,NoValue -> z
@@ -39,30 +53,31 @@ let add x y =
     | Str(a),Str(b) -> Str(a+b)
     | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
     | _ -> failwith "Cannot add these two primitives"
-let mult x y = 
-    let rec cartSeq (nss:seq<#seq<'a>>) = 
-      let f0 (n:'a) (nss:seq<#seq<'a>>) = 
-        match Seq.isEmpty nss with
-        | true -> Seq.singleton(Seq.singleton n)
-        | _ -> Seq.map (fun (nl:#seq<'a>)->seq{yield n; yield! nl}) nss
-      match Seq.isEmpty nss with
-      | true -> Seq.empty
-      | _ -> Seq.collect (fun n->f0 n (cartSeq (Seq.skip 1 nss))) (Seq.head nss)
-    match (x,y) with 
-    | NoValue,z | z,NoValue -> NoValue
-    | Int(a),Int(b) -> Int(a*b)
-    | Str(a),Str(b) -> 
-        cartSeq [a.ToCharArray();b.ToCharArray()] 
-        |> Seq.map(string)
-        |> String.concat "\n"
-        |> Str
-        //|> String.concat "" |> String.concat "\n" |> Str
-    // | Dist d, Dist d2 -> Distribution.cartesian d d2 |> Distribution.map (Result.Tuple) |> Dist
-    | _ -> failwith "Cannot multiply these two primitives"
+
 
 type GamePrimitive with 
-    static member inline(+) (x,y) = add x y
-    static member inline(*) (x,y) = mult x y
+    static member (+) (x,y) = add x y
+    static member (*) (x,y) = 
+        let rec cartSeq (nss:seq<#seq<'a>>) = 
+              let f0 (n:'a) (nss:seq<#seq<'a>>) = 
+                match Seq.isEmpty nss with
+                | true -> Seq.singleton(Seq.singleton n)
+                | _ -> Seq.map (fun (nl:#seq<'a>)->seq{yield n; yield! nl}) nss
+              match Seq.isEmpty nss with
+              | true -> Seq.empty
+              | _ -> Seq.collect (fun n->f0 n (cartSeq (Seq.skip 1 nss))) (Seq.head nss)
+        match (x,y) with 
+        | NoValue,z | z,NoValue -> NoValue
+        | Int(a),Int(b) -> Int(a*b)
+        | Str(a),Str(b) -> 
+            cartSeq [a.ToCharArray();b.ToCharArray()] 
+            |> Seq.map(string)
+            |> String.concat "\n"
+            |> Str
+        | Result r1, Result r2 -> Result.mult r1 r2 |> Result
+        | Dist d, Dist d2 -> Distribution.cartesian d d2 |> Distribution.map (Pair) |> Dist
+        | Pair (g1,g2), Pair(h1,h2) -> Pair(Pair(Pair(g1,h1),Pair(g2,h2)),Pair(Pair(g1,h2),Pair(g2,h1)))
+        | _ -> failwith "Cannot multiply these two primitives"
         
         
 type NormalizedOperation = Normal | Next of Operation    
