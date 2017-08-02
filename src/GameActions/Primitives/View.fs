@@ -12,7 +12,6 @@ let rec displayManyOp ops =
     | OpList(ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "%dD6" (List.length ops)
     | OpList(ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "%dD3" (List.length ops)
     | OpList ops -> List.map unparse ops |> String.concat " + "
-    | Unfold (op,op2) -> sprintf "%s, %s times" (unparse op) (unparse op2)
 and unparseCall func = 
     match func with 
     | Count -> sprintf "(Passes,Fails) in " 
@@ -56,6 +55,7 @@ let alternateRoot model dispatch =
         | Value(DPlus (_,i)) -> str ""
         | Call Product -> str ""
         | Call Total  -> str ""
+        | Call Unfold  -> str ""
         | Value(Dice(i))-> str ""
         | Value(Int(i)) -> str ""
         | Value(NoValue) -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []

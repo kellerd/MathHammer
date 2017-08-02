@@ -73,7 +73,6 @@ let rec subst arg s = function
       | App (f, a) -> App(subst arg s f, subst arg s a)
       | Lam (p, x) -> if p = s then Lam (p,x) else Lam(p, subst arg s x)
       | Value( ManyOp( OpList ops)) -> Value( ManyOp(List.map (subst arg s) ops |> OpList))
-      | Value( ManyOp(Unfold(op,op2)))  ->  Value( ManyOp(Unfold(subst arg s op, subst arg s op2)))
       | Value (DPlus _ ) as op -> op
       | Value _ as op -> op
       | Let (n, v, op) -> Let(n, subst arg s v, subst arg s op)
@@ -84,7 +83,6 @@ let rec allIds = function
     | Lam (p, x) -> Set.add p (allIds x)
     | App (f, a) -> Set.union (allIds f) (allIds a)
     | Value( ManyOp( OpList ops))  -> List.fold(fun s op -> op |> allIds |> Set.union s) Set.empty<_> ops 
-    | Value( ManyOp(Unfold(op,op2)))  -> Set.union (allIds op) (allIds op2)
     | Call _ | Value _ -> Set.empty<_>
     | Let (n, v, op) -> allIds op |> Set.add n
 
@@ -94,7 +92,6 @@ let freeIds x =
         | Lam (p, x) -> halp (Set.add p bound) x
         | App (f, a) -> Set.union (halp bound f) (halp bound a)
         | Value( ManyOp( OpList ops)) -> List.fold(halp) bound ops 
-        | Value( ManyOp(Unfold(op,op2)))  -> Set.union (halp bound op) (halp bound op2)
         | Call _ | Value _ -> bound
         | Let (sc, _ , op) -> halp bound op
     halp Set.empty x
@@ -132,13 +129,6 @@ let rename all (t, s, x) =
         | NoValue 
         | Str(_) ->  Fine
         | Result(_) -> failwith "Not Implemented"
-        | ManyOp(Unfold(op,op2)) ->
-            match halp op with
-            | Renamed rop -> Renamed (Value (ManyOp(Unfold(rop,op2))))
-            | _ ->
-                match halp op2 with
-                | Renamed rop2 -> Renamed (Value(ManyOp(Unfold(op,rop2))))
-                | _ -> Fine
         | ManyOp(OpList ops) -> 
             ops 
             |> List.map (fun op -> op, halp op)
@@ -197,13 +187,6 @@ let normalizeOp op =
               match reduce b with
                   | Next b -> Next (Lam (p, b))
                   | _ -> Normal
-        | Value(ManyOp(Unfold(op,op2))) -> 
-            match reduce op with
-                  | Next rop -> Next (Value(ManyOp(Unfold(rop,op2))))
-                  | _ ->
-                      match reduce op2 with
-                          | Next rop2 -> Next (Value(ManyOp(Unfold(op,rop2))))
-                          | _ -> Normal
         | Value(ManyOp(OpList ops)) -> 
             let (rops,expr) = 
                 ops 
@@ -235,10 +218,11 @@ let rec unfold op op2 env =
         | Value(Dist(times)) ->
             times |> Distribution.map(fun times' ->
                         let newOps = 
-                              match times' with  
+                              match times' with
+                              | Result(Fail (Int(n))) -> []
+                              | Int (n) 
                               | Result(Tuple(Int(n),_))
-                              | Result(Pass (Int(n)))
-                              | Result(Fail (Int(n))) -> List.init n (fun _ -> op) 
+                              | Result(Pass (Int(n))) -> List.init n (fun _ -> op) 
                               | Result(List xs) -> 
                                     let n = 
                                         List.fold (fun c elem -> 
@@ -246,9 +230,9 @@ let rec unfold op op2 env =
                                                     | Pass _ -> c + 1 
                                                     | Fail _ -> c 
                                                     | Tuple(Int(x),_) -> c + x 
-                                                    | _ -> failwith "Cannot unfold by these types of values") 0 xs
+                                                    | _ -> failwith <| sprintf "Cannot unfold by these types of values %A" elem) 0 xs
                                     List.init n  (fun _ -> op) 
-                              | _ -> failwith "Cannot unfold by these types of values"
+                              | elem -> failwith <| sprintf "Cannot unfold by these types of values %A" elem
                         evalOp env (Value(ManyOp(OpList newOps)))
             ) 
         | _ -> always <| Value(NoValue)
@@ -275,7 +259,7 @@ and evalGamePrimitive env = function
       | NoValue -> always NoValue  |> Dist |> Value
       | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Distribution.map(Result.map(Int) >> Result) |> Dist |> Value
       | Dist d -> Dist d |> Value
-      | ManyOp(Unfold (op,op2)) -> unfold op op2 env
+      
       | ManyOp(OpList ops) -> 
             ops
             |> List.fold(fun acc op -> let newOp = evalOp env op
@@ -309,6 +293,7 @@ and evalCall func v env  =
         |> Dist 
         |> Value
         |> fold (fun r1 r2 -> toCount r1 + toCount r2)  env ops
+    | Unfold, Value(ManyOp(OpList [op;op2])) -> unfold op op2 env
     | Total, Value _
     | Product,  Value _ 
     | Count,  Value _ -> evalCall func (Value(ManyOp(OpList [v]))) env

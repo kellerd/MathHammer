@@ -4,9 +4,9 @@ open Types
 let get v = Var (v)
 let single op = Value(ManyOp(List.singleton op |> OpList))
 let opList ops = Value(ManyOp(OpList ops))
-let unfoldOp op op2 =  Value(ManyOp(Unfold(op,op2)))
 let call f op = App(Call f, op)
 let count v = v |> call Count
+let unfoldOp op op2 = opList [op; op2] |> call Unfold
 let total v = v |> call Total
 let product v = v |> call Product
 let bindVal text op = Let(text,op,Var text)
@@ -18,6 +18,7 @@ let (>>=) o v = bindOp v o
 let (|%>) x f = App(f,x)
 
 let d6 = Value(Dice(D6))
+let str = Str
 
 let dPlus d v = Value(DPlus(d,v))
 let vInt i = Value(Int(i))

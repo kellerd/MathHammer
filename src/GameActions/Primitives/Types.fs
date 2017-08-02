@@ -25,9 +25,9 @@ and Call =
     | Product
     | Total
     | Count
+    | Unfold 
 and ManyOp =
     | OpList of Operation list
-    | Unfold of Operation * Operation
     
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d

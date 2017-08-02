@@ -41,15 +41,15 @@ Var("h") |%> (Var("g") |%> two)  |> normalizeOp  |> unparse
 
 let appliedTwo = Var("h") |%> (Var("g") |%> two)
 let count ops = App(Call Count,Value(ManyOp(OpList ops)))
-let count' ops = App(Call Count,Value(ManyOp(Unfold ops)))
+let count' ops = App(Call Count,App(Call Unfold, Value(ManyOp(OpList ops))))
 
 let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo] |> normalizeOp
 let normalizedSecond = count [appliedTwo;appliedTwo;appliedTwo] |> normalizeOp
 
 normalizedFirst = normalizedSecond
 
-let normalizedFirst' = count' (normalizeOp appliedTwo,normalizeOp appliedTwo) |> normalizeOp
-let normalizedSecond' = count'  (appliedTwo,appliedTwo) |> normalizeOp
+let normalizedFirst' = count' [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo]|> normalizeOp
+let normalizedSecond' = count'  [appliedTwo;appliedTwo;appliedTwo]  |> normalizeOp
 
 normalizedFirst' = normalizedSecond'
 
@@ -69,9 +69,8 @@ let addition x y  =
         Let("x", v ,App(Call Total, Value(ManyOp(OpList[Value(Int(y));Var ("x")])))) 
         |> evalOp Map.empty<_,_>
     let expected = Distribution.always (Int(x + y))
-    printf "Is %A = %A" d expected
+    printfn "Is %A = %A" d expected
     d = expected
-addition 3 9    
 //Let x = 6
 //Total of x is 6
 let totalOfXIsX x = 
@@ -80,9 +79,8 @@ let totalOfXIsX x =
         Let("x", v ,App(Call Total, v)) 
         |> evalOp Map.empty<_,_>
     let expected = Distribution.always (Int(x))
-    printf "Is %A = %A" d expected
+    printfn "Is %A = %A" d expected
     d = expected
-totalOfXIsX 6  
 //Count of one passed result is 1
 let countOfOneXIsOneX x = 
     let v = Value(Result(Result.Pass(Int(x))))
@@ -90,8 +88,16 @@ let countOfOneXIsOneX x =
         Let("x", v ,App(Call Count, v)) 
         |> evalOp Map.empty<_,_>
     let expected = Distribution.always (Result(Result.Tuple (Int(1),Int(0))))
-    printf "Is %A = %A" d expected
+    printfn "Is %A = %A" d expected
     d = expected
+
+totalOfXIsX 6  
+addition 3 9    
 countOfOneXIsOneX 6  
 
-
+let unfoldD6 = 
+    let WS = dPlus D6 3
+    let A = vInt 3
+    let unfold = unfoldOp WS A
+    unfold 
+    |> evalOp Map.empty<_,_>
