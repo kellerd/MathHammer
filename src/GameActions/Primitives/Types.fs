@@ -9,7 +9,6 @@ type GamePrimitive =
     | Int of int
     | Str of string
     | Result of Result<GamePrimitive>
-    | Pair of GamePrimitive * GamePrimitive
     | NoValue 
     | DPlus of Die * int 
     | Dice of Die
@@ -29,6 +28,7 @@ and Call =
 and ManyOp =
     | OpList of Operation list
     | Unfold of Operation * Operation
+    
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
     | _ -> None
@@ -39,24 +39,22 @@ let (|IntResult|_|) = function
     | Result(Fail(Int(i))) -> Fail i |> Some
     | Str(_) -> None
     | Result(_) -> None
-    | Pair _ -> None
     | NoValue -> Fail 0 |> Some
     | DPlus _ -> None
     | Dice(_) -> None
     | Dist(_) -> None
     | ManyOp(_) -> None 
 
-let add x y = 
-    match (x,y) with 
-    | NoValue,z | z,NoValue -> z
-    | Int(a),Int(b) -> Int(a+b)
-    | Str(a),Str(b) -> Str(a+b)
-    | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
-    | _ -> failwith "Cannot add these two primitives"
-
-
 type GamePrimitive with 
-    static member (+) (x,y) = add x y
+    static member Zero = NoValue
+    static member (+) (x,y) = 
+        match (x,y) with 
+        | NoValue,z | z,NoValue -> z
+        | Int(a),Int(b) -> Int(a+b)
+        | Str(a),Str(b) -> Str(a+b)
+        | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
+        | Result (r1),Result(r2) -> Result.add r1 r2 |> Result
+        | x,y -> failwith <| sprintf "Cannot add these two primitives %A, %A" x y
     static member (*) (x,y) = 
         let rec cartSeq (nss:seq<#seq<'a>>) = 
               let f0 (n:'a) (nss:seq<#seq<'a>>) = 
@@ -75,9 +73,8 @@ type GamePrimitive with
             |> String.concat "\n"
             |> Str
         | Result r1, Result r2 -> Result.mult r1 r2 |> Result
-        | Dist d, Dist d2 -> Distribution.cartesian d d2 |> Distribution.map (Pair) |> Dist
-        | Pair (g1,g2), Pair(h1,h2) -> Pair(Pair(Pair(g1,h1),Pair(g2,h2)),Pair(Pair(g1,h2),Pair(g2,h1)))
-        | _ -> failwith "Cannot multiply these two primitives"
+        | Dist d, Dist d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (d1,d2) -> ManyOp(OpList[Value(d1);Value(d2)])) |> Dist
+        | x,y -> failwith <| sprintf "Cannot multiply these two primitives %A, %A" x y
         
         
 type NormalizedOperation = Normal | Next of Operation    

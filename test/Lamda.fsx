@@ -68,7 +68,7 @@ let addition x y  =
     let (Value(Dist(d))) =
         Let("x", v ,App(Call Total, Value(ManyOp(OpList[Value(Int(y));Var ("x")])))) 
         |> evalOp Map.empty<_,_>
-    let expected = Distribution.always (Result.Pass (x + y))
+    let expected = Distribution.always (Int(x + y))
     printf "Is %A = %A" d expected
     d = expected
 addition 3 9    
@@ -79,17 +79,17 @@ let totalOfXIsX x =
     let (Value(Dist(d))) =
         Let("x", v ,App(Call Total, v)) 
         |> evalOp Map.empty<_,_>
-    let expected = Distribution.always (Result.Pass (x))
+    let expected = Distribution.always (Int(x))
     printf "Is %A = %A" d expected
     d = expected
 totalOfXIsX 6  
 //Count of one passed result is 1
 let countOfOneXIsOneX x = 
-    let v = Value(Int(x))
+    let v = Value(Result(Result.Pass(Int(x))))
     let (Value(Dist(d))) =
         Let("x", v ,App(Call Count, v)) 
         |> evalOp Map.empty<_,_>
-    let expected = Distribution.always (Result.Tuple (1,0))
+    let expected = Distribution.always (Result(Result.Tuple (Int(1),Int(0))))
     printf "Is %A = %A" d expected
     d = expected
 countOfOneXIsOneX 6  

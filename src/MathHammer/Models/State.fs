@@ -132,15 +132,6 @@ let rename all (t, s, x) =
         | NoValue 
         | Str(_) ->  Fine
         | Result(_) -> failwith "Not Implemented"
-        | Pair(gp, gp2) -> 
-            match halpGP gp with 
-            | Fine ->
-                match halpGP gp2 with
-                | Fine -> Fine
-                | Renamed (Value(ManyOp(rop2))) -> Renamed(Value(Pair(gp,ManyOp(rop2))))
-                | Renamed(_) -> failwith "Not Implemented"
-            | Renamed (Value(ManyOp(rop))) -> Renamed(Value(Pair(ManyOp(rop),gp2)))
-            | Renamed(_) -> failwith "Not Implemented"
         | ManyOp(Unfold(op,op2)) ->
             match halp op with
             | Renamed rop -> Renamed (Value (ManyOp(Unfold(rop,op2))))
@@ -279,9 +270,9 @@ and fold folder env ops state =
             | _ -> Value(NoValue)
             ) state
 and evalGamePrimitive env = function
-      | Int _ as i -> always i  |> Distribution.map (Pass >> Result)  |> Dist |> Value
-      | Dice d -> evalDie d  |> Distribution.map (Int >> Pass >> Result)  |> Dist |> Value
-      | NoValue -> always NoValue  |> Distribution.map (Fail >> Result)  |> Dist |> Value
+      | Int _ as i -> always i  |> Dist |> Value
+      | Dice d -> evalDie d  |> Distribution.map (Int)  |> Dist |> Value
+      | NoValue -> always NoValue  |> Dist |> Value
       | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Distribution.map(Result.map(Int) >> Result) |> Dist |> Value
       | Dist d -> Dist d |> Value
       | ManyOp(Unfold (op,op2)) -> unfold op op2 env
@@ -291,15 +282,12 @@ and evalGamePrimitive env = function
                                        (newOp::acc)) [] 
             |> List.rev 
             |> OpList |> ManyOp |> Value
-      | Str _ as s -> always s  |> Distribution.map (Pass >> Result) |> Dist |> Value
+      | Str _ as s -> always s  |> Dist |> Value
       | Result _ as r -> always r |> Dist |> Value
 and evalCall func v env  =
     match func,v with 
     | Total, Value(ManyOp(OpList(ops))) -> 
-        Int 0
-        |> Pass
-        |> Result
-        |> always 
+        always GamePrimitive.Zero
         |> Dist
         |> Value 
         |> fold (+) env ops
@@ -311,11 +299,11 @@ and evalCall func v env  =
         |> Dist
         |> Value 
         |> fold (*) env ops
-    | Count, Value(ManyOp(OpList(ops))) -> 
+    | Count, Value(ManyOp(OpList(ops))) ->
         let toCount result = 
-            match result with | Result(Pass _) -> Result(Tuple (Int(1),Int(0))) | Result(Fail _) ->  Result(Tuple(Int(0),(Int(1)))) | Result(Tuple _) as x -> x | _ -> failwith "Cannot count these" 
-        let zero = 0 |> Int 
-        Tuple(zero,zero) 
+            match result with | Result(Pass _) -> Result(Tuple (Int(1),Int(0))) | Result(Fail _) ->  Result(Tuple(Int(0),(Int(1)))) | Result(Tuple _) as x -> x | x -> failwith <| sprintf "Cannot count these %A" x
+        let zero = GamePrimitive.Zero 
+        Tuple(zero,zero)
         |> Result 
         |> always 
         |> Dist 

@@ -35,7 +35,6 @@ and unparseValue = function
     | DPlus(Reroll(is,Reroll(is2,d)), i) -> unparse <| Value(DPlus(Reroll(List.distinct (is @ is2),d),i))
     | Str s -> s
     | Result(r) -> unparseResult r
-    | Pair(v,v2) ->  sprintf "(%s,%s)" (unparseValue v) (unparseValue v2)
 and unparse operation = 
     match operation with 
     | Call f -> unparseCall f
