@@ -6,3 +6,4 @@ nuget Fable.Core
 nuget Fable.Elmish.React
 nuget Fable.Elmish.Browser
 nuget Fable.Elmish.Debugger
+clitool dotnet-fable 1.1.14

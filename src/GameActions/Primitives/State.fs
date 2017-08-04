@@ -41,13 +41,7 @@ let meleeRange =
 let psychicTest = [d6;d6] |> opList |> total |~> "PsychicTest"
 let attacker = 
     Let("M",vInt 6, Let("MeleeRange", Let("Total", App(Call Total, Value(ManyOp(OpList[get "M"; vInt 12]))), Var "Total"), Value(ManyOp(OpList [get "M";get "MeleeRange"]))))
-<@
- let Attacker = 
-    let M = 6
-    let MeleeRange = M + 12
-    let total = List.sum [M;MeleeRange]
-    [M;MeleeRange;total]
- Attacker @>
+
 
 
 
