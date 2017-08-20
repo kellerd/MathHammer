@@ -4,6 +4,7 @@ open Types
 let get v = Var (v)
 let single op = Value(ManyOp(List.singleton op |> OpList))
 let opList ops = Value(ManyOp(OpList ops))
+let pair x y = opList [x;y]
 let call f op = App(Call f, op)
 let count v = v |> call Count
 let unfoldOp op op2 = opList [op; op2] |> call Unfold
@@ -13,41 +14,23 @@ let bindVal text op = Let(text,op,Var text)
 
 let bindOp v op inBody = Operation.Let(v,op, inBody)
 let lam s op = Lam (s,op)
-let (|~>) o v = bindVal v o
-let (>>=) o v = bindOp v o
-let (|%>) x f = App(f,x)
 
 let d6 = Value(Dice(D6))
-let str = Str
+let str s = Str s |> Value
 
 let dPlus d v = Value(DPlus(d,v))
 let vInt i = Value(Int(i))
 let emptyOp = Value(NoValue)
-let hitResults = 
-    get "WS" |> single |> total
-    |~> "HitResults"
+let label v o = pair (str v) o
+let labelVar v = pair (str v) (get v)
+let apply f x = App(f,x)
+let (|%>) x f = apply f x
+let (>>=) o s = bindOp s o
 
-let chargeRange =
-    [d6;d6] |> opList |> total
-    |~> "ChargeRange"
-
-let meleeRange = 
-    [ get "M" 
-      chargeRange ] 
-    |> opList 
-    |> total 
-    |~>  "MeleeRange"
-      
-
-let psychicTest = [d6;d6] |> opList |> total |~> "PsychicTest"
-let attacker = 
-    Let("M",vInt 6, Let("MeleeRange", Let("Total", App(Call Total, Value(ManyOp(OpList[get "M"; vInt 12]))), Var "Total"), Value(ManyOp(OpList [get "M";get "MeleeRange"]))))
-
-
-
-
-
-
+// let attackerLam = <@ 
+//     let m = 6
+//     let a = 5
+//     ["M",m; "A",a] @>
 // let meq = 
 //     emptyOp
 //     |> chargeRange
