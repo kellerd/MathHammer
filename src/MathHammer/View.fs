@@ -54,8 +54,10 @@ let root model dispatch =
         | None ->  titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
             let title = titleBar selected.Name
+            match selected.Rules with
+            | LabelArgs -?
             let (attrs,actions) = 
-                selected.Attributes 
+                selected.Rules 
                 |> Map.partition (fun _ -> isCharacteristic)
                 |> fun (x,y) -> Map.toList x, Map.toList y
                 |> fun (x,y) -> (List.sortBy (snd) x), (List.sortBy (snd) y)
@@ -67,7 +69,7 @@ let root model dispatch =
                 actions 
                 |> List.choose 
                     ( fun (name,_) -> 
-                        Map.tryFind (name) selected.Environment 
+                        GameActions.Primitives.State.tryFindLabel name selected.EvaluatedRules 
                         |> Option.bind(|IsDistribution|_|)
                         |> Option.map(fun dist -> name,dist) )
             let intActions = 

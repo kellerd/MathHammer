@@ -2,6 +2,7 @@ module GameActions.Primitives.State
 
 open Types
 let get v = Var (v)
+let noValue = NoValue |> Value
 let single op = Value(ManyOp(List.singleton op |> OpList))
 let opList ops = Value(ManyOp(OpList ops))
 let pair x y = opList [x;y]
@@ -26,7 +27,38 @@ let labelVar v = pair (str v) (get v)
 let apply f x = App(f,x)
 let (|%>) x f = apply f x
 let (>>=) o s = bindOp s o
+let nestOps ops returning = ops |> List.rev |> List.reduce (>>) <| returning
+let createArgs argList operationBody = argList  |> List.rev |> List.fold (fun f arg -> lam arg f) operationBody
+let applyArgs body argValues = 
+    body::argValues
+    |> List.reduce apply
+//Equations
+let allProps = 
+    opList 
+        [ labelVar "M"
+          labelVar "WS"
+          labelVar "BS"
+          labelVar "S"
+          labelVar "T"
+          labelVar "W"
+          labelVar "A"
+          labelVar "Ld"
+          labelVar "Sv"
+          labelVar "InvSv"
+          labelVar "MeleeRange"
+          labelVar "ShootingRange"
+          labelVar "PsychicTest"
+          labelVar "HitResults"
+          labelVar "ChargeRange" ]
 
+let hitResults = get "WS" |> single |> total >>= "HitResults"
+let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
+let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
+let shootingRange = opList [get "WeaponRange"] >>= "ShootingRange"
+let psychicTest = [d6;d6] |> opList |> total >>= "PsychicTest"
+
+let tryFindLabel name operation = 
+    None
 // let attackerLam = <@ 
 //     let m = 6
 //     let a = 5

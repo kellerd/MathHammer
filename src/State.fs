@@ -7,6 +7,7 @@ open Fable.Import.Browser
 open Global
 open Types
 open MathHammer.Models.State
+open GameActions.Primitives.State
 
 let pageParser: Parser<Page->Page,Page> =
   oneOf [
@@ -25,19 +26,24 @@ open GameActions.Primitives.Types
 let init result =
   let (mathHammer, mathHammerCmd) = MathHammer.State.init()
   let (gameActions, gameActionsCmd) = GameActions.State.init()
+
+  // attackerStats
+  let body = nestOps [hitResults;chargeRange;meleeRange;psychicTest] allProps
+  let defbody = nestOps [hitResults;shootingRange;psychicTest] allProps
+  let stats = ["M";" WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
+  let attacker = createArgs stats body
+  let defender =  createArgs stats defbody
+
   let mapScale scale = 
     List.mapi 
         (fun i (x : MathHammer.Models.Types.Model,_) -> 
-          x.Name, {x with Attributes = 
-                            x.Attributes
-                            |> Map.map (fun k -> function Let("A",Value (Int(i)),op) -> Let("A" , Value (Int(i + 3)),op) | x -> x)
-                          Scale = scale} )
+          x.Name, {x with Scale = scale} )
     >> Map.ofList
 
 
-  let attackers = [initMeq "Marine"; initMeq "Captain" ] 
+  let attackers = [initMeq "Marine" attacker; initMeq "Captain" attacker ] 
                   |> mapScale mathHammer.Attacker.Scale
-  let defenders = ['a'..'z'] |> List.map (string >> initGeq)  |> mapScale mathHammer.Defender.Scale 
+  let defenders = ['a'..'z'] |> List.map (fun c -> initGeq (string c) defender)  |> mapScale mathHammer.Defender.Scale 
 
   let (model, cmd) =
     urlUpdate result

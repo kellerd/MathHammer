@@ -9,8 +9,9 @@ type Model = { PosX:float
                Name:string
                Scale:string
                Size:int<mm>
-               Attributes: Map<string,Operation>
-               Environment:Environment }
+               Attributes: Operation list
+               Rules: Operation
+               EvaluatedRules:Operation }
 
 
 type Msg = 

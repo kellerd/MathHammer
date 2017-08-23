@@ -11,44 +11,20 @@ let init name =
     { PosX=0.
       PosY=0.
       Name=name
-      Attributes = Map.empty<_,_>
       Size = 28<mm>
+      Attributes = []
       Scale = "scale(1,1)"
-      Environment = Map.empty<_,_>}
+      Rules = noValue
+      EvaluatedRules = noValue}
 
-let initMeq name =
-    { (init name) with 
-        Attributes = Map.empty<_,_>
-        // Attributes = ["M",  vInt 6 |> bindVar env "M" 
-        //               "WS", dPlus D6 3 |> bindVar env "WS" 
-        //               "BS", dPlus D6 3 |> bindVar env "BS" 
-        //               "S" , vInt 4 |> bindVar env "S" 
-        //               "T" , vInt 4 |> bindVar env "T" 
-        //               "W" , vInt 1 |> bindVar env "W" 
-        //               "A" , vInt 1 |> bindVar env "A" 
-        //               "LD", vInt 8 |> bindVar env "LD" 
-        //               "SV", dPlus D6 3 |> bindVar env "SV" 
-        //               "MeleeRange", meleeRange
-        //               "ChargeRange", chargeRange
-        //               "PsychicTest", psychicTest ] 
-        }, Cmd.none
-let initGeq name =
-    { (init name) with
-        Attributes = Map.empty<_,_>
-        //              ["M",  vInt 6 |> bindVar env "M" 
-        //               "WS", dPlus D6 4 |> bindVar env "WS" 
-        //               "BS", dPlus D6 4 |> bindVar env "BS" 
-        //               "S" , vInt 3 |> bindVar env "S" 
-        //               "T" , vInt 3 |> bindVar env "T" 
-        //               "W" , vInt 1 |> bindVar env "W" 
-        //               "A" , vInt 1 |> bindVar env "A" 
-        //               "LD", vInt 7 |> bindVar env "LD" 
-        //               "SV", dPlus D6 5 |> bindVar env "SV" 
-        //               "MeleeRange", meleeRange
-        //               "ChargeRange", chargeRange
-        //               "PsychicTest", psychicTest
-        //               "ShootingRange", vInt 6 |> single |> total |> bindVar env "ShootingRange" ] 
-        }, Cmd.none
+let initMeq name coreRules =
+    let attributes = [vInt 6; dPlus D6 3 ;dPlus D6 3; vInt 4; vInt 4; vInt 1; vInt 2; vInt 8; dPlus D6 3; Value(NoValue)] 
+    let rules = applyArgs coreRules attributes
+    { (init name) with Rules = rules; Attributes = attributes }, Cmd.none
+let initGeq name coreRules =
+    let attributes = [vInt 30; vInt 5; dPlus D6 4 ;dPlus D6 4; vInt 3; vInt 3; vInt 1; vInt 1; vInt 6; dPlus D6 5; Value(NoValue)] 
+    let rules = applyArgs (coreRules |> lam "WeaponRange") attributes
+    { (init name) with Rules = rules; Attributes = attributes }, Cmd.none
 let dPlusTest plus die = dist {
       let! roll = die
       let result = 
@@ -320,10 +296,8 @@ let update msg model =
       | Select _ -> model, Cmd.none
       | Msg.Let _ ->  model, Cmd.none
       | Rebind (initial) -> 
-            let newEnv = 
-                  model.Attributes
-                  |> Map.map (fun _ -> normalizeOp >> evalOp initial)
+            let evaluated = model.Rules |> normalizeOp |> evalOp initial
 
             //let cmds = newEnv |> Map.toList |> List.map (fun (name,result) -> Cmd.ofMsg (Msg.Let(name,result)))
             let cmds = []
-            { model with Environment = newEnv }, Cmd.batch cmds
+            { model with EvaluatedRules = evaluated }, Cmd.batch cmds
