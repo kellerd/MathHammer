@@ -8,6 +8,7 @@ open Elmish.React
 open MathHammer.Models.Types
 open Types
 open GameActions.Primitives.Types
+open MathHammer.Models.View
   
 let isCharacteristic = function 
                         | Value(NoValue)            | Value(_)             | Value(DPlus(_) )
@@ -40,13 +41,13 @@ let root model dispatch =
                        [ div [ClassName "hero-body"]
                                [ h1 [ClassName "title"]
                                       [ str text ] ] ])
-        let columnsOf f items =                                       
+        let columnsOf items =                                       
             let toColumns (left,right) = 
                 [left;right]
                 |> List.map (List.map snd >> div [ClassName "column"])
                 |> div [ClassName "columns"] 
             items
-                 |> List.mapi (fun i m -> i,f m)
+                 |> List.mapi (fun i m -> i,m)
                  |> List.partition (fun (i,_) -> i % 2 = 0)
                  |> toColumns                
         //let sequence = model.Selected |> Option.map (fun selected -> div [] [ str selected.name ])
@@ -54,33 +55,26 @@ let root model dispatch =
         | None ->  titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
             let title = titleBar selected.Name
-            match selected.Rules with
-            | LabelArgs -?
-            let (attrs,actions) = 
-                selected.Rules 
-                |> Map.partition (fun _ -> isCharacteristic)
-                |> fun (x,y) -> Map.toList x, Map.toList y
-                |> fun (x,y) -> (List.sortBy (snd) x), (List.sortBy (snd) y)
-            let attrDiv = 
+            let rec (|LabeledParams|) args op =
+                match args with 
+                | [] -> []
+                | x :: xs ->
+                    match op with 
+                    | Lam(var, LabeledParams xs lambda) -> (var,x) :: lambda
+                    | _ -> []
+            let (LabeledParams selected.Attributes attrs) = selected.Rules
+            let rec attrDiv = 
                 attrs  
-                |> List.map (fun (key,op) -> MathHammer.Models.View.showAttributes (key,op) dispatch)
+                |> List.map (fun (key,op) -> showAttributes (key,op) dispatch)
                 |> div [ClassName "columns"]  
-            let evaluatedActions = 
-                actions 
-                |> List.choose 
-                    ( fun (name,_) -> 
-                        GameActions.Primitives.State.tryFindLabel name selected.EvaluatedRules 
-                        |> Option.bind(|IsDistribution|_|)
-                        |> Option.map(fun dist -> name,dist) )
-            let intActions = 
-                evaluatedActions
-                |> List.choose (fun (name,dist) -> match Distribution.choose (function IntResult (i) -> Some i | _ -> None) dist with
-                                                   | [] -> None
-                                                   | dist -> Some (name,dist))                     
-            let actionsDiv = columnsOf (MathHammer.Models.View.showActions dispatch) actions 
-            let averagesDiv = columnsOf Probability.View.showAverages intActions
-            let probabiltiesActionsDiv = columnsOf MathHammer.Models.View.showProbabilitiesOfActions evaluatedActions
-            let sampleActionsDiv = columnsOf MathHammer.Models.View.showSample evaluatedActions
+            let evaluatedRules = 
+                match selected.EvaluatedRules with 
+                | Value(ManyOp(OpList(ops))) -> ops
+                | _ -> []
+            let actionsDiv = selected.Rules |> showActions dispatch  |> columnsOf 
+            let averagesDiv = evaluatedRules |> List.map (showOperationDistribution showAverages)  |> columnsOf
+            let probabiltiesActionsDiv = evaluatedRules |> List.map (showOperationDistribution showProbabilitiesOfActions) |> columnsOf
+            let sampleActionsDiv = evaluatedRules |> List.map (showOperationDistribution showSample) |> columnsOf
 
             section [Id "selected"] [ title; attrDiv
                                       bar "Actions"; actionsDiv

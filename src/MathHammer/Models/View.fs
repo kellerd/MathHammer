@@ -12,16 +12,14 @@ open Distribution
 open Probability.View
 let onClick x : IProp = OnClick(x) :> _
 
-let showActions dispatch (key, operation)  = 
-      div [] 
-          [ b [] [str key; str " : "]
-            GameActions.Primitives.View.root operation dispatch ]
+let showActions dispatch operation  = 
+      GameActions.Primitives.View.root operation dispatch
 
 let showAttributes (key, operation) dispatch = 
       div [ClassName "has-text-centered column"]
           [ b  [] [str key]
             br []
-            GameActions.Primitives.View.root operation dispatch ]
+            div [] (GameActions.Primitives.View.root operation dispatch) ]
 let rangeStops (dist:Distribution<_>)  = 
     let length = List.length dist
     let minRange, maxRange,minProbability,maxProbability =
@@ -63,47 +61,62 @@ let rangeStops (dist:Distribution<_>)  =
                                StopOpacity !^ opacity ] [])
         
     (minRange,maxRange, stopsPercentGreenAndOpacity)
-     
-let showProbabilitiesOfActions (key,dist) = 
-      let probabilities (dist:Distribution<GamePrimitive>) = 
-            let result = 
-                  dist 
-                  |> List.groupBy fst
-                  |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
-            match result with 
-            | [] -> str ""
-            | _ ->  let max = result |> List.maxBy snd |> snd
-                    let min = result |> List.minBy snd |> snd
-                    let total = result |> List.sumBy snd 
-                    result
-                        |> List.map (fun (r, prob) -> 
-                              match r with 
-                              | IntResult r -> 
-                                  let greenValue = Result.map float r |> passFailToExpectation
-                                  //let percentageGreen = prob / max * 255.
-                                  let alpha = opacity min max prob
-                                  //let colour = sprintf "#%02X%02X00" (0xFF - System.Convert.ToInt32 percentageGreen) (System.Convert.ToInt32(percentageGreen))
-                                  div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.2f%%" (prob / total)]
-                              | v -> div [] [GameActions.Primitives.View.unparseValue v |> str; str <| sprintf " %.2f%%" (prob / total)])
-                    |> div [ClassName "column"]            
-      section [ClassName "columns"]
-          [ 
-            div [ClassName "column"] [b  [] [str key]]
-            dist |> probabilities           
-          ]
+let rec showOperationDistribution f op = 
+    match op with 
+    | Value v -> 
+        match v with 
+        | Str s -> 
+            b  [] [str s]
+        | Dist(d) -> f d
+        | ManyOp(OpList(ops)) -> 
+            section [ClassName "columns"]
+                    (List.map (fun op -> div [ClassName "column"] [showOperationDistribution f op]) ops) 
+        | v -> 
+            GameActions.Primitives.View.unparseValue v
+        |> List.singleton 
+    | op -> GameActions.Primitives.View.unparse op
+    |> div [ClassName "column"]
+let showAverages (dist:Distribution<GamePrimitive>) =
+    let f x = 
+        match x with 
+        | Int x -> float x |> Pass
+        | Str x -> float 0 |> Pass
+        | Result r -> Result.map float r
+        | NoValue -> failwith "Not Implemented"
+        | DPlus(_, _) -> failwith "Not Implemented"
+        | Dice(_) -> failwith "Not Implemented"
+        | Dist(_) -> failwith "Not Implemented"
+        | ManyOp(_) -> failwith "Not Implemented"
+    Probability.View.showAverages f dist
+let showProbabilitiesOfActions (dist:Distribution<GamePrimitive>) = 
+    let result = 
+          dist 
+          |> List.groupBy fst
+          |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
+    match result with 
+    | [] -> str ""
+    | _ ->  let max = result |> List.maxBy snd |> snd
+            let min = result |> List.minBy snd |> snd
+            let total = result |> List.sumBy snd 
+            result
+                |> List.map (fun (r, prob) -> 
+                      match r with 
+                      | IntResult r -> 
+                          let greenValue = Result.map float r |> passFailToExpectation
+                          //let percentageGreen = prob / max * 255.
+                          let alpha = opacity min max prob
+                          //let colour = sprintf "#%02X%02X00" (0xFF - System.Convert.ToInt32 percentageGreen) (System.Convert.ToInt32(percentageGreen))
+                          div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.2f%%" (prob / total)]
+                      | v -> div [] [GameActions.Primitives.View.unparseValue v; str <| sprintf " %.2f%%" (prob / total)])
+            |> div [ClassName "column"]            
+    
 
-let showSample (key, dist) = 
-      let sampleDistribution dist = 
-            match sample dist with 
-            | IntResult result -> 
-                let colour' = result  |> Result.map float |> passFailToExpectation  |> colour
-                div [ClassName "column"; Style[Color colour']] [printResultD result |> str ]
-            | v -> div [ClassName "column";] [GameActions.Primitives.View.unparseValue v |> str]
-      section [ClassName "columns"]
-          [ 
-            div [ClassName "column"] [b  [] [str key]]
-            dist |> sampleDistribution           
-          ]        
+let showSample dist = 
+    match sample dist with 
+    | IntResult result -> 
+        let colour' = result  |> Result.map float |> passFailToExpectation  |> colour
+        div [ClassName "column"; Style[Color colour']] [printResultD result |> str ]
+    | v -> div [ClassName "column";] [GameActions.Primitives.View.unparseValue v]
 
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]

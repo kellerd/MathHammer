@@ -22,25 +22,15 @@ let colour (greenValue:float) = sprintf "#%02X%02X00" (0xFF - System.Convert.ToI
 
 
 
-let showAverages (key, dist) = 
+let showAverages f dist = 
       let expectations dist = 
             let colour = 
                   dist 
                   |> expectation passFailToExpectation 
                   |> colour
             let result = dist |> List.fold (fun sum (v,probability) -> Result.mult v (Pass probability) |> Result.add sum ) (Fail 0.)
-            // match result with 
-            // | Pass x   -> printf "Pass %.2f" x 
-            // | Fail x   -> printf "Fail %.2f" x     
-            // | List _ -> printf "List"  
-            // | Tuple(x,y) ->  printf "Pass %.2f" x 
-            //      |> List.sumBy (fun (v,probability) -> Result.mult v (Pass probability))
-            div [ClassName "column"; Style [Color colour]] 
+            div [ Style [Color colour] ] 
                 [ str <| printResultF result]
-                //[str (printResultF result)]
-      section [ClassName "columns"]
-          [ 
-            div [ClassName "column"] [b  [] [str key]]
-            dist |> Distribution.map(Result.map float) |> expectations           
-          ]
+      dist |> Distribution.map(f) |> expectations           
+      
 
