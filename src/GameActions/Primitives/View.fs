@@ -17,8 +17,8 @@ and unparseCall func =
     | Count -> sprintf "(Passes,Fails) in " |> str
     | _  -> sprintf "%A" func |> str
 and unparseResult = function 
-    | Result.Pass(v) -> div [] [str "Pass: "; (unparseValue v)]
-    | Result.Fail(v) -> div [] [str  "Fail: "; (unparseValue v)]
+    | Result.Pass(v) -> div [Style [Color (Probability.View.colour 255.) ]] [str "Pass: "; (unparseValue v)]
+    | Result.Fail(v) -> div [Style [Color (Probability.View.colour 0.) ]] [str  "Fail: "; (unparseValue v)]
     | Result.Tuple(v,v2) -> div [] [str "(" ; (unparseValue v); str ","; (unparseValue v2 ); str ")"]
     | Result.List(vs) -> div [] [
                                 yield str "["
@@ -38,7 +38,8 @@ and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function
     | DPlus(Reroll(is,D3), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str
     | DPlus(Reroll(is,Reroll(is2,d)), i) -> unparse (Value(DPlus(Reroll(List.distinct (is @ is2),d),i))) |> div []
     | Str s -> s |> str
-    | Result(r) -> unparseResult r 
+    | Result(r) -> unparseResult r
+    | Float(f) -> string f |> str
 and unparse operation : Fable.Import.React.ReactElement list = 
     match operation with 
     | Call f -> [unparseCall f]

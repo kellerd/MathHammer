@@ -76,18 +76,46 @@ let rec showOperationDistribution f op =
         |> List.singleton 
     | op -> GameActions.Primitives.View.unparse op
     |> div [ClassName "column"]
+let showGamePrimitive gp =
+    div [] [GameActions.Primitives.View.unparseValue gp]
+
 let showAverages (dist:Distribution<GamePrimitive>) =
-    let f x = 
-        match x with 
-        | Int x -> float x |> Pass
-        | Str x -> float 0 |> Pass
-        | Result r -> Result.map float r
-        | NoValue -> failwith "Not Implemented"
-        | DPlus(_, _) -> failwith "Not Implemented"
-        | Dice(_) -> failwith "Not Implemented"
-        | Dist(_) -> failwith "Not Implemented"
-        | ManyOp(_) -> failwith "Not Implemented"
-    Probability.View.showAverages f dist
+
+// let showAverages colourExpectation dist = 
+//       let expectations dist = 
+//             let colour = 
+//                   dist 
+//                   |> expectation colourExpectation 
+//                   |> colour
+//             let result = dist |> List.fold (fun sum (v,probability) -> Result.mult v (Pass probability) |> Result.add sum ) (Fail 0.)
+//             div [ Style [Color colour] ] 
+//                 [ str <| printResultF result]
+//       dist |> Distribution.map(f) |> expectations    
+    let rec mult (v,probability) =
+        match v with 
+        | NoValue -> NoValue
+        | Int i -> Float (float i * probability)
+        | Float f -> Float(f * probability)
+        | Str s -> Str (sprintf "(%s %.0f%%)" s (100. * probability))
+        | Result r -> Result.map (fun v -> mult (v,probability)) r  |> Result
+        | DPlus(_) ->  Str (sprintf "(%A %.0f%%)" v (100. * probability))
+        | Dice d -> Str (sprintf "(%A %.0f%%)" d (100. * probability))
+        | Dist d -> List.map(fun (a,p) -> a,probability*p) d |> Dist
+        | ManyOp v -> Str (sprintf "(%A %.0f%%)" v (100. * probability))
+    let add v v2 =
+        match v,v2 with 
+        | NoValue,a | a,NoValue -> a
+        | Int a, Int b -> Int (a + b)
+        | Float a, Float b -> Float (a + b)
+        | Str a, Str b -> Str (a + b)
+        | Result a, Result b -> Result.add a b |> Result
+        | Dist a, Dist b -> Distribution.combine [a;b] |> Dist
+        | _,DPlus _ | _,Dice _ | _,ManyOp _
+        | DPlus _,_ | Dice _,_ | ManyOp _,_ 
+        | _ -> failwith "not implemented"
+    let averageDistribution = dist |> List.fold (fun sum -> mult >> add sum) NoValue
+
+    showGamePrimitive averageDistribution
 let showProbabilitiesOfActions (dist:Distribution<GamePrimitive>) = 
     let result = 
           dist 
@@ -102,21 +130,21 @@ let showProbabilitiesOfActions (dist:Distribution<GamePrimitive>) =
                 |> List.map (fun (r, prob) -> 
                       match r with 
                       | IntResult r -> 
+                          let rec passFailToExpectation = function 
+                            | Pass _ -> float 0xFF  
+                            | Fail _ -> float 0x00 
+                            | List xs -> List.averageBy passFailToExpectation xs 
+                            | Tuple (x,y) when x = y ->  float 0xFF 
+                            | Tuple (x,y) -> (x / (x + y) ) * float 0xFF
                           let greenValue = Result.map float r |> passFailToExpectation
-                          //let percentageGreen = prob / max * 255.
                           let alpha = opacity min max prob
-                          //let colour = sprintf "#%02X%02X00" (0xFF - System.Convert.ToInt32 percentageGreen) (System.Convert.ToInt32(percentageGreen))
                           div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.2f%%" (prob / total)]
                       | v -> div [] [GameActions.Primitives.View.unparseValue v; str <| sprintf " %.2f%%" (prob / total)])
             |> div [ClassName "column"]            
     
 
-let showSample dist = 
-    match sample dist with 
-    | IntResult result -> 
-        let colour' = result  |> Result.map float |> passFailToExpectation  |> colour
-        div [ClassName "column"; Style[Color colour']] [printResultD result |> str ]
-    | v -> div [ClassName "column";] [GameActions.Primitives.View.unparseValue v]
+let showSample  = sample >> showGamePrimitive 
+    
 
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]

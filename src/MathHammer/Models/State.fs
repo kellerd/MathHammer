@@ -101,6 +101,7 @@ let rename all (t, s, x) =
         | DPlus(_) 
         | Dice(_) 
         | Int(_) 
+        | Float(_) 
         | Dist(_) 
         | NoValue 
         | Str(_) ->  Fine
@@ -230,6 +231,7 @@ and fold folder env ops state =
             | _ -> Value(NoValue)
             ) state
 and evalGamePrimitive env = function
+      | Float _ as f -> always f  |> Dist |> Value
       | Int _ as i -> always i  |> Dist |> Value
       | Dice d -> evalDie d  |> Distribution.map (Int)  |> Dist |> Value
       | NoValue -> always NoValue  |> Dist |> Value
