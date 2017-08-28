@@ -32,11 +32,6 @@ and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function
     | Dist(d) -> "distribution" |> str
     | ManyOp(m) -> div [] [str "("; displayManyOp m; str ")"]
     | NoValue -> "--" |> str
-    | DPlus (D6,i) -> string i + "+" |> str
-    | DPlus (D3,i) -> string i + "+ on D3" |> str
-    | DPlus(Reroll(is,D6), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str
-    | DPlus(Reroll(is,D3), i) -> sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str
-    | DPlus(Reroll(is,Reroll(is2,d)), i) -> unparse (Value(DPlus(Reroll(List.distinct (is @ is2),d),i))) |> div []
     | Str s -> s |> str
     | Result(r) -> unparseResult r
     | Float(f) -> string f |> str
@@ -46,6 +41,11 @@ and unparse operation : Fable.Import.React.ReactElement list =
     | Value(v)-> [unparseValue v]
     | Var (v) -> [sprintf "%s" v |> str]
     | Lam(p,x) -> []
+    | App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(D6)); Value(Int(i))]))) ->  [string i + "+" |> str]
+    | App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(D3)); Value(Int(i))]))) ->  [string i + "+ on D3" |> str]
+    | App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(Reroll(is,D6))); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str]
+    | App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(Reroll(is,D3))); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str]
+    | App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(Reroll(is,Reroll(is2,d)))); Value(Int(i))]))) ->  [unparse (App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(Reroll(List.distinct (is @ is2),d))); Value(Int(i))])))) |> div []]
     | App(Lam(p,x),a) -> unparse x //paren (unparse (Lam(p,x))) + " " + argstring a
     | App(f,a) -> unparse f @ [argstring a]
     | Let(v, value, inner) ->  (div [] ((b [] [str v]) :: unparse value)) :: (unparse inner)
@@ -58,7 +58,6 @@ let alternateRoot model dispatch =
         match operation with 
         | Value(ManyOp(OpList(ops)))  when List.distinct ops = [Value(Dice(D3))] -> str ""
         | Value(ManyOp(OpList(ops)))  when List.distinct ops = [Value(Dice(D6))] -> str ""
-        | Value(DPlus (_,i)) -> str ""
         | Call Product -> str ""
         | Call Total  -> str ""
         | Call Unfold  -> str ""
@@ -71,6 +70,7 @@ let alternateRoot model dispatch =
         | Let(_) -> str ""
         | App(f, value) -> str ""
         | Lam(param, body) -> str ""
+        | Call(_) -> str ""
     displayOperation model  
 
 let root model dispatch =

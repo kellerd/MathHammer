@@ -98,7 +98,6 @@ let showAverages (dist:Distribution<GamePrimitive>) =
         | Float f -> Float(f * probability)
         | Str s -> Str (sprintf "(%s %.0f%%)" s (100. * probability))
         | Result r -> Result.map (fun v -> mult (v,probability)) r  |> Result
-        | DPlus(_) ->  Str (sprintf "(%A %.0f%%)" v (100. * probability))
         | Dice d -> Str (sprintf "(%A %.0f%%)" d (100. * probability))
         | Dist d -> List.map(fun (a,p) -> a,probability*p) d |> Dist
         | ManyOp v -> Str (sprintf "(%A %.0f%%)" v (100. * probability))
@@ -110,8 +109,8 @@ let showAverages (dist:Distribution<GamePrimitive>) =
         | Str a, Str b -> Str (a + b)
         | Result a, Result b -> Result.add a b |> Result
         | Dist a, Dist b -> Distribution.combine [a;b] |> Dist
-        | _,DPlus _ | _,Dice _ | _,ManyOp _
-        | DPlus _,_ | Dice _,_ | ManyOp _,_ 
+        | _,Dice _ | _,ManyOp _
+        | Dice _,_ | ManyOp _,_ 
         | _ -> failwith "not implemented"
     let averageDistribution = dist |> List.fold (fun sum -> mult >> add sum) NoValue
 

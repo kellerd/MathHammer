@@ -11,7 +11,6 @@ type GamePrimitive =
     | Str of string
     | Result of Result<GamePrimitive>
     | NoValue 
-    | DPlus of Die * int 
     | Dice of Die
     | Dist of Distribution.Distribution<GamePrimitive>
     | ManyOp of ManyOp
@@ -27,6 +26,12 @@ and Call =
     | Total
     | Count
     | Unfold 
+    | GreaterThan
+    | Equals
+    | NotEquals
+    | LessThan
+    | And
+    | Or
 and ManyOp =
     | OpList of Operation list
     
@@ -41,7 +46,6 @@ let (|IntResult|_|) = function
     | Str(_) -> None
     | Result(_) -> None
     | NoValue -> Fail 0 |> Some
-    | DPlus _ -> None
     | Dice(_) -> None
     | Dist(_) -> None
     | ManyOp(_) -> None
@@ -53,7 +57,6 @@ let (|FloatResult|_|) = function
     | Str(_) -> None
     | Result(_) -> None
     | NoValue -> Fail 0. |> Some
-    | DPlus _ -> None
     | Dice(_) -> None
     | Dist(_) -> None
     | ManyOp(_) -> None

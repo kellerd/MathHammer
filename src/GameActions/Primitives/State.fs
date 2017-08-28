@@ -19,7 +19,7 @@ let lam s op = Lam (s,op)
 let d6 = Value(Dice(D6))
 let str s = Str s |> Value
 
-let dPlus d v = Value(DPlus(d,v))
+let dPlus d v = [Value(Dice(d));Value(Int(v))] |> opList |> call GreaterThan
 let vInt i = Value(Int(i))
 let emptyOp = Value(NoValue)
 let label v o = pair (str v) o
