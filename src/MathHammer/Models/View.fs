@@ -80,17 +80,6 @@ let showGamePrimitive gp =
     div [] [GameActions.Primitives.View.unparseValue gp]
 
 let showAverages (dist:Distribution<GamePrimitive>) =
-
-// let showAverages colourExpectation dist = 
-//       let expectations dist = 
-//             let colour = 
-//                   dist 
-//                   |> expectation colourExpectation 
-//                   |> colour
-//             let result = dist |> List.fold (fun sum (v,probability) -> Result.mult v (Pass probability) |> Result.add sum ) (Fail 0.)
-//             div [ Style [Color colour] ] 
-//                 [ str <| printResultF result]
-//       dist |> Distribution.map(f) |> expectations    
     let rec mult (v,probability) =
         match v with 
         | NoValue -> NoValue
@@ -102,19 +91,8 @@ let showAverages (dist:Distribution<GamePrimitive>) =
         | Dice d -> Str (sprintf "(%A %.0f%%)" d (100. * probability))
         | Dist d -> List.map(fun (a,p) -> a,probability*p) d |> Dist
         | ManyOp v -> Str (sprintf "(%A %.0f%%)" v (100. * probability))
-    let add v v2 =
-        match v,v2 with 
-        | NoValue,a | a,NoValue -> a
-        | Int a, Int b -> Int (a + b)
-        | Float a, Float b -> Float (a + b)
-        | Str a, Str b -> Str (a + b)
-        | Result a, Result b -> Result.add a b |> Result
-        | Dist a, Dist b -> Distribution.combine [a;b] |> Dist
-        | _,DPlus _ | _,Dice _ | _,ManyOp _
-        | DPlus _,_ | Dice _,_ | ManyOp _,_ 
-        | _ -> failwith "not implemented"
-    let averageDistribution = dist |> List.fold (fun sum -> mult >> add sum) NoValue
-
+                                                 
+    let averageDistribution = dist |> List.fold (fun sum (v,p) -> mult (v,p) + sum) NoValue
     showGamePrimitive averageDistribution
 let showProbabilitiesOfActions (dist:Distribution<GamePrimitive>) = 
     let result = 
@@ -138,8 +116,8 @@ let showProbabilitiesOfActions (dist:Distribution<GamePrimitive>) =
                             | Tuple (x,y) -> (x / (x + y) ) * float 0xFF
                           let greenValue = Result.map float r |> passFailToExpectation
                           let alpha = opacity min max prob
-                          div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.2f%%" (prob / total)]
-                      | v -> div [] [GameActions.Primitives.View.unparseValue v; str <| sprintf " %.2f%%" (prob / total)])
+                          div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.2f%%" (prob / total * 100.)]
+                      | v -> div [] [GameActions.Primitives.View.unparseValue v; str <| sprintf " %.2f%%" (prob / total * 100.)])
             |> div [ClassName "column"]            
     
 

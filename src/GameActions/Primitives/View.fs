@@ -39,7 +39,7 @@ and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function
     | DPlus(Reroll(is,Reroll(is2,d)), i) -> unparse (Value(DPlus(Reroll(List.distinct (is @ is2),d),i))) |> div []
     | Str s -> s |> str
     | Result(r) -> unparseResult r
-    | Float(f) -> string f |> str
+    | Float(f) -> sprintf "%.2f" f |> str
 and unparse operation : Fable.Import.React.ReactElement list = 
     match operation with 
     | Call f -> [unparseCall f]

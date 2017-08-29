@@ -51,8 +51,10 @@ let root model dispatch =
                  |> List.partition (fun (i,_) -> i % 2 = 0)
                  |> toColumns                
         //let sequence = model.Selected |> Option.map (fun selected -> div [] [ str selected.name ])
+        
         match model.SelectedAttacker |> Option.bind (fun name -> Map.tryFind name model.Attacker.Models) with 
-        | None ->  titleBar "<< Select model to edit turn sequence >>"
+        | None ->  
+            titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
             let title = titleBar selected.Name
             let rec (|LabeledParams|) args op =
@@ -81,4 +83,5 @@ let root model dispatch =
                                       bar "Averages"; averagesDiv
                                       bar "Probabilities"; probabiltiesActionsDiv
                                       bar "Sample"; sampleActionsDiv ]
+            
     div [] [ swap; drawing; selected  ] 
