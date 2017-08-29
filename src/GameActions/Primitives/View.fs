@@ -61,16 +61,21 @@ let alternateRoot model dispatch =
         | Call Product -> str ""
         | Call Total  -> str ""
         | Call Unfold  -> str ""
+        | Call Count -> str ""
+        | Call GreaterThan -> str ""
+        | Call LessThan -> str ""
+        | Call Equals -> str ""
+        | Call NotEquals -> str ""
+        | Call Or -> str ""
+        | Call And -> str ""
         | Value(Dice(i))-> str ""
         | Value(Int(i)) -> str ""
         | Value(NoValue) -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []
-        | Call Count -> str ""
         | Value(_) ->     str ""
         | Var(_) ->    str ""
         | Let(_) -> str ""
         | App(f, value) -> str ""
         | Lam(param, body) -> str ""
-        | Call(_) -> str ""
     displayOperation model  
 
 let root model dispatch =

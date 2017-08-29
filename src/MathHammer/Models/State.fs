@@ -230,11 +230,11 @@ and fold folder env ops state =
             | _ -> Value(NoValue)
             ) state
 and evalGamePrimitive env = function
-      | Float _ as f -> always f  |> Dist |> Value
-      | Int _ as i -> always i  |> Dist |> Value
+      | Float _ as f -> f |> Value
+      | Int _ as i -> i |> Value
       | Dice d -> evalDie d  |> Distribution.map (Int)  |> Dist |> Value
-      | NoValue -> always NoValue  |> Dist |> Value
-      | Dist d -> Dist d |> Value
+      | NoValue -> NoValue |> Value
+      | Dist _ as d -> d |> Value
       
       | ManyOp(OpList ops) -> 
             ops
@@ -242,12 +242,14 @@ and evalGamePrimitive env = function
                                        (newOp::acc)) [] 
             |> List.rev 
             |> OpList |> ManyOp |> Value
-      | Str _ as s -> always s  |> Dist |> Value
-      | Result _ as r -> always r |> Dist |> Value
+      | Str _ as s -> s |> Value
+      | Result _ as r -> r |> Value   
 and greaterThan op op2 = 
     match op,op2 with 
-    | _ -> op
-      //| DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Distribution.map(Result.map(Int) >> Result) |> Dist |> Value
+    | Value(Int(i)), Value(Int(i2)) -> (if i > i2 then  Int(i) |> Pass  else Int(i) |> Fail)|> Result
+    | Value(Float(i)), Value(Int(i2)) -> (if i > float i2 then  Float(i) |> Pass  else Float(i) |> Fail)|> Result
+    | Value(Int(i)), Value(Float(i2)) -> (if float i > i2 then  Int(i) |> Pass  else Int(i) |> Fail)|> Result
+    | Value(Int(i)), Value(Dice(d)) -> evalDie d |> dPlusTest moreThan |> Distribution.map(Result.map(Int) >> Result) |> Dist |> Value
 and lessThan op op2 = 
     match op,op2 with 
     | _ -> op
