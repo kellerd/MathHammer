@@ -49,7 +49,6 @@ let rec subst arg s = function
       | App (f, a) -> App(subst arg s f, subst arg s a)
       | Lam (p, x) -> if p = s then Lam (p,x) else Lam(p, subst arg s x)
       | Value( ManyOp( OpList ops)) -> Value( ManyOp(List.map (subst arg s) ops |> OpList))
-      | Value (DPlus _ ) as op -> op
       | Value _ as op -> op
       | Let (n, v, op) -> Let(n, subst arg s v, subst arg s op)
       | Call _ as op -> op
@@ -98,7 +97,6 @@ let uniqueId taken s =
 let rename all (t, s, x) =
     let free = freeIds t
     let rec halpGP = function 
-        | DPlus(_) 
         | Dice(_) 
         | Int(_) 
         | Float(_) 
@@ -187,6 +185,7 @@ let normalizeOp op =
         (Next op)
     |> Seq.last
 
+
 open Determinism 
 let rec unfold op op2 env = 
     let times = evalOp env op2  
@@ -235,7 +234,6 @@ and evalGamePrimitive env = function
       | Int _ as i -> always i  |> Dist |> Value
       | Dice d -> evalDie d  |> Distribution.map (Int)  |> Dist |> Value
       | NoValue -> always NoValue  |> Dist |> Value
-      | DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Distribution.map(Result.map(Int) >> Result) |> Dist |> Value
       | Dist d -> Dist d |> Value
       
       | ManyOp(OpList ops) -> 
@@ -246,6 +244,19 @@ and evalGamePrimitive env = function
             |> OpList |> ManyOp |> Value
       | Str _ as s -> always s  |> Dist |> Value
       | Result _ as r -> always r |> Dist |> Value
+and greaterThan op op2 = 
+    match op,op2 with 
+    | _ -> op
+      //| DPlus(d, moreThan) -> evalDie d |> dPlusTest moreThan |> Distribution.map(Result.map(Int) >> Result) |> Dist |> Value
+and lessThan op op2 = 
+    match op,op2 with 
+    | _ -> op
+and equals op op2 = 
+    match op,op2 with 
+    | _ -> op
+and notEquals op op2 = 
+    match op,op2 with 
+    | _ -> op
 and evalCall func v env  =
     match func,v with 
     | Total, Value(ManyOp(OpList(ops))) -> 
@@ -271,10 +282,14 @@ and evalCall func v env  =
         |> Dist 
         |> Value
         |> fold (fun r1 r2 -> toCount r1 + toCount r2)  env ops
+    | GreaterThan, Value(ManyOp(OpList([op;op2]))) -> greaterThan op op2 
+    | Equals, Value(ManyOp(OpList([op;op2]))) -> equals op op2 
+    | LessThan, Value(ManyOp(OpList([op;op2]))) -> notEquals op op2 
+    | NotEquals, Value(ManyOp(OpList([op;op2]))) -> lessThan op op2 
     | Unfold, Value(ManyOp(OpList [op;op2])) -> unfold op op2 env
     | Total, Value _
     | Product,  Value _ 
-    | Count,  Value _ -> evalCall func (Value(ManyOp(OpList [v]))) env
+    | Count,  Value _ -> evalCall func (Value(ManyOp(OpList [v]))) env  //Eval with only one operation
     | _ -> failwith "Cannot call this function with these parameters"
 and evalOp (env:Environment) (operation:Operation) = 
       //let all = allIds operation

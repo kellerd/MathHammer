@@ -33,7 +33,7 @@ and ManyOp =
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
     | _ -> None
-
+let test = <@ 1 > 1 @>
 let (|IntResult|_|) = function 
     | Int(i) 
     | Result(Pass(Int(i))) -> Pass i |> Some 

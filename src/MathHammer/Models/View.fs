@@ -87,7 +87,6 @@ let showAverages (dist:Distribution<GamePrimitive>) =
         | Float f -> Float(f * probability)
         | Str s -> Str (sprintf "(%s %.0f%%)" s (100. * probability))
         | Result r -> Result.map (fun v -> mult (v,probability)) r  |> Result
-        | DPlus(_) ->  Str (sprintf "(%A %.0f%%)" v (100. * probability))
         | Dice d -> Str (sprintf "(%A %.0f%%)" d (100. * probability))
         | Dist d -> List.map(fun (a,p) -> a,probability*p) d |> Dist
         | ManyOp v -> Str (sprintf "(%A %.0f%%)" v (100. * probability))

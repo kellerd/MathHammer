@@ -8,13 +8,7 @@ open Elmish.React
 open MathHammer.Models.Types
 open Types
 open GameActions.Primitives.Types
-open MathHammer.Models.View
-  
-let isCharacteristic = function 
-                        | Value(NoValue)            | Value(_)             | Value(DPlus(_) )
-                        | Let(_, _, Value(_)) | Let(_, _, Value(DPlus(_))) | Let(_, _, Value(DPlus(_))) -> true
-                        | _ -> false
-
+open MathHammer.Models.View  
 let root model dispatch =
     let (boardX,boardY) = model.Board |> fun (x,y) -> ft.ToMM(x),ft.ToMM(y)
     let drawing =   
