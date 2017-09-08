@@ -18,20 +18,19 @@ let rec unparseResult unparseV = function
                                     yield str ";" 
                                 yield str "]"]
 
-let rec displayManyOp ops =
+let rec displayParamArray ops =
     match ops with
-    | OpList(ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "%dD6" (List.length ops) |> str
-    | OpList(ops) when List.distinct ops = [Value(Dice(D3))] -> sprintf "%dD3" (List.length ops) |> str
+    | OpList(ops) when List.distinct ops = [GameActions.Primitives.State.``D#`` D6] -> sprintf "%dD6" (List.length ops) |> str
+    | OpList(ops) when List.distinct ops = [GameActions.Primitives.State.``D#`` D3] -> sprintf "%dD3" (List.length ops) |> str
     | OpList ops -> List.map unparse ops |> List.reduce (fun l1 l2 -> l1 @ (str " + " :: l2)) |> div []
 and unparseCall func = 
     match func with 
+    | Dice(i) -> "D" + string i  |> str
     | Count -> sprintf "(Passes,Fails) in " |> str
     | _  -> sprintf "%A" func |> str
 and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function   
-    | Dice(i) -> "D" + string i  |> str
     | Int(i) -> string i |> str
     | Dist(d) -> "distribution" |> str
-    | ManyOp(m) -> div [] [str "("; displayManyOp m; str ")"]
     | NoValue -> "--" |> str
     | Str s -> s |> str
     | Result r -> unparseResult unparseValue r
@@ -41,11 +40,13 @@ and unparse operation : Fable.Import.React.ReactElement list =
     | Value(v)-> [unparseValue v]
     | Var (v) -> [sprintf "%s" v |> str]
     | Lam(p,x) -> []
-    | App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(D6)); Value(Int(i))]))) ->  [string i + "+" |> str]
-    | App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(D3)); Value(Int(i))]))) ->  [string i + "+ on D3" |> str]
-    | App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(Reroll(is,D6))); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str]
-    | App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(Reroll(is,D3))); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str]
-    | App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(Reroll(is,Reroll(is2,d)))); Value(Int(i))]))) ->  [unparse (App(Call(GreaterThan),  Value(ManyOp(OpList [Value(Dice(Reroll(List.distinct (is @ is2),d))); Value(Int(i))])))) |> div []]
+    | ParamArray(m) -> [str "("; displayParamArray m; str ")"]
+    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(D6)),Value(NoValue)); Value(Int(i))])) ->  [string i + "+" |> str]
+    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(D3)),Value(NoValue)); Value(Int(i))])) ->  [string i + "+ on D3" |> str]
+    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(is,D6))),Value(NoValue)); Value(Int(i))])) ->  [sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str]
+    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(is,D3))),Value(NoValue)); Value(Int(i))])) ->  [sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str]
+    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(is,Reroll(is2,d)))),Value(NoValue)); Value(Int(i))])) ->  
+        [unparse (App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(List.distinct (is @ is2),d))),Value(NoValue)); Value(Int(i))]))) |> div []]
     | App(Lam(p,x),a) -> unparse x //paren (unparse (Lam(p,x))) + " " + argstring a
     | App(f,a) -> unparse f @ [argstring a]
     | Let(v, value, inner) ->  (div [] ((b [] [str v]) :: unparse value)) :: (unparse inner)
@@ -56,11 +57,12 @@ and argstring = function
 let alternateRoot model dispatch =
     let rec displayOperation operation = 
         match operation with 
-        | Value(ManyOp(OpList(ops)))  when List.distinct ops = [Value(Dice(D3))] -> str ""
-        | Value(ManyOp(OpList(ops)))  when List.distinct ops = [Value(Dice(D6))] -> str ""
+        | ParamArray(OpList(ops))  when List.distinct ops = [GameActions.Primitives.State.``D#`` D3] -> str ""
+        | ParamArray(OpList(ops))  when List.distinct ops = [GameActions.Primitives.State.``D#`` D6] -> str ""
         | Call Product -> str ""
         | Call Total  -> str ""
         | Call Unfold  -> str ""
+        | Call (Dice _)  -> str ""
         | Call Count -> str ""
         | Call GreaterThan -> str ""
         | Call LessThan -> str ""
@@ -68,7 +70,6 @@ let alternateRoot model dispatch =
         | Call NotEquals -> str ""
         | Call Or -> str ""
         | Call And -> str ""
-        | Value(Dice(i))-> str ""
         | Value(Int(i)) -> str ""
         | Value(NoValue) -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []
         | Value(_) ->     str ""
@@ -76,6 +77,7 @@ let alternateRoot model dispatch =
         | Let(_) -> str ""
         | App(f, value) -> str ""
         | Lam(param, body) -> str ""
+        | ParamArray _ -> str ""
     displayOperation model  
 
 let root model dispatch =

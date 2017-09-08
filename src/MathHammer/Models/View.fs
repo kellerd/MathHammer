@@ -68,12 +68,12 @@ let rec showOperationDistribution f op =
         | Str s -> 
             b  [] [str s]
         | Dist(d) -> f d
-        | ManyOp(OpList(ops)) -> 
-            section [ClassName "columns"]
-                    (List.map (fun op -> div [ClassName "column"] [showOperationDistribution f op]) ops) 
         | v -> 
             GameActions.Primitives.View.unparseValue v
         |> List.singleton 
+    
+    | ParamArray(OpList(ops)) -> 
+        [ section [ClassName "columns"] (List.map (fun op -> div [ClassName "column"] [showOperationDistribution f op]) ops) ]
     | op -> GameActions.Primitives.View.unparse op
     |> div [ClassName "column"]
 let showGamePrimitive gp = 
@@ -95,8 +95,6 @@ let showAverages (dist:Distribution<GamePrimitive>) =
         | NoValue -> DNoValue
         | Int i -> DFloat ((float i) * probability)
         | Str s -> DStr (sprintf "(%s %.0f%%)" s (100. * probability))
-        | Dice d -> DStr (sprintf "(%A %.0f%%)" d (100. * probability))
-        | ManyOp v -> DStr (sprintf "(%A %.0f%%)" v (100. * probability))
         | Result r -> DResult (Result.map (fun gp -> mult(gp,probability)) r)
         | Dist d -> DDist (d |> List.map (fun (g,p) -> (mult (g,1.)),p*probability)) 
     let averageDistribution = dist |> List.fold (fun sum (v,p) -> mult (v,p) + sum) DNoValue
@@ -135,7 +133,7 @@ let groupFor model display =
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
             [ g   [ Transform model.Scale ] display ]
 let rangeRoot name model =
-    let dist = GameActions.Primitives.State.tryFindLabel name model.EvaluatedRules
+    let dist = GameActions.Primitives.State.tryFindLabel name model.ProbabilityRules
     let ranges id (min:int<mm>,max:int<mm>,stops) = 
         g [] 
           [   defs  [] 

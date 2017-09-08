@@ -10,11 +10,10 @@ type GamePrimitive =
     | Str of string
     | Result of Result<GamePrimitive>
     | NoValue 
-    | Dice of Die
     | Dist of Distribution.Distribution<GamePrimitive>
-    | ManyOp of ManyOp
 and Operation = 
     | Call of Call
+    | ParamArray of ParamArray
     | Value of GamePrimitive
     | Var of string
     | App of f:Operation * value:Operation
@@ -25,13 +24,14 @@ and Call =
     | Total
     | Count
     | Unfold 
+    | Dice of Die
     | GreaterThan
     | Equals
     | NotEquals
     | LessThan
     | And
     | Or
-and ManyOp =
+and ParamArray =
     | OpList of Operation list
     
 let rec (|IsDistribution|_|) = function
@@ -44,9 +44,7 @@ let (|IntResult|_|) = function
     | Str(_) -> None
     | Result(_) -> None
     | NoValue -> Fail 0 |> Some
-    | Dice(_) -> None
     | Dist(_) -> None
-    | ManyOp(_) -> None
 
 type GamePrimitive with 
     static member Zero = NoValue
@@ -76,8 +74,56 @@ type GamePrimitive with
             |> String.concat "\n"
             |> Str
         | Result r1, Result r2 -> Result.mult r1 r2 |> Result
-        | Dist d, Dist d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (d1,d2) -> ManyOp(OpList[Value(d1);Value(d2)])) |> Dist
+        //| Dist d, Dist d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (d1,d2) -> ParamArray(OpList[Value(d1);Value(d2)])) |> Dist
         | x,y -> failwith <| sprintf "Cannot multiply these two primitives %A, %A" x y
+let rec greaterThan gp gp2 = 
+    match gp,gp2 with 
+    | Int(i),  Int(i2)  -> (if i > i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> greaterThan a b,p1) d d2 |> Dist
+    | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> greaterThan a b ) r2) r |> Result
+    | Str(s),Str(s2) -> (if s > s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result
+    | gp, Dist(d) -> List.map(fun (b,p1) -> greaterThan gp b,p1) d |> Dist
+    | Dist(d),gp -> List.map(fun (a,p1) -> greaterThan a gp,p1) d |> Dist
+    | gp,Result(r) -> Result.map(fun b -> greaterThan gp b) r |> Result
+    | Result(r), gp -> Result.map(fun a -> greaterThan a gp) r |> Result
+    | _, NoValue _ | NoValue _, _ 
+    | Str _, _ | _, Str _ -> printf "Couldn't compare %A > %A" gp gp2; NoValue
+let rec lessThan op op2 = 
+    match op,op2 with 
+    | Int(i),  Int(i2)  -> (if i < i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> lessThan a b,p1) d d2 |> Dist
+    | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> lessThan a b ) r2) r |> Result
+    | Str(s),Str(s2) -> (if s < s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result    
+    | gp, Dist(d) -> List.map(fun (b,p1) -> lessThan gp b,p1) d |> Dist
+    | Dist(d),gp -> List.map(fun (a,p1) -> lessThan a gp,p1) d |> Dist
+    | gp,Result(r) -> Result.map(fun b -> lessThan gp b) r |> Result
+    | Result(r), gp -> Result.map(fun a -> lessThan a gp) r |> Result
+    | _, NoValue _ | NoValue _, _ 
+    | Str _, _ | _, Str _ -> printf "Couldn't compare %A < %A" op op2; NoValue
+let rec equals op op2 = 
+    match op,op2 with 
+    | Int(i),  Int(i2)  -> (if i = i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> equals a b,p1) d d2 |> Dist
+    | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> equals a b ) r2) r |> Result
+    | Str(s),Str(s2) -> (if s = s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result
+    | gp, Dist(d) -> List.map(fun (b,p1) -> equals gp b,p1) d |> Dist
+    | Dist(d),gp -> List.map(fun (a,p1) -> equals a gp,p1) d |> Dist
+    | gp,Result(r) -> Result.map(fun b -> equals gp b) r |> Result
+    | Result(r), gp -> Result.map(fun a -> equals a gp) r |> Result
+    | _, NoValue _ | NoValue _, _ 
+    | Str _, _ | _, Str _ -> printf "Couldn't compare %A = %A" op op2;NoValue
+let rec notEquals op op2 = 
+    match op,op2 with 
+    | Int(i),  Int(i2)  -> (if i <> i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> notEquals a b,p1) d d2 |> Dist
+    | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> notEquals a b ) r2) r |> Result
+    | Str(s),Str(s2) -> (if s <>s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result
+    | gp, Dist(d) -> List.map(fun (b,p1) -> notEquals gp b,p1) d |> Dist
+    | Dist(d),gp -> List.map(fun (a,p1) -> notEquals a gp,p1) d |> Dist
+    | gp,Result(r) -> Result.map(fun b -> notEquals gp b) r |> Result
+    | Result(r), gp -> Result.map(fun a -> notEquals a gp) r |> Result
+    | _, NoValue _ | NoValue _, _ 
+    | Str _, _ | _, Str _ -> printf "Couldn't compare %A <> %A" op op2; NoValue
         
         
 type NormalizedOperation = Normal | Next of Operation    

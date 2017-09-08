@@ -11,7 +11,9 @@ type Model = { PosX:float
                Size:int<mm>
                Attributes: Operation list
                Rules: Operation
-               EvaluatedRules:Operation }
+               SampleRules:Operation
+               AverageRules:Operation
+               ProbabilityRules:Operation }
 type DisplayType = 
     | DFloat of float
     | DInt of int
