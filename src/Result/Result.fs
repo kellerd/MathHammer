@@ -49,6 +49,14 @@ let inline map f x =
             | Tuple(a,b) -> Tuple(f a,f b)
     map f x     
 
+let rec bind f x = 
+    match x with 
+    | Pass x -> f x  
+    | Fail x -> Fail x
+    | List xs -> List.map (bind f) xs |> List
+    | Tuple (x,y) -> f x
+
+
 let rec printResultF = 
         function
         | Pass x   -> sprintf "Pass %.2f" x 

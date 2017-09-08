@@ -25,13 +25,6 @@ let initGeq name coreRules =
     let attributes = [vInt 30; vInt 5; dPlus D6 4 ;dPlus D6 4; vInt 3; vInt 3; vInt 1; vInt 1; vInt 6; dPlus D6 5; Value(NoValue)] 
     let rules = applyArgs (coreRules |> lam "WeaponRange") attributes
     { (init name) with Rules = rules; Attributes = attributes }, Cmd.none
-let dPlusTest plus die = dist {
-      let! roll = die
-      let result = 
-            if roll >= plus then Pass roll
-            else Fail roll
-      return result
-}
 let rec evalDie d : Distribution<_> = 
       match d with 
       | D3 -> uniformDistribution [1..3]
@@ -99,7 +92,6 @@ let rename all (t, s, x) =
     let rec halpGP = function 
         | Dice(_) 
         | Int(_) 
-        | Float(_) 
         | Dist(_) 
         | NoValue 
         | Str(_) ->  Fine
@@ -230,35 +222,83 @@ and fold folder env ops state =
             | _ -> Value(NoValue)
             ) state
 and evalGamePrimitive env = function
-      | Float _ as f -> f |> Value
-      | Int _ as i -> i |> Value
-      | Dice d -> evalDie d  |> Distribution.map (Int)  |> Dist |> Value
-      | NoValue -> NoValue |> Value
-      | Dist _ as d -> d |> Value
+      | Int _ as i -> i 
+      | Dice d -> evalDie d  |> Distribution.map (Int)  |> Dist 
+      | NoValue -> NoValue 
+      | Dist _ as d -> d 
       
       | ManyOp(OpList ops) -> 
             ops
             |> List.fold(fun acc op -> let newOp = evalOp env op
                                        (newOp::acc)) [] 
             |> List.rev 
-            |> OpList |> ManyOp |> Value
-      | Str _ as s -> s |> Value
-      | Result _ as r -> r |> Value   
-and greaterThan op op2 = 
-    match op,op2 with 
-    | Value(Int(i)), Value(Int(i2)) -> (if i > i2 then  Int(i) |> Pass  else Int(i) |> Fail)|> Result
-    | Value(Float(i)), Value(Int(i2)) -> (if i > float i2 then  Float(i) |> Pass  else Float(i) |> Fail)|> Result
-    | Value(Int(i)), Value(Float(i2)) -> (if float i > i2 then  Int(i) |> Pass  else Int(i) |> Fail)|> Result
-    | Value(Int(i)), Value(Dice(d)) -> evalDie d |> dPlusTest moreThan |> Distribution.map(Result.map(Int) >> Result) |> Dist |> Value
+            |> OpList |> ManyOp 
+      | Str _ as s -> s 
+      | Result _ as r -> r 
+and greaterThan gp gp2 = 
+    match gp,gp2 with 
+    | Int(i),  Int(i2)  -> (if i > i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Dice(d), Int(i)   -> evalDie d |> Distribution.map(fun d' -> (if d' > i then Int(d') |> Pass else Int(d') |> Fail) |> Result ) |> Dist
+    | Int(i),  Dice(d)  -> evalDie d |> Distribution.map(fun d' -> (if i > d' then Int(i)  |> Pass else Int(i)  |> Fail) |> Result ) |> Dist
+    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> greaterThan a b,p1) d d2 |> Dist
+    | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> greaterThan a b ) r2) r |> Result
+    | Str(s),Str(s2) -> (if s > s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result
+    | gp, Dist(d) -> List.map(fun (b,p1) -> greaterThan gp b,p1) d |> Dist
+    | Dist(d),gp -> List.map(fun (a,p1) -> greaterThan a gp,p1) d |> Dist
+    | gp,Result(r) -> Result.map(fun b -> greaterThan gp b) r |> Result
+    | Result(r), gp -> Result.map(fun a -> greaterThan a gp) r |> Result
+    | _, NoValue _ | NoValue _, _ 
+    | _, ManyOp _ | ManyOp _, _ 
+    | Dice _, _ | _, Dice _ 
+    | Str _, _ | _, Str _ -> printf "Couldn't compare %A > %A" gp gp2; NoValue
 and lessThan op op2 = 
     match op,op2 with 
-    | _ -> op
+    | Int(i),  Int(i2)  -> (if i < i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Dice(d), Int(i)   -> evalDie d |> Distribution.map(fun d' -> (if d' < i then Int(d') |> Pass else Int(d') |> Fail) |> Result ) |> Dist
+    | Int(i),  Dice(d)  -> evalDie d |> Distribution.map(fun d' -> (if i < d' then Int(i)  |> Pass else Int(i)  |> Fail) |> Result ) |> Dist
+    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> lessThan a b,p1) d d2 |> Dist
+    | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> lessThan a b ) r2) r |> Result
+    | Str(s),Str(s2) -> (if s < s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result    
+    | gp, Dist(d) -> List.map(fun (b,p1) -> lessThan gp b,p1) d |> Dist
+    | Dist(d),gp -> List.map(fun (a,p1) -> lessThan a gp,p1) d |> Dist
+    | gp,Result(r) -> Result.map(fun b -> lessThan gp b) r |> Result
+    | Result(r), gp -> Result.map(fun a -> lessThan a gp) r |> Result
+    | _, NoValue _ | NoValue _, _ 
+    | _, ManyOp _ | ManyOp _, _ 
+    | Dice _, _ | _, Dice _ 
+    | Str _, _ | _, Str _ -> printf "Couldn't compare %A < %A" op op2; NoValue
 and equals op op2 = 
     match op,op2 with 
-    | _ -> op
+    | Int(i),  Int(i2)  -> (if i = i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Dice(d), Int(i)   -> evalDie d |> Distribution.map(fun d' -> (if d' = i then Int(d') |> Pass else Int(d') |> Fail) |> Result ) |> Dist
+    | Int(i),  Dice(d)  -> evalDie d |> Distribution.map(fun d' -> (if i = d' then Int(i)  |> Pass else Int(i)  |> Fail) |> Result ) |> Dist
+    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> equals a b,p1) d d2 |> Dist
+    | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> equals a b ) r2) r |> Result
+    | Str(s),Str(s2) -> (if s = s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result
+    | gp, Dist(d) -> List.map(fun (b,p1) -> equals gp b,p1) d |> Dist
+    | Dist(d),gp -> List.map(fun (a,p1) -> equals a gp,p1) d |> Dist
+    | gp,Result(r) -> Result.map(fun b -> equals gp b) r |> Result
+    | Result(r), gp -> Result.map(fun a -> equals a gp) r |> Result
+    | _, NoValue _ | NoValue _, _ 
+    | _, ManyOp _ | ManyOp _, _ 
+    | Dice _, _ | _, Dice _ 
+    | Str _, _ | _, Str _ -> printf "Couldn't compare %A = %A" op op2;NoValue
 and notEquals op op2 = 
     match op,op2 with 
-    | _ -> op
+    | Int(i),  Int(i2)  -> (if i <> i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Dice(d), Int(i)   -> evalDie d |> Distribution.map(fun d' -> (if d' <> i then Int(d') |> Pass else Int(d') |> Fail) |> Result ) |> Dist
+    | Int(i),  Dice(d)  -> evalDie d |> Distribution.map(fun d' -> (if i <> d' then Int(i)  |> Pass else Int(i)  |> Fail) |> Result ) |> Dist
+    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> notEquals a b,p1) d d2 |> Dist
+    | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> notEquals a b ) r2) r |> Result
+    | Str(s),Str(s2) -> (if s <>s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result
+    | gp, Dist(d) -> List.map(fun (b,p1) -> notEquals gp b,p1) d |> Dist
+    | Dist(d),gp -> List.map(fun (a,p1) -> notEquals a gp,p1) d |> Dist
+    | gp,Result(r) -> Result.map(fun b -> notEquals gp b) r |> Result
+    | Result(r), gp -> Result.map(fun a -> notEquals a gp) r |> Result
+    | _, NoValue _ | NoValue _, _ 
+    | _, ManyOp _ | ManyOp _, _ 
+    | Dice _, _ | _, Dice _ 
+    | Str _, _ | _, Str _ -> printf "Couldn't compare %A <> %A" op op2; NoValue
 and evalCall func v env  =
     match func,v with 
     | Total, Value(ManyOp(OpList(ops))) -> 
@@ -284,24 +324,24 @@ and evalCall func v env  =
         |> Dist 
         |> Value
         |> fold (fun r1 r2 -> toCount r1 + toCount r2)  env ops
-    | GreaterThan, Value(ManyOp(OpList([op;op2]))) -> greaterThan op op2 
-    | Equals, Value(ManyOp(OpList([op;op2]))) -> equals op op2 
-    | LessThan, Value(ManyOp(OpList([op;op2]))) -> notEquals op op2 
-    | NotEquals, Value(ManyOp(OpList([op;op2]))) -> lessThan op op2 
+    | GreaterThan, Value(ManyOp(OpList([Value(gp);Value(gp2)]))) -> greaterThan gp gp2 |> Value
+    | Equals, Value(ManyOp(OpList([Value(gp);Value(gp2)]))) -> equals gp gp2  |> Value
+    | LessThan, Value(ManyOp(OpList([Value(gp);Value(gp2)]))) -> notEquals gp gp2  |> Value
+    | NotEquals, Value(ManyOp(OpList([Value(gp);Value(gp2)]))) -> lessThan gp gp2  |> Value
     | Unfold, Value(ManyOp(OpList [op;op2])) -> unfold op op2 env
     | Total, Value _
     | Product,  Value _ 
-    | Count,  Value _ -> evalCall func (Value(ManyOp(OpList [v]))) env  //Eval with only one operation
-    | _ -> failwith "Cannot call this function with these parameters"
+    | Count,  Value _ -> evalCall func (Value(ManyOp(OpList [v]))) env
+    | _ -> failwith "Cannot eval any other call with those params"  //Eval with only one operation
 and evalOp (env:Environment) (operation:Operation) = 
       //let all = allIds operation
       match operation with
-      | Value v -> evalGamePrimitive env v 
-      | Call f -> Call f
-      | Var (var)  -> Map.tryFind (var) env |> function Some v -> v | None -> Value(NoValue)
+      | Value v -> evalGamePrimitive env v |> Value
+      | Call _ as c -> c
+      | Var (var)  -> Map.tryFind (var) env |> function Some v -> v | None -> printfn "Couldn't find value %s" var; Value(NoValue)
       | Let(str, var, op) -> 
             let result = evalOp env var
-            evalOp (Map.add (str) result env) op
+            evalOp (Map.add str result env) op
       | Lam _ -> Value(NoValue)
       | App(f, value) -> 
            match evalOp env f, evalOp env value with 

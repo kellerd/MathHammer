@@ -12,11 +12,10 @@ let attcker' = allProps |> lam "BS" |> lam "WS"
 vInt 3 |%> (vInt 6 |%> attcker') |> normalizeOp |> evalOp Map.empty<_,_>
 let body = nestOps [hitResults;chargeRange;meleeRange;psychicTest] allProps
 let defbody = nestOps [hitResults;shootingRange;psychicTest] allProps
-let stats = ["M";" WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"] 
+let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"] 
 let attacker = createArgs stats body
 let args = [vInt 8; dPlus D6 3 ;dPlus D6 3; vInt 4; vInt 4; vInt 1; vInt 2; vInt 8; dPlus D6 3; Value(NoValue)] 
 let evaluated = applyArgs attacker args |> normalizeOp |> evalOp Map.empty<_,_>
-
 let attackerExpanded = 
     Let("M",vInt 6, 
         Let("MeleeRange", 

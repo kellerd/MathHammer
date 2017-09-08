@@ -7,6 +7,17 @@ open Fable.Helpers.React.Props
 open Types
 let paren react = div [] <| str "(" :: react @ [str ")"]
 
+let rec unparseResult unparseV = function 
+    | Result.Pass(v) -> div [Style [Color (Probability.View.colour 255.) ]] [str "Pass: "; (unparseV v)]
+    | Result.Fail(v) -> div [Style [Color (Probability.View.colour 0.) ]] [str  "Fail: "; (unparseV v)]
+    | Result.Tuple(v,v2) -> div [] [str "(" ; (unparseV v); str ","; (unparseV v2 ); str ")"]
+    | Result.List(vs) -> div [] [
+                                yield str "["
+                                for result in vs do
+                                    yield unparseResult unparseV result
+                                    yield str ";" 
+                                yield str "]"]
+
 let rec displayManyOp ops =
     match ops with
     | OpList(ops) when List.distinct ops = [Value(Dice(D6))] -> sprintf "%dD6" (List.length ops) |> str
@@ -16,16 +27,6 @@ and unparseCall func =
     match func with 
     | Count -> sprintf "(Passes,Fails) in " |> str
     | _  -> sprintf "%A" func |> str
-and unparseResult = function 
-    | Result.Pass(v) -> div [Style [Color (Probability.View.colour 255.) ]] [str "Pass: "; (unparseValue v)]
-    | Result.Fail(v) -> div [Style [Color (Probability.View.colour 0.) ]] [str  "Fail: "; (unparseValue v)]
-    | Result.Tuple(v,v2) -> div [] [str "(" ; (unparseValue v); str ","; (unparseValue v2 ); str ")"]
-    | Result.List(vs) -> div [] [
-                                yield str "["
-                                for result in vs do
-                                    yield unparseResult result
-                                    yield str ";" 
-                                yield str "]"]
 and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function   
     | Dice(i) -> "D" + string i  |> str
     | Int(i) -> string i |> str
@@ -33,8 +34,7 @@ and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function
     | ManyOp(m) -> div [] [str "("; displayManyOp m; str ")"]
     | NoValue -> "--" |> str
     | Str s -> s |> str
-    | Result(r) -> unparseResult r
-    | Float(f) -> sprintf "%.2f" f |> str
+    | Result r -> unparseResult unparseValue r
 and unparse operation : Fable.Import.React.ReactElement list = 
     match operation with 
     | Call f -> [unparseCall f]

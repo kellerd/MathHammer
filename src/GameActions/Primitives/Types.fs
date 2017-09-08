@@ -7,7 +7,6 @@ type Die =
     | Reroll of (int list) * Die
 type GamePrimitive =
     | Int of int
-    | Float of float
     | Str of string
     | Result of Result<GamePrimitive>
     | NoValue 
@@ -38,7 +37,6 @@ and ManyOp =
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
     | _ -> None
-let test = <@ 1 > 1 @>
 let (|IntResult|_|) = function 
     | Int(i) 
     | Result(Pass(Int(i))) -> Pass i |> Some 
@@ -49,18 +47,6 @@ let (|IntResult|_|) = function
     | Dice(_) -> None
     | Dist(_) -> None
     | ManyOp(_) -> None
-    | Float(_) -> None
-let (|FloatResult|_|) = function 
-    | Float(i) 
-    | Result(Pass(Float(i))) -> Pass i |> Some 
-    | Result(Fail(Float(i))) -> Fail i |> Some
-    | Str(_) -> None
-    | Result(_) -> None
-    | NoValue -> Fail 0. |> Some
-    | Dice(_) -> None
-    | Dist(_) -> None
-    | ManyOp(_) -> None
-    | Int(_) -> None    
 
 type GamePrimitive with 
     static member Zero = NoValue

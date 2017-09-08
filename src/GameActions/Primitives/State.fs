@@ -17,9 +17,10 @@ let bindOp v op inBody = Operation.Let(v,op, inBody)
 let lam s op = Lam (s,op)
 
 let d6 = Value(Dice(D6))
+let d3 = Value(Dice(D3))
 let str s = Str s |> Value
 
-let dPlus d v = [Value(Dice(d));Value(Int(v))] |> opList |> call GreaterThan
+let dPlus d v = [Value(Dice(d));Value(Int(v - 1))] |> opList |> call GreaterThan
 let vInt i = Value(Int(i))
 let emptyOp = Value(NoValue)
 let label v o = pair (str v) o
@@ -45,17 +46,21 @@ let allProps =
           labelVar "Ld"
           labelVar "Sv"
           labelVar "InvSv"
-          labelVar "MeleeRange"
           labelVar "ShootingRange"
           labelVar "PsychicTest"
           labelVar "HitResults"
-          labelVar "ChargeRange" ]
+          labelVar "ChargeRange"
+          labelVar "MeleeRange"
+          labelVar "D6Test"
+          labelVar "D3Test" ]
 
 let hitResults = get "WS" |> single |> total >>= "HitResults"
 let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
 let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
 let shootingRange = opList [get "WeaponRange"] >>= "ShootingRange"
 let psychicTest = [d6;d6] |> opList |> total >>= "PsychicTest"
+let d6Test = [d6] |> opList |> total >>= "D6Test"
+let d3Test = [d3] |> opList |> total >>= "D3Test"
 
 let tryFindLabel name operation = 
     None
