@@ -61,21 +61,6 @@ let rangeStops (dist:Distribution<_>)  =
                                StopOpacity !^ opacity ] [])
         
     (minRange,maxRange, stopsPercentGreenAndOpacity)
-let rec showOperationDistribution f op = 
-    match op with 
-    | Value v -> 
-        match v with 
-        | Str s -> 
-            b  [] [str s]
-        | Dist(d) -> f d
-        | v -> 
-            GameActions.Primitives.View.unparseValue v
-        |> List.singleton 
-    
-    | ParamArray(OpList(ops)) -> 
-        [ section [ClassName "columns"] (List.map (fun op -> div [ClassName "column"] [showOperationDistribution f op]) ops) ]
-    | op -> GameActions.Primitives.View.unparse op
-    |> div [ClassName "column"]
 
 let showProbabilitiesOfActions (dist:Distribution<GamePrimitive>) = 
     let result = 
@@ -103,6 +88,23 @@ let showProbabilitiesOfActions (dist:Distribution<GamePrimitive>) =
                       | v -> div [] [GameActions.Primitives.View.unparseValue v; str <| sprintf " %.2f%%" (prob / total * 100.)])
             |> div [ClassName "column"]            
       
+
+let rec showOperation op = 
+    match op with 
+    | Value v -> 
+        match v with 
+        | Str s -> 
+            b  [] [str s]
+        | Dist(d) -> showProbabilitiesOfActions d
+        | v -> 
+            GameActions.Primitives.View.unparseValue v
+        |> List.singleton 
+    
+    | ParamArray(OpList(ops)) -> 
+        [ section [ClassName "columns"] (List.map (fun op -> div [ClassName "column"] [showOperation op]) ops) ]
+    | op -> GameActions.Primitives.View.unparse op
+    |> div [ClassName "column"]
+
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
             [ g   [ Transform model.Scale ] display ]

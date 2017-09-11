@@ -65,9 +65,9 @@ let root model dispatch =
                 |> div [ClassName "columns"]  
             let getListOfOps = function | ParamArray(OpList(ops)) -> ops | op -> [op]
             let actionsDiv = selected.Rules |> showActions dispatch  |> columnsOf 
-            let averagesDiv = selected.AverageRules |> getListOfOps |> List.map (showOperationDistribution showProbabilitiesOfActions)  |> columnsOf
-            let probabiltiesActionsDiv = selected.ProbabilityRules |> getListOfOps |> List.map (showOperationDistribution showProbabilitiesOfActions) |> columnsOf
-            let sampleActionsDiv = selected.SampleRules |> getListOfOps |> List.map (showOperationDistribution showProbabilitiesOfActions) |> columnsOf
+            let averagesDiv = selected.AverageRules |> getListOfOps |> List.map showOperation  |> columnsOf
+            let probabiltiesActionsDiv = selected.ProbabilityRules |> getListOfOps |> List.map showOperation |> columnsOf
+            let sampleActionsDiv = selected.SampleRules |> getListOfOps |> List.map showOperation |> columnsOf
 
             section [Id "selected"] [ title; attrDiv
                                       bar "Actions"; actionsDiv
