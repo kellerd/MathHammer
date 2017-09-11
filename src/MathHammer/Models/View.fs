@@ -76,29 +76,7 @@ let rec showOperationDistribution f op =
         [ section [ClassName "columns"] (List.map (fun op -> div [ClassName "column"] [showOperationDistribution f op]) ops) ]
     | op -> GameActions.Primitives.View.unparse op
     |> div [ClassName "column"]
-let showGamePrimitive gp = 
-    div [] [GameActions.Primitives.View.unparseValue gp]
-let rec showDisplayType dt = 
-    let re = match dt with 
-             | DInt(i) -> string i |> str
-             | DFloat(f) -> sprintf "%.2f" f |> str
-             | DNoValue -> "--" |> str
-             | DStr s -> s |> str
-             | DDist d -> "distribution" |> str
-             | DResult(r) -> GameActions.Primitives.View.unparseResult showDisplayType r
-    div [] [re]
 
-let showAverages (dist:Distribution<GamePrimitive>) =
-
-    let rec mult (v,probability) =
-        match v with 
-        | NoValue -> DNoValue
-        | Int i -> DFloat ((float i) * probability)
-        | Str s -> DStr (sprintf "(%s %.0f%%)" s (100. * probability))
-        | Result r -> DResult (Result.map (fun gp -> mult(gp,probability)) r)
-        | Dist d -> DDist (d |> List.map (fun (g,p) -> (mult (g,1.)),p*probability)) 
-    let averageDistribution = dist |> List.fold (fun sum (v,p) -> mult (v,p) + sum) DNoValue
-    showDisplayType averageDistribution
 let showProbabilitiesOfActions (dist:Distribution<GamePrimitive>) = 
     let result = 
           dist 
@@ -124,11 +102,7 @@ let showProbabilitiesOfActions (dist:Distribution<GamePrimitive>) =
                           div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.2f%%" (prob / total * 100.)]
                       | v -> div [] [GameActions.Primitives.View.unparseValue v; str <| sprintf " %.2f%%" (prob / total * 100.)])
             |> div [ClassName "column"]            
-    
-
-let showSample  = sample >> showGamePrimitive 
-    
-
+      
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
             [ g   [ Transform model.Scale ] display ]

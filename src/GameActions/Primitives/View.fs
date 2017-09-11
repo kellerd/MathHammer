@@ -30,6 +30,7 @@ and unparseCall func =
     | _  -> sprintf "%A" func |> str
 and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function   
     | Int(i) -> string i |> str
+    | Float(f) -> sprintf "%.2f" f |> str
     | Dist(d) -> "distribution" |> str
     | NoValue -> "--" |> str
     | Str s -> s |> str
@@ -41,12 +42,12 @@ and unparse operation : Fable.Import.React.ReactElement list =
     | Var (v) -> [sprintf "%s" v |> str]
     | Lam(p,x) -> []
     | ParamArray(m) -> [str "("; displayParamArray m; str ")"]
-    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(D6)),Value(NoValue)); Value(Int(i))])) ->  [string i + "+" |> str]
-    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(D3)),Value(NoValue)); Value(Int(i))])) ->  [string i + "+ on D3" |> str]
-    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(is,D6))),Value(NoValue)); Value(Int(i))])) ->  [sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str]
-    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(is,D3))),Value(NoValue)); Value(Int(i))])) ->  [sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str]
-    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(is,Reroll(is2,d)))),Value(NoValue)); Value(Int(i))])) ->  
-        [unparse (App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(List.distinct (is @ is2),d))),Value(NoValue)); Value(Int(i))]))) |> div []]
+    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(D6)),noValue); Value(Int(i))])) ->  [string i + "+" |> str]
+    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(D3)),noValue); Value(Int(i))])) ->  [string i + "+ on D3" |> str]
+    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(is,D6))),noValue); Value(Int(i))])) ->  [sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str]
+    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(is,D3))),noValue); Value(Int(i))])) ->  [sprintf "%d+ rerolling (%s)"  i (String.concat "," (List.map string is)) |> str]
+    | App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(is,Reroll(is2,d)))),noValue); Value(Int(i))])) ->  
+        [unparse (App(Call(GreaterThan),  ParamArray(OpList [App(Call(Dice(Reroll(List.distinct (is @ is2),d))),noValue); Value(Int(i))]))) |> div []]
     | App(Lam(p,x),a) -> unparse x //paren (unparse (Lam(p,x))) + " " + argstring a
     | App(f,a) -> unparse f @ [argstring a]
     | Let(v, value, inner) ->  (div [] ((b [] [str v]) :: unparse value)) :: (unparse inner)

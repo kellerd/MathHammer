@@ -3,12 +3,13 @@ module GameActions.GameActionsList.State
 open Elmish
 open Types
 open GameActions.Primitives.Types
+open GameActions.Primitives.State
 
 let initRow () : Row * Cmd<Types.Msg> = 
-    ReadWrite("", Value(NoValue)), Cmd.none
+    ReadWrite("", noValue), Cmd.none
 
 let init () : Model * Cmd<Types.Msg> =
-    let readOnlyRow = ReadOnly ("HighFive", App(Call Total, ParamArray(OpList [App(Call(Dice(D6)), Value(NoValue)); Value(Int(3))])))
+    let readOnlyRow = ReadOnly ("HighFive", App(Call Total, ParamArray(OpList [App(Call(Dice(D6)), noValue); Value(Int(3))])))
     ([readOnlyRow],false), Cmd.none
 
 

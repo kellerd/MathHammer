@@ -15,14 +15,14 @@ let bindVal text op = Let(text,op,Var text)
 
 let bindOp v op inBody = Operation.Let(v,op, inBody)
 let lam s op = Lam (s,op)
-let ``D#`` d = App(Call(Dice(d)), Value(NoValue))
-let d6 = App(Call(Dice(D6)), Value(NoValue))
-let d3 = App(Call(Dice(D3)), Value(NoValue))
+let ``D#`` d = App(Call(Dice(d)), noValue)
+let d6 = App(Call(Dice(D6)), noValue)
+let d3 = App(Call(Dice(D3)), noValue)
 let str s = Str s |> Value
 
 let dPlus d v = [``D#`` d; Value(Int(v - 1))] |> opList |> call GreaterThan
 let vInt i = Value(Int(i))
-let emptyOp = Value(NoValue)
+let emptyOp = noValue
 let label v o = pair (str v) o
 let labelVar v = pair (str v) (get v)
 let apply f x = App(f,x)
@@ -203,11 +203,11 @@ let rec evalOp evalCall env (operation:Operation) =
             |> OpList |> ParamArray 
       | Value _ as v -> v
       | Call _ as c -> c
-      | Var (var)  -> Map.tryFind (var) env |> function Some v -> v | None -> printfn "Couldn't find value %s" var; Value(NoValue)
+      | Var (var)  -> Map.tryFind (var) env |> function Some v -> v | None -> printfn "Couldn't find value %s" var; noValue
       | Let(str, var, op) -> 
             let result = evalOp evalCall env var
             evalOp evalCall (Map.add str result env) op
-      | Lam _ -> Value(NoValue)
+      | Lam _ -> noValue
       | App(f, value) -> 
            match evalOp evalCall env f, evalOp evalCall env value with 
            | (Call f),v -> evalCall f v env 

@@ -61,7 +61,7 @@ let update msg model : Model * Cmd<Types.Msg> =
             model.GlobalOperations 
             |> Map.map(fun _ (ord,op) -> op 
                                          |> GameActions.Primitives.State.normalizeOp 
-                                         |>  GameActions.Primitives.State.evalOp MathHammer.Models.State.evalCall initial) 
+                                         |>  GameActions.Primitives.State.evalOp MathHammer.Models.State.standardCall initial) 
         {model with Environment = environment}, Cmd.batch [ Cmd.ofMsg BindDefender
                                                             Cmd.ofMsg BindAttacker ]
     | BindDefender -> 

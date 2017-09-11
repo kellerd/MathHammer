@@ -8,6 +8,7 @@ type Die =
 type GamePrimitive =
     | Int of int
     | Str of string
+    | Float of float
     | Result of Result<GamePrimitive>
     | NoValue 
     | Dist of Distribution.Distribution<GamePrimitive>
@@ -45,6 +46,7 @@ let (|IntResult|_|) = function
     | Result(_) -> None
     | NoValue -> Fail 0 |> Some
     | Dist(_) -> None
+    | Float _ -> None
 
 type GamePrimitive with 
     static member Zero = NoValue
@@ -52,6 +54,7 @@ type GamePrimitive with
         match (x,y) with 
         | NoValue,z | z,NoValue -> z
         | Int(a),Int(b) -> Int(a+b)
+        | Float(a),Float(b) -> Float(a+b)
         | Str(a),Str(b) -> Str(a+b)
         | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
         | Result (r1),Result(r2) -> Result.add r1 r2 |> Result
@@ -68,6 +71,7 @@ type GamePrimitive with
         match (x,y) with 
         | NoValue,z | z,NoValue -> NoValue
         | Int(a),Int(b) -> Int(a*b)
+        | Float(a),Float(b) -> Float(a*b)
         | Str(a),Str(b) -> 
             cartSeq [a.ToCharArray();b.ToCharArray()] 
             |> Seq.map(string)
@@ -79,6 +83,9 @@ type GamePrimitive with
 let rec greaterThan gp gp2 = 
     match gp,gp2 with 
     | Int(i),  Int(i2)  -> (if i > i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Float(i),  Float(i2)  -> (if i > i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Result
+    | Int a, Float b -> (if float a > b then Int(a) |> Pass else Int(a) |> Fail) |> Result
+    | Float a, Int b -> (if a > float b then Float(a) |> Pass else Float(a) |> Fail) |> Result
     | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> greaterThan a b,p1) d d2 |> Dist
     | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> greaterThan a b ) r2) r |> Result
     | Str(s),Str(s2) -> (if s > s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result
@@ -91,6 +98,9 @@ let rec greaterThan gp gp2 =
 let rec lessThan op op2 = 
     match op,op2 with 
     | Int(i),  Int(i2)  -> (if i < i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Float(i),  Float(i2)  -> (if i < i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Result
+    | Int a, Float b -> (if float a < b then Int(a) |> Pass else Int(a) |> Fail) |> Result
+    | Float a, Int b -> (if a < float b then Float(a) |> Pass else Float(a) |> Fail) |> Result
     | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> lessThan a b,p1) d d2 |> Dist
     | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> lessThan a b ) r2) r |> Result
     | Str(s),Str(s2) -> (if s < s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result    
@@ -103,6 +113,8 @@ let rec lessThan op op2 =
 let rec equals op op2 = 
     match op,op2 with 
     | Int(i),  Int(i2)  -> (if i = i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Float(i),  Float(i2)  -> (if i = i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Result
+    | Int a, Float b | Float b, Int a -> (if float a = b then Int(a) |> Pass else Int(a) |> Fail) |> Result
     | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> equals a b,p1) d d2 |> Dist
     | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> equals a b ) r2) r |> Result
     | Str(s),Str(s2) -> (if s = s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result
@@ -115,6 +127,8 @@ let rec equals op op2 =
 let rec notEquals op op2 = 
     match op,op2 with 
     | Int(i),  Int(i2)  -> (if i <> i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
+    | Float(i),  Float(i2)  -> (if i <> i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Result
+    | Int a, Float b | Float b, Int a -> (if float a <> b then Int(a) |> Pass else Int(a) |> Fail) |> Result
     | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> notEquals a b,p1) d d2 |> Dist
     | Result(r), Result(r2) -> Result.bind (fun a -> Result.map(fun b -> notEquals a b ) r2) r |> Result
     | Str(s),Str(s2) -> (if s <>s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Result
