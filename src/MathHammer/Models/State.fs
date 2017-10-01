@@ -51,7 +51,7 @@ let rec evalCall dieFunc func v env  =
                 | Result(Pass (Int(n))) -> List.init n (fun _ -> op) 
                 | Dist(times) -> 
                     match times |> Distribution.map(repeatOps op) |> fromDistribution with
-                    | NoResult -> [noValue]        
+                    | NoResult -> [noValue]     
                     | Deterministic d -> [d]
                     | NonDeterministic _ -> [noValue]
                 | Result(List xs) -> 
@@ -83,7 +83,17 @@ let rec evalCall dieFunc func v env  =
                       let! b' = reduced2
                       return folder a' b'                             
                 } |> Dist |> Value
-            | _ -> noValue
+            | Value(Dist reduced1),Value(b) ->
+                dist {
+                      let! a' = reduced1
+                      return folder a' b                             
+                } |> Dist |> Value
+            |   Value(a), Value(Dist reduced2) ->
+                dist {
+                      let! b' = reduced2
+                      return folder a b'                             
+                } |> Dist |> Value
+            | x -> failwith <| sprintf "Not a value 2 %A" x
             ) state
     match func,v with 
     | Dice d, Value(NoValue) -> dieFunc d  

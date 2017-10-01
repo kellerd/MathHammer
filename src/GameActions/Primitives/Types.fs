@@ -57,7 +57,11 @@ type GamePrimitive with
         | Float(a),Float(b) -> Float(a+b)
         | Str(a),Str(b) -> Str(a+b)
         | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
+        | Dist d, gp -> Distribution.map ((+) gp) d |> Dist
+        | gp, Dist d -> Distribution.map ((+) gp) d |> Dist
         | Result (r1),Result(r2) -> Result.add r1 r2 |> Result
+        | Float(x), Int(y) 
+        | Int(y), Float(x)  -> Float(x + float y)
         | x,y -> failwith <| sprintf "Cannot add these two primitives %A, %A" x y
     static member (*) (x,y) = 
         let rec cartSeq (nss:seq<#seq<'a>>) = 
