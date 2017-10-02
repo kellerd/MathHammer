@@ -207,7 +207,7 @@ let rec evalOp evalCall env (operation:Operation) =
       | Let(str, var, op) -> 
             let result = evalOp evalCall env var
             evalOp evalCall (Map.add str result env) op
-      | Lam _ -> noValue
+      | Lam _ as l -> l
       | App(f, value) -> 
            match evalOp evalCall env f, evalOp evalCall env value with 
            | (Call f),v -> evalCall f v env 

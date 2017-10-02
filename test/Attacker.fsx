@@ -25,6 +25,12 @@ let attackerExpanded =
         Let("MeleeRange", 
             Let("Total", App(Call Total, ParamArray(OpList[get "M"; vInt 12])), 
                 Var "Total"), allProps))
+
+attackerExpanded |> normalizeOp |> evalOp sampleCall Map.empty<_,_>
+attackerExpanded |> normalizeOp |> evalOp avgCall Map.empty<_,_>
+attackerExpanded |> normalizeOp |> evalOp standardCall Map.empty<_,_>
+
+
 attacker |> normalizeOp |> evalOp sampleCall Map.empty<_,_>
 attacker |> normalizeOp |> evalOp avgCall Map.empty<_,_>
 attacker |> normalizeOp |> evalOp standardCall Map.empty<_,_>
