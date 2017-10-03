@@ -10,6 +10,7 @@ open GameActions.Primitives.Types
 open Result
 open Distribution
 open Probability.View
+
 let onClick x : IProp = OnClick(x) :> _
 
 let showActions dispatch operation  = 
@@ -62,48 +63,6 @@ let rangeStops (dist:Distribution<_>)  =
         
     (minRange,maxRange, stopsPercentGreenAndOpacity)
 
-let showProbabilitiesOfActions (dist:Distribution<GamePrimitive>) = 
-    let result = 
-          dist 
-          |> List.groupBy fst
-          |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
-    match result with 
-    | [] -> str ""
-    | _ ->  let max = result |> List.maxBy snd |> snd
-            let min = result |> List.minBy snd |> snd
-            let total = result |> List.sumBy snd 
-            result
-                |> List.map (fun (r, prob) -> 
-                      match r with 
-                      | IntResult r -> 
-                          let rec passFailToExpectation = function 
-                            | Pass _ -> float 0xFF  
-                            | Fail _ -> float 0x00 
-                            | List xs -> List.averageBy passFailToExpectation xs 
-                            | Tuple (x,y) when x = y ->  float 0xFF 
-                            | Tuple (x,y) -> (x / (x + y) ) * float 0xFF
-                          let greenValue = Result.map float r |> passFailToExpectation
-                          let alpha = opacity min max prob
-                          div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.2f%%" (prob / total * 100.)]
-                      | v -> div [] [GameActions.Primitives.View.unparseValue v; str <| sprintf " %.2f%%" (prob / total * 100.)])
-            |> div [ClassName "column"]            
-      
-
-let rec showOperation op = 
-    match op with 
-    | Value v -> 
-        match v with 
-        | Str s -> 
-            b  [] [str s]
-        | Dist(d) -> showProbabilitiesOfActions d
-        | v -> 
-            GameActions.Primitives.View.unparseValue v
-        |> List.singleton 
-    
-    | ParamArray(OpList(ops)) -> 
-        [ section [ClassName "columns"] (List.map (fun op -> div [ClassName "column"] [showOperation op]) ops) ]
-    | op -> GameActions.Primitives.View.unparse op
-    |> div [ClassName "column"]
 
 let groupFor model display = 
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]

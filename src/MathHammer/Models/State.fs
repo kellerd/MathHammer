@@ -17,6 +17,7 @@ let init name =
       Scale = "scale(1,1)"
       Rules = noValue
       SampleRules = noValue
+      NormalizedRules = noValue
       AverageRules = noValue
       ProbabilityRules = noValue}
 
@@ -146,4 +147,5 @@ let update msg model =
             let cmds = []
             { model with SampleRules = sampled
                          AverageRules = average
+                         NormalizedRules = normalized
                          ProbabilityRules = probability }, Cmd.batch cmds

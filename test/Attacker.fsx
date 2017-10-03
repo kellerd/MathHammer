@@ -40,3 +40,6 @@ let attackerQuote =
         let m = 6
         let a = 5
         ["M",m; "A",a] @>
+
+(initMeq "Marine" attacker |> fst).Rules
+|> normalizeOp

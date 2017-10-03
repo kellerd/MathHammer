@@ -12,6 +12,7 @@ type Model = { PosX:float
                Attributes: Operation list
                Rules: Operation
                SampleRules:Operation
+               NormalizedRules:Operation
                AverageRules:Operation
                ProbabilityRules:Operation }
 type DisplayType = 
