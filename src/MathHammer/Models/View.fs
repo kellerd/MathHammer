@@ -25,6 +25,7 @@ let rangeStops (dist:Distribution<_>)  =
     let length = List.length dist
     let minRange, maxRange,minProbability,maxProbability =
         dist 
+        |> List.rev
         |> Distribution.choose (function IntResult (i) -> Result.map ((*) 1<inch>) i |> Some | _ -> None)
         |> List.fold (fun (currMinRange,currMaxRange,currMin,currMax) (range,prob) -> 
             min currMinRange range, max currMaxRange range,
@@ -44,6 +45,7 @@ let rangeStops (dist:Distribution<_>)  =
     let stopsPercentGreenAndOpacity = 
         let stops = 
             dist 
+            |> List.rev
             |> List.toArray
             |> Array.mapi (fun i (range,prob) -> 
                 match range,prob with 

@@ -31,8 +31,8 @@ let initGeq name coreRules =
     { (init name) with Rules = rules; Attributes = attributes }, Cmd.none
 let rec evalDie d : Distribution<_> = 
       match d with 
-      | D3 -> uniformDistribution [1..3]
-      | D6 -> uniformDistribution [1..6]
+      | D3 -> uniformDistribution [3..-1..1]
+      | D6 -> uniformDistribution [6..-1..1]
       | Reroll(rerolls, d) -> 
             dist {
                   let! roll = evalDie d
