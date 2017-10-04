@@ -98,7 +98,7 @@ let rec greaterThan gp gp2 =
     | gp,Result(r) -> Result.map(fun b -> greaterThan gp b) r |> Result
     | Result(r), gp -> Result.map(fun a -> greaterThan a gp) r |> Result
     | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> printf "Couldn't compare %A > %A" gp gp2; NoValue
+    | Str _, _ | _, Str _ -> printfn "Couldn't compare %A > %A" gp gp2; NoValue
 let rec lessThan op op2 = 
     match op,op2 with 
     | Int(i),  Int(i2)  -> (if i < i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
@@ -113,7 +113,7 @@ let rec lessThan op op2 =
     | gp,Result(r) -> Result.map(fun b -> lessThan gp b) r |> Result
     | Result(r), gp -> Result.map(fun a -> lessThan a gp) r |> Result
     | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> printf "Couldn't compare %A < %A" op op2; NoValue
+    | Str _, _ | _, Str _ -> printfn "Couldn't compare %A < %A" op op2; NoValue
 let rec equals op op2 = 
     match op,op2 with 
     | Int(i),  Int(i2)  -> (if i = i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
@@ -127,7 +127,7 @@ let rec equals op op2 =
     | gp,Result(r) -> Result.map(fun b -> equals gp b) r |> Result
     | Result(r), gp -> Result.map(fun a -> equals a gp) r |> Result
     | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> printf "Couldn't compare %A = %A" op op2;NoValue
+    | Str _, _ | _, Str _ -> printfn "Couldn't compare %A = %A" op op2;NoValue
 let rec notEquals op op2 = 
     match op,op2 with 
     | Int(i),  Int(i2)  -> (if i <> i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Result
@@ -141,7 +141,7 @@ let rec notEquals op op2 =
     | gp,Result(r) -> Result.map(fun b -> notEquals gp b) r |> Result
     | Result(r), gp -> Result.map(fun a -> notEquals a gp) r |> Result
     | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> printf "Couldn't compare %A <> %A" op op2; NoValue
+    | Str _, _ | _, Str _ -> printfn "Couldn't compare %A <> %A" op op2; NoValue
         
         
 type NormalizedOperation = Normal | Next of Operation    
@@ -155,17 +155,28 @@ type ft with
     static member ToMM(a:int<ft>) : int<mm> = a * 305<mm/ft>
     static member FromInch(a:int<inch>) : int<ft> = a / 12<inch/ft>
     static member FromMM(a:int<mm>) : int<ft> = a / 305<mm/ft>
+    static member ToInchf(a:float<ft>) : float<inch> = a * 12.<inch/ft>
+    static member ToMMf(a:float<ft>) : float<mm> = a * 305.<mm/ft>
+    static member FromInchf(a:float<inch>) : float<ft> = a / 12.<inch/ft>
+    static member FromMMf(a:float<mm>) : float<ft> = a / 305.<mm/ft>
 type inch with     
     static member ToFt : int<inch>->int<ft> = ft.FromInch
     static member ToMM(a:int<inch>) : int<mm> = a * 25<mm/inch>
     static member FromMM(a:int<mm>) : int<inch> = a / 25<mm/inch>
     static member FromFt : int<ft>->int<inch> = ft.ToInch
+    static member ToFtf : float<inch>->float<ft> = ft.FromInchf
+    static member ToMMf(a:float<inch>) : float<mm> = a * 25.<mm/inch>
+    static member FromMMf(a:float<mm>) : float<inch> = a / 25.<mm/inch>
+    static member FromFtf : float<ft>->float<inch> = ft.ToInchf
 type mm with 
     static member ToInch : int<mm>->int<inch> = inch.FromMM
     static member ToFt : int<mm>->int<ft>= ft.FromMM
     static member FromInch : int<inch>->int<mm>= inch.ToMM
     static member FromFt : int<ft>->int<mm> = ft.ToMM
-
+    static member ToInchf : float<mm>->float<inch> = inch.FromMMf
+    static member ToFtf : float<mm>->float<ft>= ft.FromMMf
+    static member FromInchf : float<inch>->float<mm>= inch.ToMMf
+    static member FromFtf : float<ft>->float<mm> = ft.ToMMf
                           
 type Msg =  Unit  
 

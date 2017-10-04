@@ -213,7 +213,11 @@ let rec evalOp evalCall env (operation:Operation) =
            | (Call f),v -> evalCall f v env 
            | _ -> failwith "Cannot apply to something not a function"
 let tryFindLabel name operation = 
-    None
+    let (|FirstIsName|_|) = function | ParamArray(OpList[Value(Str name');v]) when name' = name -> Some v | _ -> None
+    match operation with 
+    | FirstIsName v -> Some v
+    | ParamArray(OpList ops) -> List.tryPick (function FirstIsName v -> Some v | _ -> None) ops
+    | _ -> None
 // let attackerLam = <@ 
 //     let m = 6
 //     let a = 5

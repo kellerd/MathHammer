@@ -48,8 +48,12 @@ let rangeStops (dist:Distribution<_>)  =
             |> Array.mapi (fun i (range,prob) -> 
                 match range,prob with 
                 | Result(Fail _),_ | _,0.0 -> (stopPercent i length, colour 255.), 0.0
-                | Result(Pass (Int(range))),_ -> (stopPercent i length, percentGreen (inch.ToMM(int range * 1<inch>))), prob
-                | _ -> failwith "invalid range calculation") 
+                | Result(Pass (Int(range))),_ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
+                | Result(Pass (Float (range))),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
+                | Int (range),_ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
+                | Float (range),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
+                | _ -> failwith "invalid range calculation"
+                ) 
             |> Array.rev
         stops
         |> Array.scan (fun ((_,_),lastProb) ((stopPercent,green),prob) -> ((stopPercent,green),prob+lastProb)) (("0.00","#000000"), 0.0)                          

@@ -43,3 +43,4 @@ let attackerQuote =
 
 (initMeq "Marine" attacker |> fst).Rules
 |> normalizeOp
+|> evalOp standardCall Map.empty<_,_>
