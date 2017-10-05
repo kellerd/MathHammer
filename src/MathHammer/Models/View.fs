@@ -84,7 +84,9 @@ let rangeRoot name model =
                       R !^ (float max)] [] ]
 
     dist
-    |> Option.bind(|IsDistribution|_|)
+    |> Option.bind(function | IsDistribution d -> Some d
+                            | Value(Int(i)) -> Some (Result.Pass (Int(i)) |> Result |> always)
+                            | _ -> None)
     |> Option.map 
         (rangeStops 
         >> ranges name

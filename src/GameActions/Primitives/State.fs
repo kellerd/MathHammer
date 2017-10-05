@@ -57,7 +57,7 @@ let allProps =
 let hitResults = get "WS" |> single |> total >>= "HitResults"
 let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
 let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
-let shootingRange = opList [get "WeaponRange"] >>= "ShootingRange"
+let shootingRange = get "WeaponRange" >>= "ShootingRange"
 let psychicTest = [d6;d6] |> opList |> total >>= "PsychicTest"
 let d6Test = [d6] |> opList |> total >>= "D6Test"
 let d3Test = [d3] |> opList |> total >>= "D3Test"
