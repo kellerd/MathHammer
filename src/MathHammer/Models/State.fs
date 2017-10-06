@@ -5,7 +5,7 @@ open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open Distribution
-open Result
+open Check
 open Determinism 
 
 let init name =
@@ -46,16 +46,16 @@ let rec evalCall dieFunc func v env  =
         let rec repeatOps op times =
             let newOps = 
                 match times with
-                | Result(Fail (Int(n))) -> []
+                | Check(Fail (Int(n))) -> []
                 | Int (n) 
-                | Result(Tuple(Int(n),_))
-                | Result(Pass (Int(n))) -> List.init n (fun _ -> op) 
+                | Check(Tuple(Int(n),_))
+                | Check(Pass (Int(n))) -> List.init n (fun _ -> op) 
                 | Dist(times) -> 
                     match times |> Distribution.map(repeatOps op) |> fromDistribution with
-                    | NoResult -> [noValue]     
+                    | NoCheck -> [noValue]     
                     | Deterministic d -> [d]
                     | NonDeterministic _ -> [noValue]
-                | Result(List xs) -> 
+                | Check(List xs) -> 
                     let n = 
                         List.fold (fun c elem -> 
                                     match elem with 
@@ -106,17 +106,17 @@ let rec evalCall dieFunc func v env  =
     | Product, ParamArray ops -> 
         Int 1
         |> Pass
-        |> Result
+        |> Check
         |> always 
         |> Dist
         |> Value 
         |> fold (*) ops
     | Count, ParamArray ops ->
         let toCount result = 
-            match result with | Result(Pass _) -> Result(Tuple (Int(1),Int(0))) | Result(Fail _) ->  Result(Tuple(Int(0),(Int(1)))) | Result(Tuple _) as x -> x | x -> failwith <| sprintf "Cannot count these %A" x
+            match result with | Check(Pass _) -> Check(Tuple (Int(1),Int(0))) | Check(Fail _) ->  Check(Tuple(Int(0),(Int(1)))) | Check(Tuple _) as x -> x | x -> failwith <| sprintf "Cannot count these %A" x
         let zero = GamePrimitive.Zero 
         Tuple(zero,zero)
-        |> Result 
+        |> Check 
         |> always 
         |> Dist 
         |> Value

@@ -5,7 +5,7 @@ type Model = {
 //     Actions : MathHammer.UnitList.Types.Model
 //     Defender : MathHammer.UnitList.Types.Model
 //     Selected : Option<MathHammer.Models.Types.Model>
-//     StoredActions : Map<string,Probability.Distribution<Result>>
+//     StoredActions : Map<string,Probability.Distribution<Check>>
 // }
 
 type Msg = 

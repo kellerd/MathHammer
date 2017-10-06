@@ -7,7 +7,7 @@ open Fable.Helpers.React.Props
 open Types
 open Fable.Import
 open GameActions.Primitives.Types
-open Result
+open Check
 open Distribution
 open Probability.View
 
@@ -26,7 +26,7 @@ let rangeStops (dist:Distribution<_>)  =
     let minRange, maxRange,minProbability,maxProbability =
         dist 
         |> List.rev
-        |> Distribution.choose (function IntResult (i) -> Result.map ((*) 1<inch>) i |> Some | _ -> None)
+        |> Distribution.choose (function IntCheck (i) -> Check.map ((*) 1<inch>) i |> Some | _ -> None)
         |> List.fold (fun (currMinRange,currMaxRange,currMin,currMax) (range,prob) -> 
             min currMinRange range, max currMaxRange range,
             min currMin prob, max currMax prob ) (Pass (28<ft> * 12<inch/ft>),Pass 0<inch>,1.,0.)
@@ -49,9 +49,9 @@ let rangeStops (dist:Distribution<_>)  =
             |> List.toArray
             |> Array.mapi (fun i (range,prob) -> 
                 match range,prob with 
-                | Result(Fail _),_ | _,0.0 -> (stopPercent i length, colour 255.), 0.0
-                | Result(Pass (Int(range))),_ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
-                | Result(Pass (Float (range))),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
+                | Check(Fail _),_ | _,0.0 -> (stopPercent i length, colour 255.), 0.0
+                | Check(Pass (Int(range))),_ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
+                | Check(Pass (Float (range))),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
                 | Int (range),_ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
                 | Float (range),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
                 | _ -> failwith "invalid range calculation"
@@ -85,7 +85,7 @@ let rangeRoot name model =
 
     dist
     |> Option.bind(function | IsDistribution d -> Some d
-                            | Value(Int(i)) -> Some (Result.Pass (Int(i)) |> Result |> always)
+                            | Value(Int(i)) -> Some (Check.Pass (Int(i)) |> Check |> always)
                             | _ -> None)
     |> Option.map 
         (rangeStops 

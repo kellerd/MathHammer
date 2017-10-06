@@ -1,6 +1,6 @@
-module Result
-//type Result< ^a when ^a: (static member Zero : ^a)> = Pass of  ^a | Fail of  ^a | List of Result<  ^a> list | Tuple of  ^a *  ^a 
-type Result<'a> = Pass of 'a | Fail of 'a | List of Result< 'a> list | Tuple of 'a * 'a 
+module Check
+//type Check< ^a when ^a: (static member Zero : ^a)> = Pass of  ^a | Fail of  ^a | List of Check<  ^a> list | Tuple of  ^a *  ^a 
+type Check<'a> = Pass of 'a | Fail of 'a | List of Check< 'a> list | Tuple of 'a * 'a 
 
 let inline add x y = 
     let rec add x y = 
@@ -35,10 +35,10 @@ let inline count x y =
                 match result with | Pass _ -> Tuple (1,0) | Fail _ ->  Tuple(0,1) | Tuple _ as x -> x | _ -> failwith "Cannot count these" 
           add r1 (toCount r2)  
     addCounts x y          
-// type Result< ^a when ^a: (static member Zero : ^a)> with
+// type Check< ^a when ^a: (static member Zero : ^a)> with
 //     static member inline(+) (x,y) = add x y
 //     static member inline(*) (x,y) = mult x y
-//     static member inline Zero : Result< ^a> = Fail <| LanguagePrimitives.GenericZero   
+//     static member inline Zero : Check< ^a> = Fail <| LanguagePrimitives.GenericZero   
     // <'T 
 let inline map f x = 
     let rec map f x = 
@@ -57,17 +57,17 @@ let rec bind f x =
     | Tuple (x,y) -> f x
 
 
-let rec printResultF = 
+let rec printCheckF = 
         function
         | Pass x   -> sprintf "Pass %.2f" x 
         | Fail x  -> sprintf "Fail %.2f" x
-        | List xs -> List.map printResultF xs |> String.concat ";" |> sprintf "[%s]"
+        | List xs -> List.map printCheckF xs |> String.concat ";" |> sprintf "[%s]"
         | Tuple(x,y) -> sprintf "Passes: %.2f, Fails: %.2f" x y
-let rec printResultD = 
+let rec printCheckD = 
         function
         | Pass x   -> sprintf "Pass %d" x 
         | Fail x  -> sprintf "Fail %d" x
-        | List xs -> List.map printResultD xs |> String.concat ";" |> sprintf "[%s]"
+        | List xs -> List.map printCheckD xs |> String.concat ";" |> sprintf "[%s]"
         | Tuple(x,y) -> sprintf "Passes: %d,Fails: %d" x y
 let resultListAverage list =
     let divide x y = map (fun x' -> x' / y) x

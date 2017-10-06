@@ -6,7 +6,7 @@
     <!-- Global to the app -->
     <Compile Include="src/Global.fs" />
     <!-- Maths -->
-    <Compile Include="src/Result/Result.fs" />
+    <Compile Include="src/Check/Check.fs" />
     <Compile Include="src/Probability/Distribution.fs" />
     <Compile Include="src/Probability/Determinism.fs" />
     <Compile Include="src/Probability/View.fs" />

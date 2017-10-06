@@ -1,5 +1,5 @@
 module MathHammer.Types
-open Result
+open Check
 open GameActions.Primitives.Types
 open MathHammer.Models.Types
 open Distribution

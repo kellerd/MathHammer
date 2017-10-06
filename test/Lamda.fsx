@@ -83,11 +83,11 @@ let totalOfXIsX x =
     d = expected
 //Count of one passed result is 1
 let countOfOneXIsOneX x = 
-    let v = Value(Result(Result.Pass(Int(x))))
+    let v = Value(Check(Check.Pass(Int(x))))
     let (Value(Dist(d))) =
         Let("x", v ,App(Call Count, v)) 
         |> evalOp standardCall Map.empty<_,_>
-    let expected = Distribution.always (Result(Result.Tuple (Int(1),Int(0))))
+    let expected = Distribution.always (Check(Check.Tuple (Int(1),Int(0))))
     printfn "Is %A = %A" d expected
     d = expected
 

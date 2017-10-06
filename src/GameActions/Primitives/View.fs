@@ -5,20 +5,20 @@ open Fable.Core.JsInterop
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
 open Types
-open Result
+open Check
 open Distribution
 open Probability.View
 
 let paren react = div [] <| str "(-" :: react @ [str ")"]
 
-let rec unparseResult unparseV = function 
-    | Result.Pass(v) -> div [Style [Color (Probability.View.colour 255.) ]] [str "Pass: "; (unparseV v)]
-    | Result.Fail(v) -> div [Style [Color (Probability.View.colour 0.) ]] [str  "Fail: "; (unparseV v)]
-    | Result.Tuple(v,v2) -> div [] [paren <| unparseV v::(str ",")::[unparseV v2]]
-    | Result.List(vs) -> div [] [
+let rec unparseCheck unparseV = function 
+    | Check.Pass(v) -> div [Style [Color (Probability.View.colour 255.) ]] [str "Pass: "; (unparseV v)]
+    | Check.Fail(v) -> div [Style [Color (Probability.View.colour 0.) ]] [str  "Fail: "; (unparseV v)]
+    | Check.Tuple(v,v2) -> div [] [paren <| unparseV v::(str ",")::[unparseV v2]]
+    | Check.List(vs) -> div [] [
                                 yield str "["
                                 for result in vs do
-                                    yield unparseResult unparseV result
+                                    yield unparseCheck unparseV result
                                     yield str ";" 
                                 yield str "]"]
      
@@ -50,16 +50,16 @@ and unparseDist (dist:Distribution.Distribution<GamePrimitive>) =
             result
             |> List.map (fun (r, prob) -> 
                   match r with 
-                  | IntResult r -> 
+                  | IntCheck r -> 
                       let rec passFailToExpectation = function 
                         | Pass _ -> float 0xFF  
                         | Fail _ -> float 0x00 
                         | List xs -> List.averageBy passFailToExpectation xs 
                         | Tuple (x,y) when x = y ->  float 0xFF 
                         | Tuple (x,y) -> (x / (x + y) ) * float 0xFF
-                      let greenValue = Result.map float r |> passFailToExpectation
+                      let greenValue = Check.map float r |> passFailToExpectation
                       let alpha = opacity min max prob
-                      div [Style [Color (colourA greenValue alpha)]] [str (printResultD r); str <| sprintf " %.1f%%" (prob / total * 100.)]
+                      div [Style [Color (colourA greenValue alpha)]] [str (printCheckD r); str <| sprintf " %.1f%%" (prob / total * 100.)]
                   | v -> div [] [unparseValue v; str <| sprintf " %.1f%%" (prob / total * 100.)])
             |> div []       
 and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function   
@@ -68,7 +68,7 @@ and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function
     | Dist(d) -> unparseDist d
     | NoValue -> "--" |> str
     | Str s -> b  [] [str s]
-    | Result r -> unparseResult unparseValue r
+    | Check r -> unparseCheck unparseValue r
 and unparse operation : Fable.Import.React.ReactElement list = 
     match operation with 
     | Call f -> [unparseCall f]

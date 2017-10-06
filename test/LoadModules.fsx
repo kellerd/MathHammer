@@ -4,7 +4,7 @@
 #r "../packages/Fable.Elmish.React/lib/netstandard1.6/Fable.Elmish.React.dll"
 #r "../packages/Fable.Elmish.Browser/lib/netstandard1.6/Fable.Elmish.Browser.dll"
 #r "../packages/Fable.React/lib/netstandard1.6/Fable.React.dll"
-#load "../src/Result/Result.fs"
+#load "../src/Check/Check.fs"
 #load "../src/Probability/Distribution.fs"
 #load "../src/Probability/Determinism.fs"
 #load "../src/Probability/View.fs"

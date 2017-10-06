@@ -1,7 +1,7 @@
 module Probability.View
 open Fable.Helpers.React
 open Fable.Helpers.React.Props
-open Result
+open Check
 open Distribution
 
 let normalize minX maxX low high x =
