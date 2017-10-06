@@ -24,7 +24,7 @@ applyArgs attacker args |> normalizeOp |> evalOp standardCall Map.empty<_,_>
 let attackerExpanded = 
     Let("M",vInt 6, 
         Let("MeleeRange", 
-            Let("Total", App(Call Total, ParamArray(OpList[get "M"; vInt 12])), 
+            Let("Total", App(Call Total, ParamArray([get "M"; vInt 12])), 
                 Var "Total"), allProps))
 
 attackerExpanded |> normalizeOp |> evalOp sampleCall Map.empty<_,_>
@@ -51,3 +51,4 @@ let attackerQuote =
 (initGeq "Q" defender |> fst).Rules
 |> normalizeOp
 |> evalOp standardCall Map.empty<_,_>
+

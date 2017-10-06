@@ -63,7 +63,7 @@ let root model dispatch =
                 attrs  
                 |> List.map (fun (key,op) -> showAttributes (key,op) dispatch)
                 |> div [ClassName "columns"]  
-            let getListOfOps = function | ParamArray(OpList(ops)) -> ops | op -> [op]
+            let getListOfOps = function | ParamArray ops -> ops | op -> [op]
             let actionsDiv = selected.NormalizedRules |> showActions dispatch |> div []
             let averagesDiv = selected.AverageRules |> getListOfOps |> List.collect (showActions dispatch) |> columnsOf
             let probabiltiesActionsDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showActions dispatch) |> columnsOf

@@ -40,8 +40,8 @@ Var("h") |%> (Var("g") |%> one)  |> normalizeOp  |> unparse
 Var("h") |%> (Var("g") |%> two)  |> normalizeOp  |> unparse
 
 let appliedTwo = Var("h") |%> (Var("g") |%> two)
-let count ops = App(Call Count,ParamArray(OpList ops))
-let count' ops = App(Call Count,App(Call Unfold, ParamArray(OpList ops)))
+let count ops = App(Call Count,ParamArray(ops))
+let count' ops = App(Call Count,App(Call Unfold, ParamArray(ops)))
 
 let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo] |> normalizeOp
 let normalizedSecond = count [appliedTwo;appliedTwo;appliedTwo] |> normalizeOp
@@ -66,7 +66,7 @@ retValueIsSame v normalizeOp
 let addition x y  =    
     let v = Value(Int(x))
     let (Value(Dist(d))) =
-        Let("x", v ,App(Call Total, ParamArray(OpList[Value(Int(y));Var ("x")])))
+        Let("x", v ,App(Call Total, ParamArray([Value(Int(y));Var ("x")])))
         |> evalOp standardCall Map.empty<_,_>
     let expected = Distribution.always (Int(x + y))
     printfn "Is %A = %A" d expected

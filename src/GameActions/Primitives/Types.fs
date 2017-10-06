@@ -14,7 +14,7 @@ type GamePrimitive =
     | Dist of Distribution.Distribution<GamePrimitive>
 and Operation = 
     | Call of Call
-    | ParamArray of ParamArray
+    | ParamArray of Operation list
     | Value of GamePrimitive
     | Var of string
     | App of f:Operation * value:Operation
@@ -32,8 +32,6 @@ and Call =
     | LessThan
     | And
     | Or
-and ParamArray =
-    | OpList of Operation list
     
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
@@ -82,7 +80,7 @@ type GamePrimitive with
             |> String.concat "\n"
             |> Str
         | Result r1, Result r2 -> Result.mult r1 r2 |> Result
-        //| Dist d, Dist d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (d1,d2) -> ParamArray(OpList[Value(d1);Value(d2)])) |> Dist
+        //| Dist d, Dist d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (d1,d2) -> ParamArray([Value(d1);Value(d2)])) |> Dist
         | x,y -> failwith <| sprintf "Cannot multiply these two primitives %A, %A" x y
 let rec greaterThan gp gp2 = 
     match gp,gp2 with 

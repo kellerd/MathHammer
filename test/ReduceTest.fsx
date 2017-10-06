@@ -62,5 +62,5 @@ x |%> passes |> normalizeOp |> evalOp standardCall Map.empty<_,_>
 
 
 // let attacker = 
-//     Let("M",vInt 6, Let("MeleeRange", Let("Total", App(Call Total, Value(ParamArray(OpList[get "M"; vInt 12]))), Var "Total"), get "Total"))
+//     Let("M",vInt 6, Let("MeleeRange", Let("Total", App(Call Total, Value(ParamArray([get "M"; vInt 12]))), Var "Total"), get "Total"))
 // attacker |> normalizeOp |> evalOp Map.empty<_,_> 

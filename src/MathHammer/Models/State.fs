@@ -65,7 +65,7 @@ let rec evalCall dieFunc func v env  =
                                     | _ -> failwith <| sprintf "Cannot unfold by these types of values %A" elem) 0 xs
                     List.init n  (fun _ -> op) 
                 | elem -> failwith <| sprintf "Cannot unfold by these types of values %A" elem
-            evalOp (evalCall dieFunc) env (ParamArray(OpList newOps))
+            evalOp (evalCall dieFunc) env (ParamArray(newOps))
 
         let times = evalOp (evalCall dieFunc) env op2  
         match times with 
@@ -98,12 +98,12 @@ let rec evalCall dieFunc func v env  =
             ) state
     match func,v with 
     | Dice d, Value(NoValue) -> dieFunc d  
-    | Total, ParamArray(OpList(ops)) -> 
+    | Total, ParamArray ops -> 
         always GamePrimitive.Zero
         |> Dist
         |> Value 
         |> fold (+) ops
-    | Product, ParamArray(OpList(ops)) -> 
+    | Product, ParamArray ops -> 
         Int 1
         |> Pass
         |> Result
@@ -111,7 +111,7 @@ let rec evalCall dieFunc func v env  =
         |> Dist
         |> Value 
         |> fold (*) ops
-    | Count, ParamArray(OpList(ops)) ->
+    | Count, ParamArray ops ->
         let toCount result = 
             match result with | Result(Pass _) -> Result(Tuple (Int(1),Int(0))) | Result(Fail _) ->  Result(Tuple(Int(0),(Int(1)))) | Result(Tuple _) as x -> x | x -> failwith <| sprintf "Cannot count these %A" x
         let zero = GamePrimitive.Zero 
@@ -121,14 +121,14 @@ let rec evalCall dieFunc func v env  =
         |> Dist 
         |> Value
         |> fold (fun r1 r2 -> toCount r1 + toCount r2) ops
-    | GreaterThan, ParamArray(OpList([Value(gp);Value(gp2)])) -> greaterThan gp gp2 |> Value
-    | Equals, ParamArray(OpList([Value(gp);Value(gp2)])) -> equals gp gp2  |> Value
-    | LessThan, ParamArray(OpList([Value(gp);Value(gp2)])) -> notEquals gp gp2  |> Value
-    | NotEquals, ParamArray(OpList([Value(gp);Value(gp2)])) -> lessThan gp gp2  |> Value
-    | Unfold, ParamArray(OpList [op;op2]) -> unfold op op2 
+    | GreaterThan, ParamArray([Value(gp);Value(gp2)]) -> greaterThan gp gp2 |> Value
+    | Equals, ParamArray([Value(gp);Value(gp2)]) -> equals gp gp2  |> Value
+    | LessThan, ParamArray([Value(gp);Value(gp2)]) -> notEquals gp gp2  |> Value
+    | NotEquals, ParamArray([Value(gp);Value(gp2)]) -> lessThan gp gp2  |> Value
+    | Unfold, ParamArray([op;op2]) -> unfold op op2 
     | Total, Value _
     | Product,  Value _ 
-    | Count,  Value _ -> evalCall dieFunc func (ParamArray(OpList [v])) env  //Eval with only one operation
+    | Count,  Value _ -> evalCall dieFunc func (ParamArray([v])) env  //Eval with only one operation
     | _ -> failwith "Cannot eval any other call with those params" 
 
 let standardCall = (evalCall (evalDie >> Distribution.map (Int)  >> Dist >> Value))
