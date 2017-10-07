@@ -18,13 +18,14 @@ let lam s op = Lam (s,op)
 let ``D#`` d = App(Call(Dice(d)), noValue)
 let d6 = App(Call(Dice(D6)), noValue)
 let d3 = App(Call(Dice(D3)), noValue)
-let str s = Str s |> Value
+let vStr s = Str s |> Value
 
 let dPlus d v = [``D#`` d; Value(Int(v - 1))] |> opList |> call GreaterThan
 let vInt i = Value(Int(i))
 let emptyOp = noValue
-let label v o = pair (str v) o
-let labelVar v = pair (str v) (get v)
+let label v o = pair (vStr v) o
+let labelVar v = pair (vStr v) (get v)
+let pget s op = PropertyGet(s, op)
 let apply f x = App(f,x)
 let (|%>) x f = apply f x
 let (>>=) o s = bindOp s o
@@ -69,6 +70,7 @@ let rec subst arg s = function
       | Value _ as op -> op
       | Let (n, v, op) -> Let(n, subst arg s v, subst arg s op)
       | Call _ as op -> op
+      | PropertyGet(a, op) -> PropertyGet(a, subst arg s op)
 let rec allIds = function
     | Var (v) -> Set.singleton v
     | Lam (p, x) -> Set.add p (allIds x)
@@ -76,6 +78,7 @@ let rec allIds = function
     | ParamArray( ops)  -> List.fold(fun s op -> op |> allIds |> Set.union s) Set.empty<_> ops 
     | Call _ | Value _ -> Set.empty<_>
     | Let (n, v, op) -> allIds op |> Set.add n
+    | PropertyGet(_,op) -> allIds op
 
 let freeIds x =
     let rec halp bound = function
@@ -85,6 +88,7 @@ let freeIds x =
         | ParamArray( ops) -> List.fold(halp) bound ops 
         | Call _ | Value _ -> bound
         | Let (sc, _ , op) -> halp bound op
+        | PropertyGet(_, op) -> halp bound op
     halp Set.empty x
 type ConflictResult =
     | Fine
@@ -129,6 +133,10 @@ let rename all (t, s, x) =
         | Let(sc,v,op) -> match halp op with 
                           | Renamed ro -> Renamed(Let(sc,v,ro))
                           | _ -> Fine
+        | PropertyGet(sc,op) ->
+                          match halp op with 
+                          | Renamed ro -> Renamed(PropertyGet(sc,ro))
+                          | _ -> Fine
         | Call _ -> Fine
         | Value v -> Fine
         | ParamArray(ops) -> 
@@ -169,6 +177,10 @@ let normalizeOp op =
               match reduce b with
                   | Next b -> Next (Lam (p, b))
                   | _ -> Normal
+        | PropertyGet (p, b) ->
+              match reduce b with
+                  | Next b -> Next (PropertyGet (p, b))
+                  | _ -> Normal
         | ParamArray(ops) -> 
             let (rops,expr) = 
                 ops 
@@ -191,6 +203,12 @@ let normalizeOp op =
         (function Next rop -> Some (rop, reduce rop) | Normal -> None) 
         (Next op)
     |> Seq.last
+let tryFindLabel name operation = 
+    let (|FirstIsName|_|) = function | ParamArray([Value(Str name');v]) when name' = name -> Some v | _ -> None
+    match operation with 
+    | FirstIsName v -> Some v
+    | ParamArray(ops) -> List.tryPick (function FirstIsName v -> Some v | _ -> None) ops
+    | _ -> None
 let rec evalOp evalCall env (operation:Operation) = 
       //let all = allIds operation
       match operation with
@@ -207,17 +225,16 @@ let rec evalOp evalCall env (operation:Operation) =
       | Let(str, var, op) -> 
             let result = evalOp evalCall env var
             evalOp evalCall (Map.add str result env) op
+      | PropertyGet(str, op) -> 
+            let result = evalOp evalCall env op
+            match tryFindLabel str result with 
+            | Some result -> result
+            | None -> noValue
       | Lam _ as l -> l
       | App(f, value) -> 
            match evalOp evalCall env f, evalOp evalCall env value with 
            | (Call f),v -> evalCall f v env 
            | _ -> failwith "Cannot apply to something not a function"
-let tryFindLabel name operation = 
-    let (|FirstIsName|_|) = function | ParamArray([Value(Str name');v]) when name' = name -> Some v | _ -> None
-    match operation with 
-    | FirstIsName v -> Some v
-    | ParamArray(ops) -> List.tryPick (function FirstIsName v -> Some v | _ -> None) ops
-    | _ -> None
 // let attackerLam = <@ 
 //     let m = 6
 //     let a = 5

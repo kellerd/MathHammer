@@ -52,7 +52,7 @@ let rec evalCall dieFunc func v env  =
                 | Check(Pass (Int(n))) -> List.init n (fun _ -> op) 
                 | Dist(times) -> 
                     match times |> Distribution.map(repeatOps op) |> fromDistribution with
-                    | NoCheck -> [noValue]     
+                    | NoResult -> [noValue]     
                     | Deterministic d -> [d]
                     | NonDeterministic _ -> [noValue]
                 | Check(List xs) -> 

@@ -88,6 +88,7 @@ and unparse operation : Fable.Import.React.ReactElement list =
     | App(f,(Var(v))) -> unparse f @ [div [] [sprintf "%s" v |> str]]
     | App(f,a) -> unparse f @ [div [] (unparse a)]
     | Let(v, value, inner) ->  unparse inner
+    | PropertyGet(s,op) -> unparse op @ [str <| sprintf ".%s" s]
 
 
 let alternateRoot model dispatch =
@@ -114,6 +115,7 @@ let alternateRoot model dispatch =
         | App(f, value) -> str ""
         | Lam(param, body) -> str ""
         | ParamArray _ -> str ""
+        | PropertyGet _ -> str ""
     displayOperation model  
 
 let root model dispatch =

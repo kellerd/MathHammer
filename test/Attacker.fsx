@@ -47,6 +47,10 @@ let attackerQuote =
 |> evalOp standardCall Map.empty<_,_>
 
 
+(initMeq "Marine" attacker |> fst).Rules
+|> pget "HitResults" 
+|> normalizeOp
+|> evalOp standardCall Map.empty<_,_>
 
 (initGeq "Q" defender |> fst).Rules
 |> normalizeOp

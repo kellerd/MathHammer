@@ -7,6 +7,8 @@ open Fable.Helpers.React.Props
 open Types
 open Fable.Import
 open GameActions.Primitives.Types
+open GameActions.Primitives.State
+open MathHammer.Models.State
 open Check
 open Distribution
 open Probability.View
@@ -16,7 +18,7 @@ let onClick x : IProp = OnClick(x) :> _
 let showActions dispatch operation  = 
       GameActions.Primitives.View.root operation dispatch
 
-let showAttributes (key, operation) dispatch = 
+let showAttributes ((key:string), operation) dispatch = 
       div [ClassName "has-text-centered column"]
           [ b  [] [str key]
             br []
@@ -74,7 +76,7 @@ let groupFor model display =
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
             [ g   [ Transform model.Scale ] display ]
 let rangeRoot name model =
-    let dist = GameActions.Primitives.State.tryFindLabel name model.ProbabilityRules
+    let dist = model.ProbabilityRules |> pget name |> evalOp standardCall Map.empty<_,_>
     let ranges id (min:int<mm>,max:int<mm>,stops) = 
         g [] 
           [   defs  [] 
@@ -83,10 +85,10 @@ let rangeRoot name model =
               circle [Fill <| sprintf "url(#%s)" id
                       R !^ (float max)] [] ]
 
-    dist
-    |> Option.bind(function | IsDistribution d -> Some d
-                            | Value(Int(i)) -> Some (Check.Pass (Int(i)) |> Check |> always)
-                            | _ -> None)
+    match dist with 
+    | IsDistribution d -> Some d
+    | Value(Int(i)) -> Some (Check.Pass (Int(i)) |> Check |> always)
+    | _ -> None
     |> Option.map 
         (rangeStops 
         >> ranges name
