@@ -25,7 +25,7 @@ let vInt i = Value(Int(i))
 let emptyOp = noValue
 let label v o = pair (vStr v) o
 let labelVar v = pair (vStr v) (get v)
-let pget s op = PropertyGet(s, op)
+let getp s op = PropertyGet(s, op)
 let apply f x = App(f,x)
 let (|%>) x f = apply f x
 let (>>=) o s = bindOp s o
@@ -56,6 +56,23 @@ let allProps =
           labelVar "D3Test" ]
 
 let hitResults = get "WS" |> single |> total >>= "HitResults"
+let svtOps = [get "S";getp "T" (get "Defender")] |> opList >>= "SvsT"
+
+let  table ifThen = 
+    let rec acc x = 
+        match x with 
+        | [] -> None
+        | (cmp,thenPortion)::xs -> IfThenElse(cmp,thenPortion,acc xs) |> Some
+    match acc ifThen with 
+    | None -> noValue
+    | Some o -> o
+
+let sVsT = 
+    [ get "SvsT" |> call GreaterThan, dPlus D6 3
+      get "SvsT" |> call LessThan, dPlus D6 5
+      get "SvsT" |> call Equals, dPlus D6 4 ]
+    |> table
+let woundResults = unfoldOp (svtOps sVsT) (get "HitResults")
 let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
 let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
 let shootingRange = get "WeaponRange" >>= "ShootingRange"
@@ -67,10 +84,11 @@ let rec subst arg s = function
       | App (f, a) -> App(subst arg s f, subst arg s a)
       | Lam (p, x) -> if p = s then Lam (p,x) else Lam(p, subst arg s x)
       | ParamArray( ops) -> ParamArray(List.map (subst arg s) ops)
-      | Value _ as op -> op
+      | Value v -> Value v
       | Let (n, v, op) -> Let(n, subst arg s v, subst arg s op)
-      | Call _ as op -> op
+      | Call x -> Call x
       | PropertyGet(a, op) -> PropertyGet(a, subst arg s op)
+      | IfThenElse(ifExpr, thenExpr, elseExpr) -> IfThenElse(subst arg s ifExpr, subst arg s thenExpr, elseExpr |> Option.map (fun op -> subst arg s op) )
 let rec allIds = function
     | Var (v) -> Set.singleton v
     | Lam (p, x) -> Set.add p (allIds x)
@@ -79,6 +97,12 @@ let rec allIds = function
     | Call _ | Value _ -> Set.empty<_>
     | Let (n, v, op) -> allIds op |> Set.add n
     | PropertyGet(_,op) -> allIds op
+    | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
+        [ allIds ifExpr |> Some
+          allIds thenExpr |> Some
+          elseExpr |> Option.map allIds ]
+        |> List.choose id
+        |> List.reduce Set.union
 
 let freeIds x =
     let rec halp bound = function
@@ -89,6 +113,12 @@ let freeIds x =
         | Call _ | Value _ -> bound
         | Let (sc, _ , op) -> halp bound op
         | PropertyGet(_, op) -> halp bound op
+        | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
+            [ halp bound  ifExpr |> Some
+              halp bound  thenExpr |> Some
+              elseExpr |> Option.map (halp bound)  ]
+            |> List.choose id
+            |> List.reduce Set.union
     halp Set.empty x
 type ConflictResult =
     | Fine
@@ -152,7 +182,14 @@ let rename all (t, s, x) =
             | Renamed(ParamArray(ops)) -> Renamed(ParamArray(List.rev ops))
             | Renamed (_) as r -> r   
             | _ -> Fine
-
+        | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
+            match halp ifExpr with
+            | Renamed ri -> Renamed(IfThenElse(ri, thenExpr, elseExpr))
+            | _ ->
+                match halp thenExpr, elseExpr |> Option.map(halp) with
+                | Renamed rt,_ -> Renamed(IfThenElse(ifExpr, rt, elseExpr))
+                | _,Some(Renamed re)  -> Renamed(IfThenElse(ifExpr, thenExpr, Some re))
+                | _ -> Fine
     match halp x,s with
         | Renamed x,s -> Renamed (App (Lam (s, x), t))
         | _ -> Fine
@@ -198,6 +235,14 @@ let normalizeOp op =
             | _ -> 
                 match reduce op with
                 | Next rop -> Next ( Let(s, v, rop))
+                | _ -> Normal
+        | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
+            match reduce ifExpr with 
+            | Next ri -> Next(IfThenElse(ri, thenExpr, elseExpr))
+            | _ -> 
+                match reduce thenExpr, elseExpr |> Option.map reduce with 
+                | Next rt, _  -> Next(IfThenElse(ifExpr, rt, elseExpr))
+                | _, Some (Next(re)) -> Next(IfThenElse(ifExpr, thenExpr, Some re))
                 | _ -> Normal
     Seq.unfold 
         (function Next rop -> Some (rop, reduce rop) | Normal -> None) 

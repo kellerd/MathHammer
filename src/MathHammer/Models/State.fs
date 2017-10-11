@@ -23,7 +23,7 @@ let init name =
 
 let initMeq name coreRules =
     let attributes = [vInt 6; dPlus D6 3 ;dPlus D6 3; vInt 4; vInt 4; vInt 1; vInt 2; vInt 8; dPlus D6 3; noValue] 
-    let rules = applyArgs coreRules attributes
+    let rules = applyArgs (coreRules |> lam "Defender") attributes
     { (init name) with Rules = rules; Attributes = attributes }, Cmd.none
 let initGeq name coreRules =
     let attributes = [vInt 30; vInt 5; dPlus D6 4 ;dPlus D6 4; vInt 3; vInt 3; vInt 1; vInt 1; vInt 6; dPlus D6 5; noValue] 

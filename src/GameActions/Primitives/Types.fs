@@ -21,6 +21,7 @@ and Operation =
     | App of f:Operation * value:Operation
     | Lam of param:string * body:Operation
     | Let of string * value:Operation * body:Operation
+    | IfThenElse of ifExpr:Operation * thenExpr:Operation * elseExpr:Operation option
 and Call = 
     | Product
     | Total
@@ -33,7 +34,12 @@ and Call =
     | LessThan
     | And
     | Or
-    
+
+let x = 
+    <@ 
+        let a = 5
+        let b = 10
+        if a > b then "" elif a >= b then "a" else "ab" @>    
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
     | _ -> None

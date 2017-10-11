@@ -76,7 +76,7 @@ let groupFor model display =
       g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
             [ g   [ Transform model.Scale ] display ]
 let rangeRoot name model =
-    let dist = model.ProbabilityRules |> pget name |> evalOp standardCall Map.empty<_,_>
+    let dist = model.ProbabilityRules |> getp name |> evalOp standardCall Map.empty<_,_>
     let ranges id (min:int<mm>,max:int<mm>,stops) = 
         g [] 
           [   defs  [] 

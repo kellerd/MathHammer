@@ -116,6 +116,7 @@ let alternateRoot model dispatch =
         | Lam(param, body) -> str ""
         | ParamArray _ -> str ""
         | PropertyGet _ -> str ""
+        | IfThenElse(ifExpr, thenExpr, elseExpr)  -> str ""
     displayOperation model  
 
 let root model dispatch =
