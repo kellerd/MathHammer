@@ -120,17 +120,18 @@ let rec lessThan op op2 =
     | _, NoValue _ | NoValue _, _ 
     | Str _, _ | _, Str _ -> printfn "Couldn't compare %A < %A" op op2; NoValue
 let rec equals op op2 = 
-    match op,op2 with 
+    match op,op2 with
     | Int(i),  Int(i2)  -> (if i = i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Check
     | Float(i),  Float(i2)  -> (if i = i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Check
     | Int a, Float b | Float b, Int a -> (if float a = b then Int(a) |> Pass else Int(a) |> Fail) |> Check
-    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> equals a b,p1) d d2 |> Dist
+    | Dist(d), Dist(d2) -> (if d = d2 then Dist(d) |> Pass else Dist(d) |> Fail) |> Check
     | Check(r), Check(r2) -> Check.bind (fun a -> Check.map(fun b -> equals a b ) r2) r |> Check
     | Str(s),Str(s2) -> (if s = s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Check
     | gp, Dist(d) -> List.map(fun (b,p1) -> equals gp b,p1) d |> Dist
     | Dist(d),gp -> List.map(fun (a,p1) -> equals a gp,p1) d |> Dist
     | gp,Check(r) -> Check.map(fun b -> equals gp b) r |> Check
     | Check(r), gp -> Check.map(fun a -> equals a gp) r |> Check
+    | NoValue,NoValue -> Pass NoValue |> Check
     | _, NoValue _ | NoValue _, _ 
     | Str _, _ | _, Str _ -> printfn "Couldn't compare %A = %A" op op2;NoValue
 let rec notEquals op op2 = 
@@ -138,13 +139,14 @@ let rec notEquals op op2 =
     | Int(i),  Int(i2)  -> (if i <> i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Check
     | Float(i),  Float(i2)  -> (if i <> i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Check
     | Int a, Float b | Float b, Int a -> (if float a <> b then Int(a) |> Pass else Int(a) |> Fail) |> Check
-    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> notEquals a b,p1) d d2 |> Dist
+    | Dist(d), Dist(d2) -> (if d <> d2 then Dist(d) |> Pass else Dist(d) |> Fail) |> Check
     | Check(r), Check(r2) -> Check.bind (fun a -> Check.map(fun b -> notEquals a b ) r2) r |> Check
     | Str(s),Str(s2) -> (if s <>s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Check
     | gp, Dist(d) -> List.map(fun (b,p1) -> notEquals gp b,p1) d |> Dist
     | Dist(d),gp -> List.map(fun (a,p1) -> notEquals a gp,p1) d |> Dist
     | gp,Check(r) -> Check.map(fun b -> notEquals gp b) r |> Check
     | Check(r), gp -> Check.map(fun a -> notEquals a gp) r |> Check
+    | gp,gp2 when gp = gp2 -> Fail gp |> Check
     | _, NoValue _ | NoValue _, _ 
     | Str _, _ | _, Str _ -> printfn "Couldn't compare %A <> %A" op op2; NoValue
         

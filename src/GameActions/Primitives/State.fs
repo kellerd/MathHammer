@@ -276,6 +276,10 @@ let rec evalOp evalCall env (operation:Operation) =
             | Some result -> result
             | None -> noValue
       | Lam _ as l -> l
+      | IfThenElse(Value(Check(Check.Pass(_))),thenPart,_) -> evalOp evalCall env thenPart
+      | IfThenElse(Value(Check(Check.Fail(_))),_,Some elsePart) -> evalOp evalCall env elsePart
+      | IfThenElse(Value(Check(Check.Fail(_))),_,None) -> noValue
+      | IfThenElse(gp, _, _) -> failwith <| sprintf "Invalid type, cannot check if/else with %A" gp    
       | App(f, value) -> 
            match evalOp evalCall env f, evalOp evalCall env value with 
            | (Call f),v -> evalCall f v env 
