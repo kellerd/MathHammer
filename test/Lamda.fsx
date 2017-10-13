@@ -102,3 +102,9 @@ let unfoldD6 =
     unfold 
     |> evalOp standardCall Map.empty<_,_>
 
+let c = ParamArray[ParamArray[Value (Str "M"); Value(Int 8)]
+                   ParamArray[Value (Str "T"); Value(Float 6.)]]
+
+PropertyGet("T", c) |> normalizeOp = Value(Float 6.)   
+PropertyGet("M", c) |> normalizeOp = Value(Int 8)                             
+PropertyGet("H", c) |> normalizeOp = PropertyGet("H", c)  

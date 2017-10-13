@@ -89,6 +89,11 @@ and unparse operation : Fable.Import.React.ReactElement list =
     | App(f,a) -> unparse f @ [div [] (unparse a)]
     | Let(v, value, inner) ->  unparse inner
     | PropertyGet(s,op) -> unparse op @ [str <| sprintf ".%s" s]
+    | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
+        let ifPart = str "if " :: unparse ifExpr
+        let thenPart = str " then " :: br [] :: unparse thenExpr
+        let elsePart = Option.map(fun elseExpr -> br [] :: unparse elseExpr) elseExpr |> Option.toList |> List.collect id
+        ifPart @ thenPart @ elsePart
 
 
 let alternateRoot model dispatch =

@@ -52,6 +52,7 @@ let allProps =
           labelVar "HitResults"
           labelVar "ChargeRange"
           labelVar "MeleeRange"
+          labelVar "HitResults"
           labelVar "D6Test"
           labelVar "D3Test" ]
 
@@ -72,13 +73,16 @@ let sVsT =
       get "SvsT" |> call LessThan, dPlus D6 5
       get "SvsT" |> call Equals, dPlus D6 4 ]
     |> table
-let woundResults = unfoldOp (svtOps sVsT) (get "HitResults")
+let woundResults = unfoldOp (svtOps sVsT) (get "HitResults") >>= "WoundResults"
 let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
 let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
 let shootingRange = get "WeaponRange" >>= "ShootingRange"
 let psychicTest = [d6;d6] |> opList |> total >>= "PsychicTest"
 let d6Test = [d6] |> opList |> total >>= "D6Test"
 let d3Test = [d3] |> opList |> total >>= "D3Test"
+
+
+
 let rec subst arg s = function
       | Var (v) -> if (v) = s then arg else Var (v)
       | App (f, a) -> App(subst arg s f, subst arg s a)
@@ -163,9 +167,9 @@ let rename all (t, s, x) =
         | Let(sc,v,op) -> match halp op with 
                           | Renamed ro -> Renamed(Let(sc,v,ro))
                           | _ -> Fine
-        | PropertyGet(sc,op) ->
+        | PropertyGet(p,op) ->
                           match halp op with 
-                          | Renamed ro -> Renamed(PropertyGet(sc,ro))
+                          | Renamed ro -> Renamed(PropertyGet(p,ro))
                           | _ -> Fine
         | Call _ -> Fine
         | Value v -> Fine
@@ -193,6 +197,12 @@ let rename all (t, s, x) =
     match halp x,s with
         | Renamed x,s -> Renamed (App (Lam (s, x), t))
         | _ -> Fine
+let tryFindLabel name operation = 
+    let (|FirstIsName|_|) = function | ParamArray([Value(Str name');v]) when name' = name -> Some v | _ -> None
+    match operation with 
+    | FirstIsName v -> Some v
+    | ParamArray(ops) -> List.tryPick (function FirstIsName v -> Some v | _ -> None) ops
+    | _ -> None        
 let normalizeOp op = 
     let all = freeIds op
     let rec reduce = function
@@ -216,8 +226,11 @@ let normalizeOp op =
                   | _ -> Normal
         | PropertyGet (p, b) ->
               match reduce b with
-                  | Next b -> Next (PropertyGet (p, b))
-                  | _ -> Normal
+                  | Next b ->  Next (PropertyGet (p, b))
+                  | _ -> 
+                        match tryFindLabel p b with 
+                        | Some op -> Next(op) 
+                        | None -> Normal
         | ParamArray(ops) -> 
             let (rops,expr) = 
                 ops 
@@ -248,12 +261,7 @@ let normalizeOp op =
         (function Next rop -> Some (rop, reduce rop) | Normal -> None) 
         (Next op)
     |> Seq.last
-let tryFindLabel name operation = 
-    let (|FirstIsName|_|) = function | ParamArray([Value(Str name');v]) when name' = name -> Some v | _ -> None
-    match operation with 
-    | FirstIsName v -> Some v
-    | ParamArray(ops) -> List.tryPick (function FirstIsName v -> Some v | _ -> None) ops
-    | _ -> None
+
 let rec evalOp evalCall env (operation:Operation) = 
       //let all = allIds operation
       match operation with
@@ -276,10 +284,12 @@ let rec evalOp evalCall env (operation:Operation) =
             | Some result -> result
             | None -> noValue
       | Lam _ as l -> l
-      | IfThenElse(Value(Check(Check.Pass(_))),thenPart,_) -> evalOp evalCall env thenPart
-      | IfThenElse(Value(Check(Check.Fail(_))),_,Some elsePart) -> evalOp evalCall env elsePart
-      | IfThenElse(Value(Check(Check.Fail(_))),_,None) -> noValue
-      | IfThenElse(gp, _, _) -> failwith <| sprintf "Invalid type, cannot check if/else with %A" gp    
+      | IfThenElse(gp, thenPart, elsePart) -> 
+        match evalOp evalCall env gp, elsePart with 
+        | (Value(Check(Check.Pass(_)))),_ -> evalOp evalCall env thenPart
+        | (Value(Check(Check.Fail(_))),Some elsePart) -> evalOp evalCall env elsePart
+        | (Value(Check(Check.Fail(_))),None) -> noValue
+        | gp -> failwith <| sprintf "Invalid type, cannot check if/else with %A" gp    
       | App(f, value) -> 
            match evalOp evalCall env f, evalOp evalCall env value with 
            | (Call f),v -> evalCall f v env 

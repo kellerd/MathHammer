@@ -35,11 +35,11 @@ and Call =
     | And
     | Or
 
-let x = 
-    <@ 
-        let a = 5
-        let b = 10
-        if a > b then "" elif a >= b then "a" else "ab" @>    
+// let x = 
+//     <@ 
+//         let a = 5
+//         let b = 10
+//         if a > b then "" elif a >= b then "a" else "ab" @>    
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
     | _ -> None
