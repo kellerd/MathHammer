@@ -52,7 +52,7 @@ let allProps =
           labelVar "HitResults"
           labelVar "ChargeRange"
           labelVar "MeleeRange"
-          labelVar "HitResults"
+          labelVar "WoundResults"
           labelVar "D6Test"
           labelVar "D3Test" ]
 

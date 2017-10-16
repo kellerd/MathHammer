@@ -19,9 +19,13 @@ let attacker = createArgs (stats @ ["Defender"]) body
 let defender =  createArgs stats defbody
 let args = [vInt 8; dPlus D6 3 ;dPlus D6 3; vInt 4; vInt 4; vInt 1; vInt 2; vInt 8; dPlus D6 3; Value(NoValue)] 
 let beforeDef = applyArgs attacker args |> normalizeOp 
-let defApplied = applyArgs defender args |> normalizeOp |> evalOp sampleCall Map.empty<_,_> 
-defApplied |> List.singleton |> applyArgs beforeDef |> normalizeOp |> evalOp sampleCall Map.empty<_,_>
+let defApplied = applyArgs defender args |> normalizeOp |> evalOp standardCall Map.empty<_,_> 
+defApplied |> List.singleton |> applyArgs beforeDef |> normalizeOp |> evalOp standardCall Map.empty<_,_>
 
+let 
+
+
+applyArgs attacker args |> normalizeOp |> evalOp sampleCall Map.empty<_,_>
 applyArgs attacker args |> normalizeOp |> evalOp avgCall Map.empty<_,_>
 applyArgs attacker args |> normalizeOp |> evalOp standardCall Map.empty<_,_>
 let attackerExpanded = 
