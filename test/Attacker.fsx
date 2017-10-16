@@ -22,8 +22,16 @@ let beforeDef = applyArgs attacker args |> normalizeOp
 let defApplied = applyArgs defender args |> normalizeOp |> evalOp standardCall Map.empty<_,_> 
 defApplied |> List.singleton |> applyArgs beforeDef |> normalizeOp |> evalOp standardCall Map.empty<_,_>
 
-let 
+let ift =IfThenElse(App(Call GreaterThan,ParamArray[Value(Int 6);Value(Int 5)]),Value(Int 2),None)
+App(Call GreaterThan,ParamArray[Value(Int 6);Value(Int 5)]) |> evalOp standardCall Map.empty<_,_>
+ift |> evalOp standardCall Map.empty<_,_>
 
+let hitResults = vInt 3 >>= "HitResults"
+let defender = defApplied >>= "Defender"
+let s = vInt 4 >>= "S"
+
+(woundResults >> s >> defender >> hitResults ) (get "WoundResults") 
+|> normalizeOp |> evalOp standardCall Map.empty<_,_>
 
 applyArgs attacker args |> normalizeOp |> evalOp sampleCall Map.empty<_,_>
 applyArgs attacker args |> normalizeOp |> evalOp avgCall Map.empty<_,_>

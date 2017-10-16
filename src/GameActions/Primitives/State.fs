@@ -282,13 +282,13 @@ let rec evalOp evalCall env (operation:Operation) =
             let result = evalOp evalCall env op
             match tryFindLabel str result with 
             | Some result -> result
-            | None -> noValue
+            | None -> printfn "Couldn't find propert %s in %A" str op;noValue
       | Lam _ as l -> l
       | IfThenElse(gp, thenPart, elsePart) -> 
         match evalOp evalCall env gp, elsePart with 
         | (Value(Check(Check.Pass(_)))),_ -> evalOp evalCall env thenPart
         | (Value(Check(Check.Fail(_))),Some elsePart) -> evalOp evalCall env elsePart
-        | (Value(Check(Check.Fail(_))),None) -> noValue
+        | (Value(Check(Check.Fail(_))),None) -> printfn "failed with no else"; noValue
         | gp -> failwith <| sprintf "Invalid type, cannot check if/else with %A" gp    
       | App(f, value) -> 
            match evalOp evalCall env f, evalOp evalCall env value with 
