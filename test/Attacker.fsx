@@ -26,11 +26,10 @@ let ift =IfThenElse(App(Call GreaterThan,ParamArray[Value(Int 6);Value(Int 5)]),
 App(Call GreaterThan,ParamArray[Value(Int 6);Value(Int 5)]) |> evalOp standardCall Map.empty<_,_>
 ift |> evalOp standardCall Map.empty<_,_>
 
-let hitResults = vInt 3 >>= "HitResults"
-let defender = defApplied >>= "Defender"
-let s = vInt 4 >>= "S"
+let s = vInt 5 >>= "S"
+let ws' = dPlus D6 4 >>= "WS"
 
-(woundResults >> s >> defender >> hitResults ) (get "WoundResults") 
+(woundResults  >> s >> (defApplied >>= "Defender") >> hitResults >> ws') (get "WoundResults") 
 |> normalizeOp |> evalOp standardCall Map.empty<_,_>
 
 applyArgs attacker args |> normalizeOp |> evalOp sampleCall Map.empty<_,_>

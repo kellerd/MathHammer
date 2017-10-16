@@ -52,9 +52,9 @@ let rec evalCall dieFunc func v env  =
                 | Check(Pass (Int(n))) -> List.init n (fun _ -> op) 
                 | Dist(times) -> 
                     match times |> Distribution.map(repeatOps op) |> fromDistribution with
-                    | NoResult -> [noValue]     
+                    | NoResult -> printfn "No Result %A" times; [noValue]     
                     | Deterministic d -> [d]
-                    | NonDeterministic _ -> [noValue]
+                    | NonDeterministic _ -> printfn "Non deterministic result %A" times;[noValue]
                 | Check(List xs) -> 
                     let n = 
                         List.fold (fun c elem -> 
@@ -70,7 +70,7 @@ let rec evalCall dieFunc func v env  =
         let times = evalOp (evalCall dieFunc) env op2  
         match times with 
         | Value(gp) -> repeatOps op gp
-        | _ -> noValue
+        | _ -> printfn "Times is not a value %A" times; noValue
         
 
     let fold folder ops state =

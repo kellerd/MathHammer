@@ -56,7 +56,7 @@ let allProps =
           labelVar "D6Test"
           labelVar "D3Test" ]
 
-let hitResults = get "WS" |> single |> total >>= "HitResults"
+let hitResults = get "WS" |> single |> count >>= "HitResults"
 let svtOps = [get "S";getp "T" (get "Defender")] |> opList >>= "SvsT"
 
 let  table ifThen = 
