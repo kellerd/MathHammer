@@ -20,5 +20,5 @@ let tests =
             let result = stdEval d3
             let expected = [1..3] |> List.map (Int) |> List.rev |> uniformDistribution |> Dist |> Value
             Expect.equal result expected <| sprintf "Evaluating a D6 should be [1..3] Ints as an even distribution"
-     
+       
     ]

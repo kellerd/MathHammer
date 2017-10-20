@@ -1,17 +1,32 @@
-#load "LoadModules.fsx"
-
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
-let es x op = get x |> op |> evalOp standardCall Map.empty<_,_> 
-let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
-let e x op = get x |> op |> evalOp sampleCall Map.empty<_,_> 
+open Expecto
+[<Tests>]
+let tests = 
+    let es x op = get x |> op |> evalOp standardCall Map.empty<_,_> 
+    let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
+    let e x op = get x |> op |> evalOp sampleCall Map.empty<_,_> 
 
-let A = Value(Int(6)) >>= "A" 
-A |> es "A"
-A |> ea "A"
-A |> e "A"
-let WS = dPlus D6 3 >>= "WS"
+    testList "Reduce Tests" [
+        test "All evaluations of straight values return same value" <| fun _
+            let input = Value(Int(6))
+            let variableName = "A"
+            let results = 
+                [ input >>= variableName |> es variableName
+                  input >>= variableName |> ea variableName
+                  input >>= variableName |> e variableName ]
+            Expect.allEqual results input "All should return straight values"
+        let plus = 3
+        let WS = dPlus D6 plus >>= "WS"
+        let expectedWS = List.init 6 (fun i -> if i >= plus then Pass i else Fail i) |> toUniformDistribution
+        testList "D+ Tests" [
+            test "WS Test Std" <| fun
+                let result = WS |> es "WS"
+                Expect.equal results expectedWs
+        ]    
+    ]
+
 WS |> es "WS"
 WS |> ea "WS"
 WS |> e "WS"
