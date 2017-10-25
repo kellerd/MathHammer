@@ -74,7 +74,14 @@ let tests =
                 Expect.contains expected a ""
             }
         ]    
-
+    let unfoldVsStraight = 
+        let passOrFailCount = [dPlus D6 3] |> opList |> call Count
+        let times = 3
+        let ``Three Passes`` = List.init times (fun _ -> passOrFailCount) |> opList |> call Total >>= "ThreePasses"
+        let ``Three Passes Unfold`` = unfoldOp passOrFailCount (vInt times) |> call Total >>= "ThreePasses"
+        test "Straight Array should be the same as unfold" {
+            (es  "ThreePasses" ``Three Passes``) ==? (es "ThreePasses" ``Three Passes Unfold``)
+        }
     testList "Reduce Tests" [
         test "All evaluations of straight values return same value" {
             let input = Value(Int(6))
@@ -94,40 +101,5 @@ let tests =
         plusTest 7
         psychicDiceTest
         psychicTotalTest
+        unfoldVsStraight
     ]
-
-
-// let x = dPlus D6 3 >>= "x" <| get "x"
-// let a = vInt 3 >>= "a"  <| get "a"
-// let env = Map.empty<_,_>
-// let r = evalOp standardCall Map.empty<_,_> x
-// let r2 = evalOp standardCall env a
-
-// let passes = lam "x" <| (call Count <| opList [get "x"]) 
-// // let (env3,r3) = evalOp env2 (Repeat(Var(Global,"x"),Var(Global,"a")))
-// // r3
-// x |%> passes |> normalizeOp |> evalOp standardCall Map.empty<_,_>
-
-
-// // let threepasses = [passes;passes;passes]
-// // let threepassestwo = unfoldOp passes (get "a")
-// // let total = call Total <| opList threepasses
-// // let total2 = call Total <|  threepassestwo
-
-// // evalOp env passes 
-// // evalOp env total 
-// // evalOp env total2 
-// // let three = Value(Int(3))
-// // evalOp env2 (call Product <| opList [passes;passes]) |> snd
-
-
-// // let op2 = get "A"
-
-// // let d6 =  DPlus (D6, 3)
-
-// // evalOp env2 (call Product <| opList [Value(d6);three])
-
-
-// // let attacker = 
-// //     Let("M",vInt 6, Let("MeleeRange", Let("Total", App(Call Total, Value(ParamArray([get "M"; vInt 12]))), Var "Total"), get "Total"))
-// // attacker |> normalizeOp |> evalOp Map.empty<_,_> 

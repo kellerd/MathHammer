@@ -13,6 +13,7 @@
     <Compile Include="OperationTest.fs" />
     <Compile Include="DistTest.fs" />
     <Compile Include="ReduceTest.fs" />
+    <Compile Include="Normalization.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
