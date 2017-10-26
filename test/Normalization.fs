@@ -34,7 +34,7 @@ let ``Ski Combinators`` =
     let ``xz(yz)`` = App(xz,yz)
     let S = Lam("x", Lam ("y", Lam ("z", ``xz(yz)``)))
     
-    let F = App(S,K)
+    let F = App(S,K) |> normalizeOp
     let T = K 
     let NOT = App(F,T)
     let OR = K
@@ -81,75 +81,45 @@ let ``Ski Combinators`` =
                 (App(T,App(T,AND))|> normalizeOp) ==? (T |> normalizeOp)  
                 (App(F,App(T,AND))|> normalizeOp) ==? (F |> normalizeOp)  
                 (App(T,App(F,AND))|> normalizeOp) ==? (F |> normalizeOp)  
-                (App(F,App(F,AND))|> normalizeOp) ==? (F |> normalizeOp)                 
+                (App(F,App(F,AND))|> normalizeOp) ==? (F |> normalizeOp)                    
             }
         ]
     ]
+[<Tests>]
+let ``Getting a property test`` =
+    let c = ParamArray[ParamArray[Value (Str "M"); Value(Int 8)]; ParamArray[Value (Str "T"); Value(Float 6.)]]
+    testList "Getting a property test" [
+        test "Get First Property" {
+            PropertyGet("M", c) |> normalizeOp ==? Value(Int 8)    
+        }
+        test "Get Second Property" {
+            PropertyGet("T", c) |> normalizeOp ==? Value(Float 6.)   
+        }
+        test "Can't find property does nothing" {
+            PropertyGet("H", c) |> normalizeOp ==? PropertyGet("H", c)    
+        }
+        // 
+    ]
 
-// let count ops = App(Call Count,ParamArray(ops))
-// let count' ops = App(Call Count,App(Call Unfold, ParamArray(ops)))
+[<Tests>]
+let ``Counting call test`` = 
+    let appliedTwo = vInt 7 |%> (vInt 7 |%> two)
+    testList "Normalize function application" [
+        test "Count by Param Array" {
+            let count ops = App(Call Count,ParamArray(ops))
 
-// let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo] |> normalizeOp
-// let normalizedSecond = count [appliedTwo;appliedTwo;appliedTwo] |> normalizeOp
+            let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo] |> normalizeOp
+            let normalizedSecond = count [appliedTwo;appliedTwo;appliedTwo] |> normalizeOp
 
-// normalizedFirst = normalizedSecond
+            normalizedFirst ==? normalizedSecond
+        }
+        test "Count by unfold" {
+            let count ops = App(Call Count,App(Call Unfold, ParamArray(ops)))
+            let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo]|> normalizeOp
+            let normalizedSecond = count  [appliedTwo;appliedTwo;appliedTwo]  |> normalizeOp
 
-// let normalizedFirst' = count' [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo]|> normalizeOp
-// let normalizedSecond' = count'  [appliedTwo;appliedTwo;appliedTwo]  |> normalizeOp
+            normalizedFirst ==? normalizedSecond
+        }
+    ]
 
-// normalizedFirst' = normalizedSecond'
 
-// let v = Value(Int(3))
-// //Let x = 3 returns 3 as well as binding to environment
-// let retValueIsSame v f =
-//     let evaled = Let("x", v ,Var ("x")) |> f |> evalOp standardCall Map.empty<_,_> 
-//     let evaled' = v |> f |> evalOp standardCall Map.empty<_,_> 
-//     evaled = evaled'
-// retValueIsSame v id
-// retValueIsSame v normalizeOp
-// //Let x = some number in
-// //x + some other number
-// let addition x y  =    
-//     let v = Value(Int(x))
-//     let (Value(Dist(d))) =
-//         Let("x", v ,App(Call Total, ParamArray([Value(Int(y));Var ("x")])))
-//         |> evalOp standardCall Map.empty<_,_>
-//     let expected = Distribution.always (Int(x + y))
-//     printfn "Is %A = %A" d expected
-//     d = expected
-// //Let x = 6
-// //Total of x is 6
-// let totalOfXIsX x = 
-//     let v = Value(Int(x))
-//     let (Value(Dist(d))) =
-//         Let("x", v ,App(Call Total, v)) 
-//         |> evalOp standardCall Map.empty<_,_>
-//     let expected = Distribution.always (Int(x))
-//     printfn "Is %A = %A" d expected
-//     d = expected
-// //Count of one passed result is 1
-// let countOfOneXIsOneX x = 
-//     let v = Value(Check(Check.Pass(Int(x))))
-//     let (Value(Dist(d))) =
-//         Let("x", v ,App(Call Count, v)) 
-//         |> evalOp standardCall Map.empty<_,_>
-//     let expected = Distribution.always (Check(Check.Tuple (Int(1),Int(0))))
-//     printfn "Is %A = %A" d expected
-//     d = expected
-
-// totalOfXIsX 6  
-// addition 3 9    
-// countOfOneXIsOneX 6  
-
-// let unfoldD6 = 
-//     let WS = dPlus D6 3
-//     let A = vInt 3
-//     let unfold = unfoldOp WS A
-//     unfold 
-//     |> evalOp standardCall Map.empty<_,_>
-
-// let c = ParamArray[ParamArray[Value (Str "M"); Value(Int 8)]; ParamArray[Value (Str "T"); Value(Float 6.)]]
-
-// PropertyGet("T", c) |> normalizeOp = Value(Float 6.)   
-// PropertyGet("M", c) |> normalizeOp = Value(Int 8)                             
-// PropertyGet("H", c) |> normalizeOp = PropertyGet("H", c)  
