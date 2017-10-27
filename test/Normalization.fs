@@ -1,9 +1,7 @@
 module Lambda
 
 open GameActions.Primitives.Types
-open MathHammer.Models.State
 open GameActions.Primitives.State
-open GameActions.Primitives.View
 open Expecto
 
 let (==?) actual expected = Expect.equal expected actual ""
@@ -19,6 +17,7 @@ let ``Lambda Calculus`` =
         match op with 
         | App(Value(Str "Add 1"), op2) -> 1 + doAdding op2
         | Value(Str "Zero") -> 0
+        | x -> failtest (sprintf "Couldn't add unexpected value %A" x)
     let doTest (op,expected) = 
         let result = Value(Str "Zero") |%> (Value(Str "Add 1") |%> op) |> normalizeOp |> doAdding    
         test (sprintf "Lambda for %d" expected) { result ==? expected }
@@ -27,61 +26,61 @@ let ``Lambda Calculus`` =
 
 [<Tests>]
 let ``Ski Combinators`` =
-    let I = Lam("x", Var "x")
-    let K = Lam("x", Lam ("y", Var "x"))
+    let i = Lam("x", Var "x")
+    let k = Lam("x", Lam ("y", Var "x"))
     let xz = App(Var "x", Var"z")
     let yz = App(Var "y", Var "z")
     let ``xz(yz)`` = App(xz,yz)
-    let S = Lam("x", Lam ("y", Lam ("z", ``xz(yz)``)))
+    let s = Lam("x", Lam ("y", Lam ("z", ``xz(yz)``)))
     
-    let F = App(S,K) |> normalizeOp
-    let T = K 
-    let NOT = App(F,T)
-    let OR = K
-    let AND = F
+    let ``false`` = App(s,k) |> normalizeOp
+    let ``true`` = k 
+    let ``not`` = App(``false``,``true``)
+    let ``or`` = k
+    let ``and`` = ``false``
 
     testList "Ski Combinators" [
         test "I is identity" {
             let x' = vInt 6
-            App(I, x') |> normalizeOp ==? x'
+            App(i, x') |> normalizeOp ==? x'
         }
         test "K returns first" {
             let x' = vInt 6
             let y' = vInt 8
-            App(App(K, x'),y') |> normalizeOp ==? x'
+            App(App(k, x'),y') |> normalizeOp ==? x'
         }        
         testList "Test Boolean Functions" [
             test "F returns second" {
                 let x' = vInt 6
                 let y' = vInt 8
-                App(App(F, x'),y') |> normalizeOp ==? y'          
+                App(App(``false``, x'),y') |> normalizeOp ==? y'          
             }
             test "T returns first" {
                 let x' = vInt 6
                 let y' = vInt 8
-                App(App(T, x'),y') |> normalizeOp ==? x'          
+                App(App(``true``, x'),y') |> normalizeOp ==? x'          
             }
             test "NOT = (SK)(K)" {
-                let ``(SK)(K)`` = (App(App(S,K), K)) |> normalizeOp                
-                (NOT |> normalizeOp) ==? ``(SK)(K)`` 
+                let ``(SK)(K)`` = (App(App(s,k), k)) |> normalizeOp                
+                (``not`` |> normalizeOp) ==? ``(SK)(K)`` 
             }
             test "True Not == False " {
-                (App(T,NOT) |> normalizeOp) ==? (F |> normalizeOp) 
+                (App(``true``,``not``) |> normalizeOp) ==? (``false`` |> normalizeOp) 
             }
             test "True Not == False " {
-                (App(F,NOT) |> normalizeOp) ==? (T |> normalizeOp) 
+                (App(``false``,``not``) |> normalizeOp) ==? (``true`` |> normalizeOp) 
             }     
             test "x OR y" {
-                (App(T,App(OR,T))|> normalizeOp) ==? (T |> normalizeOp)  
-                (App(F,App(OR,T))|> normalizeOp) ==? (T |> normalizeOp)  
-                (App(T,App(OR,F))|> normalizeOp) ==? (T |> normalizeOp)  
-                (App(F,App(OR,F))|> normalizeOp) ==? (F |> normalizeOp)                 
+                (App(``true``,App(``or``,``true``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
+                (App(``false``,App(``or``,``true``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
+                (App(``true``,App(``or``,``false``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
+                (App(``false``,App(``or``,``false``))|> normalizeOp) ==? (``false`` |> normalizeOp)                 
             } 
             test "x AND y" {
-                (App(T,App(T,AND))|> normalizeOp) ==? (T |> normalizeOp)  
-                (App(F,App(T,AND))|> normalizeOp) ==? (F |> normalizeOp)  
-                (App(T,App(F,AND))|> normalizeOp) ==? (F |> normalizeOp)  
-                (App(F,App(F,AND))|> normalizeOp) ==? (F |> normalizeOp)                    
+                (App(``true``,App(``true``,``and``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
+                (App(``false``,App(``true``,``and``))|> normalizeOp) ==? (``false`` |> normalizeOp)  
+                (App(``true``,App(``false``,``and``))|> normalizeOp) ==? (``false`` |> normalizeOp)  
+                (App(``false``,App(``false``,``and``))|> normalizeOp) ==? (``false`` |> normalizeOp)                    
             }
         ]
     ]
