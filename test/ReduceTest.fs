@@ -1,4 +1,4 @@
-module ResultTest
+module ReduceTests
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State

@@ -5,28 +5,23 @@ open GameActions.Primitives.State
 open MathHammer.Models.State
 
 open Distribution
-[<Tests>]
 let (==?) x y = Expect.equal x y ""
+
+[<Tests>]
 let tests = 
-    let stdEval = normalizeOp >> evalOp standardCall Map.empty<_,_>
-    testList "Operation Standard" [
-        
-        testCase "Evalled D6 equal std distribution of integers, reversed" <| fun _ -> 
+    testList "Operation Tests" [
+        let stdEval = normalizeOp >> evalOp standardCall Map.empty<_,_>
+        yield test "Evalled D6 equal std distribution of integers, reversed" {
             let result = stdEval d6
             let expected = [1..6] |> List.map (Int) |> List.rev |> uniformDistribution |> Dist |> Value
             result ==? expected
-
+        }
         
-        testCase "Evalled D3 equal std distribution of integers, reversed" <| fun _ -> 
+        yield test "Evalled D3 equal std distribution of integers, reversed" {
             let result = stdEval d3
             let expected = [1..3] |> List.map (Int) |> List.rev |> uniformDistribution |> Dist |> Value
             result ==? expected
-       
-    ]
-
-[<Tests>]
-let ``Operation Tests`` = 
-    testList "Operation Tests" [
+        }
         let v = Value(Int(3))
         //Let x = 3 returns 3 as well as binding to environment
         let retValueIsSame v f =
@@ -43,7 +38,6 @@ let ``Operation Tests`` =
                 Let("x", v ,App(Call Total, ParamArray([Value(Int(y));Var ("x")])))
                 |> evalOp standardCall Map.empty<_,_>
             let expected = always (Int(x + y))
-            printfn "Is %A = %A" d expected
             d ==? expected
             
         yield test "Add 3 + 9" {addition 3 9}
@@ -53,7 +47,6 @@ let ``Operation Tests`` =
                 Let("x", v ,App(Call Total, v)) 
                 |> evalOp standardCall Map.empty<_,_>
             let expected = always (Int(x))
-            printfn "Is %A = %A" d expected
             d ==? expected
         yield test "Total of x is x" {totalOfXIsX 4}
         let countOfOneXIsOneX x = 
@@ -62,7 +55,6 @@ let ``Operation Tests`` =
                 Let("x", v ,App(Call Count, v)) 
                 |> evalOp standardCall Map.empty<_,_>
             let expected = always (Check(Check.Tuple (Int(1),Int(0))))
-            printfn "Is %A = %A" d expected
             d ==? expected
         yield test "Count of one passed result is 1"  {countOfOneXIsOneX 6}  
         let unfoldD6 x = 
