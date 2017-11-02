@@ -13,7 +13,7 @@ let total v = v |> call Total
 let product v = v |> call Product
 let bindVal text op = Let(text,op,Var text)
 
-let bindOp v op inBody = Operation.Let(v,op, inBody)
+let bindOp v op inBody = Let(v,op, inBody)
 let lam s op = Lam (s,op)
 let ``D#`` d = App(Call(Dice(d)), noValue)
 let d6 = App(Call(Dice(D6)), noValue)
@@ -99,7 +99,7 @@ let rec allIds = function
     | App (f, a) -> Set.union (allIds f) (allIds a)
     | ParamArray( ops)  -> List.fold(fun s op -> op |> allIds |> Set.union s) Set.empty<_> ops 
     | Call _ | Value _ -> Set.empty<_>
-    | Let (n, v, op) -> allIds op |> Set.add n
+    | Let (n, _, op) -> allIds op |> Set.add n
     | PropertyGet(_,op) -> allIds op
     | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
         [ allIds ifExpr |> Some
@@ -115,7 +115,7 @@ let freeIds x =
         | App (f, a) -> Set.union (halp bound f) (halp bound a)
         | ParamArray( ops) -> List.fold(halp) bound ops 
         | Call _ | Value _ -> bound
-        | Let (sc, _ , op) -> halp bound op
+        | Let (_, _ , op) -> halp bound op
         | PropertyGet(_, op) -> halp bound op
         | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
             [ halp bound  ifExpr |> Some
@@ -150,7 +150,7 @@ let uniqueId taken s =
 let rename all (t, s, x) =
     let free = freeIds t
     let rec halp = function
-        | Var (v) -> Fine
+        | Var (_) -> Fine
         | App (f, a) ->
             match halp f with
             | Renamed rf -> Renamed (App (rf, a))
@@ -172,7 +172,7 @@ let rename all (t, s, x) =
                           | Renamed ro -> Renamed(PropertyGet(p,ro))
                           | _ -> Fine
         | Call _ -> Fine
-        | Value v -> Fine
+        | Value _ -> Fine
         | ParamArray(ops) -> 
             ops 
             |> List.map (fun op -> op, halp op)
@@ -274,7 +274,7 @@ let rec evalOp evalCall env (operation:Operation) =
             |> ParamArray 
       | Value _ as v -> v
       | Call _ as c -> c
-      | Var (var)  -> Map.tryFind (var) env |> function Some v -> v | None -> printfn "Couldn't find value %s" var; noValue
+      | Var (var)  -> Map.tryFind (var) env |> function Some v -> v | None -> noValue
       | Let(str, var, op) -> 
             let result = evalOp evalCall env var
             evalOp evalCall (Map.add str result env) op

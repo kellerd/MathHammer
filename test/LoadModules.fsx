@@ -5,6 +5,7 @@
 #r "../packages/Fable.Elmish.Browser/lib/netstandard1.6/Fable.Elmish.Browser.dll"
 #r "../packages/Fable.React/lib/netstandard1.6/Fable.React.dll"
 #r "../packages/Expecto/lib/net461/Expecto.dll"
+#r "../packages/FsCheck/lib/netstandard1.6/FsCheck.dll"
 #load "../src/Check/Check.fs"
 #load "../src/Probability/Distribution.fs"
 #load "../src/Probability/Determinism.fs"

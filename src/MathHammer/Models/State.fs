@@ -46,7 +46,7 @@ let rec evalCall dieFunc func v env  =
         let rec repeatOps op times =
             let newOps = 
                 match times with
-                | Check(Fail (Int(n))) -> []
+                | Check(Fail (Int(_))) -> []
                 | Int (n) 
                 | Check(Tuple(Int(n),_))
                 | Check(Pass (Int(n))) -> List.init n (fun _ -> op) 
@@ -132,8 +132,8 @@ let rec evalCall dieFunc func v env  =
     | _ -> failwith "Cannot eval any other call with those params" 
 
 let standardCall = (evalCall (evalDie >> Distribution.map (Int)  >> Dist >> Value))
-let sampleCall = (evalCall (evalDie >> Distribution.sample >> Int >> Value))
-let avgCall = (evalCall (evalDie >> Distribution.expectation(float) >> Float >> Value))
+let sampleCall = (evalCall (evalDie >> sample >> Int >> Value))
+let avgCall = (evalCall (evalDie >> expectation(float) >> Float >> Value))
 let update msg model =
       match msg with
       | ChangePosition (x,y,scale) -> {model with PosX = x; PosY = y; Scale=scale}, Cmd.none

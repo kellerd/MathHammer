@@ -36,7 +36,7 @@ let tests =
     let expectedStd = 
         pairs        
         |> List.map(function 
-                    | key,(App(_,ParamArray [_;Value(Int(plus))]) as op) -> key,List.init 6 ((+) 1 >> fun i -> if i > plus then Check(Check.Pass(Int(i))) else Check(Check.Fail(Int(i)))) |> Distribution.uniformDistribution |> List.rev |> Dist |> Value
+                    | key,App(_,ParamArray [_;Value(Int(plus))]) -> key,List.init 6 ((+) 1 >> fun i -> if i > plus then Check(Check.Pass(Int(i))) else Check(Check.Fail(Int(i)))) |> Distribution.uniformDistribution |> List.rev |> Dist |> Value
                     | key,op -> key,op)
     let expectedAvg = 
         pairs
