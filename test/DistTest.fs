@@ -1,4 +1,4 @@
-module DistTest
+module DistTests
 open Distribution
 open Expecto                                       
 open GameActions.Primitives.Types

@@ -1,4 +1,4 @@
-module Lambda
+module Normalization
 
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
@@ -11,7 +11,6 @@ let zero = Lam("f",Lam("x", Var("x")))// fun f -> fun x -> x
 let one = Lam("f",Lam("x", App(Var "f", Var("x"))))// fun f -> fun x -> f x
 let two = Lam( "f", Lam("x",App(Var("f"),App(Var("f"),Var("x"))))) //fun f -> fun x -> f f x
 let three = Lam( "f", Lam("x",App(Var("f"),App(Var("f"),App(Var("f"),Var("x")))))) //fun f -> fun x -> f f f x
-[<Tests>]
 let ``Lambda Calculus`` = 
     let rec doAdding op =
         match op with 
@@ -23,8 +22,6 @@ let ``Lambda Calculus`` =
         test (sprintf "Lambda for %d" expected) { result ==? expected }
     testList "Lambda Calculus Normalization" (List.map doTest [zero,0;one,1;two,2;three,3])
 
-
-[<Tests>]
 let ``Ski Combinators`` =
     let i = Lam("x", Var "x")
     let k = Lam("x", Lam ("y", Var "x"))
@@ -84,7 +81,6 @@ let ``Ski Combinators`` =
             }
         ]
     ]
-[<Tests>]
 let ``Getting a property test`` =
     let c = ParamArray[ParamArray[Value (Str "M"); Value(Int 8)]; ParamArray[Value (Str "T"); Value(Float 6.)]]
     testList "Getting a property test" [
@@ -99,8 +95,6 @@ let ``Getting a property test`` =
         }
         // 
     ]
-
-[<Tests>]
 let ``Counting call test`` = 
     let appliedTwo = vInt 7 |%> (vInt 7 |%> two)
     testList "Normalize function application" [
@@ -120,5 +114,10 @@ let ``Counting call test`` =
             normalizedFirst ==? normalizedSecond
         }
     ]
-
-
+[<Tests>]
+let tests =  
+    testList "Normalization Tests" 
+        [ ``Counting call test``
+          ``Getting a property test``
+          ``Lambda Calculus``
+          ``Ski Combinators`` ]

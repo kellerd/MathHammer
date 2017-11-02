@@ -1,9 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="FSharp.NET.Sdk;Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\paket-files\haf\expecto\Expecto.FsCheck\FsCheck.fs">
+      <Paket>True</Paket>
+      <Link>FsCheck.fs</Link>
+    </Compile>
     <ProjectReference Include="..\MathHammer.fsproj">
       <Name>MathHammer.fsproj</Name>
     </ProjectReference>
@@ -18,6 +23,8 @@
   <ItemGroup>
     <PackageReference Include="Expecto" Version="5.*" />
     <PackageReference Include="FSharp.NET.Sdk" Version="1.0.*" PrivateAssets="All" />
+    <PackageReference Include="FsCheck" Version="3.0.0-alpha2" />
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0" />
   </ItemGroup>
+  <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
