@@ -9,10 +9,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="../paket-files/haf/expecto/Expecto.FsCheck/FsCheck.fs">
-      <Paket>True</Paket>
-      <Link>FsCheck.fs</Link>
-    </Compile>
+    <Compile Include="FsCheck.fs"/>
     <Compile Include="OperationTest.fs" />
     <Compile Include="DistTest.fs" />
     <Compile Include="ReduceTest.fs" />

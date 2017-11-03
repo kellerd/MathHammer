@@ -44,21 +44,21 @@ let tests =
         }
         //Let x = 3 returns 3 as well as binding to environment
         let retValueIsSame f v = 
-            let evaled = Let("x", v ,Var ("x")) |> f |> evalOp standardCall Map.empty<_,_> 
-            let evaled' = v |> f |> evalOp standardCall Map.empty<_,_> 
+            let evaled = Let("x", Value(v) ,Var ("x")) |> f |> evalOp standardCall Map.empty<_,_> 
+            let evaled' = Value(v) |> f |> evalOp standardCall Map.empty<_,_> 
             evaled ==? evaled'
-        yield ptestPropertyWithConfig config "let x = 3 returns 3 evaluated without normalization" (retValueIsSame id)
-        yield ptestPropertyWithConfig config "let x = 3 returns 3 evaluated with normalization" (retValueIsSame normalizeOp)
+        yield testPropertyWithConfig config "let x = 3 returns 3 evaluated without normalization" (retValueIsSame id)
+        yield testPropertyWithConfig config "let x = 3 returns 3 evaluated with normalization" (retValueIsSame normalizeOp)
         //Let x = some number in
         //x + some other number
         let addition x y  =    
-            let (Value(Dist(d))) =
+            let result =
                 Let("x", Value(y) ,App(Call Total, ParamArray([Value(x);Var ("x")])))
                 |> evalOp standardCall Map.empty<_,_>
-            let expected = always (x + y)
-            d ==? expected 
+            let expected = Value(x + y)
+            result ==? expected 
             
-        yield ptestPropertyWithConfig config "Addition in child scope is valid" addition
+        yield testPropertyWithConfig config "Addition in child scope is valid" addition
         let totalOfXIsX x = 
             let expected = x |> Value
             let result =

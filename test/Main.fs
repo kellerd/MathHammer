@@ -1,6 +1,6 @@
 ﻿#if INTERACTIVE
 #load "LoadModules.fsx"
-#load @"..\paket-files\haf\expecto\Expecto.FsCheck\FsCheck.fs"
+#load "FsCheck.fs"
 #load "DistTest.fs"
 #load "Attacker.fs"
 #load "Normalization.fs"

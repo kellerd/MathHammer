@@ -9,5 +9,4 @@ nuget Fable.Elmish.Browser
 nuget Fable.Elmish.Debugger
 nuget Expecto
 nuget FsCheck 3.0.0-alpha2
-github haf/expecto Expecto.FsCheck/FsCheck.fs
 clitool dotnet-fable 1.1.14
