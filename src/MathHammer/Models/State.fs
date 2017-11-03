@@ -49,7 +49,7 @@ let rec evalCall dieFunc func v env  =
                 | Check(Fail (Int(_))) -> []
                 | Int (n) 
                 | Check(Tuple(Int(n),_))
-                | Check(Pass (Int(n))) -> List.init n (fun _ -> op) 
+                | Check(Pass (Int(n))) -> List.init (max 0 n) (fun _ -> op) 
                 | Dist(times) -> 
                     match times |> Distribution.map(repeatOps op) |> fromDistribution with
                     | NoResult -> printfn "No Result %A" times; [noValue]     
@@ -94,23 +94,25 @@ let rec evalCall dieFunc func v env  =
                       let! b' = reduced2
                       return folder a b'                             
                 } |> Dist |> Value
+            | Value(a), Value(b) ->
+                folder a b |> Value
             | x -> failwith <| sprintf "Not a value 2 %A" x
             ) state
     match func,v with 
     | Dice d, Value(NoValue) -> dieFunc d  
-    | Total, ParamArray ops -> 
-        always GamePrimitive.Zero
-        |> Dist
-        |> Value 
-        |> fold (+) ops
-    | Product, ParamArray ops -> 
-        Int 1
-        |> Pass
-        |> Check
-        |> always 
-        |> Dist
-        |> Value 
-        |> fold (*) ops
+    | Total, ParamArray [] -> 
+        GamePrimitive.Zero |> Value
+    | Total, ParamArray (head::tail) -> 
+        fold (+) tail head
+    | Product, ParamArray [] -> 
+        GamePrimitive.Zero |> Value
+    | Product, ParamArray (head::tail) -> 
+        fold (*) tail head
+    | Count, ParamArray [] -> 
+        let zero = GamePrimitive.Zero 
+        Tuple(zero,zero)
+        |> Check 
+        |> Value
     | Count, ParamArray ops ->
         let toCount result = 
             match result with | Check(Pass _) -> Check(Tuple (Int(1),Int(0))) | Check(Fail _) ->  Check(Tuple(Int(0),(Int(1)))) | Check(Tuple _) as x -> x | x -> failwith <| sprintf "Cannot count these %A" x

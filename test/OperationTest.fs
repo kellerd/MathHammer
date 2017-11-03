@@ -7,6 +7,26 @@ open Distribution
 open ExpectoFsCheck
 let (==?) x y = Expect.equal x y ""
 
+let rec (|IsValidGp|) (gp:GamePrimitive) : bool = 
+    match gp with 
+    | Float(f) -> (System.Double.IsInfinity(f) || System.Double.IsNaN(f)) |> not
+    | Int(_) -> true
+    | Str null -> false
+    | Str _ -> true 
+    | Check(Check.Pass(IsValidGp(p))) -> p
+    | Check(Check.Fail(IsValidGp(p))) -> p
+    | Check(Check.Tuple(IsValidGp(p),IsValidGp(p2))) -> p && p2
+    | Check(Check.List(l)) -> List.exists(Check >> (|IsValidGp|) >> not) l |> not
+    | NoValue -> true
+    | Dist(d) -> List.exists(fun (a,p) -> ((|IsValidGp|) (Float(p)) && (|IsValidGp|) a) |> not ) d |> not
+type GamePrimitiveGen() =
+   static member GamePrimitive() : FsCheck.Arbitrary<GamePrimitive> =
+    // FsCheck.Gen.elements [Float(5.0);NoValue;Int(6);Float(nan)]
+    // |> FsCheck.Arb.fromGen
+    FsCheck.Arb.Default.Derive () 
+    |> FsCheck.Arb.filter ((|IsValidGp|))
+let config = {FsCheckConfig.defaultConfig with arbitrary = (typeof<GamePrimitiveGen>)::FsCheckConfig.defaultConfig.arbitrary}
+
 [<Tests>]
 let tests = 
     testList "Operation Tests" [
@@ -27,8 +47,8 @@ let tests =
             let evaled = Let("x", v ,Var ("x")) |> f |> evalOp standardCall Map.empty<_,_> 
             let evaled' = v |> f |> evalOp standardCall Map.empty<_,_> 
             evaled ==? evaled'
-        yield ftestProperty (1865288075, 296281834) "let x = 3 returns 3 evaluated without normalization" (retValueIsSame id)
-        yield ftestProperty (1865288075, 296281834) "let x = 3 returns 3 evaluated with normalization" (retValueIsSame normalizeOp)
+        yield ptestPropertyWithConfig config "let x = 3 returns 3 evaluated without normalization" (retValueIsSame id)
+        yield ptestPropertyWithConfig config "let x = 3 returns 3 evaluated with normalization" (retValueIsSame normalizeOp)
         //Let x = some number in
         //x + some other number
         let addition x y  =    
@@ -36,19 +56,16 @@ let tests =
                 Let("x", Value(y) ,App(Call Total, ParamArray([Value(x);Var ("x")])))
                 |> evalOp standardCall Map.empty<_,_>
             let expected = always (x + y)
-            d ==? expected
+            d ==? expected 
             
-        yield ftestProperty (1865288075, 296281834) "Addition in child scope is valid" addition
-
-
+        yield ptestPropertyWithConfig config "Addition in child scope is valid" addition
         let totalOfXIsX x = 
-            let v = Value(x)
-            let (Value(Dist(d))) =
-                Let("x", v ,App(Call Total, v)) 
+            let expected = x |> Value
+            let result =
+                Let("x", expected ,App(Call Total, Var("x"))) 
                 |> evalOp standardCall Map.empty<_,_>
-            let expected = always (x)
-            d ==? expected
-        yield ftestProperty (1865288075, 296281834)  "Total of x is x" totalOfXIsX 
+            result ==? expected
+        yield testPropertyWithConfig config "Total of x is x" totalOfXIsX
         let countOfOneXIsOneX x = 
             let v = Value(Check(Check.Pass(x)))
             let (Value(Dist(d))) =
@@ -56,16 +73,16 @@ let tests =
                 |> evalOp standardCall Map.empty<_,_>
             let expected = always (Check(Check.Tuple (Int(1),Int(0))))
             d ==? expected
-        yield ftestProperty (1865288075, 296281834)  "Count of one passed result is 1"  countOfOneXIsOneX 
+        yield testPropertyWithConfig config "Count of one passed result is 1"  countOfOneXIsOneX 
 
         let unfoldD6 x = 
             let ws = dPlus D6 3
             let a = vInt x
             let unfold = unfoldOp ws a
             let (ParamArray(result))= unfold |> evalOp standardCall Map.empty<_,_>
-            Expect.equal (List.length result) x "Length of unfold should be same as length input"
+            Expect.equal (List.length result) (max x 0) "Length of unfold should be same as length input, or 0 if < 1"
             match result with 
             | [] -> ()
             | head::tail -> Expect.allEqual tail head "All elements in unfold should be the same"
-        yield ftestProperty (1865288075, 296281834)  "Unfold D6 by 3" unfoldD6 
+        yield testPropertyWithConfig config "Unfold D6 by 3" unfoldD6 
     ]

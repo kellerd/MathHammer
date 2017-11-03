@@ -64,16 +64,16 @@ let ``Ski Combinators`` =
             test "True Not == False " {
                 (App(``true``,``not``) |> normalizeOp) ==? (``false`` |> normalizeOp) 
             }
-            test "True Not == False " {
+            ptest "True Not == False " {
                 (App(``false``,``not``) |> normalizeOp) ==? (``true`` |> normalizeOp) 
             }     
-            test "x OR y" {
+            ptest "x OR y" {
                 (App(``true``,App(``or``,``true``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
                 (App(``false``,App(``or``,``true``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
                 (App(``true``,App(``or``,``false``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
                 (App(``false``,App(``or``,``false``))|> normalizeOp) ==? (``false`` |> normalizeOp)                 
             } 
-            test "x AND y" {
+            ptest "x AND y" {
                 (App(``true``,App(``true``,``and``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
                 (App(``false``,App(``true``,``and``))|> normalizeOp) ==? (``false`` |> normalizeOp)  
                 (App(``true``,App(``false``,``and``))|> normalizeOp) ==? (``false`` |> normalizeOp)  

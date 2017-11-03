@@ -6,7 +6,6 @@
 #load "Normalization.fs"
 #load "OperationTest.fs"
 #load "ReduceTest.fs"
-#r @"c:\Users\diese\source\repos\mathhammer\packages\System.Threading\lib\netstandard1.3\System.Threading.dll"
 #else
 module ExpectoTests
 #endif

@@ -65,11 +65,11 @@ let tests =
             }
             test "Psychic Dice avg" {
                 let result = psychicTest |> ea "PsychicTest"
-                let expected = Value (Dist [(Float 7.0, 1.0)])
+                let expected = Value (Float 7.0)
                 result ==? expected            
             }
             test "Psychic Dice sample" {
-                let (Value (Dist [(a, _)])) = psychicTest |> e "PsychicTest"
+                let (Value a) = psychicTest |> e "PsychicTest"
                 let expected = [2..12] |> List.map (Int) 
                 Expect.contains expected a ""
             }
