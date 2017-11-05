@@ -57,13 +57,14 @@ type GamePrimitive with
     static member Zero = NoValue
     static member (+) (x,y) = 
         match (x,y) with 
+        | NoValue,Dist z | Dist z,NoValue -> z |> Distribution.normalize |> Dist 
         | NoValue,z | z,NoValue -> z
         | Int(a),Int(b) -> Int(a+b)
         | Float(a),Float(b) -> Float(a+b)
         | Str(a),Str(b) -> Str(a+b)
         | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
-        | Dist d, gp -> Distribution.map ((+) gp) d |> Dist
-        | gp, Dist d -> Distribution.map ((+) gp) d |> Dist
+        | Dist d, gp -> Distribution.map ((+) gp) d |> Distribution.normalize |> Dist
+        | gp, Dist d -> Distribution.map ((+) gp) d |> Distribution.normalize |> Dist
         | Check (r1),Check(r2) -> Check.add r1 r2 |> Check
         | Float(x), Int(y) 
         | Int(y), Float(x)  -> Float(x + float y)

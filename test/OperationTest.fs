@@ -4,28 +4,11 @@ open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
 open Distribution
+open FsCheckGen
 open ExpectoFsCheck
 let (==?) x y = Expect.equal x y ""
 
-let rec (|IsValidGp|) (gp:GamePrimitive) : bool = 
-    match gp with 
-    | Float(f) -> (System.Double.IsInfinity(f) || System.Double.IsNaN(f)) |> not
-    | Int(_) -> true
-    | Str null -> false
-    | Str _ -> true 
-    | Check(Check.Pass(IsValidGp(p))) -> p
-    | Check(Check.Fail(IsValidGp(p))) -> p
-    | Check(Check.Tuple(IsValidGp(p),IsValidGp(p2))) -> p && p2
-    | Check(Check.List(l)) -> List.exists(Check >> (|IsValidGp|) >> not) l |> not
-    | NoValue -> true
-    | Dist(d) -> List.exists(fun (a,p) -> ((|IsValidGp|) (Float(p)) && (|IsValidGp|) a) |> not ) d |> not
-type GamePrimitiveGen() =
-   static member GamePrimitive() : FsCheck.Arbitrary<GamePrimitive> =
-    // FsCheck.Gen.elements [Float(5.0);NoValue;Int(6);Float(nan)]
-    // |> FsCheck.Arb.fromGen
-    FsCheck.Arb.Default.Derive () 
-    |> FsCheck.Arb.filter ((|IsValidGp|))
-let config = {FsCheckConfig.defaultConfig with arbitrary = (typeof<GamePrimitiveGen>)::FsCheckConfig.defaultConfig.arbitrary}
+
 
 [<Tests>]
 let tests = 
@@ -51,13 +34,18 @@ let tests =
         yield testPropertyWithConfig config "let x = 3 returns 3 evaluated with normalization" (retValueIsSame normalizeOp)
         //Let x = some number in
         //x + some other number
-        let addition x y  =    
-            let result =
-                Let("x", Value(y) ,App(Call Total, ParamArray([Value(x);Var ("x")])))
-                |> evalOp standardCall Map.empty<_,_>
-            let expected = Value(x + y)
+        let addition x y  =   
+            let result = 
+                try 
+                    Let("x", Value(y) ,App(Call Total, ParamArray([Value(x);Var ("x")])))
+                    |> evalOp standardCall Map.empty<_,_>
+                    |> Choice1Of2
+                with ex -> Choice2Of2 (ex.Message.Substring(0,30))
+            let expected = 
+                try 
+                    Value(x + y) |> Choice1Of2
+                with ex -> Choice2Of2 (ex.Message.Substring(0,30))
             result ==? expected 
-            
         yield testPropertyWithConfig config "Addition in child scope is valid" addition
         let totalOfXIsX x = 
             let expected = x |> Value

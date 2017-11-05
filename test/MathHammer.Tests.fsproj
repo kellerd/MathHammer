@@ -10,10 +10,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FsCheck.fs"/>
+    <Compile Include="FsCheckGen.fs" />
     <Compile Include="OperationTest.fs" />
     <Compile Include="DistTest.fs" />
     <Compile Include="ReduceTest.fs" />
     <Compile Include="Normalization.fs" />
+    <Compile Include="EvalTest.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>

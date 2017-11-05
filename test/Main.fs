@@ -10,7 +10,6 @@
 module ExpectoTests
 #endif
 open Expecto
-
 #if INTERACTIVE
 Tests.runTests defaultConfig <|
     testList "All Tests" 
@@ -18,7 +17,8 @@ Tests.runTests defaultConfig <|
           OperationTests.tests
           ReduceTests.tests
           AttackerTests.tests
-          Normalization.tests ]    
+          Normalization.tests
+          EvalTest.tests ]    
 #else
 [<EntryPoint>]
 let main argv =
