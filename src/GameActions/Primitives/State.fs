@@ -264,28 +264,31 @@ let normalizeOp op =
 
 let rec evalOp evalCall env (operation:Operation) = 
       //let all = allIds operation
-      match operation with
+    match operation with
       
-      | ParamArray(ops) -> 
-            ops
-            |> List.fold(fun acc op -> let newOp = evalOp evalCall env op
-                                       (newOp::acc)) [] 
-            |> List.rev 
-            |> ParamArray 
-      | Value _ as v -> v
-      | Call _ as c -> c
-      | Var (var)  -> Map.tryFind (var) env |> function Some v -> v | None -> noValue
-      | Let(str, var, op) -> 
-            let result = evalOp evalCall env var
-            evalOp evalCall (Map.add str result env) op
-      | PropertyGet(str, op) -> 
-            let result = evalOp evalCall env op
-            match tryFindLabel str result with 
-            | Some result -> result
-            | None -> //printfn "Couldn't find propert %s in %A" str op;
-                noValue
-      | Lam _ as l -> l
-      | IfThenElse(gp, thenPart, elsePart) -> 
+    | ParamArray(ops) -> 
+        ops
+        |> List.fold(fun acc op -> let newOp = evalOp evalCall env op
+                                   (newOp::acc)) [] 
+        |> List.rev 
+        |> ParamArray 
+    | Value _ as v -> v
+    | Call _ as c -> c
+    | Var (var)  -> 
+        Map.tryFind (var) env 
+        |> function Some v -> v | None -> noValue 
+        |> evalOp evalCall env
+    | Let(str, var, op) -> 
+        let result = evalOp evalCall env var
+        evalOp evalCall (Map.add str result env) op
+    | PropertyGet(str, op) -> 
+        let result = evalOp evalCall env op
+        match tryFindLabel str result with 
+        | Some result -> result
+        | None -> //printfn "Couldn't find propert %s in %A" str op;
+            noValue
+    | Lam _ as l -> l
+    | IfThenElse(gp, thenPart, elsePart) -> 
         match evalOp evalCall env gp, elsePart with 
         | (Value(Check(Check.Pass(_)))),_ -> evalOp evalCall env thenPart
         | (Value(Check(Check.Fail(_))),Some elsePart) -> evalOp evalCall env elsePart
@@ -293,10 +296,12 @@ let rec evalOp evalCall env (operation:Operation) =
         | Value NoValue,None -> noValue;
         | Value (gp),_ -> evalOp evalCall env thenPart
         | gp -> printfn "Invalid type, cannot check if/else with %A" gp; noValue  
-      | App(f, value) -> 
-           match evalOp evalCall env f, evalOp evalCall env value with 
-           | (Call f),v -> evalCall f v env 
-           | _ -> failwith "Cannot apply to something not a function"
+    | App(Lam(x, op),value) ->
+        evalOp evalCall (Map.add x value env) op 
+    | App(f, value) -> 
+        match evalOp evalCall env f, evalOp evalCall env value with 
+        | (Call f),v -> evalCall f v env 
+        | _ -> failwith "Cannot apply to something not a function"
 // let attackerLam = <@ 
 //     let m = 6
 //     let a = 5
