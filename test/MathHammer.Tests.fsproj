@@ -16,7 +16,7 @@
     <Compile Include="ReduceTest.fs" />
     <Compile Include="Normalization.fs" />
     <Compile Include="EvalTest.fs" />
-    <Compile Include="UnfoldTest.fs" />
+    <Compile Include="RepeatTest.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>

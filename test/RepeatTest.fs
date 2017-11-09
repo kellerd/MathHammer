@@ -33,3 +33,14 @@ let tests =
             | head::tail -> Expect.allEqual tail head "All elements in repeat should be the same"
         yield testPropertyWithConfig config "Repeat D6 by 3" repeatD6
         yield repeatVsStraight ]
+
+
+// D6+3  = Scalara + Scalara Dist = Scalara Dist
+// 3D6 = Repeat D6 3 = Scalara x Scalarb Dist = Scalarb Dist List
+// Double D6 = Scalara x Scalara Dist = Scalara Dist
+// D3D6s = Repeat D6 D3 = Scalara Dist x ScalarbDist = Dist Scalarb Dist List
+// 3 + 3 = Scalar + Scalar = Scalar
+// 3 × 3 = Scalar × Scalar = Scalar 
+// 3 x 3 = Repear 3 3 = Scalar x Scalar = Scalar list
+// D6 3 = Repeat 3 D6 = Scalarb Dist x Scalara Dist Scalara List
+// Total(Repeat x y) = Product(x,y)
