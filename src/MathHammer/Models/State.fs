@@ -42,16 +42,16 @@ let rec evalDie d : Distribution<_> =
             }
 
 let rec evalCall dieFunc func v env  =
-    let unfold op op2 = 
-        let rec repeatOps op times =
+    let repeat lam op2 = 
+        let rec repeatOps lam times =
             let newOps = 
                 match times with
                 | Check(Fail (Int(_))) -> []
                 | Int (n) 
                 | Check(Tuple(Int(n),_))
-                | Check(Pass (Int(n))) -> List.init (max 0 n) (fun _ -> op) 
+                | Check(Pass (Int(n))) -> List.init (max 0 n) (fun n -> App(lam,vInt n)) 
                 | Dist(times) -> 
-                    match times |> Distribution.map(repeatOps op) |> fromDistribution with
+                    match times |> Distribution.map(repeatOps lam) |> fromDistribution with
                     | NoResult -> printfn "No Result %A" times; [noValue]     
                     | Deterministic d -> [d]
                     | NonDeterministic _ -> printfn "Non deterministic result %A" times;[noValue]
@@ -62,17 +62,16 @@ let rec evalCall dieFunc func v env  =
                                     | Pass _ -> c + 1 
                                     | Fail _ -> c 
                                     | Tuple(Int(x),_) -> c + x 
-                                    | _ -> failwith <| sprintf "Cannot unfold by these types of values %A" elem) 0 xs
-                    List.init n  (fun _ -> op) 
-                | elem -> failwith <| sprintf "Cannot unfold by these types of values %A" elem
+                                    | _ -> failwith <| sprintf "Cannot repeat by these types of values %A" elem) 0 xs
+                    List.init n  (fun n -> App(lam,vInt n)) 
+                | elem -> failwith <| sprintf "Cannot repeat by these types of values %A" elem
             evalOp (evalCall dieFunc) env (ParamArray(newOps))
 
         let times = evalOp (evalCall dieFunc) env op2  
         match times with 
-        | Value(gp) -> repeatOps op gp
+        | Value(gp) -> repeatOps lam gp
         | _ -> printfn "Times is not a value %A" times; noValue
-        
-
+    
     let fold folder ops state =
       ops 
       |> List.fold (fun reduced1 op -> 
@@ -127,7 +126,7 @@ let rec evalCall dieFunc func v env  =
     | Equals, ParamArray([Value(gp);Value(gp2)]) -> equals gp gp2  |> Value
     | LessThan, ParamArray([Value(gp);Value(gp2)]) -> notEquals gp gp2  |> Value
     | NotEquals, ParamArray([Value(gp);Value(gp2)]) -> lessThan gp gp2  |> Value
-    | Unfold, ParamArray([op;op2]) -> unfold op op2 
+    | Repeat, ParamArray([lam;op2]) -> repeat lam op2 
     | Total, Value _
     | Product,  Value _ 
     | Count,  Value _ -> evalCall dieFunc func (ParamArray([v])) env  //Eval with only one operation

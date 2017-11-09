@@ -74,14 +74,7 @@ let tests =
                 Expect.contains expected a ""
             }
         ]    
-    let unfoldVsStraight = 
-        let passOrFailCount = [dPlus D6 3] |> opList |> call Count
-        let times = 3
-        let ``Three Passes`` = List.init times (fun _ -> passOrFailCount) |> opList |> call Total >>= "ThreePasses"
-        let ``Three Passes Unfold`` = unfoldOp passOrFailCount (vInt times) |> call Total >>= "ThreePasses"
-        test "Straight Array should be the same as unfold" {
-            (es  "ThreePasses" ``Three Passes``) ==? (es "ThreePasses" ``Three Passes Unfold``)
-        }
+
     testList "Reduce Tests" [
         test "All evaluations of straight values return same value" {
             let input = Value(Int(6))
@@ -101,5 +94,4 @@ let tests =
         plusTest 7
         psychicDiceTest
         psychicTotalTest
-        unfoldVsStraight
     ]

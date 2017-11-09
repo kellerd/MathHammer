@@ -8,13 +8,15 @@ let opList ops = ParamArray(ops)
 let pair x y = opList [x;y]
 let call f op = App(Call f, op)
 let count v = v |> call Count
-let unfoldOp op op2 = opList [op; op2] |> call Unfold
+let repeat ``(fun op -> 't)`` op2 = opList [``(fun op -> 't)``; op2;] |> call Repeat
+let repeatOp op op2 = opList [Lam("unusedVariable", op); op2] |> call Repeat
 let total v = v |> call Total
 let product v = v |> call Product
 let bindVal text op = Let(text,op,Var text)
 
 let bindOp v op inBody = Let(v,op, inBody)
 let lam s op = Lam (s,op)
+let opId = Lam ("v",get "v")
 let ``D#`` d = App(Call(Dice(d)), noValue)
 let d6 = App(Call(Dice(D6)), noValue)
 let d3 = App(Call(Dice(D3)), noValue)
@@ -73,7 +75,7 @@ let sVsT =
       get "SvsT" |> call LessThan, dPlus D6 5
       get "SvsT" |> call Equals, dPlus D6 4 ]
     |> table
-let woundResults = unfoldOp (svtOps sVsT) (get "HitResults") >>= "WoundResults"
+let woundResults = repeat (svtOps sVsT) (get "HitResults") >>= "WoundResults"
 let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
 let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
 let shootingRange = get "WeaponRange" >>= "ShootingRange"

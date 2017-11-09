@@ -26,7 +26,7 @@ and Call =
     | Product
     | Total
     | Count
-    | Unfold 
+    | Repeat 
     | Dice of Die
     | GreaterThan
     | Equals

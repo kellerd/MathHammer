@@ -62,15 +62,4 @@ let tests =
             let expected = always (Check(Check.Tuple (Int(1),Int(0))))
             d ==? expected
         yield testPropertyWithConfig config "Count of one passed result is 1"  countOfOneXIsOneX 
-
-        let unfoldD6 x = 
-            let ws = dPlus D6 3
-            let a = vInt x
-            let unfold = unfoldOp ws a
-            let (ParamArray(result))= unfold |> evalOp standardCall Map.empty<_,_>
-            Expect.equal (List.length result) (max x 0) "Length of unfold should be same as length input, or 0 if < 1"
-            match result with 
-            | [] -> ()
-            | head::tail -> Expect.allEqual tail head "All elements in unfold should be the same"
-        yield testPropertyWithConfig config "Unfold D6 by 3" unfoldD6 
     ]

@@ -103,7 +103,7 @@ let alternateRoot model dispatch =
         | ParamArray ops  when List.distinct ops = [GameActions.Primitives.State.``D#`` D6] -> str ""
         | Call Product -> str ""
         | Call Total  -> str ""
-        | Call Unfold  -> str ""
+        | Call Repeat  -> str ""
         | Call (Dice _)  -> str ""
         | Call Count -> str ""
         | Call GreaterThan -> str ""
