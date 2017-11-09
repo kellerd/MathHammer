@@ -316,7 +316,7 @@ let rec evalOp evalCall env (operation:Operation) =
 // let test char = get char |> single |> count
 // let hitMelee = 
 //     get Attacker "A"
-//     |> unfoldOp (test "WS")
+//     |> repeatOp (test "WS")
 //     |> total 
 //     |> bindOp Attacker "Melee"
 

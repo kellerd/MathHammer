@@ -106,7 +106,7 @@ let ``Counting call test`` =
 
             normalizedFirst ==? normalizedSecond
         }
-        test "Count by unfold" {
+        test "Count by repeat" {
             let count ops = App(Call Count,App(Call Repeat, ParamArray(ops)))
             let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo]|> normalizeOp
             let normalizedSecond = count  [appliedTwo;appliedTwo;appliedTwo]  |> normalizeOp
