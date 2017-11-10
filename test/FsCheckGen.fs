@@ -60,4 +60,4 @@ let (|IsValidOp|) (op:Operation) : bool =
 type GamePrimitiveGen() = static member GamePrimitive() : FsCheck.Arbitrary<GamePrimitive> = FsCheck.Arb.Default.Derive ()  |> FsCheck.Arb.filter ((|IsValidGp|))
 type OperationGen() = static member Operation() : FsCheck.Arbitrary<Operation> = FsCheck.Arb.Default.Derive ()  |> FsCheck.Arb.filter ((|IsValidOp|))
 type DieGen() = static member Die() : FsCheck.Arbitrary<Die> = FsCheck.Arb.Default.Derive ()  |> FsCheck.Arb.filter ((|IsValidDie|))
-let config = {FsCheckConfig.defaultConfig with arbitrary = (typeof<GamePrimitiveGen>)::(typeof<DieGen>)::FsCheckConfig.defaultConfig.arbitrary}
+let config = {FsCheckConfig.defaultConfig with arbitrary = (typeof<OperationGen>)::(typeof<GamePrimitiveGen>)::(typeof<DieGen>)::FsCheckConfig.defaultConfig.arbitrary}
