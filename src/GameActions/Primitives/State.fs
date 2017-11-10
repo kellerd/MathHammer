@@ -297,12 +297,14 @@ let rec evalOp evalCall env (operation:Operation) =
         | (Value(Check(Check.Fail(_))),None) 
         | Value NoValue,None -> noValue;
         | Value (gp),_ -> evalOp evalCall env thenPart
-        | gp -> printfn "Invalid type, cannot check if/else with %A" gp; noValue  
+        | gp -> //printfn "Invalid type, cannot check if/else with %A" gp; 
+            noValue  
     | App(Lam(x, op),value) ->
         evalOp evalCall (Map.add x value env) op 
     | App(f, value) -> 
         match evalOp evalCall env f, evalOp evalCall env value with 
         | (Call f),v -> evalCall f v env 
+        | Lam(x, op),v -> evalOp evalCall env <| App(Lam(x, op),v) 
         | _ -> failwith "Cannot apply to something not a function"
 // let attackerLam = <@ 
 //     let m = 6
