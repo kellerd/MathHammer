@@ -1,6 +1,5 @@
 module MathHammer.Models.Types
 open GameActions.Primitives.Types
-open Distribution 
 open Check
 type Environment = Map<string,Operation>
 type Order = int
@@ -21,7 +20,7 @@ type DisplayType =
     | DStr of string
     | DCheck of Check<DisplayType> 
     | DNoValue
-    | DDist of Distribution<DisplayType>
+    | DDist of Distribution.Distribution<DisplayType>
     with static member (+) (a,b) =
                         match a,b with
                         | DNoValue,x | x,DNoValue -> x

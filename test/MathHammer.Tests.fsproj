@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="FsCheck.fs"/>
     <Compile Include="FsCheckGen.fs" />
+    <Compile Include="Attacker.fs" />
     <Compile Include="OperationTest.fs" />
     <Compile Include="DistTest.fs" />
     <Compile Include="ReduceTest.fs" />

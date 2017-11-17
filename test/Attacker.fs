@@ -11,7 +11,7 @@ let (==~) x y =
 let body = nestOps [hitResults;chargeRange;meleeRange;psychicTest;woundResults] allProps
 let defbody = nestOps [hitResults;shootingRange;psychicTest] allProps
 let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"] 
-let attacker = createArgs (stats @ ["Defender"]) body
+let attacker = createArgs stats body
 let defender =  createArgs stats defbody
 let move = vInt 6
 let threePlus = dPlus D6 3
@@ -25,11 +25,11 @@ let ld = vInt 8
 let sv = threePlus
 let invSave = noValue
 let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;] 
-let beforeDef = applyArgs attacker seargent |> normalizeOp 
-let defApplied = applyArgs defender seargent |> List.singleton |> applyArgs beforeDef |> normalizeOp
-let eps x op = getp x op |> evalOp standardCall Map.empty<_,_> 
-let epa x op = getp x op |> evalOp avgCall Map.empty<_,_> 
-let ep x op = getp x op |> evalOp sampleCall Map.empty<_,_> 
+let defApplied = applyArgs defender seargent |> normalizeOp
+let initialMap = Map.add "Defender" defApplied Map.empty<string,Operation>
+let eps x op = getp x op |> evalOp standardCall initialMap
+let epa x op = getp x op |> evalOp avgCall initialMap
+let ep x op = getp x op |> evalOp sampleCall initialMap
 [<Tests>]
 let tests = 
     let pairs = List.zip stats seargent 

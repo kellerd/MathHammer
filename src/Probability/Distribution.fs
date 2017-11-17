@@ -1,5 +1,5 @@
+[<RequireQualifiedAccess>]
 module Distribution 
-    open System
     type Probability = double
     type Distribution<'a> = ('a * Probability) list
     type Event<'a> = 'a -> bool

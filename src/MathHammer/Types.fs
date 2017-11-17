@@ -1,11 +1,9 @@
 module MathHammer.Types
-open Check
 open GameActions.Primitives.Types
-open MathHammer.Models.Types
-open Distribution
+open Models.Types
 type Model = {
-    Attacker : MathHammer.UnitList.Types.Model
-    Defender : MathHammer.UnitList.Types.Model
+    Attacker : UnitList.Types.Model
+    Defender : UnitList.Types.Model
     Board : int<ft> * int<ft>
     SelectedAttacker : Option<string>
     SelectedDefender : Option<string>
@@ -14,7 +12,7 @@ type Model = {
 }
 
 type Msg = 
-    | UnitListMsg of MathHammer.UnitList.Types.Msg * string option
+    | UnitListMsg of UnitList.Types.Msg * string option
     | Swap
     | RebindEnvironment 
     | BindDefender

@@ -1,8 +1,4 @@
 module Probability.View
-open Fable.Helpers.React
-open Fable.Helpers.React.Props
-open Check
-open Distribution
 
 let normalize minX maxX low high x =
       (high - low) * ( (x - minX) / (maxX - minX) ) + low

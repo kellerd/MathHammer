@@ -3,9 +3,7 @@ open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
-open Distribution
 open FsCheckGen
-open ExpectoFsCheck
 let (==?) x y = Expect.equal x y ""
 
 
@@ -16,13 +14,13 @@ let tests =
         let stdEval = normalizeOp >> evalOp standardCall Map.empty<_,_>
         yield test "Evalled D6 equal std distribution of integers, reversed" {
             let result = stdEval d6
-            let expected = [1..6] |> List.map (Int) |> List.rev |> uniformDistribution |> Dist |> Value
+            let expected = [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
             result ==? expected
         }
         
         yield test "Evalled D3 equal std distribution of integers, reversed" {
             let result = stdEval d3
-            let expected = [1..3] |> List.map (Int) |> List.rev |> uniformDistribution |> Dist |> Value
+            let expected = [1..3] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
             result ==? expected
         }
         //Let x = 3 returns 3 as well as binding to environment
@@ -56,10 +54,10 @@ let tests =
         yield testPropertyWithConfig config "Total of x is x" totalOfXIsX
         let countOfOneXIsOneX x = 
             let v = Value(Check(Check.Pass(x)))
-            let (Value(Dist(d))) =
+            let result =
                 Let("x", v ,App(Call Count, v)) 
                 |> evalOp standardCall Map.empty<_,_>
-            let expected = always (Check(Check.Tuple (Int(1),Int(0))))
-            d ==? expected
+            let expected = Value(Dist(Distribution.always (Check(Check.Tuple (Int(1),Int(0))))))
+            result ==? expected
         yield testPropertyWithConfig config "Count of one passed result is 1"  countOfOneXIsOneX 
     ]

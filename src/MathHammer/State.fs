@@ -3,16 +3,21 @@ module MathHammer.State
 open Elmish
 open Types
 open GameActions.Primitives.Types
-let attackerMap msg = UnitListMsg(msg, Some "Attacker")
-let defenderMap msg = UnitListMsg(msg, Some "Defender")
-let rebindMsg scope map = 
-    Option.map (fun (m : Models.Types.Model) -> UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Rebind scope, m.Name)
-                                                |> map
-                                                |> Cmd.ofMsg )
+open GameActions.Primitives.State
+let bindModelToEnvironment initial key = 
+    Option.map (fun (m : Models.Types.Model) -> 
+        let evaluatedRule = 
+            m.Rules 
+            |> normalizeOp 
+            |>  evalOp Models.State.standardCall initial
+        let scopeWithBoundDude = Map.add key evaluatedRule initial
+        let modelMsg = UnitList.Types.ModelMsg(Models.Types.Msg.Rebind scopeWithBoundDude, m.Name)
+        UnitListMsg(modelMsg, Some key) 
+        |> Cmd.ofMsg) 
     >> Option.toList
 let init () : Model * Cmd<Types.Msg> =
-    let (attacker,attackerCmd) = MathHammer.UnitList.State.init "Attacker" () 
-    let (defender,defenderCmd) = MathHammer.UnitList.State.init "Defender" () 
+    let (attacker,attackerCmd) = UnitList.State.init attackerMap () 
+    let (defender,defenderCmd) = UnitList.State.init defenderMap () 
     
     let model : Model = 
         
@@ -25,30 +30,30 @@ let init () : Model * Cmd<Types.Msg> =
             Board = 6<ft>,4<ft>
             GlobalOperations = Map.empty<_,_>
         }
-    model, Cmd.batch [ Cmd.map attackerMap attackerCmd
-                       Cmd.map defenderMap defenderCmd
+    model, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap)) attackerCmd
+                       Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap)) defenderCmd
                        Cmd.ofMsg RebindEnvironment ]
 
 let update msg model : Model * Cmd<Types.Msg> =
     match msg with
-    | UnitListMsg (UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Let(name,dist), _), _) -> 
+    | UnitListMsg (UnitList.Types.ModelMsg(Models.Types.Msg.Let(name,dist), _), _) -> 
         {model with Environment = Map.add (name) dist model.Environment}, Cmd.none
-    | UnitListMsg (UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Select, m), Some "Attacker") -> 
+    | UnitListMsg (UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), Some "Attacker") -> 
         {model with SelectedAttacker = Some m}, Cmd.ofMsg RebindEnvironment
-    | UnitListMsg (UnitList.Types.ModelMsg(MathHammer.Models.Types.Msg.Select, m), Some "Defender") -> 
+    | UnitListMsg (UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), Some "Defender") -> 
         {model with SelectedDefender = Some m}, Cmd.ofMsg RebindEnvironment
     | UnitListMsg (msg, Some "Attacker")-> 
         let (ula,ulCmdsa) = UnitList.State.update msg model.Attacker
-        { model with Attacker = ula }, Cmd.batch [ Cmd.map attackerMap ulCmdsa]
+        { model with Attacker = ula }, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some "Attacker")) ulCmdsa]
     | UnitListMsg (msg, Some "Defender")-> 
         let (uld,ulCmdsd) = UnitList.State.update msg model.Defender
-        { model with Defender = uld }, Cmd.batch [ Cmd.map defenderMap ulCmdsd]
-    | UnitListMsg (msg, Some _)-> failwith "No list of that name"
+        { model with Defender = uld }, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some "Defender")) ulCmdsd]
+    | UnitListMsg (_, Some _)-> failwith "No list of that name"
     | UnitListMsg (msg, None) -> 
         let (ula,ulCmdsa) = UnitList.State.update msg model.Attacker
         let (uld,ulCmdsd) = UnitList.State.update msg model.Defender
-        { model with Attacker = ula; Defender = uld }, Cmd.batch [ Cmd.map attackerMap ulCmdsa
-                                                                   Cmd.map defenderMap ulCmdsd ]
+        { model with Attacker = ula; Defender = uld }, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap)) ulCmdsa
+                                                                   Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap)) ulCmdsd ]
     | Swap -> { model with Attacker = { model.Attacker with Models = model.Defender.Models}    
                            Defender = { model.Defender with Models = model.Attacker.Models} 
                            SelectedAttacker = None
@@ -59,24 +64,22 @@ let update msg model : Model * Cmd<Types.Msg> =
         let environment = 
             let initial = Map.empty<_,_>
             model.GlobalOperations 
-            |> Map.map(fun _ (ord,op) -> op 
-                                         |> GameActions.Primitives.State.normalizeOp 
-                                         |>  GameActions.Primitives.State.evalOp MathHammer.Models.State.standardCall initial) 
+            |> Map.map(fun _ (_,op) -> op 
+                                         |> normalizeOp 
+                                         |>  evalOp Models.State.standardCall initial) 
         {model with Environment = environment}, Cmd.batch [ Cmd.ofMsg BindDefender
                                                             Cmd.ofMsg BindAttacker ]
     | BindDefender -> 
         match model.SelectedDefender with 
         | None -> model, Cmd.none
         | Some defender -> 
-            model, (model.SelectedDefender
-            |> Option.bind (fun key -> Map.tryFind key model.Defender.Models) 
-            |> rebindMsg (model.Environment) defenderMap 
+            model, (Map.tryFind defender model.Defender.Models
+            |> bindModelToEnvironment model.Environment defenderMap 
             |> Cmd.batch)
     | BindAttacker -> 
         match model.SelectedAttacker with 
         | None -> model, Cmd.none
         | Some attacker -> 
-            model, (model.SelectedAttacker
-            |> Option.bind (fun key -> Map.tryFind key model.Attacker.Models) 
-            |> rebindMsg (model.Environment) attackerMap 
+            model, (Map.tryFind attacker model.Attacker.Models 
+            |> bindModelToEnvironment model.Environment attackerMap 
             |> Cmd.batch)

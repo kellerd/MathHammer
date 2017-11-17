@@ -9,20 +9,21 @@ open MathHammer.Models.Types
 open Types
 open GameActions.Primitives.Types
 open MathHammer.Models.View  
+open GameActions.Primitives.State
 let root model dispatch =
     let (boardX,boardY) = model.Board |> fun (x,y) -> ft.ToMM(x),ft.ToMM(y)
     let drawing =   
         div [] 
             [svg 
                 [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
-                [ UnitList.View.rootBoard model.Attacker (State.attackerMap >> dispatch)
-                  UnitList.View.rootBoard model.Defender (State.defenderMap >> dispatch)
+                [ UnitList.View.rootBoard model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
+                  UnitList.View.rootBoard model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
                   model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("MeleeRange")) |> opt
                   model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("MeleeRange")) |> opt
                   model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("ShootingRange")) |> opt
                   model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("ShootingRange")) |> opt
-                  UnitList.View.root model.Attacker (State.attackerMap >> dispatch)
-                  UnitList.View.root model.Defender (State.defenderMap >> dispatch) ] ] 
+                  UnitList.View.root model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
+                  UnitList.View.root model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch) ] ] 
     let swap =  i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
     let selected = 
         let titleBar text = 

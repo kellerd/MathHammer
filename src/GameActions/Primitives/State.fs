@@ -59,7 +59,9 @@ let allProps =
           labelVar "D3Test" ]
 
 let hitResults = get "WS" |> single |> count >>= "HitResults"
-let svtOps = [get "S";getp "T" (get "Defender")] |> opList >>= "SvsT"
+let defenderMap = "Defender"
+let attackerMap = "Attacker"
+let svtOps = [get "S";getp "T" (get defenderMap)] |> opList >>= "SvsT"
 
 let  table ifThen = 
     let rec acc x = 
@@ -296,8 +298,8 @@ let rec evalOp evalCall env (operation:Operation) =
         | (Value(Check(Check.Fail(_))),Some elsePart) -> evalOp evalCall env elsePart
         | (Value(Check(Check.Fail(_))),None) 
         | Value NoValue,None -> noValue;
-        | Value (gp),_ -> evalOp evalCall env thenPart
-        | gp -> //printfn "Invalid type, cannot check if/else with %A" gp; 
+        | Value _,_ -> evalOp evalCall env thenPart // truthy
+        | _ -> //printfn "Invalid type, cannot check if/else with %A" gp; 
             noValue  
     | App(Lam(x, op),value) ->
         evalOp evalCall (Map.add x value env) op 

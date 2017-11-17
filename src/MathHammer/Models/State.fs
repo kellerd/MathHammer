@@ -4,7 +4,6 @@ open Elmish
 open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open Distribution
 open Check
 open Determinism 
 
@@ -23,18 +22,18 @@ let init name =
 
 let initMeq name coreRules =
     let attributes = [vInt 6; dPlus D6 3 ;dPlus D6 3; vInt 4; vInt 4; vInt 1; vInt 2; vInt 8; dPlus D6 3; noValue] 
-    let rules = applyArgs (coreRules |> lam "Defender") attributes
+    let rules = applyArgs coreRules attributes
     { (init name) with Rules = rules; Attributes = attributes }, Cmd.none
 let initGeq name coreRules =
     let attributes = [vInt 30; vInt 5; dPlus D6 4 ;dPlus D6 4; vInt 3; vInt 3; vInt 1; vInt 1; vInt 6; dPlus D6 5; noValue] 
     let rules = applyArgs (coreRules |> lam "WeaponRange") attributes
     { (init name) with Rules = rules; Attributes = attributes }, Cmd.none
-let rec evalDie d : Distribution<_> = 
+let rec evalDie d : Distribution.Distribution<_> = 
       match d with 
-      | D3 -> uniformDistribution [3..-1..1]
-      | D6 -> uniformDistribution [6..-1..1]
+      | D3 -> Distribution.uniformDistribution [3..-1..1]
+      | D6 -> Distribution.uniformDistribution [6..-1..1]
       | Reroll(rerolls, d) -> 
-            dist {
+            Distribution.dist {
                   let! roll = evalDie d
                   if List.contains roll rerolls then
                         return! evalDie d
@@ -78,18 +77,18 @@ let rec evalCall dieFunc func v env  =
             let reduced2 = evalOp (evalCall dieFunc) env op
             match reduced1,reduced2 with 
             | Value(Dist reduced1),Value(Dist reduced2) -> 
-                dist {
+                Distribution.dist {
                       let! a' = reduced1
                       let! b' = reduced2
                       return folder a' b'                             
                 } |> Dist |> Value
             | Value(Dist reduced1),Value(b) ->
-                dist {
+                Distribution.dist {
                       let! a' = reduced1
                       return folder a' b                             
                 } |> Dist |> Value
             |   Value(a), Value(Dist reduced2) ->
-                dist {
+                Distribution.dist {
                       let! b' = reduced2
                       return folder a b'                             
                 } |> Dist |> Value
@@ -127,7 +126,7 @@ let rec evalCall dieFunc func v env  =
         let zero = GamePrimitive.Zero 
         Tuple(zero,zero)
         |> Check 
-        |> always 
+        |> Distribution.always 
         |> Dist 
         |> Value
         |> fold (fun r1 r2 -> toCount r1 + toCount r2) ops
@@ -142,15 +141,16 @@ let rec evalCall dieFunc func v env  =
     | _ -> failwith "Cannot eval any other call with those params" 
 
 let standardCall = (evalCall (evalDie >> Distribution.map (Int)  >> Dist >> Value))
-let sampleCall = (evalCall (evalDie >> sample >> Int >> Value))
-let avgCall = (evalCall (evalDie >> expectation(float) >> Float >> Value))
+let sampleCall = (evalCall (evalDie >> Distribution.sample >> Int >> Value))
+let avgCall = (evalCall (evalDie >> Distribution.expectation(float) >> Float >> Value))
+let (|ContainsVar|_|) env key = Map.tryFind key env
 let update msg model =
       match msg with
       | ChangePosition (x,y,scale) -> {model with PosX = x; PosY = y; Scale=scale}, Cmd.none
       | Select _ -> model, Cmd.none
       | Msg.Let _ ->  model, Cmd.none
       | Rebind (initial) -> 
-            let normalized = model.Rules |> normalizeOp
+            let normalized = model.Rules |> normalizeOp 
             let sampled = normalized |> evalOp sampleCall initial
             let average = normalized |> evalOp avgCall initial
             let probability = normalized |> evalOp standardCall initial

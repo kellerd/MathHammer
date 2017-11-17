@@ -6,7 +6,6 @@ open Fable.Helpers.React
 open Fable.Helpers.React.Props
 open Types
 open Check
-open Distribution
 open Probability.View
 
 let paren react = div [] <| str "(-" :: react @ [str ")"]

@@ -2,19 +2,17 @@ module App.View
 
 open Elmish
 open Elmish.Browser.Navigation
-open Elmish.Browser.UrlParser
+open Browser.UrlParser
 open Fable.Core
-open Fable.Core.JsInterop
-open Fable.Import
-open Fable.Import.Browser
+open JsInterop
 open Types
-open App.State
+open State
 open Global
 
 importAll "../sass/main.sass"
 
 open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Props
 
 let menuItem label page currentPage =
     li
@@ -63,7 +61,7 @@ let root model dispatch =
                     [ pageHtml model.currentPage ] ] ] ] ]
 
 open Elmish.React
-open Elmish.Debug
+//open Elmish.Debug
 // App
 Program.mkProgram init update root
 |> Program.toNavigable (parseHash pageParser) urlUpdate

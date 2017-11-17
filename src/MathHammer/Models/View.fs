@@ -10,7 +10,6 @@ open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
 open Check
-open Distribution
 open Probability.View
 
 let onClick x : IProp = OnClick(x) :> _
@@ -23,7 +22,7 @@ let showAttributes ((key:string), operation) dispatch =
           [ b  [] [str key]
             br []
             div [] (GameActions.Primitives.View.root operation dispatch) ]
-let rangeStops (dist:Distribution<_>)  = 
+let rangeStops (dist:Distribution.Distribution<_>)  = 
     let length = List.length dist
     let minRange, maxRange,minProbability,maxProbability =
         dist 
@@ -87,7 +86,7 @@ let rangeRoot name model =
 
     match dist with 
     | IsDistribution d -> Some d
-    | Value(Int(i)) -> Some (Check.Pass (Int(i)) |> Check |> always)
+    | Value(Int(i)) -> Some (Check.Pass (Int(i)) |> Check |> Distribution.always)
     | _ -> None
     |> Option.map 
         (rangeStops 

@@ -14,21 +14,21 @@ let tests =
     let e x op = get x |> op |> evalOp sampleCall Map.empty<_,_> 
     let d6Dist =  [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
     let plusTest plus = 
-        let WS = dPlus D6 plus >>= "WS"
+        let ws = dPlus D6 plus >>= "WS"
         let expectedWS = List.init 6 ((+) 1 >> fun i -> if i >= plus then Check(Pass(Int(i))) else Check(Fail(Int(i)))) |> Distribution.uniformDistribution 
         testList (sprintf "%d+ Tests" plus) [
             test "WS Test Std" {
-                let (Value(Dist(result))) = WS |> es "WS"
+                let (Value(Dist(result))) = ws |> es "WS"
                 Expect.containsAll result expectedWS ""
             }
             test "WS Test avg" {
-                let result = WS |> ea "WS"
+                let result = ws |> ea "WS"
                 let wrap f = Value(Check(f(Float(3.5))))
                 let expected = if 3.5 >= float plus then wrap Pass else wrap Fail
                 result ==? expected
             }
             test "WS Test Sample" {
-                let (Value result) = WS |> e "WS"
+                let (Value result) = ws |> e "WS"
                 Expect.contains (List.map fst expectedWS) result ""
             }
         ]    
