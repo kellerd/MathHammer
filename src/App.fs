@@ -1,12 +1,11 @@
 module App.View
 
 open Elmish
-open Elmish.Browser.Navigation
+open Elmish.Browser.Navigation 
 open Browser.UrlParser
-open Fable.Core
-open JsInterop
+open Fable.Core.JsInterop
 open Types
-open State
+open App.State
 open Global
 
 importAll "../sass/main.sass"

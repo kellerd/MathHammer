@@ -1,4 +1,4 @@
-module RepeatTest
+module RepeatTests
 open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State

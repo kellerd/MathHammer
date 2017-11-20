@@ -1,4 +1,4 @@
-module EvalTest
+module EvalTests
 open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
