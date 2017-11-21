@@ -39,11 +39,11 @@ let tests =
         (result |> e  "TotalSum") ==? (product |> e  "TotalSum")
 
     testList "Repeat Tests" [
-        ftestPropertyWithConfig (3,623) config "Repeating an operation gives correct length" ``Repeating an operation gives correct length``
-        ftestPropertyWithConfig (3,623) config "Total - Repeat Op X Times equivalent to List init X Times "   <| ``Repeat is same as List.init`` Total
-        ftestPropertyWithConfig (3,623) config "Product - Repeat Op X Times equivalent to List init X Times " <| ``Repeat is same as List.init`` Product
-        ftestPropertyWithConfig  (3,623) config "Count - Repeat Op X Times equivalent to List init X Times "   <| ``Repeat is same as List.init`` Count
-        ftestPropertyWithConfig  (3,623) config "Total(Repeat x y) = Product(x,y)" ``Repeat Sum is the same as product``]
+        testPropertyWithConfig config "Repeating an operation gives correct length" ``Repeating an operation gives correct length``
+        testPropertyWithConfig config "Total - Repeat Op X Times equivalent to List init X Times "   <| ``Repeat is same as List.init`` Total
+        testPropertyWithConfig config "Product - Repeat Op X Times equivalent to List init X Times " <| ``Repeat is same as List.init`` Product
+        testPropertyWithConfig config "Count - Repeat Op X Times equivalent to List init X Times "   <| ``Repeat is same as List.init`` Count
+        testPropertyWithConfig config "Total(Repeat x y) = Product(x,y)" ``Repeat Sum is the same as product``]
 
 
 // D6+3  = Scalara + Scalara Dist = Scalara Dist

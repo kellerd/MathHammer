@@ -267,7 +267,7 @@ let normalizeOp op =
     |> Seq.last
 
 let rec evalOp evalCall env (operation:Operation) = 
-      //let all = allIds operation
+    printfn "%A" operation
     match operation with
       
     | ParamArray(ops) -> 
@@ -307,7 +307,7 @@ let rec evalOp evalCall env (operation:Operation) =
         match evalOp evalCall env f, evalOp evalCall env value with 
         | (Call f),v -> evalCall f v env 
         | Lam(x, op),v -> evalOp evalCall env <| App(Lam(x, op),v) 
-        | _ -> failwith "Cannot apply to something not a function"
+        | x -> failwith <| sprintf "Cannot apply to something not a function %A" x
 // let attackerLam = <@ 
 //     let m = 6
 //     let a = 5

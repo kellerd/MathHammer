@@ -3,6 +3,7 @@ open GameActions.Primitives.Types
 open MathHammer.Models.State
 open GameActions.Primitives.State
 open Expecto
+let log f x y = printfn "%A" y; f x y
 let (==?) x y = Expect.equal x y ""
 let (==~) x y = 
     match y with 
@@ -25,8 +26,13 @@ let ld = vInt 8
 let sv = threePlus
 let invSave = noValue
 let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;] 
-let defApplied = applyArgs defender seargent |> normalizeOp
+let defApplied = applyArgs defender seargent |> normalizeOp |> evalOp standardCall Map.empty<string,Operation>
 let initialMap = Map.add "Defender" defApplied Map.empty<string,Operation>
+
+// let attApplied = applyArgs attacker seargent |> normalizeOp |> evalOp standardCall initialMap
+
+
+
 let eps x op = getp x op |> evalOp standardCall initialMap
 let epa x op = getp x op |> evalOp avgCall initialMap
 let ep x op = getp x op |> evalOp sampleCall initialMap
