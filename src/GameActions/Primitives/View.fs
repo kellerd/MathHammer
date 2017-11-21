@@ -8,7 +8,7 @@ open Types
 open Check
 open Probability.View
 
-let paren react = div [] <| str "(-" :: react @ [str ")"]
+let paren react = div [] <| str "(" :: react @ [str ")"]
 
 let rec unparseCheck unparseV = function 
     | Check.Pass(v) -> div [Style [Color (Probability.View.colour 255.) ]] [str "Pass: "; (unparseV v)]
