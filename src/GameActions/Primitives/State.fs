@@ -267,7 +267,7 @@ let normalizeOp op =
     |> Seq.last
 
 let rec evalOp evalCall env (operation:Operation) = 
-    printfn "%A" operation
+    //printfn "%A" operation
     match operation with
       
     | ParamArray(ops) -> 

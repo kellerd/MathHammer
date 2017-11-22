@@ -31,19 +31,20 @@ let tests =
         (ea  "ThreePasses" ``Three Passes``) ==? (ea "ThreePasses" ``Three Passes Repeat``)
         (e   "ThreePasses" ``Three Passes``) ==? (e  "ThreePasses" ``Three Passes Repeat``)
 
+
     let ``Repeat Sum is the same as product`` x y =
         let result = repeatOp x y |> call Total >>= "TotalSum" 
         let product = [x;y] |> opList |> call Product >>= "TotalProduct" 
-        (result |> es "TotalSum") ==? (product |> es "TotalSum")
-        (result |> ea "TotalSum") ==? (product |> ea "TotalSum")
-        (result |> e  "TotalSum") ==? (product |> e  "TotalSum")
+        (result |> es "TotalSum") ==? (product |> es "TotalProduct")
+        (result |> ea "TotalSum") ==? (product |> ea "TotalProduct")
+        (result |> e  "TotalSum") ==? (product |> e  "TotalProduct")
 
     testList "Repeat Tests" [
         testPropertyWithConfig config "Repeating an operation gives correct length" ``Repeating an operation gives correct length``
         testPropertyWithConfig config "Total - Repeat Op X Times equivalent to List init X Times "   <| ``Repeat is same as List.init`` Total
         testPropertyWithConfig config "Product - Repeat Op X Times equivalent to List init X Times " <| ``Repeat is same as List.init`` Product
         testPropertyWithConfig config "Count - Repeat Op X Times equivalent to List init X Times "   <| ``Repeat is same as List.init`` Count
-        testPropertyWithConfig config "Total(Repeat x y) = Product(x,y)" ``Repeat Sum is the same as product``]
+        ftestPropertyWithConfig (463,123) config "Total(Repeat x y) = Product(x,y)" ``Repeat Sum is the same as product``]
 
 
 // D6+3  = Scalara + Scalara Dist = Scalara Dist
