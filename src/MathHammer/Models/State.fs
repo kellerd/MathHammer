@@ -45,7 +45,9 @@ let rec evalCall dieFunc func v env  =
         let rec repeatOps lam times =
             let newOps = 
                 match times with
-                | Check(Fail (Int(_))) -> []
+                | NoValue
+                | Check(List []) 
+                | Check(Fail (_)) -> []
                 | Int (n) 
                 | Check(Tuple(Int(n),_))
                 | Check(Pass (Int(n))) -> List.init (max 0 n) (fun n -> App(lam,vInt n)) 
@@ -114,22 +116,22 @@ let rec evalCall dieFunc func v env  =
     | Count, ParamArray ops ->
         let toCount result = 
             match result with 
-            | Check(Pass _)       -> Check(Tuple (Int(1),Int(0)))
-            | Int(_)              -> Check(Tuple (Int(1),Int(0)))
-            | Str(_)              -> Check(Tuple (Int(1),Int(0)))
-            | Float(_)            -> Check(Tuple (Int(1),Int(0)))
-            | Check(List _)       -> Check(Tuple (Int(1),Int(0)))
-            | Dist(_)             -> Check(Tuple (Int(1),Int(0)))  
-            | Check(Tuple _) as x -> x
-            | NoValue             ->  Check(Tuple(Int(0),(Int(1)))) 
-            | Check(Fail _)       ->  Check(Tuple(Int(0),(Int(1)))) 
+            | Check(Pass _)       -> Check(Tuple(Int(1),Int(0)))
+            | Check(Tuple _)      -> Check(Tuple(Int(1),Int(0)))  
+            | Check(List _)       -> Check(Tuple(Int(1),Int(0)))
+            | Int(_)              -> Check(Tuple(Int(1),Int(0)))
+            | Str(_)              -> Check(Tuple(Int(1),Int(0)))
+            | Float(_)            -> Check(Tuple(Int(1),Int(0)))
+            | Dist(_)             -> Check(Tuple(Int(1),Int(0)))  
+            | NoValue             -> Check(Tuple(Int(0),Int(1))) 
+            | Check(Fail _)       -> Check(Tuple(Int(0),Int(1)))
         let zero = GamePrimitive.Zero 
         Tuple(zero,zero)
         |> Check 
         |> Distribution.always 
         |> Dist 
         |> Value
-        |> fold (fun r1 r2 -> toCount r1 + toCount r2) ops
+        |> fold (fun r1 r2 -> r1 + toCount r2) ops
     | GreaterThan, ParamArray([Value(gp);Value(gp2)]) -> greaterThan gp gp2 |> Value
     | Equals, ParamArray([Value(gp);Value(gp2)]) -> equals gp gp2  |> Value
     | LessThan, ParamArray([Value(gp);Value(gp2)]) -> notEquals gp gp2  |> Value

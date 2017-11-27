@@ -35,13 +35,31 @@ let tests =
         let addition x y  =   
             let result = 
                 try 
-                    Let("x", Value(y) ,App(Call Total, ParamArray([Value(x);Var ("x")])))
+                    Let("y", Value(y) ,App(Call Total, ParamArray([Value(x);Var ("y")])))
                     |> evalOp standardCall Map.empty<_,_>
                     |> Choice1Of2
                 with ex -> Choice2Of2 (ex.Message.Substring(0,30))
             let expected = 
                 try 
-                    Value(x + y) |> Choice1Of2
+                    match x,y with 
+                    | Dist reduced1,Dist reduced2 -> 
+                        Distribution.dist {
+                              let! a' = reduced1
+                              let! b' = reduced2
+                              return a' + b'                           
+                        } |> Dist |> Value  |> Choice1Of2
+                    | Dist reduced1,b ->
+                        Distribution.dist {
+                              let! a' = reduced1
+                              return a' + b                         
+                        } |> Dist |> Value  |> Choice1Of2
+                    |   a, Dist reduced2 ->
+                        Distribution.dist {
+                              let! b' = reduced2
+                              return a + b'                            
+                        } |> Dist |> Value  |> Choice1Of2
+                    | a,b ->
+                        a + b |> Value  |> Choice1Of2
                 with ex -> Choice2Of2 (ex.Message.Substring(0,30))
             result ==? expected 
         yield testPropertyWithConfig config "Addition in child scope is valid" addition

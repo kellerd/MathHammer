@@ -28,7 +28,7 @@ let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;]
 let defApplied = applyArgs defender seargent |> normalizeOp |> evalOp standardCall Map.empty<string,Operation>
 let initialMap = Map.add "Defender" defApplied Map.empty<string,Operation>
 
-// let attApplied = applyArgs attacker seargent |> normalizeOp |> evalOp standardCall initialMap
+let attApplied = applyArgs attacker seargent |> normalizeOp
 
 let eps x op = getp x op |> evalOp standardCall initialMap
 let epa x op = getp x op |> evalOp avgCall initialMap
@@ -51,15 +51,15 @@ let tests =
     testList "Attacker Tests" [
         
         expectedStd 
-        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { eps key defApplied ==? expected })  
+        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { eps key attApplied ==? expected })  
         |> testList "Std eval Tests";
 
         expectedStd 
-        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { ep key defApplied ==~ expected })  
+        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { ep key attApplied ==~ expected })  
         |> testList "Sample Tests";
-
+        
         expectedAvg
-        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key)  { epa key defApplied ==? expected })  
+        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key)  { epa key attApplied ==? expected })  
         |> testList "Avg Tests";
 
     ] 

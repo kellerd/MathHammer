@@ -7,8 +7,8 @@ open FsCheckGen
 
 
 let (==?) x y = 
-    printfn "%A" x
-    printfn "%A" y
+    //printfn "%A" x
+    //printfn "%A" y
     Expect.equal x y ""
 let es x op = get x |> op |> evalOp standardCall Map.empty<_,_> 
 let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
@@ -43,23 +43,22 @@ let tests =
         (result |> e  "TotalSum") ==? (product |> e  "TotalProduct")
 
     
-   // let ``Test D6+3  = Scalara + Scalara Dist = Scalara Dist``
-    let testRun = 
-        testList "Tests" [
-            test "Product test" {
-                let x = vInt 6
-                let y = vInt 3
-                fun () -> ``Repeat Sum is the same as product`` x y
-            }; ]
-        |> Tests.runTests defaultConfig 
+//    // let ``Test D6+3  = Scalara + Scalara Dist = Scalara Dist``
+//     let testRun = 
+//         testList "Tests" [
+//             test "Product test" {
+//                 let x = vInt 6
+//                 let y = vInt 3
+//                 fun () -> ``Repeat Sum is the same as product`` x y
+//             }; ]
+//         |> Tests.runTests defaultConfig 
     
     testList "Repeat Tests" [
         testPropertyWithConfig config "Repeating an operation gives correct length" ``Repeating an operation gives correct length``
         testPropertyWithConfig config "Total - Repeat Op X Times equivalent to List init X Times "   <| ``Repeat is same as List.init`` Total
         testPropertyWithConfig config "Product - Repeat Op X Times equivalent to List init X Times " <| ``Repeat is same as List.init`` Product
         testPropertyWithConfig config "Count - Repeat Op X Times equivalent to List init X Times "   <| ``Repeat is same as List.init`` Count
-        ftestPropertyWithConfig (463,123) config "Total(Repeat x y) = Product(x,y)" ``Repeat Sum is the same as product``]
-
+        testPropertyWithConfig config "Total(Repeat x y) = Product(x,y)" ``Repeat Sum is the same as product``]
 // 3D6 = Repeat D6 3 = Scalara x Scalarb Dist = Scalarb Dist List
 // Double D6 = Scalara x Scalara Dist = Scalara Dist
 // D3D6s = Repeat D6 D3 = Scalara Dist x ScalarbDist = Dist Scalarb Dist List

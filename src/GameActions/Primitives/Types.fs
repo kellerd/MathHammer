@@ -103,8 +103,11 @@ let rec greaterThan gp gp2 =
     | Dist(d),gp -> List.map(fun (a,p1) -> greaterThan a gp,p1) d |> Dist
     | gp,Check(r) -> Check.map(fun b -> greaterThan gp b) r |> Check
     | Check(r), gp -> Check.map(fun a -> greaterThan a gp) r |> Check
+    | NoValue,NoValue -> Fail NoValue |> Check
     | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> printfn "Couldn't compare %A > %A" gp gp2; NoValue
+    | Str _, _ | _, Str _ -> 
+        //printfn "Couldn't compare %A > %A" gp gp2;
+        NoValue
 let rec lessThan op op2 = 
     match op,op2 with 
     | Int(i),  Int(i2)  -> (if i < i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Check
@@ -118,8 +121,11 @@ let rec lessThan op op2 =
     | Dist(d),gp -> List.map(fun (a,p1) -> lessThan a gp,p1) d |> Dist
     | gp,Check(r) -> Check.map(fun b -> lessThan gp b) r |> Check
     | Check(r), gp -> Check.map(fun a -> lessThan a gp) r |> Check
+    | NoValue,NoValue -> Fail NoValue |> Check
     | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> printfn "Couldn't compare %A < %A" op op2; NoValue
+    | Str _, _ | _, Str _ -> 
+        //printfn "Couldn't compare %A < %A" op op2; 
+        NoValue
 let rec equals op op2 = 
     match op,op2 with
     | Int(i),  Int(i2)  -> (if i = i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Check
@@ -134,7 +140,8 @@ let rec equals op op2 =
     | Check(r), gp -> Check.map(fun a -> equals a gp) r |> Check
     | NoValue,NoValue -> Pass NoValue |> Check
     | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> printfn "Couldn't compare %A = %A" op op2;NoValue
+    | Str _, _ | _, Str _ -> //printfn "Couldn't compare %A = %A" op op2;
+        NoValue
 let rec notEquals op op2 = 
     match op,op2 with 
     | Int(i),  Int(i2)  -> (if i <> i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Check
@@ -149,7 +156,8 @@ let rec notEquals op op2 =
     | Check(r), gp -> Check.map(fun a -> notEquals a gp) r |> Check
     | gp,gp2 when gp = gp2 -> Fail gp |> Check
     | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> printfn "Couldn't compare %A <> %A" op op2; NoValue
+    | Str _, _ | _, Str _ -> // printfn "Couldn't compare %A <> %A" op op2; 
+        NoValue
         
         
 type NormalizedOperation = Normal | Next of Operation    

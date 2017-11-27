@@ -2,76 +2,59 @@ module FsCheckGen
 open GameActions.Primitives.Types
 open GameActions.Primitives
 open Expecto
-open GameActions.Primitives.State
-open MathHammer.Models.State
-let rec (|IsValidGp|) (gp:GamePrimitive) : bool = 
-    let rec isValid gp currentlyValid = 
-        if currentlyValid then 
-            match gp with 
-            | Float(f) -> (System.Double.IsInfinity(f) || System.Double.IsNaN(f)) |> not
-            | Int(_) -> true
-            | Str null -> false
-            | Str _ -> currentlyValid 
-            | Check(Check.Pass(p)) -> isValid p true 
-            | Check(Check.Fail(p)) -> isValid p true 
-            | Check(Check.Tuple(p,p2)) -> isValid p (isValid p2 true) 
-            | Check(Check.List(l)) -> List.forall (fun gp -> isValid (Check gp) true) l
-            | NoValue -> true
-            | Dist(d) -> 
-                match d with 
-                | [] -> true
-                | ds -> 
-                    let total = (List.sumBy snd ds)
-                    List.forall (fun (a,p) -> isValid a (p >= 0.0 && p <= 1.0)) ds && (total >= 0.0 && total <= 1.0)
-        else false  
-    isValid gp true      
-let (|IsValidDie|) = function
-    | D6 | D3 -> true
-    | Reroll (rs, D3) -> List.forall(fun i -> i = 1 || i = 2 || i = 3) rs
-    | Reroll (rs, D6) -> List.forall(fun i -> i = 1 || i = 2 || i = 3 || i = 4 || i = 5 || i = 6) rs
-    | _ -> false
-let (|IsValidOp|) (op:Operation) : bool = 
-    let rec isValid op currentlyValid = 
-        if currentlyValid then 
-            match op with 
-            | Value (IsValidGp(v)) -> v 
-            | Call _ -> true
-            | PropertyGet(n, op) -> isValid op (isNull n |> not)
-            | ParamArray ops -> List.foldBack (isValid) ops true
-            | Var n -> isNull n |> not 
-            | App(Lam(n, op),value) -> isValid op (isValid value (isNull n |> not))
-            | App(f,value) -> 
-                let v = (evalOp standardCall Map.empty<_,_> value)
-                let c = (evalOp standardCall Map.empty<_,_> f)
-                if isValid v true then
-                    match c,v with 
-                    | Lam(x, op),v -> isValid (App(Lam(x, op),v)) true
-                    | Call(Dice(IsValidDie d)), Value(NoValue) -> d
-                    | Call(Total ),       ParamArray ops     -> List.forall (fun op -> isValid op true) ops
-                    | Call(Product),      ParamArray ops     -> List.forall (fun op -> isValid op true) ops
-                    | Call(Count),        ParamArray ops     -> List.forall (fun op -> isValid op true) ops
-                    | Call(GreaterThan),  ParamArray([Value(IsValidGp(gp));Value(IsValidGp(gp2))]) -> gp && gp2
-                    | Call(Equals),       ParamArray([Value(IsValidGp(gp));Value(IsValidGp(gp2))]) ->  gp && gp2
-                    | Call(LessThan),     ParamArray([Value(IsValidGp(gp));Value(IsValidGp(gp2))]) ->  gp && gp2
-                    | Call(NotEquals),    ParamArray([Value(IsValidGp(gp));Value(IsValidGp(gp2))]) ->  gp && gp2
-                    | Call(Repeat),       ParamArray([Lam(n, body);op2]) -> isValid op2 (isValid body (System.String.IsNullOrWhiteSpace n |> not))
-                    | Call(Total),    Value(IsValidGp gp)
-                    | Call(Product),  Value(IsValidGp gp) 
-                    | Call(Count),    Value(IsValidGp gp) -> gp
-                    | _ -> false
-                else false 
-            | Lam(n, body) -> isValid body (isNull n |> not)
-            | Let(n, value, body) -> isValid body (isValid value (isNull n |> not))
-            | IfThenElse(ifExpr, thenExpr, Some(elseExpr)) -> isValid ifExpr (isValid thenExpr (isValid elseExpr true))
-            | IfThenElse(ifExpr, thenExpr, None) -> isValid ifExpr (isValid thenExpr true)
-        else false 
-    isValid op true
 open FsCheck
+
+let genFloat = Gen.map (fun (NormalFloat f) -> Float f) Arb.generate<_>
+let genInt = Gen.map Int Arb.generate<_>
+let genStr = Gen.map (fun (NonEmptyString s) -> Str s) Arb.generate<_>
+let genNoVal = Gen.constant (Types.Value(NoValue))
+let genFOfPrim f = 
+    Gen.oneof [ f genFloat;f  genInt;f  genStr; f (Gen.constant NoValue) ]
+let genPrimitive = genFOfPrim id
+let genNumber f = Gen.oneof [ f genFloat; f genInt ]
+let genListOfPrimitive = genFOfPrim (Gen.listOf)  
+let genCheck = 
+    let basic = 
+        Gen.oneof [
+            Gen.map (Check.Pass) genPrimitive
+            Gen.map (Check.Fail) genPrimitive
+            Gen.map2 (fun a b -> Check.Tuple(a,b)) genPrimitive genPrimitive
+        ]
+    Gen.oneof [
+        basic
+        Gen.map (Check.List) (Gen.listOf basic) //Restrict to only one level
+    ]
+
+let genGp = 
+    let rec genGp' = function
+        | 0 -> genPrimitive
+        | n -> 
+            //Restrict to only one level
+            //let subtree = genGp' (n/4)
+            let probabilities = Gen.filter (fun f -> f >= 0.0 && f <= 1.0) Arb.generate<_>
+            //Restrict to only one level of dists.  
+            let pair = genListOfPrimitive |> Gen.map (fun ls -> List.zip (ls)  <| (Gen.sample (List.length ls) probabilities |> List.ofArray) )
+            Gen.oneof [
+                genPrimitive
+                Gen.map Types.Check genCheck 
+                Gen.map Dist pair
+            ] 
+    Gen.sized genGp'
+let genDie = 
+    Gen.oneof [
+        Gen.constant D6
+        Gen.constant D3
+        [1..3] |> Seq.map Gen.constant |> Gen.oneof |> Gen.listOfLength 3 |> Gen.map (fun rs -> Reroll(List.distinct rs, D3))
+        [1..6] |> Seq.map Gen.constant |> Gen.oneof |> Gen.listOfLength 6 |> Gen.map (fun rs -> Reroll(List.distinct rs, D6))
+    ]
+
 let genOp =
     let rec genOp' = function
-        | 0 -> Gen.constant (Types.Value(NoValue))
+        | 0 -> genNoVal
         | n when n>0 -> 
-            let subtree = genOp' (n/2)
+            let subtree = genOp' (n/4)
+            let paramArrayG = genListOfPrimitive
+            let twoParamArrayG = genFOfPrim Gen.two
             let lambda = 
                 Gen.map2 (fun (NonEmptyString n) body -> Lam(n, body)) Arb.generate<_> subtree
             Gen.oneof [ 
@@ -85,26 +68,26 @@ let genOp =
                 lambda
                 Gen.oneof [
                     Gen.map2 (fun lam value -> App(lam,value)) lambda subtree
-                    Gen.map (function 
-                        | Call(Dice(_)) c ->  c, Gen.constant (Types.Value(NoValue))
-                        | Call(Total ),       ParamArray ops     -> List.forall (fun op -> isValid op true) ops
-                        | Call(Product),      ParamArray ops     -> List.forall (fun op -> isValid op true) ops
-                        | Call(Count),        ParamArray ops     -> List.forall (fun op -> isValid op true) ops
-                        | Call(GreaterThan),  ParamArray([Value(IsValidGp(gp));Value(IsValidGp(gp2))]) -> gp && gp2
-                        | Call(Equals),       ParamArray([Value(IsValidGp(gp));Value(IsValidGp(gp2))]) ->  gp && gp2
-                        | Call(LessThan),     ParamArray([Value(IsValidGp(gp));Value(IsValidGp(gp2))]) ->  gp && gp2
-                        | Call(NotEquals),    ParamArray([Value(IsValidGp(gp));Value(IsValidGp(gp2))]) ->  gp && gp2
-                        | Call(Repeat),       ParamArray([Lam(n, body);op2]) -> isValid op2 (isValid body (System.String.IsNullOrWhiteSpace n |> not))
-                        | Call(Total),    Value(IsValidGp gp)
-                        | Call(Product),  Value(IsValidGp gp) 
-                        | Call(Count),    Value(IsValidGp gp) -> gp
-                    ) Arb.generate<_>
+                    Gen.map6 (fun c opList (gp,gp2) s ints (NonEmptyString name) -> 
+                        match c with  
+                        | Dice(_)     -> App(Call(c),Types.Value NoValue)
+                        | Total       
+                        | Product      
+                        | Count       -> App(Call(c), opList |> List.map Types.Value |> ParamArray)
+                        | GreaterThan  
+                        | Equals     
+                        | LessThan  
+                        | NotEquals   -> App(Call(c), ParamArray [Types.Value(gp);Types.Value(gp2)])    
+                        | Repeat      -> App(Call(c), ParamArray([Lam(name, s);Types.Value(ints)]))
+                        | And -> Types.Value(NoValue)
+                        | Or  -> Types.Value(NoValue)
+                    ) Arb.generate<_> paramArrayG twoParamArrayG subtree genInt Arb.generate<_>
                 ]                        
                 ]
         | _ -> invalidArg "s" "Only positive arguments are allowed"
     Gen.sized genOp'
 //Gen.sample 1 genOp
-type GamePrimitiveGen() = static member GamePrimitive() : Arbitrary<GamePrimitive> = Arb.Default.Derive ()  |> Arb.filter ((|IsValidGp|))
-type DieGen() = static member Die() : Arbitrary<Die> = Arb.Default.Derive ()  |> Arb.filter ((|IsValidDie|))
+type GamePrimitiveGen() = static member GamePrimitive() : Arbitrary<GamePrimitive> = Arb.fromGen genGp
+type DieGen() = static member Die() : Arbitrary<Die> = Arb.fromGen genDie
 type GenOp() = static member Operation() : Arbitrary<Operation> = Arb.fromGen genOp
 let config = {FsCheckConfig.defaultConfig with arbitrary = (typeof<GenOp>)::(typeof<GamePrimitiveGen>)::(typeof<DieGen>)::FsCheckConfig.defaultConfig.arbitrary}
