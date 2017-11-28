@@ -21,7 +21,7 @@ let tests =
             try op                |> evalAndRemoveLamdas (evalOp call Map.empty<_,_>)  |> Choice1Of2
             with ex -> Choice2Of2 (ex.Message.Substring(0,15))
         let expected = 
-            try op |> normalizeOp |> evalAndRemoveLamdas (evalOp standardCall Map.empty<_,_>)  |> Choice1Of2
+            try op |> normalizeOp |> evalAndRemoveLamdas (evalOp call Map.empty<_,_>)  |> Choice1Of2
             with ex -> Choice2Of2 (ex.Message.Substring(0,15))
         result ==? expected 
     testList "Test normalize and eval" [

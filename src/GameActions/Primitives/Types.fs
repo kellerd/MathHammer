@@ -1,6 +1,7 @@
 module GameActions.Primitives.Types
 open Check    
-
+open Elmish.React.Common
+open System.Globalization
 type Die =
     | D3
     | D6
@@ -63,33 +64,47 @@ type GamePrimitive with
         | Float(a),Float(b) -> Float(a+b)
         | Str(a),Str(b) -> Str(a+b)
         | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
-        | Dist d, gp -> Distribution.map ((+) gp) d |> Distribution.normalize |> Dist
+        | Dist d, gp 
         | gp, Dist d -> Distribution.map ((+) gp) d |> Distribution.normalize |> Dist
         | Check (r1),Check(r2) -> Check.add r1 r2 |> Check
         | Float(x), Int(y) 
         | Int(y), Float(x)  -> Float(x + float y)
         | x,y -> failwith <| sprintf "Cannot add these two primitives %A, %A" x y
     static member (*) (x,y) = 
-        let rec cartSeq (nss:seq<#seq<'a>>) = 
-              let f0 (n:'a) (nss:seq<#seq<'a>>) = 
-                match Seq.isEmpty nss with
-                | true -> Seq.singleton(Seq.singleton n)
-                | _ -> Seq.map (fun (nl:#seq<'a>)->seq{yield n; yield! nl}) nss
-              match Seq.isEmpty nss with
-              | true -> Seq.empty
-              | _ -> Seq.collect (fun n->f0 n (cartSeq (Seq.skip 1 nss))) (Seq.head nss)
         match (x,y) with 
         | NoValue,z | z,NoValue -> NoValue
         | Int(a),Int(b) -> Int(a*b)
         | Float(a),Float(b) -> Float(a*b)
-        | Str(a),Str(b) -> 
-            cartSeq [a.ToCharArray();b.ToCharArray()] 
-            |> Seq.map(string)
-            |> String.concat "\n"
-            |> Str
         | Check r1, Check r2 -> Check.mult r1 r2 |> Check
-        //| Dist d, Dist d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (d1,d2) -> ParamArray([Value(d1);Value(d2)])) |> Dist
+        | Dist _, Check(List [])
+        | Dist _, Check(Fail (_))
+        | Check(List []), Dist _ 
+        | Check(Fail (_)), Dist _ -> NoValue
+        | Check(Tuple(Int(n),_)), Dist d2
+        | Dist d2, Check(Tuple(Int(n),_))
+        | Check(Pass (Int(n))), Dist d2 
+        | Dist d2, Check(Pass (Int(n)))
+        | Dist d2, Int (n) 
+        | Int (n), Dist d2 -> 
+                match List.replicate n d2 with 
+                | [] -> [] 
+                | head::tail -> tail |> List.fold (fun d d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (a,b) -> a + b)) head
+                |> Dist
+        | Dist d2, Check(List xs)
+        | Check(List xs), Dist d2-> 
+            let n = 
+                List.fold (fun c elem -> 
+                            match elem with 
+                            | Pass _ -> c + 1 
+                            | Fail _ -> c 
+                            | Tuple(Int(x),_) -> c + x 
+                            | _ -> c) 0 xs    
+            match List.replicate n d2 with 
+            | [] -> [] 
+            | head::tail -> tail |> List.fold (fun d d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (a,b) -> a + b)) head
+            |> Dist                       
         | x,y -> failwith <| sprintf "Cannot multiply these two primitives %A, %A" x y
+
 let rec greaterThan gp gp2 = 
     match gp,gp2 with 
     | Int(i),  Int(i2)  -> (if i > i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Check
@@ -158,7 +173,6 @@ let rec notEquals op op2 =
     | _, NoValue _ | NoValue _, _ 
     | Str _, _ | _, Str _ -> // printfn "Couldn't compare %A <> %A" op op2; 
         NoValue
-        
         
 type NormalizedOperation = Normal | Next of Operation    
 

@@ -5,7 +5,6 @@ open GameActions.Primitives.State
 open MathHammer.Models.State
 open FsCheckGen
 
-
 let (==?) x y = 
     //printfn "%A" x
     //printfn "%A" y
@@ -34,7 +33,9 @@ let tests =
         (ea  "ThreePasses" ``Three Passes``) ==? (ea "ThreePasses" ``Three Passes Repeat``)
         (e   "ThreePasses" ``Three Passes``) ==? (e  "ThreePasses" ``Three Passes Repeat``)
 
-
+    let x = Dist [(Check (Check.Tuple (Int 0,Int 1)), 1.0)] 
+    let y = Dist   [(Check (Check.Tuple (Int 0,Int 1)), 1.0)]
+    x * y
     let ``Repeat Sum is the same as product`` x y =
         let result = repeatOp x y |> call Total >>= "TotalSum" 
         let product = [x;y] |> opList |> call Product >>= "TotalProduct" 

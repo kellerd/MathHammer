@@ -63,9 +63,9 @@ let rec evalCall dieFunc func v env  =
                                     | Pass _ -> c + 1 
                                     | Fail _ -> c 
                                     | Tuple(Int(x),_) -> c + x 
-                                    | _ -> failwith <| sprintf "Cannot repeat by these types of values %A" elem) 0 xs
+                                    | _ -> c) 0 xs
                     List.init n  (fun n -> App(lam,vInt n)) 
-                | elem -> failwith <| sprintf "Cannot repeat by these types of values %A" elem
+                | _ -> []
             evalOp (evalCall dieFunc) env (ParamArray(newOps))
 
         let times = evalOp (evalCall dieFunc) env op2  
@@ -96,7 +96,7 @@ let rec evalCall dieFunc func v env  =
                 } |> Dist |> Value
             | Value(a), Value(b) ->
                 folder a b |> Value
-            | x -> failwith <| sprintf "Not a value 2 %A" x
+            | x -> NoValue |> Value
             ) state
     match func,v with 
     | Dice d, Value(NoValue) -> dieFunc d  
