@@ -64,7 +64,7 @@ let ``Ski Combinators`` =
             test "True Not == False " {
                 (App(``true``,``not``) |> normalizeOp) ==? (``false`` |> normalizeOp) 
             }
-            ptest "True Not == False " {
+            ptest "False Not == False " {
                 (App(``false``,``not``) |> normalizeOp) ==? (``true`` |> normalizeOp) 
             }     
             ptest "x OR y" {

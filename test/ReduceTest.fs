@@ -73,7 +73,7 @@ let tests =
     let psychicTotalTest = 
         let psychicTest = [d6;d6] |> opList |> total >>= "PsychicTest"
         testList "Some Tests" [
-            test "Psychic Dice std" {
+            test "Psychic Total std" {
                 let expected = Distribution.dist {
                     let! d1 = Distribution.uniformDistribution [1..6]
                     let! d2 = Distribution.uniformDistribution [1..6]
@@ -82,12 +82,12 @@ let tests =
                 let (Value(Dist(result))) = psychicTest |> es "PsychicTest"
                 Expect.containsAll result expected ""
             }
-            test "Psychic Dice avg" {
+            test "Psychic Total avg" {
                 let result = psychicTest |> ea "PsychicTest"
                 let expected = Value (Float 7.0)
                 result ==? expected            
             }
-            test "Psychic Dice sample" {
+            test "Psychic Total sample" {
                 let (Value a) = psychicTest |> e "PsychicTest"
                 let expected = [2..12] |> List.map (Int) 
                 Expect.contains expected a ""
