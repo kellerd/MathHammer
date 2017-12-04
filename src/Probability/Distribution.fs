@@ -16,7 +16,7 @@ module Distribution
     let rnd = System.Random()
     let sample (v : Distribution<_>)  = 
         let prob = rnd.NextDouble()
-        v |> Seq.scan (fun (p,acc) (n,prob) -> Some n, acc + prob )  (None, 0.0) 
+        v |> Seq.scan (fun (_,acc) (n,prob) -> Some n, acc + prob )  (None, 0.0) 
         |> Seq.pairwise
         |> Seq.pick(fun ((_,p1),(a,p2)) -> if prob >= p1 && prob < p2 then a else None)
     let uniformDistribution (ls : 'a list) : Distribution<_> =
@@ -75,6 +75,9 @@ module Distribution
  
     let dist= DistrBuilder()   
     let map f = bind (f >> returnM) 
+    let groupBy projection mapping (x: Distribution<'a>) : Distribution<'a> = 
+        List.groupBy (fst >> projection) x
+        |> List.choose (function (_,[]) -> None | (_,h::tail) -> Some <| List.fold (fun (c,p) (n,p2) -> mapping c n, (p + p2)) h tail)
     let apply f v = 
         dist {
             let! v' = v

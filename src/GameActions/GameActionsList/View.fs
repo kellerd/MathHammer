@@ -1,9 +1,7 @@
 module GameActions.GameActionsList.View
-
-open Fable.Core
 open Fable.Core.JsInterop
 open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Props
 open Types
 
 

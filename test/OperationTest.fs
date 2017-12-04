@@ -35,7 +35,7 @@ let tests =
         let addition x y  =   
             let result = 
                 try 
-                    Let("y", Value(y) ,App(Call Total, ParamArray([Value(x);Var ("y")])))
+                    Let("y", Value(y) ,App(Call Total, opList[Value(x);Var ("y")]))
                     |> evalOp standardCall Map.empty<_,_>
                     |> Choice1Of2
                 with ex -> Choice2Of2 (ex.Message.Substring(0,30))
@@ -75,7 +75,7 @@ let tests =
             let result =
                 Let("x", v ,App(Call Count, v)) 
                 |> evalOp standardCall Map.empty<_,_>
-            let expected = Value(Dist(Distribution.always (Check(Check.Tuple (Int(1),Int(0))))))
+            let expected = Value(Dist(Distribution.always (Tuple (Int(1),Int(0)))))
             result ==? expected
         yield testPropertyWithConfig config "Count of one passed result is 1"  countOfOneXIsOneX 
     ]

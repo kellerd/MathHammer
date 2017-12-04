@@ -3,10 +3,11 @@ module GameActions.Primitives.State
 open Types
 let get v = Var (v)
 let noValue = NoValue |> Value
-let single op = ParamArray(List.singleton op)
-let opList ops = ParamArray(ops)
+let single op = ParamArray(List.singleton op) |> Value
+let opList ops = ParamArray(ops) |> Value
 let pair x y = opList [x;y]
 let call f op = App(Call f, op)
+let tuple ab = Tuple(ab)
 let count v = v |> call Count
 let repeat ``(fun op -> 't)`` op2 = opList [``(fun op -> 't)``; op2;] |> call Repeat
 let repeatOp op op2 = opList [Lam("unusedVariable", op); op2] |> call Repeat
@@ -22,7 +23,7 @@ let d6 = App(Call(Dice(D6)), noValue)
 let d3 = App(Call(Dice(D3)), noValue)
 let vStr s = Str s |> Value
 
-let dPlus d v = [``D#`` d; Value(Int(v - 1))] |> opList |> call GreaterThan
+
 let vInt i = Value(Int(i))
 let emptyOp = noValue
 let label v o = pair (vStr v) o
@@ -31,6 +32,19 @@ let getp s op = PropertyGet(s, op)
 let apply f x = App(f,x)
 let (|%>) x f = apply f x
 let (>>=) o s = bindOp s o
+let v = 3
+let d = D6
+let dPlus d v =
+    let gt = [Var "roll"; Value(Int(v))] |> opList |> call GreaterThan
+    let eq = [Var "roll"; Value(Int(v))] |> opList |> call Equals
+    let gte = [Var "eq"; Var "gt" ]  |> opList |> call Or
+
+    let dp = Let ("roll", ``D#`` d, (Let("gt", gt, Let ("eq", eq,  gte))))
+    dp
+// dp |> evalOp standardCall (Map.add "roll" (``D#`` d) Map.empty<_,_>    )
+// eq |> evalOp standardCall (Map.add "roll" (``D#`` d) Map.empty<_,_>    )
+// dPlus D6 3 |> evalOp standardCall Map.empty<_,_>    
+    
 let nestOps ops returning = ops |> List.rev |> List.reduce (>>) <| returning
 let createArgs argList operationBody = argList  |> List.rev |> List.fold (fun f arg -> lam arg f) operationBody
 let applyArgs body argValues = 
@@ -91,7 +105,7 @@ let rec subst arg s = function
       | Var (v) -> if (v) = s then arg else Var (v)
       | App (f, a) -> App(subst arg s f, subst arg s a)
       | Lam (p, x) -> if p = s then Lam (p,x) else Lam(p, subst arg s x)
-      | ParamArray( ops) -> ParamArray(List.map (subst arg s) ops)
+      | Value(ParamArray( ops)) -> Value(ParamArray(List.map (subst arg s) ops))
       | Value v -> Value v
       | Let (n, v, op) -> Let(n, subst arg s v, subst arg s op)
       | Call x -> Call x
@@ -101,7 +115,7 @@ let rec allIds = function
     | Var (v) -> Set.singleton v
     | Lam (p, x) -> Set.add p (allIds x)
     | App (f, a) -> Set.union (allIds f) (allIds a)
-    | ParamArray( ops)  -> List.fold(fun s op -> op |> allIds |> Set.union s) Set.empty<_> ops 
+    | Value(ParamArray( ops))  -> List.fold(fun s op -> op |> allIds |> Set.union s) Set.empty<_> ops 
     | Call _ | Value _ -> Set.empty<_>
     | Let (n, _, op) -> allIds op |> Set.add n
     | PropertyGet(_,op) -> allIds op
@@ -117,7 +131,7 @@ let freeIds x =
         | Var (v) -> if Set.contains v bound then Set.empty else Set.singleton v
         | Lam (p, x) -> halp (Set.add p bound) x
         | App (f, a) -> Set.union (halp bound f) (halp bound a)
-        | ParamArray( ops) -> List.fold(halp) bound ops 
+        | Value(ParamArray( ops)) -> List.fold(halp) bound ops 
         | Call _ | Value _ -> bound
         | Let (_, _ , op) -> halp bound op
         | PropertyGet(_, op) -> halp bound op
@@ -175,21 +189,21 @@ let rename all (t, s, x) =
                           match halp op with 
                           | Renamed ro -> Renamed(PropertyGet(p,ro))
                           | _ -> Fine
-        | Call _ -> Fine
-        | Value _ -> Fine
-        | ParamArray(ops) -> 
+        | Value(ParamArray(ops)) -> 
             ops 
             |> List.map (fun op -> op, halp op)
             |> List.fold (fun state (op,rop) -> 
                           match state,rop with
-                          | Renamed(ParamArray(ops)),_ -> Renamed(ParamArray((op::ops)))
+                          | Renamed(Value(ParamArray(ops))),_ -> Renamed(Value(ParamArray((op::ops))))
                           | Renamed (_) as r,_ -> r
-                          | Fine,Renamed rop -> Renamed(ParamArray([rop]))
+                          | Fine,Renamed rop -> Renamed(Value(ParamArray([rop])))
                           | Fine,Fine -> Fine) Fine 
             |> function 
-            | Renamed(ParamArray(ops)) -> Renamed(ParamArray(List.rev ops))
+            | Renamed(Value(ParamArray(ops))) -> Renamed(Value(ParamArray(List.rev ops)))
             | Renamed (_) as r -> r   
             | _ -> Fine
+        | Call _ -> Fine
+        | Value _ -> Fine
         | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
             match halp ifExpr with
             | Renamed ri -> Renamed(IfThenElse(ri, thenExpr, elseExpr))
@@ -202,10 +216,10 @@ let rename all (t, s, x) =
         | Renamed x,s -> Renamed (App (Lam (s, x), t))
         | _ -> Fine
 let tryFindLabel name operation = 
-    let (|FirstIsName|_|) = function | ParamArray([Value(Str name');v]) when name' = name -> Some v | _ -> None
+    let (|FirstIsName|_|) = function | Value(ParamArray([Value(Str name');v])) when name' = name -> Some v | _ -> None
     match operation with 
     | FirstIsName v -> Some v
-    | ParamArray(ops) -> List.tryPick (function FirstIsName v -> Some v | _ -> None) ops
+    | Value(ParamArray(ops)) -> List.tryPick (function FirstIsName v -> Some v | _ -> None) ops
     | _ -> None        
 let normalizeOp op = 
     let all = freeIds op
@@ -235,7 +249,7 @@ let normalizeOp op =
                         match tryFindLabel p b with 
                         | Some op -> Next(op) 
                         | None -> Normal
-        | ParamArray(ops) -> 
+        | Value(ParamArray(ops)) -> 
             let (rops,expr) = 
                 ops 
                 |> List.map (fun op -> match reduce op with 
@@ -243,7 +257,7 @@ let normalizeOp op =
                                                   | Next rop -> rop,Next rop)
                 |> List.unzip                            
             if List.exists(function Next _ -> true | Normal -> false) expr then
-                Next (ParamArray(rops))
+                Next (Value(ParamArray(rops)))
             else Normal
         | Value _ -> Normal
         | Let(s, v, op) -> 
@@ -270,12 +284,13 @@ let rec evalOp evalCall env (operation:Operation) =
     //printfn "%A" operation
     match operation with
       
-    | ParamArray(ops) -> 
+    | Value(ParamArray(ops)) -> 
         ops
         |> List.fold(fun acc op -> let newOp = evalOp evalCall env op
                                    (newOp::acc)) [] 
         |> List.rev 
         |> ParamArray 
+        |> Value
     | Value _ as v -> v
     | Call _ as c -> c
     | Var (var)  -> 
@@ -298,7 +313,9 @@ let rec evalOp evalCall env (operation:Operation) =
         | (Value(Check(Check.Fail(_))),Some elsePart) -> evalOp evalCall env elsePart
         | (Value(Check(Check.Fail(_))),None) 
         | Value NoValue,None -> noValue;
-        | Value _,_ -> evalOp evalCall env thenPart // truthy
+        | Value v,_ -> 
+            v |> ignore
+            evalOp evalCall env thenPart // truthy
         | _ -> //printfn "Invalid type, cannot check if/else with %A" gp; 
             noValue  
     | App(Lam(x, op),value) ->

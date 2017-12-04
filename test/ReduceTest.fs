@@ -2,7 +2,6 @@ module ReduceTests
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
-open Check
 open Expecto
 
 let (==?) actual expected = Expect.equal expected actual ""
@@ -15,16 +14,36 @@ let tests =
     let d6Dist =  [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
     let plusTest plus = 
         let ws = dPlus D6 plus >>= "WS"
-        let expectedWS = List.init 6 ((+) 1 >> fun i -> if i >= plus then Check(Pass(Int(i))) else Check(Fail(Int(i)))) |> Distribution.uniformDistribution 
+        let expectedWS = List.init 6 ((+) 1 >> fun i -> if i >= plus then Check(Check.Pass(Int(i))) else Check(Check.Fail(Int(i)))) |> Distribution.uniformDistribution 
         testList (sprintf "%d+ Tests" plus) [
             test "WS Test Std" {
+                // let a = [Value(Check(Check.Fail(Int 1)));Value(Check(Check.Pass(Int 1)))] |> opList |> call Or >>= "Or" |> es "Or"
+                // let (Value(Dist(result'))) = d6Dist
+
+                // let rand = new System.Random()
+
+                // let swap (a: _[]) x y =
+                //     let tmp = a.[x]
+                //     a.[x] <- a.[y]
+                //     a.[y] <- tmp
+
+                // // shuffle an array (in-place)
+                // let shuffle a =
+                //     let a = List.toArray a
+                //     Array.iteri (fun i _ -> swap a i (rand.Next(i, Array.length a))) a
+                //     a |> List.ofArray
+
+
+                // let dp = result' |> Distribution.map(fun a -> (if a > Int 4 then Check.Pass a else Check.Fail a) |> Check) |> Dist |> Value
+                // let df = result' |> Distribution.map(fun a -> (if a = Int 4 then Check.Pass (Int 4) else Check.Fail( a) )|> Check) |> shuffle |> Dist |> Value
+                // let b = [dp;df] |> opList |> call Or >>= "Or" |> es "Or"
                 let (Value(Dist(result))) = ws |> es "WS"
                 Expect.containsAll result expectedWS ""
             }
             test "WS Test avg" {
                 let result = ws |> ea "WS"
                 let wrap f = Value(Check(f(Float(3.5))))
-                let expected = if 3.5 >= float plus then wrap Pass else wrap Fail
+                let expected = if 3.5 >= float plus then wrap Check.Pass else wrap Check.Fail
                 result ==? expected
             }
             test "WS Test Sample" {
@@ -38,14 +57,14 @@ let tests =
         testList "Some Tests" [
             test "Psychic Dice std" {
                 let result = psychicDice |> es "PsychicDice"
-                result ==? ParamArray[d6Dist;d6Dist]                    
+                result ==? opList[d6Dist;d6Dist]                    
             }
             test "Psychic Dice avg" {
                 let result = psychicDice |> ea "PsychicDice"
-                result ==? ParamArray[Value(Float(3.5));Value(Float(3.5))]                    
+                result ==? opList[Value(Float(3.5));Value(Float(3.5))]                    
             }
             test "Psychic Dice sample" {
-                let (ParamArray[Value(a);Value(b)]) = psychicDice |> e "PsychicDice"
+                let (Value(ParamArray[Value(a);Value(b)])) = psychicDice |> e "PsychicDice"
                 let expected = [1..6] |> List.map (Int) 
                 Expect.contains expected a ""
                 Expect.contains expected b ""

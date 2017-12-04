@@ -1,6 +1,5 @@
 module MathHammer.UnitList.Types
 open GameActions.Primitives.Types
-open Check
 type Model = {
     OffsetY:int<mm>
     Models:Map<string,MathHammer.Models.Types.Model>

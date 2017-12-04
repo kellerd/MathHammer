@@ -9,7 +9,7 @@ let initRow () : Row * Cmd<Types.Msg> =
     ReadWrite("", noValue), Cmd.none
 
 let init () : Model * Cmd<Types.Msg> =
-    let readOnlyRow = ReadOnly ("HighFive", App(Call Total, ParamArray([App(Call(Dice(D6)), noValue); Value(Int(3))])))
+    let readOnlyRow = ReadOnly ("HighFive", App(Call Total, opList [App(Call(Dice(D6)), noValue); Value(Int(3))]))
     ([readOnlyRow],false), Cmd.none
 
 

@@ -19,7 +19,7 @@ let tests =
     let ``Repeating an operation gives correct length`` (FsCheck.NonNegativeInt x) op = 
         let a = vInt x
         let repeat = repeatOp op a
-        let (ParamArray(result))= repeat |> evalOp standardCall Map.empty<_,_>
+        let (Value(ParamArray(result)))= repeat |> evalOp standardCall Map.empty<_,_>
         Expect.equal (List.length result) (max x 0) "Length of repeat should be same as length input, or 0 if < 1"
         match result with 
         | [] -> ()
@@ -33,9 +33,6 @@ let tests =
         (ea  "ThreePasses" ``Three Passes``) ==? (ea "ThreePasses" ``Three Passes Repeat``)
         (e   "ThreePasses" ``Three Passes``) ==? (e  "ThreePasses" ``Three Passes Repeat``)
 
-    let x = Dist [(Check (Check.Tuple (Int 0,Int 1)), 1.0)] 
-    let y = Dist   [(Check (Check.Tuple (Int 0,Int 1)), 1.0)]
-    x * y
     let ``Repeat Sum is the same as product`` x y =
         let result = repeatOp x y |> call Total >>= "TotalSum" 
         let product = [x;y] |> opList |> call Product >>= "TotalProduct" 

@@ -82,7 +82,7 @@ let ``Ski Combinators`` =
         ]
     ]
 let ``Getting a property test`` =
-    let c = ParamArray[ParamArray[Value (Str "M"); Value(Int 8)]; ParamArray[Value (Str "T"); Value(Float 6.)]]
+    let c = opList [opList [Value (Str "M"); Value(Int 8)]; opList [Value (Str "T"); Value(Float 6.)]]
     testList "Getting a property test" [
         test "Get First Property" {
             PropertyGet("M", c) |> normalizeOp ==? Value(Int 8)    
@@ -99,7 +99,7 @@ let ``Counting call test`` =
     let appliedTwo = vInt 7 |%> (vInt 7 |%> two)
     testList "Normalize function application" [
         test "Count by Param Array" {
-            let count ops = App(Call Count,ParamArray(ops))
+            let count ops = App(Call Count,opList (ops))
 
             let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo] |> normalizeOp
             let normalizedSecond = count [appliedTwo;appliedTwo;appliedTwo] |> normalizeOp
@@ -107,7 +107,7 @@ let ``Counting call test`` =
             normalizedFirst ==? normalizedSecond
         }
         test "Count by repeat" {
-            let count ops = App(Call Count,App(Call Repeat, ParamArray(ops)))
+            let count ops = App(Call Count,App(Call Repeat, opList(ops)))
             let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo]|> normalizeOp
             let normalizedSecond = count  [appliedTwo;appliedTwo;appliedTwo]  |> normalizeOp
 

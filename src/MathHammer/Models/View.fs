@@ -1,15 +1,12 @@
 module MathHammer.Models.View
 
-open Fable.Core
 open Fable.Core.JsInterop
 open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Props
 open Types
-open Fable.Import
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open MathHammer.Models.State
-open Check
+open State
 open Probability.View
 
 let onClick x : IProp = OnClick(x) :> _
@@ -24,19 +21,19 @@ let showAttributes ((key:string), operation) dispatch =
             div [] (GameActions.Primitives.View.root operation dispatch) ]
 let rangeStops (dist:Distribution.Distribution<_>)  = 
     let length = List.length dist
-    let minRange, maxRange,minProbability,maxProbability =
+    let minRange, maxRange,_,_ =
         dist 
         |> List.rev
         |> Distribution.choose (function IntCheck (i) -> Check.map ((*) 1<inch>) i |> Some | _ -> None)
         |> List.fold (fun (currMinRange,currMaxRange,currMin,currMax) (range,prob) -> 
             min currMinRange range, max currMaxRange range,
-            min currMin prob, max currMax prob ) (Pass (28<ft> * 12<inch/ft>),Pass 0<inch>,1.,0.)
+            min currMin prob, max currMax prob ) (Check.Pass (28<ft> * 12<inch/ft>),Check.Pass 0<inch>,1.,0.)
         |> function 
-           | (Pass minRange, Pass maxRange,minProbability,maxProbability) ->
+           | (Check.Pass minRange, Check.Pass maxRange,minProbability,maxProbability) ->
                 inch.ToMM(int minRange * 1<inch>), inch.ToMM(int maxRange * 1<inch>),minProbability,maxProbability
-           | (Fail _, Pass maxRange,minProbability,maxProbability) ->  
+           | (Check.Fail _, Check.Pass maxRange,minProbability,maxProbability) ->  
                 0<mm>, inch.ToMM(int maxRange * 1<inch>),minProbability,maxProbability  
-           | (_, _,minProbability,maxProbability) ->  
+           | (_, _,_,_) ->  
                 0<mm>, 0<mm>,0.,0.       
     let stopPercent i length = float (i + 1) / float length |> sprintf "%.2f"
     let percentGreen (range:int<mm>) =
@@ -50,9 +47,9 @@ let rangeStops (dist:Distribution.Distribution<_>)  =
             |> List.toArray
             |> Array.mapi (fun i (range,prob) -> 
                 match range,prob with 
-                | Check(Fail _),_ | _,0.0 -> (stopPercent i length, colour 255.), 0.0
-                | Check(Pass (Int(range))),_ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
-                | Check(Pass (Float (range))),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
+                | Check(Check.Fail _),_ | _,0.0 -> (stopPercent i length, colour 255.), 0.0
+                | Check(Check.Pass (Int(range))),_ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
+                | Check(Check.Pass (Float (range))),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
                 | Int (range),_ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
                 | Float (range),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
                 | _ -> failwith "invalid range calculation"
@@ -76,7 +73,7 @@ let groupFor model display =
             [ g   [ Transform model.Scale ] display ]
 let rangeRoot name model =
     let dist = model.ProbabilityRules |> getp name |> evalOp standardCall Map.empty<_,_>
-    let ranges id (min:int<mm>,max:int<mm>,stops) = 
+    let ranges id (_:int<mm>,max:int<mm>,stops) = 
         g [] 
           [   defs  [] 
                     [ radialGradient [ Id id ]
@@ -96,7 +93,7 @@ let rangeRoot name model =
 let root model dispatch =
       let modelDisplay = 
             [ circle   [ R !^ (model.Size / 2 |> float) :> IProp
-                         OnClick (fun mouseEvt -> Select |> dispatch) :> IProp] []
+                         OnClick (fun _ -> Select |> dispatch) :> IProp] []
               text     [ TextAnchor "middle"
                          Y !^ 50.
                          StrokeWidth (!^ ".5")

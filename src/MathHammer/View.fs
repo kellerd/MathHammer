@@ -1,14 +1,10 @@
 module MathHammer.View
 
-open Fable.Core
-open Fable.Core.JsInterop
 open Fable.Helpers.React
-open Fable.Helpers.React.Props
-open Elmish.React
-open MathHammer.Models.Types
+open Props
 open Types
 open GameActions.Primitives.Types
-open MathHammer.Models.View  
+open Models.View  
 open GameActions.Primitives.State
 let root model dispatch =
     let (boardX,boardY) = model.Board |> fun (x,y) -> ft.ToMM(x),ft.ToMM(y)
@@ -64,7 +60,7 @@ let root model dispatch =
                 attrs  
                 |> List.map (fun (key,op) -> showAttributes (key,op) dispatch)
                 |> div [ClassName "columns"]  
-            let getListOfOps = function | ParamArray ops -> ops | op -> [op]
+            let getListOfOps = function | Value(ParamArray ops) -> ops | op -> [op]
             let actionsDiv = selected.NormalizedRules |> showActions dispatch |> div []
             let averagesDiv = selected.AverageRules |> getListOfOps |> List.collect (showActions dispatch) |> columnsOf
             let probabiltiesActionsDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showActions dispatch) |> columnsOf

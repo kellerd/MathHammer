@@ -4,7 +4,6 @@ open Elmish
 open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open Check
 open Determinism 
 
 let init name =
@@ -46,27 +45,27 @@ let rec evalCall dieFunc func v env  =
             let newOps = 
                 match times with
                 | NoValue
-                | Check(List []) 
-                | Check(Fail (_)) -> []
+                // | Check(Check.List []) 
+                | Check(Check.Fail (_)) -> []
                 | Int (n) 
-                | Check(Tuple(Int(n),_))
-                | Check(Pass (Int(n))) -> List.init (max 0 n) (fun n -> App(lam,vInt n)) 
+                // | tuple(Int(n),_))
+                | Check(Check.Pass (Int(n))) -> List.init (max 0 n) (fun n -> App(lam,vInt n)) 
                 | Dist(times) -> 
                     match times |> Distribution.map(repeatOps lam) |> fromDistribution with
                     | NoResult -> printfn "No Result %A" times; [noValue]     
                     | Deterministic d -> [d]
                     | NonDeterministic _ -> printfn "Non deterministic result %A" times;[noValue]
-                | Check(List xs) -> 
-                    let n = 
-                        List.fold (fun c elem -> 
-                                    match elem with 
-                                    | Pass _ -> c + 1 
-                                    | Fail _ -> c 
-                                    | Tuple(Int(x),_) -> c + x 
-                                    | _ -> c) 0 xs
-                    List.init n  (fun n -> App(lam,vInt n)) 
+                // | Check(Check.List xs) -> 
+                //     let n = 
+                //         List.fold (fun c elem -> 
+                //                     match elem with 
+                //                     | Check.Pass _ -> c + 1 
+                //                     | Check.Fail _ -> c 
+                //                     | Check.Tuple(Int(x),_) -> c + x 
+                //                     | _ -> c) 0 xs
+                //     List.init n  (fun n -> App(lam,vInt n)) 
                 | _ -> []
-            evalOp (evalCall dieFunc) env (ParamArray(newOps))
+            evalOp (evalCall dieFunc) env (opList newOps)
 
         let times = evalOp (evalCall dieFunc) env op2  
         match times with 
@@ -96,50 +95,51 @@ let rec evalCall dieFunc func v env  =
                 } |> Dist |> Value
             | Value(a), Value(b) ->
                 folder a b |> Value
-            | x -> NoValue |> Value
+            | _ -> NoValue |> Value
             ) state
     match func,v with 
     | Dice d, Value(NoValue) -> dieFunc d  
-    | Total, ParamArray [] -> 
+    | Total, Value(ParamArray []) -> 
         GamePrimitive.Zero |> Value
-    | Total, ParamArray (head::tail) -> 
+    | Total, Value(ParamArray (head::tail)) -> 
         fold (+) tail head
-    | Product, ParamArray [] -> 
+    | Product, Value(ParamArray []) -> 
         GamePrimitive.Zero |> Value
-    | Product, ParamArray (head::tail) -> 
+    | Product, Value(ParamArray (head::tail)) -> 
         fold (*) tail head
-    | Count, ParamArray [] -> 
+    | Count, Value(ParamArray []) -> 
         let zero = GamePrimitive.Zero 
-        Tuple(zero,zero)
-        |> Check 
-        |> Value
-    | Count, ParamArray ops ->
+        (zero,zero) |> tuple |> Value
+    | Count, Value(ParamArray ops) ->
         let toCount result = 
             match result with 
-            | Check(Pass _)       -> Check(Tuple(Int(1),Int(0)))
-            | Check(Tuple _)      -> Check(Tuple(Int(1),Int(0)))  
-            | Check(List _)       -> Check(Tuple(Int(1),Int(0)))
-            | Int(_)              -> Check(Tuple(Int(1),Int(0)))
-            | Str(_)              -> Check(Tuple(Int(1),Int(0)))
-            | Float(_)            -> Check(Tuple(Int(1),Int(0)))
-            | Dist(_)             -> Check(Tuple(Int(1),Int(0)))  
-            | NoValue             -> Check(Tuple(Int(0),Int(1))) 
-            | Check(Fail _)       -> Check(Tuple(Int(0),Int(1)))
+            | ParamArray _          -> tuple(Int(1),Int(0))
+            | Check(Check.Pass _)       -> tuple(Int(1),Int(0))
+            | Tuple (_)      ->             tuple(Int(1),Int(0)) 
+            // | Check(Check.List _)       -> tuple(Int(1),Int(0))
+            | Int(_)              -> tuple(Int(1),Int(0))
+            | Str(_)              -> tuple(Int(1),Int(0))
+            | Float(_)            -> tuple(Int(1),Int(0))
+            | Dist(_)             -> tuple(Int(1),Int(0)) 
+            | NoValue             -> tuple(Int(0),Int(1))
+            | Check(Check.Fail _)       -> tuple(Int(0),Int(1))
         let zero = GamePrimitive.Zero 
-        Tuple(zero,zero)
-        |> Check 
+        (zero,zero) 
+        |> tuple
         |> Distribution.always 
         |> Dist 
         |> Value
         |> fold (fun r1 r2 -> r1 + toCount r2) ops
-    | GreaterThan, ParamArray([Value(gp);Value(gp2)]) -> greaterThan gp gp2 |> Value
-    | Equals, ParamArray([Value(gp);Value(gp2)]) -> equals gp gp2  |> Value
-    | LessThan, ParamArray([Value(gp);Value(gp2)]) -> notEquals gp gp2  |> Value
-    | NotEquals, ParamArray([Value(gp);Value(gp2)]) -> lessThan gp gp2  |> Value
-    | Repeat, ParamArray([lam;op2]) -> repeat lam op2 
+    | GreaterThan, Value(ParamArray([Value(gp);Value(gp2)])) -> greaterThan gp gp2 |> Value
+    | Equals, Value(ParamArray([Value(gp);Value(gp2)])) -> equals gp gp2  |> Value
+    | LessThan, Value(ParamArray([Value(gp);Value(gp2)])) -> notEquals gp gp2  |> Value
+    | NotEquals, Value(ParamArray([Value(gp);Value(gp2)])) -> lessThan gp gp2  |> Value
+    | And, Value(ParamArray([Value(gp);Value(gp2)])) -> andGp gp gp2 |> Value
+    | Or,       Value(ParamArray([Value(gp);Value(gp2)])) -> orGp gp gp2  |> Value
+    | Repeat, Value(ParamArray([lam;op2])) -> repeat lam op2 
     | Total, Value _
     | Product,  Value _ 
-    | Count,  Value _ -> evalCall dieFunc func (ParamArray([v])) env  //Eval with only one operation
+    | Count,  Value _ -> evalCall dieFunc func (opList [v]) env  //Eval with only one operation
     | _ -> failwith "Cannot eval any other call with those params" 
 
 let standardCall = (evalCall (evalDie >> Distribution.map (Int)  >> Dist >> Value))

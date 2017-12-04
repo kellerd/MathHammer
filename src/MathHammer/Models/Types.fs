@@ -1,6 +1,5 @@
 module MathHammer.Models.Types
 open GameActions.Primitives.Types
-open Check
 type Environment = Map<string,Operation>
 type Order = int
 type Model = { PosX:float
@@ -18,7 +17,7 @@ type DisplayType =
     | DFloat of float
     | DInt of int
     | DStr of string
-    | DCheck of Check<DisplayType> 
+    | DCheck of Check.Check<DisplayType> 
     | DNoValue
     | DDist of Distribution.Distribution<DisplayType>
     with static member (+) (a,b) =

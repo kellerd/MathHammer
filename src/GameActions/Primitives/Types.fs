@@ -1,7 +1,4 @@
 module GameActions.Primitives.Types
-open Check    
-open Elmish.React.Common
-open System.Globalization
 type Die =
     | D3
     | D6
@@ -10,13 +7,14 @@ type GamePrimitive =
     | Int of int
     | Str of string
     | Float of float
-    | Check of Check<GamePrimitive>
+    | Check of Check.Check<GamePrimitive>
     | NoValue 
+    | ParamArray of Operation list
+    | Tuple of GamePrimitive * GamePrimitive
     | Dist of Distribution.Distribution<GamePrimitive>
 and Operation = 
     | Call of Call
     | PropertyGet of string * Operation
-    | ParamArray of Operation list
     | Value of GamePrimitive
     | Var of string
     | App of f:Operation * value:Operation
@@ -46,13 +44,15 @@ let rec (|IsDistribution|_|) = function
     | _ -> None
 let (|IntCheck|_|) = function 
     | Int(i) 
-    | Check(Pass(Int(i))) -> Pass i |> Some 
-    | Check(Fail(Int(i))) -> Fail i |> Some
+    | Check(Check.Pass(Int(i))) -> Check.Pass i |> Some 
+    | Check(Check.Fail(Int(i))) -> Check.Fail i |> Some
     | Str(_) -> None
     | Check(_) -> None
-    | NoValue -> Fail 0 |> Some
+    | NoValue -> Check.Fail 0 |> Some
     | Dist(_) -> None
     | Float _ -> None
+    | ParamArray(_) -> None
+    | Tuple(_) ->None
 
 type GamePrimitive with 
     static member Zero = NoValue
@@ -69,111 +69,186 @@ type GamePrimitive with
         | Check (r1),Check(r2) -> Check.add r1 r2 |> Check
         | Float(x), Int(y) 
         | Int(y), Float(x)  -> Float(x + float y)
+        | Tuple(a,b), Tuple(x,y) -> Tuple(a+x,b+y)
         | x,y -> failwith <| sprintf "Cannot add these two primitives %A, %A" x y
     static member (*) (x,y) = 
         match (x,y) with 
-        | NoValue,z | z,NoValue -> NoValue
+        | NoValue,_ | _,NoValue -> NoValue
         | Int(a),Int(b) -> Int(a*b)
         | Float(a),Float(b) -> Float(a*b)
+        | Tuple(a,b), Tuple(x,y) -> Tuple(a*x,b*y)
         | Check r1, Check r2 -> Check.mult r1 r2 |> Check
-        | Dist _, Check(List [])
-        | Dist _, Check(Fail (_))
-        | Check(List []), Dist _ 
-        | Check(Fail (_)), Dist _ -> NoValue
-        | Check(Tuple(Int(n),_)), Dist d2
-        | Dist d2, Check(Tuple(Int(n),_))
-        | Check(Pass (Int(n))), Dist d2 
-        | Dist d2, Check(Pass (Int(n)))
+        // | Dist _, Check(Check.List [])
+        | Dist _, Check(Check.Fail (_))
+        // | Check(Check.List []), Dist _ 
+        | Check(Check.Fail (_)), Dist _ -> NoValue
+        | Tuple(Int(n),_), Dist d2
+        | Dist d2, Tuple(Int(n),_)
+        | Check(Check.Pass (Int(n))), Dist d2 
+        | Dist d2, Check(Check.Pass (Int(n)))
         | Dist d2, Int (n) 
         | Int (n), Dist d2 -> 
                 match List.replicate n d2 with 
                 | [] -> [] 
                 | head::tail -> tail |> List.fold (fun d d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (a,b) -> a + b)) head
                 |> Dist
-        | Dist d2, Check(List xs)
-        | Check(List xs), Dist d2-> 
-            let n = 
-                List.fold (fun c elem -> 
-                            match elem with 
-                            | Pass _ -> c + 1 
-                            | Fail _ -> c 
-                            | Tuple(Int(x),_) -> c + x 
-                            | _ -> c) 0 xs    
-            match List.replicate n d2 with 
-            | [] -> [] 
-            | head::tail -> tail |> List.fold (fun d d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (a,b) -> a + b)) head
-            |> Dist                       
+        // | Dist d2, Check(Check.List xs)
+        // | Check(Check.List xs), Dist d2-> 
+        //     let n = 
+        //         List.fold (fun c elem -> 
+        //                     match elem with 
+        //                     | Check.Pass _ -> c + 1 
+        //                     | Check.Fail _ -> c 
+        //                     | Check.Tuple(Int(x),_) -> c + x 
+        //                     | _ -> c) 0 xs    
+        //     match List.replicate n d2 with 
+        //     | [] -> [] 
+        //     | head::tail -> tail |> List.fold (fun d d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (a,b) -> a + b)) head
+        //     |> Dist                       
         | x,y -> failwith <| sprintf "Cannot multiply these two primitives %A, %A" x y
 
-let rec greaterThan gp gp2 = 
-    match gp,gp2 with 
-    | Int(i),  Int(i2)  -> (if i > i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Check
-    | Float(i),  Float(i2)  -> (if i > i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Check
-    | Int a, Float b -> (if float a > b then Int(a) |> Pass else Int(a) |> Fail) |> Check
-    | Float a, Int b -> (if a > float b then Float(a) |> Pass else Float(a) |> Fail) |> Check
-    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> greaterThan a b,p1) d d2 |> Dist
-    | Check(r), Check(r2) -> Check.bind (fun a -> Check.map(fun b -> greaterThan a b ) r2) r |> Check
-    | Str(s),Str(s2) -> (if s > s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Check
-    | gp, Dist(d) -> List.map(fun (b,p1) -> greaterThan gp b,p1) d |> Dist
-    | Dist(d),gp -> List.map(fun (a,p1) -> greaterThan a gp,p1) d |> Dist
-    | gp,Check(r) -> Check.map(fun b -> greaterThan gp b) r |> Check
-    | Check(r), gp -> Check.map(fun a -> greaterThan a gp) r |> Check
-    | NoValue,NoValue -> Fail NoValue |> Check
-    | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> 
-        //printfn "Couldn't compare %A > %A" gp gp2;
-        NoValue
-let rec lessThan op op2 = 
-    match op,op2 with 
-    | Int(i),  Int(i2)  -> (if i < i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Check
-    | Float(i),  Float(i2)  -> (if i < i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Check
-    | Int a, Float b -> (if float a < b then Int(a) |> Pass else Int(a) |> Fail) |> Check
-    | Float a, Int b -> (if a < float b then Float(a) |> Pass else Float(a) |> Fail) |> Check
-    | Dist(d), Dist(d2) -> List.map2(fun (a,p1) (b,p2) -> lessThan a b,p1) d d2 |> Dist
-    | Check(r), Check(r2) -> Check.bind (fun a -> Check.map(fun b -> lessThan a b ) r2) r |> Check
-    | Str(s),Str(s2) -> (if s < s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Check    
-    | gp, Dist(d) -> List.map(fun (b,p1) -> lessThan gp b,p1) d |> Dist
-    | Dist(d),gp -> List.map(fun (a,p1) -> lessThan a gp,p1) d |> Dist
-    | gp,Check(r) -> Check.map(fun b -> lessThan gp b) r |> Check
-    | Check(r), gp -> Check.map(fun a -> lessThan a gp) r |> Check
-    | NoValue,NoValue -> Fail NoValue |> Check
-    | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> 
-        //printfn "Couldn't compare %A < %A" op op2; 
-        NoValue
-let rec equals op op2 = 
-    match op,op2 with
-    | Int(i),  Int(i2)  -> (if i = i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Check
-    | Float(i),  Float(i2)  -> (if i = i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Check
-    | Int a, Float b | Float b, Int a -> (if float a = b then Int(a) |> Pass else Int(a) |> Fail) |> Check
-    | Dist(d), Dist(d2) -> (if d = d2 then Dist(d) |> Pass else Dist(d) |> Fail) |> Check
-    | Check(r), Check(r2) -> Check.bind (fun a -> Check.map(fun b -> equals a b ) r2) r |> Check
-    | Str(s),Str(s2) -> (if s = s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Check
-    | gp, Dist(d) -> List.map(fun (b,p1) -> equals gp b,p1) d |> Dist
-    | Dist(d),gp -> List.map(fun (a,p1) -> equals a gp,p1) d |> Dist
-    | gp,Check(r) -> Check.map(fun b -> equals gp b) r |> Check
-    | Check(r), gp -> Check.map(fun a -> equals a gp) r |> Check
-    | NoValue,NoValue -> Pass NoValue |> Check
-    | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> //printfn "Couldn't compare %A = %A" op op2;
-        NoValue
-let rec notEquals op op2 = 
-    match op,op2 with 
-    | Int(i),  Int(i2)  -> (if i <> i2 then  Int(i) |> Pass  else Int(i) |> Fail) |> Check
-    | Float(i),  Float(i2)  -> (if i <> i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Check
-    | Int a, Float b | Float b, Int a -> (if float a <> b then Int(a) |> Pass else Int(a) |> Fail) |> Check
-    | Dist(d), Dist(d2) -> (if d <> d2 then Dist(d) |> Pass else Dist(d) |> Fail) |> Check
-    | Check(r), Check(r2) -> Check.bind (fun a -> Check.map(fun b -> notEquals a b ) r2) r |> Check
-    | Str(s),Str(s2) -> (if s <>s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Check
-    | gp, Dist(d) -> List.map(fun (b,p1) -> notEquals gp b,p1) d |> Dist
-    | Dist(d),gp -> List.map(fun (a,p1) -> notEquals a gp,p1) d |> Dist
-    | gp,Check(r) -> Check.map(fun b -> notEquals gp b) r |> Check
-    | Check(r), gp -> Check.map(fun a -> notEquals a gp) r |> Check
-    | gp,gp2 when gp = gp2 -> Fail gp |> Check
-    | _, NoValue _ | NoValue _, _ 
-    | Str _, _ | _, Str _ -> // printfn "Couldn't compare %A <> %A" op op2; 
-        NoValue
-        
+module GamePrimitive =
+    let map2 f x y =
+        match x,y with  
+        | Dist(r), Dist(r2) -> Distribution.bind (fun a -> Distribution.map(fun b -> f a b ) r2) r |> Dist
+        | Check(r), Check(r2) -> Check.bind (fun a -> Check.map(fun b -> f a b ) r2) r |> Check
+        | gp,Dist(r) -> Distribution.map(f gp) r |> Dist
+        | Dist(r), gp -> Distribution.map(fun a -> f a gp) r |> Dist
+        | gp,Check(r) -> Check.map(fun b -> f gp b) r |> Check
+        | Check(r), gp -> Check.map(fun a -> f a gp) r |> Check
+        | x,y -> f x y
+
+let greaterThan = 
+    GamePrimitive.map2 (fun gp gp2 -> 
+        match gp,gp2 with 
+        | Int(i),  Int(i2)  -> (if i > i2 then  Int(i) |> Check.Pass  else Int(i) |> Check.Fail) |> Check
+        | Float(i),  Float(i2)  -> (if i > i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
+        | Int a, Float b -> (if float a > b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
+        | Float a, Int b -> (if a > float b then Float(a) |> Check.Pass else Float(a) |> Check.Fail) |> Check
+        | Str(s),Str(s2) -> (if s > s2 then  Str(s) |> Check.Pass  else Str(s) |> Check.Fail) |> Check
+        | NoValue,NoValue -> Check.Fail NoValue |> Check
+        | (Tuple _ as t), (Tuple _ as t2) -> (if t > t2 then  t |> Check.Pass  else t |> Check.Fail) |> Check
+        | Tuple _, _ | _, Tuple _ 
+        | _, NoValue _ | NoValue _, _ 
+        | Str _, _ | _, Str _ 
+        | Check _, _ | _, Check _
+        | Dist _, _ | _, Dist _
+        | ParamArray _, _ | _, ParamArray _ -> NoValue //printfn "Couldn't compare %A > %A" gp gp2;
+    )
+let lessThan = 
+    GamePrimitive.map2 (fun gp gp2 -> 
+        match gp,gp2 with 
+        | Int(i),  Int(i2)  -> (if i < i2 then  Int(i) |> Check.Pass  else Int(i) |> Check.Fail) |> Check
+        | Float(i),  Float(i2)  -> (if i < i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
+        | Int a, Float b -> (if float a < b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
+        | Float a, Int b -> (if a < float b then Float(a) |> Check.Pass else Float(a) |> Check.Fail) |> Check
+        | Str(s),Str(s2) -> (if s < s2 then  Str(s) |> Check.Pass  else Str(s) |> Check.Fail) |> Check    
+        | NoValue,NoValue -> Check.Fail NoValue |> Check
+        | (Tuple _ as t), (Tuple _ as t2) -> (if t < t2 then  t |> Check.Pass  else t |> Check.Fail) |> Check
+        | Tuple _, _ | _, Tuple _ 
+        | _, NoValue _ | NoValue _, _ 
+        | Str _, _ | _, Str _ 
+        | Check _, _ | _, Check _
+        | Dist _, _ | _, Dist _
+        | ParamArray _, _ | _, ParamArray _ -> NoValue //printfn "Couldn't compare %A > %A" gp gp2;
+    )
+let equals = 
+    GamePrimitive.map2 (fun gp gp2 -> 
+        match gp,gp2 with 
+        | Int(i),  Int(i2)  -> (if i = i2 then  Int(i) |> Check.Pass  else Int(i) |> Check.Fail) |> Check
+        | Float(i),  Float(i2)  -> (if i = i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
+        | Int a, Float b ->  (if float a = b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
+        | Float a, Int b -> (if float b = a then Float(a) |> Check.Pass else Float(a) |> Check.Fail) |> Check
+        | Str(s),Str(s2) -> (if s = s2 then  Str(s) |> Check.Pass  else Str(s) |> Check.Fail) |> Check
+        | NoValue,NoValue -> Check.Pass NoValue |> Check
+        | (Tuple _ as t), (Tuple _ as t2) -> (if t = t2 then  t |> Check.Pass  else t |> Check.Fail) |> Check
+        | Tuple _, _ | _, Tuple _ 
+        | _, NoValue _ | NoValue _, _ 
+        | Str _, _ | _, Str _ 
+        | Check _, _ | _, Check _
+        | Dist _, _ | _, Dist _
+        | ParamArray _, _ | _, ParamArray _ -> NoValue //printfn "Couldn't compare %A > %A" gp gp2;
+        )
+let rec notEquals = 
+    GamePrimitive.map2 (fun gp gp2 -> 
+        match gp,gp2 with 
+        | Int(i),  Int(i2)  -> (if i <> i2 then  Int(i) |> Check.Pass  else Int(i) |> Check.Fail) |> Check
+        | Float(i),  Float(i2)  -> (if i <> i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
+        | Int a, Float b | Float b, Int a -> (if float a <> b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
+        | Str(s),Str(s2) -> (if s <>s2 then  Str(s) |> Check.Pass  else Str(s) |> Check.Fail) |> Check
+        | gp,gp2 when gp = gp2 -> Check.Fail gp |> Check
+        | (Tuple _ as t), (Tuple _ as t2) -> (if t <> t2 then  t |> Check.Pass  else t |> Check.Fail) |> Check
+        | Tuple _, _ | _, Tuple _ 
+        | _, NoValue _ | NoValue _, _ 
+        | Str _, _ | _, Str _ 
+        | Check _, _ | _, Check _
+        | Dist _, _ | _, Dist _
+        | ParamArray _, _ | _, ParamArray _ -> NoValue //printfn "Couldn't compare %A > %A" gp gp2;
+    )
+// open GameActions.Primitives.Types
+// let d6 = Distribution.uniformDistribution [1..6] |> Distribution.map (fun i -> if i > 3 then Check.Pass (Int i) else Check.Fail (Int i)) 
+// let d6' = Distribution.uniformDistribution [1..6] |> Distribution.map (fun i -> if i < 2 then Check.Pass (Int i) else Check.Fail (Int i))
+
+// let dx = Distribution.pair d6 d6' |> Distribution.map (Check.either >> Check.map (fun (a,b) -> ParamArray[Value(Check a);Value(Check b)]))
+
+// let d'' = Distribution.dist {
+//     let! x = d6
+//     let! y = d6'
+//     if Check.IsPass x || x = y then
+//         return x 
+//     else if Check.IsPass y then 
+//         return y
+//     else 
+//         return x
+//   }
+let checkGp f = 
+    let (|AsCheck|) v = 
+        match v with
+        | NoValue -> Check.Fail NoValue
+        | Check c -> c
+        | v -> Check.Pass v 
+    let rec checkGp' gp gp2 = 
+        match gp,gp2 with 
+        | Dist(a), Dist(b) -> 
+            Distribution.combine [a;b]
+            |> Distribution.groupBy (function AsCheck(Check.Pass a) -> a | AsCheck(Check.Fail b) -> b) checkGp'
+            |> Dist
+        | Dist(a), b       ->    Distribution.map (fun a     -> checkGp' a b) a |> Dist
+        | a, Dist(b)       ->    Distribution.map (fun b     -> checkGp' a b) b |> Dist
+        | AsCheck a, AsCheck b -> 
+            f a b |> Check
+    checkGp'
+let rec andGp = checkGp Check.all
+let rec orGp = checkGp Check.either
+
+    // | Dist(a), Dist(b) -> Distribution.dist {
+    //         let! d1
+    //     }
+
+    // | (Check (Pass _) as a), Check _ 
+    // | Check _, (Check (Pass _) as a) -> a
+    // | (Check (Fail _)), (Check _ as b)
+    // | (Check _ as b), (Check (Fail _)) -> b
+    // | Check _, b 
+    // | b, Check _ -> Pass b |> Check
+    // | 
+    // | Int(i) as a,  Int(i2)  -> Int(i) |> Pass  else Int(i) |> Fail) |> Check
+    // | Float(i) as a,  Float(i2)  -> (if i < i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Check
+    // | Int a, Float b -> (if float a < b then Int(a) |> Pass else Int(a) |> Fail) |> Check
+    // | Float a, Int b -> (if a < float b then Float(a) |> Pass else Float(a) |> Fail) |> Check
+    // | Dist(r), Dist(r2) -> Distribution.bind (fun a -> Distribution.map(fun b -> lessThan a b ) r2) r |> Dist
+    // | Check(r), Check(r2) -> Check.bind (fun a -> Check.map(fun b -> lessThan a b ) r2) r |> Check
+    // | Str(s),Str(s2) -> (if s < s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Check    
+    // | gp,Dist(r) -> Distribution.map(fun b -> lessThan gp b) r |> Dist
+    // | Dist(r), gp -> Distribution.map(fun a -> lessThan a gp) r |> Dist
+    // | gp,Check(r) -> Check.map(fun b -> lessThan gp b) r |> Check
+    // | Check(r), gp -> Check.map(fun a -> lessThan a gp) r |> Check
+    // | NoValue,NoValue -> Fail NoValue |> Check
+    // | _, NoValue _ | NoValue _, _ 
+    // | Str _, _ | _, Str _ -> 
+    //     //printfn "Couldn't compare %A < %A" op op2; 
+    //     NoValue
+
 type NormalizedOperation = Normal | Next of Operation    
 
 type [<Measure>] ft 
