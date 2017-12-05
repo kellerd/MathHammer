@@ -4,21 +4,45 @@ open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
-open Fable.Import.Browser
 let (==?) x y = 
     //printfn "%A" x
     //printfn "%A" y
     Expect.equal x y ""
-let rec (|Scalar|List|Dist|Other|) = function 
-    | Int _ -> Scalar "Int"
-    | Str(_) -> Scalar "Str"
-    | Float(_) -> Scalar "Float"
-    | Check(Check.CheckValue(Scalar c)) -> Scalar c
-    | Check(Check.CheckValue(Dist c)) -> Scalar (Dist c)
-    | NoValue -> Scalar "NoValue"
-    | ParamArray(ops) when (List.distinctBy (function Value v -> (|Scalar|List|Dist|) v | _ ->  ops |> List.length) = 1 -> None
-    | Tuple(_) -> None
-    | Dist(_) -> None
+let rec (|Scalar|List|Dist|Other|) = 
+    let uniqueBy = 
+        let s = System.Random()
+        Other (s.NextDouble().ToString())
+
+    function 
+    | Int _                             -> Scalar "Scalar<Int>"
+    | Str(_)                            -> Scalar "Scalar<Str>"
+    | Float(_)                          -> Scalar "Scalar<Float>"
+    | Check(Check.CheckValue(Scalar c)) -> Scalar (sprintf "Scalar<%s>" c)
+    | Check(Check.CheckValue(List c))   -> Scalar (sprintf "Scalar<%s>" c)
+    | Check(Check.CheckValue(Dist c))   -> Scalar (sprintf "Scalar<%s>" c)
+    | Check(Check.CheckValue(Other c))  -> Scalar (sprintf "Scalar<%s>" c)
+    | NoValue                           -> Scalar "Scalar<NoValue>"
+    | ParamArray(ops)  -> 
+        match List.distinctBy (function Value v -> (|Scalar|List|Dist|Other|) v | _ ->  uniqueBy) ops with 
+        | [] -> List ""
+        | [Value(Scalar(x))] -> List x
+        | [Value(List(x))]   -> List x
+        | [Value(Dist(x))]   -> List x
+        | [Value(Other(x))]  -> List x
+        | _ -> uniqueBy
+    | Tuple(Scalar a, Scalar c) -> Scalar (sprintf "Scalar<%s,%s>" a c)
+    | Tuple(List a  , List c)   -> Scalar (sprintf "Scalar<%s,%s>" a c)
+    | Tuple(Dist a  , Dist c)   -> Scalar (sprintf "Scalar<%s,%s>" a c)
+    | Tuple(Other a , Other c)  -> Scalar (sprintf "Scalar<%s,%s>" a c)
+    | GameActions.Primitives.Types.Dist(vs) -> 
+        match List.distinctBy (fst >> (|Scalar|List|Dist|Other|)) vs with 
+        | [] -> List ""
+        | [(Scalar(x),_)] -> Dist x
+        | [(List(x),_)]   -> Dist x
+        | [(Dist(x),_)]   -> Dist x
+        | [(Other(x),_)]  -> Dist x
+        | _ -> uniqueBy
+        
 
 let es x op = get x |> op |> evalOp standardCall Map.empty<_,_> 
 let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
