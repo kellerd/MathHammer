@@ -4,17 +4,19 @@ open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
+open Fable.Import.Browser
 let (==?) x y = 
     //printfn "%A" x
     //printfn "%A" y
     Expect.equal x y ""
-let rec (|IsScalar|_|) = function 
-    | Int _ -> Some "Int"
-    | Str(_) -> Some "Str"
-    | Float(_) -> Some "Float"
-    | Check(Check.CheckValue(IsScalar(c))) -> c
-    | NoValue -> Some "NoValue"
-    | ParamArray(_) -> None
+let rec (|Scalar|List|Dist|Other|) = function 
+    | Int _ -> Scalar "Int"
+    | Str(_) -> Scalar "Str"
+    | Float(_) -> Scalar "Float"
+    | Check(Check.CheckValue(Scalar c)) -> Scalar c
+    | Check(Check.CheckValue(Dist c)) -> Scalar (Dist c)
+    | NoValue -> Scalar "NoValue"
+    | ParamArray(ops) when (List.distinctBy (function Value v -> (|Scalar|List|Dist|) v | _ ->  ops |> List.length) = 1 -> None
     | Tuple(_) -> None
     | Dist(_) -> None
 

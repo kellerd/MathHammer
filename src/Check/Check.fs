@@ -1,4 +1,3 @@
-open Fable.Import.JS
 [<RequireQualifiedAccess>]
 module Check
 //type Check< ^a when ^a: (static member Zero : ^a)> = Pass of  ^a | Fail of  ^a | List of Check<  ^a> list | Tuple of  ^a *  ^a 
