@@ -17,26 +17,6 @@ let tests =
         let expectedWS = List.init 6 ((+) 1 >> fun i -> if i >= plus then Check(Check.Pass(Int(i))) else Check(Check.Fail(Int(i)))) |> Distribution.uniformDistribution 
         testList (sprintf "%d+ Tests" plus) [
             test "WS Test Std" {
-                // let a = [Value(Check(Check.Fail(Int 1)));Value(Check(Check.Pass(Int 1)))] |> opList |> call Or >>= "Or" |> es "Or"
-                // let (Value(Dist(result'))) = d6Dist
-
-                // let rand = new System.Random()
-
-                // let swap (a: _[]) x y =
-                //     let tmp = a.[x]
-                //     a.[x] <- a.[y]
-                //     a.[y] <- tmp
-
-                // // shuffle an array (in-place)
-                // let shuffle a =
-                //     let a = List.toArray a
-                //     Array.iteri (fun i _ -> swap a i (rand.Next(i, Array.length a))) a
-                //     a |> List.ofArray
-
-
-                // let dp = result' |> Distribution.map(fun a -> (if a > Int 4 then Check.Pass a else Check.Fail a) |> Check) |> Dist |> Value
-                // let df = result' |> Distribution.map(fun a -> (if a = Int 4 then Check.Pass (Int 4) else Check.Fail( a) )|> Check) |> shuffle |> Dist |> Value
-                // let b = [dp;df] |> opList |> call Or >>= "Or" |> es "Or"
                 let (Value(Dist(result))) = ws |> es "WS"
                 Expect.containsAll result expectedWS ""
             }

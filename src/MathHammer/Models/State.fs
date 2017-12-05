@@ -113,16 +113,15 @@ let rec evalCall dieFunc func v env  =
     | Count, Value(ParamArray ops) ->
         let toCount result = 
             match result with 
-            | ParamArray _          -> tuple(Int(1),Int(0))
-            | Check(Check.Pass _)       -> tuple(Int(1),Int(0))
-            | Tuple (_)      ->             tuple(Int(1),Int(0)) 
-            // | Check(Check.List _)       -> tuple(Int(1),Int(0))
+            | ParamArray _        -> tuple(Int(1),Int(0))
+            | Check(Check.Pass _) -> tuple(Int(1),Int(0))
+            | Tuple (_)           -> tuple(Int(1),Int(0)) 
             | Int(_)              -> tuple(Int(1),Int(0))
             | Str(_)              -> tuple(Int(1),Int(0))
             | Float(_)            -> tuple(Int(1),Int(0))
             | Dist(_)             -> tuple(Int(1),Int(0)) 
             | NoValue             -> tuple(Int(0),Int(1))
-            | Check(Check.Fail _)       -> tuple(Int(0),Int(1))
+            | Check(Check.Fail _) -> tuple(Int(0),Int(1))
         let zero = GamePrimitive.Zero 
         (zero,zero) 
         |> tuple

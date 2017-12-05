@@ -51,7 +51,6 @@ let rec bind f x =
     // | List xs -> List.map (bind f) xs |> List
     // | Tuple (x,_) -> f x
 
-
 let either a b =  
     match a,b with 
     | Fail a, Fail _    -> Fail a
@@ -73,6 +72,9 @@ let rec (|IsFail|_|) x =
     | Fail y -> Some y 
     | _ -> None
 
+let (|CheckValue|) = function
+    | Pass p -> p
+    | Fail f -> f
 let rec printCheckF = 
         function
         | Pass x   -> sprintf "Pass %.2f" x 
