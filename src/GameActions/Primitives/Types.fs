@@ -161,6 +161,7 @@ let equals =
         | Float a, Int b -> (if float b = a then Float(a) |> Check.Pass else Float(a) |> Check.Fail) |> Check
         | Str(s),Str(s2) -> (if s = s2 then  Str(s) |> Check.Pass  else Str(s) |> Check.Fail) |> Check
         | NoValue,NoValue -> Check.Pass NoValue |> Check
+        | ParamArray ops, ParamArray ops2 ->  (if ops = ops2 then ParamArray ops |> Check.Pass  else ParamArray ops |> Check.Fail) |> Check
         | (Tuple _ as t), (Tuple _ as t2) -> (if t = t2 then  t |> Check.Pass  else t |> Check.Fail) |> Check
         | Tuple _, _ | _, Tuple _ 
         | _, NoValue _ | NoValue _, _ 
@@ -176,8 +177,9 @@ let rec notEquals =
         | Float(i),  Float(i2)  -> (if i <> i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
         | Int a, Float b | Float b, Int a -> (if float a <> b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
         | Str(s),Str(s2) -> (if s <>s2 then  Str(s) |> Check.Pass  else Str(s) |> Check.Fail) |> Check
-        | gp,gp2 when gp = gp2 -> Check.Fail gp |> Check
         | (Tuple _ as t), (Tuple _ as t2) -> (if t <> t2 then  t |> Check.Pass  else t |> Check.Fail) |> Check
+        | ParamArray ops, ParamArray ops2 ->  (if ops <> ops2 then ParamArray ops |> Check.Pass  else ParamArray ops |> Check.Fail) |> Check
+        | gp,gp2 when gp = gp2 -> Check.Fail gp |> Check
         | Tuple _, _ | _, Tuple _ 
         | _, NoValue _ | NoValue _, _ 
         | Str _, _ | _, Str _ 
