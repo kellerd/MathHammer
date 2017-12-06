@@ -4,45 +4,65 @@ open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
+open System.Reflection.Metadata.Ecma335
 let (==?) x y = 
     //printfn "%A" x
     //printfn "%A" y
     Expect.equal x y ""
-let rec (|Scalar|List|Dist|Other|) = 
-    let uniqueBy = 
-        let s = System.Random()
-        Other (s.NextDouble().ToString())
+type GamePrimitiveType = Scalar of string | List of GamePrimitiveType | Distr of GamePrimitiveType | Mixed | Unknown
+let (|Sc|Ls|Ds|Mx|Uk|) = function 
+        | Scalar s -> Sc s
+        | List _ -> Ls
+        | Distr _ -> Ds 
+        | Mixed -> Mx
+        | Unknown -> Uk
+    
 
-    function 
-    | Int _                             -> Scalar "Scalar<Int>"
-    | Str(_)                            -> Scalar "Scalar<Str>"
-    | Float(_)                          -> Scalar "Scalar<Float>"
-    | Check(Check.CheckValue(Scalar c)) -> Scalar (sprintf "Scalar<%s>" c)
-    | Check(Check.CheckValue(List c))   -> Scalar (sprintf "Scalar<%s>" c)
-    | Check(Check.CheckValue(Dist c))   -> Scalar (sprintf "Scalar<%s>" c)
-    | Check(Check.CheckValue(Other c))  -> Scalar (sprintf "Scalar<%s>" c)
-    | NoValue                           -> Scalar "Scalar<NoValue>"
-    | ParamArray(ops)  -> 
-        match List.distinctBy (function Value v -> (|Scalar|List|Dist|Other|) v | _ ->  uniqueBy) ops with 
-        | [] -> List ""
-        | [Value(Scalar(x))] -> List x
-        | [Value(List(x))]   -> List x
-        | [Value(Dist(x))]   -> List x
-        | [Value(Other(x))]  -> List x
-        | _ -> uniqueBy
-    | Tuple(Scalar a, Scalar c) -> Scalar (sprintf "Scalar<%s,%s>" a c)
-    | Tuple(List a  , List c)   -> Scalar (sprintf "Scalar<%s,%s>" a c)
-    | Tuple(Dist a  , Dist c)   -> Scalar (sprintf "Scalar<%s,%s>" a c)
-    | Tuple(Other a , Other c)  -> Scalar (sprintf "Scalar<%s,%s>" a c)
-    | GameActions.Primitives.Types.Dist(vs) -> 
-        match List.distinctBy (fst >> (|Scalar|List|Dist|Other|)) vs with 
-        | [] -> List ""
-        | [(Scalar(x),_)] -> Dist x
-        | [(List(x),_)]   -> Dist x
-        | [(Dist(x),_)]   -> Dist x
-        | [(Other(x),_)]  -> Dist x
-        | _ -> uniqueBy
-        
+let rec toString = function 
+    | Scalar s -> sprintf "Scalar<%s>" s 
+    | List gpt -> sprintf "List<%s>" <| toString gpt
+    | Distr gpt -> sprintf "Dist<%s>" <| toString gpt
+    | Mixed -> "Mixed"
+    | Unknown -> "Unknown"
+let toTyped op = 
+    let rec doCheck = function 
+        | Int _                             -> Scalar "Int"  
+        | Str(_)                            -> Scalar "Str"  
+        | Float(_)                          -> Scalar "Float"
+        | Check(Check.CheckValue(gp))       -> Scalar (doCheck gp |> toString) 
+        | NoValue                           -> Unknown
+        | ParamArray(ops)  -> 
+            match List.distinctBy (function Value v -> doCheck v | _ ->  Unknown) ops with 
+            | [] -> List (Unknown)
+            | [Value(gp)]  -> doCheck gp |> List
+            | _ -> Mixed
+        | Tuple(a, b) -> Scalar (sprintf "Scalar<%s,%s>" (doCheck a |> toString) ((doCheck b |> toString)))
+        | Dist(vs) -> 
+            match List.distinctBy (fst >> doCheck) vs with 
+            | [] -> Distr (Scalar "")
+            | [gp,_]  -> doCheck gp |> Distr
+            | _ -> Mixed
+    match op with 
+    | Value(gp) -> doCheck gp
+    | _ -> Unknown
+
+
+// vInt 6 |> toTyped |> toString
+// [vInt 6; vInt 5] |> opList |> toTyped  |> toString
+// [vInt 6; Value(Float(5.))] |> opList |> toTyped  |> toString
+// Call Repeat |> toTyped  |> toString
+// opList [] |> toTyped  |> toString
+// [vInt 6; vInt 5] |> opList |> toTyped  |> toString
+// let d = Distribution.uniformDistribution [1..6] |> Distribution.map Int |> GameActions.Primitives.Types.Dist |> Value
+// let d2 = Distribution.uniformDistribution [1.0..6.0] |> Distribution.map Float |> GameActions.Primitives.Types.Dist |> Value
+// d |> toTyped |> toString
+// d2 |> toTyped |> toString
+// [d;d] |> opList |> toTyped |> toString
+// [[d;d] |> opList] |> opList |> toTyped |> toString
+// [d;d2] |> opList |> toTyped |> toString
+// [[d;d2] |> opList] |> opList |> toTyped |> toString
+// [[d] |> opList; d2] |> opList |> toTyped |> toString
+// [[d] |> opList; d] |> opList |> toTyped |> toString
 
 let es x op = get x |> op |> evalOp standardCall Map.empty<_,_> 
 let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
@@ -76,35 +96,70 @@ let tests =
         (result |> es "TotalSum") ==? (product |> es "TotalProduct")
         (result |> ea "TotalSum") ==? (product |> ea "TotalProduct")
         (result |> e  "TotalSum") ==? (product |> e  "TotalProduct")
-    
-    let ``3 + 3 = Scalar + Scalar = Scalar`` (value1:GamePrimitive) (value2:GamePrimitive) = 
-            let expected = Value( )
-            let result = [value1;value2] >>= opList |> call Product >>= "result" |> es "result"
-            result ==? expected
-    let ``3 × 3 = Scalar × Scalar = Scalar `` (value1:GamePrimitive) (value2:GamePrimitive) = 
-            let expected = Value( )
-            let result = [value1;value2] >>= opList |> call Product >>= "result" |> es "result"
-            result ==? expected
-    let ``3 x 3 = Repeat 3 3 = Scalar x Scalar = Scalar list`` (value1:GamePrimitive) (value2:GamePrimitive) = 
-            let expected = Value( )
-            let result = [value1;value2] >>= opList |> call Product >>= "result" |> es "result"
-            result ==? expected
-    let ``3D6 = Repeat D6 3 = Scalara x Scalarb Dist = Scalarb Dist List`` (value1:GamePrimitive) (value2:GamePrimitive) = 
-            let expected = Value( )
-            let result = [value1;value2] >>= opList |> call Product >>= "result" |> es "result"
-            result ==? expected
+    let ``NoValue + 3 = Unknown + T = T`` (value2:GamePrimitive) = 
+        let value1 = NoValue
+        let value1Type = value1 |> Value |> toTyped
+        let value2Type = value2 |> Value |> toTyped
+        let result = [Value value1;Value value2]  |> opList |> call Total >>= "result" |> es "result" |> toTyped
+        value1Type ==? Unknown
+        value2Type ==? result
+    let ``3 + NoValue = T + Unknown = T`` (value1:GamePrimitive) = 
+        let value2 = NoValue
+        let value1Type = value1 |> Value |> toTyped
+        let value2Type = value2 |> Value |> toTyped
+        let result = [Value value1;Value value2]  |> opList |> call Total >>= "result" |> es "result" |> toTyped
+        value1Type ==? Unknown
+        value2Type ==? result
+    let ``3 + 3 = Scalara + Scalara = Scalara`` (value1:GamePrimitive) (value2:GamePrimitive) = 
+        let value1Type = value1 |> Value |> toTyped
+        let value2Type = value2 |> Value |> toTyped
+        let result = [Value value1;Value value2] |> opList |> call Total >>= "result" |> es "result" |> toTyped
+        match value1Type,value2Type,result with 
+        | Scalar a, Scalar a', Scalar a'' -> Expect.isTrue (a = a'' && a' = a'') "Scalars not same type"
+        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
+    let ``3 × 3 = Scalara × Scalara = Scalara`` (value1:GamePrimitive) (value2:GamePrimitive) = 
+        let value1Type = value1 |> Value |> toTyped
+        let value2Type = value2 |> Value |> toTyped
+        let result = [Value value1;Value value2] |> opList |> call Product >>= "result" |> es "result" |> toTyped
+        match value1Type,value2Type,result with 
+        | Scalar a, Scalar a', Scalar a'' -> Expect.isTrue (a = a'' && a' = a'') "Scalars not same type"
+        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
+         
+    let ``3 x 3 = Repeat 3 3 = Scalara x Scalarb = Scalara list`` (value1:GamePrimitive) (value2:GamePrimitive) = 
+        let value1Type = value1 |> Value |> toTyped
+        let value2Type = value2 |> Value |> toTyped
+        let result = repeatOp (Value value1) (Value value2) >>= "result" |> es "result" |> toTyped
+        match value1Type,value2Type,result with 
+        | Scalar a, _, List (Scalar a'') -> Expect.isTrue (a = a'') "Scalars not same type"
+        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
+    let ``3D6 = Repeat D6 3 = Scalara Dist x Scalarb  = Scalara Dist List`` (value1:GamePrimitive) (value2:GamePrimitive) = 
+        let value1Type = value1 |> Value |> toTyped
+        let value2Type = value2 |> Value |> toTyped
+        let result = repeatOp (Value value1) (Value value2) >>= "result" |> es "result" |> toTyped
+        match value1Type,value2Type,result with 
+        | Distr(Scalar a), _, List (Distr(Scalar a'')) -> Expect.isTrue (a = a'') "Scalars not same type"
+        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
     let ``Double D6 = Scalara x Scalara Dist = Scalara Dist`` (value1:GamePrimitive) (value2:GamePrimitive) = 
-            let expected = Value( )
-            let result = [value1;value2] >>= opList |> call Product >>= "result" |> es "result"
-            result ==? expected
-    let ``D3D6s = Repeat D6 D3 = Scalara Dist x ScalarbDist = Dist Scalarb Dist List`` (value1:GamePrimitive) (value2:GamePrimitive) = 
-            let expected = Value( )
-            let result = [value1;value2] >>= opList |> call Product >>= "result" |> es "result"
-            result ==? expected
-    let ``D6 3 = Repeat 3 D6 = Scalarb Dist x Scalara Dist Scalara List`` (value1:GamePrimitive) (value2:GamePrimitive) = 
-            let expected = Value( )
-            let result = [value1;value2] >>= opList |> call Product >>= "result" |> es "result"
-            result ==? expected
+        let value1Type = value1 |> Value |> toTyped
+        let value2Type = value2 |> Value |> toTyped
+        let result = [Value value1;Value value2] |> opList |> call Product >>= "result" |> es "result" |> toTyped
+        match value1Type,value2Type,result with 
+        | Scalar a, Distr(Scalar a'), Distr(Scalar a'') -> Expect.isTrue (a = a'' && a = a') "Scalars not same type"
+        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
+    let ``D3D6s = Repeat D6 D3 = Scalara Dist x Scalarb Dist = Scalara Dist List Dist`` (value1:GamePrimitive) (value2:GamePrimitive) = 
+        let value1Type = value1 |> Value |> toTyped
+        let value2Type = value2 |> Value |> toTyped
+        let result = repeatOp (Value value1) (Value value2) >>= "result" |> es "result" |> toTyped
+        match value1Type,value2Type,result with 
+        | Distr(Scalar a), Distr(Scalar _), Distr(List(Distr(Scalar a''))) -> Expect.isTrue (a = a'') "Scalars not same type"
+        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
+    let ``D6 3 = Repeat 3 D6 = Scalara x Scalarb Dist = Scalara Dist List`` (value1:GamePrimitive) (value2:GamePrimitive) = 
+        let value1Type = value1 |> Value |> toTyped
+        let value2Type = value2 |> Value |> toTyped
+        let result = repeatOp (Value value1) (Value value2) >>= "result" |> es "result" |> toTyped
+        match value1Type,value2Type,result with 
+        | Distr(Scalar a), Distr(Scalar _), List(Distr(Scalar a'')) -> Expect.isTrue (a = a'') "Scalars not same type"
+        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
     
     testList "Repeat Tests" [
         testPropertyWithConfig config "Repeating an operation gives correct length" ``Repeating an operation gives correct length``
@@ -112,11 +167,11 @@ let tests =
         testPropertyWithConfig config "Product - Repeat Op X Times equivalent to List init X Times " <| ``Repeat is same as List.init`` Product
         testPropertyWithConfig config "Count - Repeat Op X Times equivalent to List init X Times "   <| ``Repeat is same as List.init`` Count
         testPropertyWithConfig config "Total(Repeat x y) = Product(x,y)" ``Repeat Sum is the same as product``
-        testPropertyWithConfig config "3 + 3 = Scalar + Scalar = Scalar" ``3 + 3 = Scalar + Scalar = Scalar``
-        testPropertyWithConfig config "3 × 3 = Scalar × Scalar = Scalar " ``3 × 3 = Scalar × Scalar = Scalar ``
-        testPropertyWithConfig config "3 x 3 = Repeat 3 3 = Scalar x Scalar = Scalar list" ``3 x 3 = Repeat 3 3 = Scalar x Scalar = Scalar list``
-        testPropertyWithConfig config "3D6 = Repeat D6 3 = Scalara x Scalarb Dist = Scalarb Dist List" ``3D6 = Repeat D6 3 = Scalara x Scalarb Dist = Scalarb Dist List``
+        testPropertyWithConfig config "3 + 3 = Scalar + Scalar = Scalar" ``3 + 3 = Scalara + Scalara = Scalara``
+        testPropertyWithConfig config "3 × 3 = Scalar × Scalar = Scalar " ``3 × 3 = Scalara × Scalara = Scalara``
+        testPropertyWithConfig config "3 x 3 = Repeat 3 3 = Scalar x Scalar = Scalar list" ``3 x 3 = Repeat 3 3 = Scalara x Scalarb = Scalara list``
+        testPropertyWithConfig config "3D6 = Repeat D6 3 = Scalara x Scalarb Dist = Scalarb Dist List" ``3D6 = Repeat D6 3 = Scalara Dist x Scalarb  = Scalara Dist List``
         testPropertyWithConfig config "Double D6 = Scalara x Scalara Dist = Scalara Dist" ``Double D6 = Scalara x Scalara Dist = Scalara Dist``
-        testPropertyWithConfig config "D3D6s = Repeat D6 D3 = Scalara Dist x ScalarbDist = Dist Scalarb Dist List" ``D3D6s = Repeat D6 D3 = Scalara Dist x ScalarbDist = Dist Scalarb Dist List``
-        testPropertyWithConfig config "D6 3 = Repeat 3 D6 = Scalarb Dist x Scalara Dist Scalara List" ``D6 3 = Repeat 3 D6 = Scalarb Dist x Scalara Dist Scalara List``
+        testPropertyWithConfig config "D3D6s = Repeat D6 D3 = Scalara Dist x ScalarbDist = Dist Scalarb Dist List" ``D3D6s = Repeat D6 D3 = Scalara Dist x Scalarb Dist = Scalara Dist List Dist``
+        testPropertyWithConfig config "D6 3 = Repeat 3 D6 = Scalarb Dist x Scalara Dist Scalara List" ``D6 3 = Repeat 3 D6 = Scalara x Scalarb Dist = Scalara Dist List``
         ]
