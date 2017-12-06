@@ -14,18 +14,13 @@ let genFOfPrim f =
 let genPrimitive = genFOfPrim id
 let genNumber f = Gen.oneof [ f genFloat; f genInt ]
 let genListOfPrimitive = genFOfPrim (Gen.listOf)  
-let genCheck = 
-    // let basic = 
+let genCheck ofType = 
         Gen.oneof [
-            Gen.map (Check.Pass) genPrimitive
-            Gen.map (Check.Fail) genPrimitive
+            Gen.map (Check.Pass) ofType
+            Gen.map (Check.Fail) ofType
             // Gen.map2 (fun a b -> Check.Tuple(a,b)) genPrimitive genPrimitive
         ]
-    // Gen.oneof [
-    //     basic
-    //     Gen.map (Check.List) (Gen.listOf basic) //Restrict to only one level
-    // ]
-
+let genScalarN = Gen.oneof [genCheck (genNumber id);(genNumber id)]
 let genGp = 
     let rec genGp' = function
         | 0 -> genPrimitive
@@ -37,7 +32,7 @@ let genGp =
             let pair = genListOfPrimitive |> Gen.map (fun ls -> List.zip (ls)  <| (Gen.sample (List.length ls) probabilities |> List.ofArray) )
             Gen.oneof [
                 genPrimitive
-                Gen.map Check genCheck 
+                Gen.map Check (genCheck genPrimitive)
                 Gen.map Dist pair
             ] 
     Gen.sized genGp'
@@ -83,7 +78,16 @@ let genOp =
         | _ -> invalidArg "s" "Only positive arguments are allowed"
     Gen.sized genOp'
 //Gen.sample 1 genOp
+
+
 type GamePrimitiveGen() = static member GamePrimitive() : Arbitrary<GamePrimitive> = Arb.fromGen genGp
+type DistType = GamePrimitive
+type DistTypeGen() = static member DistType() : Arbitrary<DistType> = Arb.fromGen genDistType
+type ListType = GamePrimitive
+type ListTypeGen() = static member ListType() : Arbitrary<ListType> = Arb.fromGen genListType
+type ScalarType = GamePrimitive
+type ScalarTypeGen() = static member ScalarType() : Arbitrary<ScalarType> = Arb.fromGen genScalarType
+
 type DieGen() = static member Die() : Arbitrary<Die> = Arb.fromGen genDie
 type GenOp() = static member Operation() : Arbitrary<Operation> = Arb.fromGen genOp
 let config = {FsCheckConfig.defaultConfig with arbitrary = (typeof<GenOp>)::(typeof<GamePrimitiveGen>)::(typeof<DieGen>)::FsCheckConfig.defaultConfig.arbitrary}

@@ -4,20 +4,11 @@ open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
-open System.Reflection.Metadata.Ecma335
 let (==?) x y = 
     //printfn "%A" x
     //printfn "%A" y
     Expect.equal x y ""
 type GamePrimitiveType = Scalar of string | List of GamePrimitiveType | Distr of GamePrimitiveType | Mixed | Unknown
-let (|Sc|Ls|Ds|Mx|Uk|) = function 
-        | Scalar s -> Sc s
-        | List _ -> Ls
-        | Distr _ -> Ds 
-        | Mixed -> Mx
-        | Unknown -> Uk
-    
-
 let rec toString = function 
     | Scalar s -> sprintf "Scalar<%s>" s 
     | List gpt -> sprintf "List<%s>" <| toString gpt
