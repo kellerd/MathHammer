@@ -20,20 +20,24 @@ let genCheck ofType =
             Gen.map (Check.Fail) ofType
             // Gen.map2 (fun a b -> Check.Tuple(a,b)) genPrimitive genPrimitive
         ]
-let genScalarN = Gen.oneof [genCheck (genNumber id);(genNumber id)]
+        
+let genScalarType = Gen.oneof [Gen.map Check (genCheck genPrimitive);(genNumber id)]
+let genDistType = 
+    let probabilities = Gen.filter (fun f -> f >= 0.0 && f <= 1.0) Arb.generate<_>
+    let pair = genListOfPrimitive |> Gen.map (fun ls -> List.zip (ls)  <| (Gen.sample (List.length ls) probabilities |> List.ofArray) )
+    Gen.map Dist pair
+let genListType = 
+    Gen.map (List.map Value >> ParamArray) genListOfPrimitive
+
+ 
 let genGp = 
     let rec genGp' = function
         | 0 -> genPrimitive
         | _ -> 
-            //Restrict to only one level
-            //let subtree = genGp' (n/4)
-            let probabilities = Gen.filter (fun f -> f >= 0.0 && f <= 1.0) Arb.generate<_>
-            //Restrict to only one level of dists.  
-            let pair = genListOfPrimitive |> Gen.map (fun ls -> List.zip (ls)  <| (Gen.sample (List.length ls) probabilities |> List.ofArray) )
             Gen.oneof [
                 genPrimitive
                 Gen.map Check (genCheck genPrimitive)
-                Gen.map Dist pair
+                genDistType
             ] 
     Gen.sized genGp'
 let genDie = 
