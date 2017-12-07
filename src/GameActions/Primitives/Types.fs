@@ -265,23 +265,23 @@ type ft with
     static member FromInchf(a:float<inch>) : float<ft> = a / 12.<inch/ft>
     static member FromMMf(a:float<mm>) : float<ft> = a / 305.<mm/ft>
 type inch with     
-    static member ToFt : int<inch>->int<ft> = ft.FromInch
+    static member ToFt a = a
     static member ToMM(a:int<inch>) : int<mm> = a * 25<mm/inch>
     static member FromMM(a:int<mm>) : int<inch> = a / 25<mm/inch>
-    static member FromFt : int<ft>->int<inch> = ft.ToInch
-    static member ToFtf : float<inch>->float<ft> = ft.FromInchf
+    static member FromFt a = ft.ToInch a
+    static member ToFtf a = ft.FromInchf a
     static member ToMMf(a:float<inch>) : float<mm> = a * 25.<mm/inch>
     static member FromMMf(a:float<mm>) : float<inch> = a / 25.<mm/inch>
-    static member FromFtf : float<ft>->float<inch> = ft.ToInchf
+    static member FromFtf a = ft.ToInchf a
 type mm with 
-    static member ToInch : int<mm>->int<inch> = inch.FromMM
-    static member ToFt : int<mm>->int<ft>= ft.FromMM
-    static member FromInch : int<inch>->int<mm>= inch.ToMM
-    static member FromFt : int<ft>->int<mm> = ft.ToMM
-    static member ToInchf : float<mm>->float<inch> = inch.FromMMf
-    static member ToFtf : float<mm>->float<ft>= ft.FromMMf
-    static member FromInchf : float<inch>->float<mm>= inch.ToMMf
-    static member FromFtf : float<ft>->float<mm> = ft.ToMMf
+    static member ToInch a = inch.FromMM a
+    static member ToFt a = ft.FromMM a
+    static member FromInch a = inch.ToMM a
+    static member FromFt a = ft.ToMM a
+    static member ToInchf a = inch.FromMMf a
+    static member ToFtf a = ft.FromMMf a
+    static member FromInchf a = inch.ToMMf a
+    static member FromFtf a = ft.ToMMf a
                           
 type Msg =  Unit  
 

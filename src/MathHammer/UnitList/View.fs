@@ -1,14 +1,11 @@
 module MathHammer.UnitList.View
 
-open Fable.Core
-open Fable.Core.JsInterop
 open Fable.Helpers.React
-open Fable.Helpers.React.Props
+open Props
 open Types
-open GameActions.Primitives.Types
 
 
-let rootBoard model dispatch = 
+let rootBoard model _ = 
     g   [SVGAttr.Transform <| sprintf "translate(0,%d)" (model.OffsetY * 2) ]
         [g  [SVGAttr.Transform model.Scale ] 
             [rect 

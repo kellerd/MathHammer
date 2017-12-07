@@ -68,10 +68,10 @@ module Distribution
     let (>>=) x f = bind f x
 
     type DistrBuilder () =
-        member x.Bind(m, f) = m >>= f
-        member x.Return(v) = returnM v
-        member x.ReturnFrom(v) = v
-        member x.Delay(f) = f ()
+        member __.Bind(m, f) = m >>= f
+        member __.Return(v) = returnM v
+        member __.ReturnFrom(v) = v
+        member __.Delay(f) = f ()
  
     let dist= DistrBuilder()   
     let map f = bind (f >> returnM) 
@@ -123,7 +123,7 @@ module Distribution
         let ``Average dice roll`` = 
             singleDice |> expectation float
 
-        let nDice = takeN singleDice
+        let nDice n = takeN singleDice n
 
         let ``Average 3D6`` = 
             dist{
