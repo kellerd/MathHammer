@@ -78,10 +78,8 @@ type GamePrimitive with
         | Float(a),Float(b) -> Float(a*b)
         | Tuple(a,b), Tuple(x,y) -> Tuple(a*x,b*y)
         | Check r1, Check r2 -> Check.mult r1 r2 |> Check
-        // | Dist _, Check(Check.List [])
-        | Dist _, Check(Check.Fail (_))
-        // | Check(Check.List []), Dist _ 
-        | Check(Check.Fail (_)), Dist _ -> NoValue
+        | a, Check(b)
+        | Check(b), a -> Check.mult (Check.Pass a) b  |> Check
         | Tuple(Int(n),_), Dist d2
         | Dist d2, Tuple(Int(n),_)
         | Check(Check.Pass (Int(n))), Dist d2 
