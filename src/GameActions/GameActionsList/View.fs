@@ -23,7 +23,7 @@ let mkRows hideAddButton dispatch row  =
                 input [ ClassName "input"
                         Type "text"
                         Placeholder "Type the action name"
-                        DefaultValue !^text
+                        DefaultValue text
                         AutoFocus true 
                         OnChange (fun ev -> !!ev.target?value |> ChangeNewRowName |> dispatch ) ] ]
             td [] (GameActions.Primitives.View.root op dispatch) ]

@@ -14,19 +14,19 @@ let rootBoard model dispatch =
             [rect 
                 [ unbox ("width", (model.Width |> string))
                   unbox ("height", (model.Height |> string))
-                  Fill model.BoxFill] []
+                  SVGAttr.Fill model.BoxFill] []
              rect 
                 [ 
                   unbox ("width", (model.Width |> string))
                   unbox ("height", (model.Deployment |> string))
-                  Fill model.DeploymentFill] []
+                  SVGAttr.Fill model.DeploymentFill] []
              g   [SVGAttr.Transform <| sprintf "translate(%d,%d)" (model.Width / 2) (model.Deployment / 2) ]
                 [   g   [SVGAttr.Transform model.Scale ] 
                         [text [ TextAnchor "middle"
-                                StrokeWidth (!^ ".5")
-                                Fill "#999999"
+                                SVGAttr.StrokeWidth ".5"
+                                SVGAttr.Fill "#999999"
                                 Stroke "#999999"
-                                FontSize !^ "25"    ] [str "Deployment Area"] ] 
+                                SVGAttr.FontSize "25"    ] [str "Deployment Area"] ] 
                 ]
             ]
         ]
@@ -35,14 +35,14 @@ let rootRanges model key name =
     |> Option.bind (MathHammer.Models.View.rangeRoot key)
     |> Option.map (fun distance -> 
         g   [SVGAttr.Transform <| sprintf "translate(0,%d)" (model.OffsetY * 2) ]
-            [ g  [SVGAttr.Transform model.Scale ] [ g  [ Stroke model.ElementStroke; StrokeWidth (!^ "1") ] [ distance ] ] ])
+            [ g  [SVGAttr.Transform model.Scale ] [ g  [ Stroke model.ElementStroke; SVGAttr.StrokeWidth "1" ] [ distance ] ] ])
 
 let root model dispatch =
     let models = 
         model.Models 
         |> Map.toList
         |> List.map (fun (_,m) -> MathHammer.Models.View.root m (fun msg -> ModelMsg(msg,m.Name) |> dispatch))
-        |> g [ Fill model.ElementFill ; Stroke model.ElementStroke; StrokeWidth (!^ "1") ]
+        |> g [ SVGAttr.Fill model.ElementFill ; Stroke model.ElementStroke; SVGAttr.StrokeWidth "1" ]
     g   [ SVGAttr.Transform <| sprintf "translate(0,%d)" (model.OffsetY * 2) ]
         [ g  [SVGAttr.Transform model.Scale ] [ models ] ]
       

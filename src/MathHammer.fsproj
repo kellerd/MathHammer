@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Global to the app -->
+    <Compile Include="Global.fs" />
+    <!-- Maths -->
+    <Compile Include="Check/Check.fs" />
+    <Compile Include="Probability/Distribution.fs" />
+    <Compile Include="Probability/Determinism.fs" />
+    <Compile Include="Probability/View.fs" />
+    <!-- GameActions -->
+    <Compile Include="GameActions/Primitives/Types.fs" />
+    <Compile Include="GameActions/Primitives/State.fs" />
+    <Compile Include="GameActions/Primitives/View.fs" />
+    <Compile Include="GameActions/GameActionsList/Types.fs" />
+    <Compile Include="GameActions/GameActionsList/State.fs" />
+    <Compile Include="GameActions/GameActionsList/View.fs" />
+    <Compile Include="GameActions/Types.fs" />
+    <Compile Include="GameActions/State.fs" />
+    <Compile Include="GameActions/View.fs" />
+    <!-- MathHammer -->
+    <Compile Include="MathHammer/Models/Types.fs" />
+    <Compile Include="MathHammer/Models/State.fs" />
+    <Compile Include="MathHammer/Models/View.fs" />
+    <Compile Include="MathHammer/UnitList/Types.fs" />
+    <Compile Include="MathHammer/UnitList/State.fs" />
+    <Compile Include="MathHammer/UnitList/View.fs" />
+    <Compile Include="MathHammer/Types.fs" />
+    <Compile Include="MathHammer/State.fs" />
+    <Compile Include="MathHammer/View.fs" />
+    <!-- Navbar -->
+    <Compile Include="Navbar/View.fs" />
+    <!-- App -->
+    <Compile Include="Types.fs" />
+    <Compile Include="State.fs" />
+    <Compile Include="App.fs" />
+  </ItemGroup>
+  <Import Project="..\.paket\Paket.Restore.targets" />
+</Project>

@@ -61,16 +61,16 @@ let rangeStops (dist:Distribution.Distribution<_>)  =
         |> List.skip 1
         |> List.sortByDescending snd
         |> List.map(fun ((offset:string,stopcolor:string),opacity:float) -> 
-                        stop [ Offset !^ offset
+                        stop [ Offset offset
                                StopColor stopcolor
-                               StopOpacity !^ opacity ] [])
+                               StopOpacity opacity ] [])
         
     (minRange,maxRange, stopsPercentGreenAndOpacity)
 
 
 let groupFor model display = 
-      g     [Transform <| sprintf "translate(%f,%f)" model.PosX model.PosY]
-            [ g   [ Transform model.Scale ] display ]
+    g [ SVGAttr.Transform (sprintf "translate(%f,%f)" model.PosX model.PosY)]
+            [ g   [SVGAttr.Transform model.Scale ] display ]
 let rangeRoot name model =
     let dist = model.ProbabilityRules |> getp name |> evalOp standardCall Map.empty<_,_>
     let ranges id (_:int<mm>,max:int<mm>,stops) = 
@@ -78,8 +78,8 @@ let rangeRoot name model =
           [   defs  [] 
                     [ radialGradient [ Id id ]
                                        stops ]
-              circle [Fill <| sprintf "url(#%s)" id
-                      R !^ (float max)] [] ]
+              circle [SVGAttr.Fill (sprintf "url(#%s)" id)
+                      R (float max)] [] ]
 
     match dist with 
     | IsDistribution d -> Some d
@@ -92,14 +92,14 @@ let rangeRoot name model =
         >> groupFor model )
 let root model dispatch =
       let modelDisplay = 
-            [ circle   [ R !^ (model.Size / 2 |> float) :> IProp
-                         OnClick (fun _ -> Select |> dispatch) :> IProp] []
+            [ circle   [ R (model.Size / 2 |> float) 
+                         OnClick (fun _ -> Select |> dispatch) ] []
               text     [ TextAnchor "middle"
-                         Y !^ 50.
-                         StrokeWidth (!^ ".5")
-                         Fill "#000000"
+                         Y 50.
+                         SVGAttr.StrokeWidth (".5")
+                         SVGAttr.Fill "#000000"
                          Stroke "#000000"
-                         FontSize !^ "25"    ] 
+                         SVGAttr.FontSize "25"] 
                          [ str model.Name ] ]
             //
             
