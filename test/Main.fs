@@ -9,6 +9,7 @@
 #load "Normalization.fs"
 #load "EvalTest.fs"
 #load "RepeatTest.fs"
+#load "TypeChecker.fs"
 #else
 module ExpectoTests
 #endif
@@ -21,6 +22,7 @@ Tests.runTests defaultConfig ReduceTests.tests
 Tests.runTests defaultConfig NormalizationTests.tests
 Tests.runTests defaultConfig EvalTests.tests
 Tests.runTests defaultConfig RepeatTests.tests
+Tests.runTests defaultConfig TypeChecker.tests
 #else
 [<EntryPoint>]
 let main argv =

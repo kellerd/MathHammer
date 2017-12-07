@@ -9,7 +9,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FsCheck.fs"/>
+    <Compile Include="FsCheck.fs" />
     <Compile Include="FsCheckGen.fs" />
     <Compile Include="Attacker.fs" />
     <Compile Include="OperationTest.fs" />
@@ -18,6 +18,7 @@
     <Compile Include="Normalization.fs" />
     <Compile Include="EvalTest.fs" />
     <Compile Include="RepeatTest.fs" />
+    <Compile Include="TypeChecker.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
