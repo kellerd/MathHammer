@@ -17,8 +17,9 @@ let tests =
         let expectedWS = List.init 6 ((+) 1 >> fun i -> if i >= plus then Check(Check.Pass(Int(i))) else Check(Check.Fail(Int(i)))) |> Distribution.uniformDistribution 
         testList (sprintf "%d+ Tests" plus) [
             test "WS Test Std" {
-                let (Value(Dist(result))) = ws |> es "WS"
-                Expect.containsAll result expectedWS ""
+                match ws |> es "WS" with 
+                | (Value(Dist(result))) -> Expect.containsAll result expectedWS ""
+                | x -> failwith <| sprintf "Result is wrong type %A" x
             }
             test "WS Test avg" {
                 let result = ws |> ea "WS"
@@ -27,8 +28,9 @@ let tests =
                 result ==? expected
             }
             test "WS Test Sample" {
-                let (Value result) = ws |> e "WS"
-                Expect.contains (List.map fst expectedWS) result ""
+                match  ws |> e "WS" with
+                | Value result -> Expect.contains (List.map fst expectedWS) result ""
+                | x -> failwith <| sprintf "Result is wrong type %A" x
             }
         ]    
     let psychicDiceTest = 
@@ -44,10 +46,13 @@ let tests =
                 result ==? opList[Value(Float(3.5));Value(Float(3.5))]                    
             }
             test "Psychic Dice sample" {
-                let (Value(ParamArray[Value(a);Value(b)])) = psychicDice |> e "PsychicDice"
+                let result = psychicDice |> e "PsychicDice"
                 let expected = [1..6] |> List.map (Int) 
-                Expect.contains expected a ""
-                Expect.contains expected b ""
+                match result with 
+                | (Value(ParamArray[Value(a);Value(b)])) ->
+                    Expect.contains expected a ""
+                    Expect.contains expected b ""
+                | x -> failwith <| sprintf "Result is wrong type %A" x
             }
         ]
     let psychicTotalTest = 
@@ -59,8 +64,9 @@ let tests =
                     let! d2 = Distribution.uniformDistribution [1..6]
                     return Int(d1 + d2)
                 } 
-                let (Value(Dist(result))) = psychicTest |> es "PsychicTest"
-                Expect.containsAll result expected ""
+                match psychicTest |> es "PsychicTest" with 
+                | Value(Dist(result)) -> Expect.containsAll result expected ""
+                | x -> failwith <| sprintf "Result is wrong type %A" x
             }
             test "Psychic Total avg" {
                 let result = psychicTest |> ea "PsychicTest"
@@ -68,9 +74,10 @@ let tests =
                 result ==? expected            
             }
             test "Psychic Total sample" {
-                let (Value a) = psychicTest |> e "PsychicTest"
                 let expected = [2..12] |> List.map (Int) 
-                Expect.contains expected a ""
+                match psychicTest |> e "PsychicTest" with 
+                | Value result -> Expect.contains expected result ""
+                | x -> failwith <| sprintf "Result is wrong type %A" x
             }
         ]    
 

@@ -17,11 +17,13 @@ let tests =
     let ``Repeating an operation gives correct length`` (FsCheck.NonNegativeInt x) op = 
         let a = vInt x
         let repeat = repeatOp op a
-        let (Value(ParamArray(result)))= repeat |> evalOp standardCall Map.empty<_,_>
-        Expect.equal (List.length result) (max x 0) "Length of repeat should be same as length input, or 0 if < 1"
+        let result = repeat |> evalOp standardCall Map.empty<_,_>
         match result with 
-        | [] -> ()
-        | head::tail -> Expect.allEqual tail head "All elements in repeat should be the same"
+        | Value(ParamArray([])) -> Expect.equal x 0 "X should be 0 if an empty list is the result"
+        | Value(ParamArray((head::tail) as result)) -> 
+            Expect.equal (List.length result) (max x 0) "Length of repeat should be same as length input, or 0 if < 1"
+            Expect.allEqual tail head "All elements in repeat should be the same"
+        | x -> failwith <| sprintf "Result is wrong type %A" x
     let ``Repeat is same as List.init`` functionToCall operation = 
         let passOrFailCount = operation |> List.map (Value) |> opList |> call Count
         let times = 3
