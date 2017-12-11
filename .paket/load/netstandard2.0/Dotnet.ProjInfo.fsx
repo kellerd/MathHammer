@@ -1,0 +1,2 @@
+#r "../../../../../../.nuget/packages/dotnet.projinfo/0.9.0/lib/netstandard2.0/Dotnet.ProjInfo.Helpers.dll" 
+#r "../../../../../../.nuget/packages/dotnet.projinfo/0.9.0/lib/netstandard2.0/Dotnet.ProjInfo.dll" 

@@ -1,0 +1,1 @@
+#r "../../../../../../.nuget/packages/system.collections.immutable/1.4.0/lib/netstandard1.0/System.Collections.Immutable.dll" 

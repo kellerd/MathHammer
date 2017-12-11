@@ -1,0 +1,2 @@
+#load @"System.Runtime.Serialization.Primitives.fsx" 
+#r "../../../../../../.nuget/packages/system.runtime.serialization.formatters/4.3.0/lib/netstandard1.4/System.Runtime.Serialization.Formatters.dll" 

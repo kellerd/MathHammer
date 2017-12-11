@@ -1,0 +1,8 @@
+#load @"System.Diagnostics.Debug.fsx" 
+#load @"System.Globalization.fsx" 
+#load @"System.IO.fsx" 
+#load @"System.Resources.ResourceManager.fsx" 
+#load @"System.Runtime.fsx" 
+#load @"System.Threading.fsx" 
+#load @"System.Threading.Tasks.fsx" 
+#r "../../../../../../.nuget/packages/system.security.cryptography.primitives/4.3.0/lib/net46/System.Security.Cryptography.Primitives.dll" 

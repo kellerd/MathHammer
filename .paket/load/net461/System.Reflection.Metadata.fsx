@@ -1,0 +1,1 @@
+#r "../../../../../../.nuget/packages/system.reflection.metadata/1.5.0/lib/netstandard1.1/System.Reflection.Metadata.dll" 

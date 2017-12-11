@@ -1,0 +1,6 @@
+#load @"System.Globalization.fsx" 
+#load @"System.Resources.ResourceManager.fsx" 
+#load @"System.Runtime.fsx" 
+#load @"System.Runtime.Extensions.fsx" 
+#load @"System.Runtime.InteropServices.fsx" 
+#r "../../../../../../.nuget/packages/system.globalization.extensions/4.3.0/lib/net46/System.Globalization.Extensions.dll" 

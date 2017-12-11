@@ -1,0 +1,5 @@
+#load @"../../../.paket/load/netstandard2.0/Fable.Core.fsx" 
+#load @"../../../.paket/load/netstandard2.0/Fable.Elmish.fsx" 
+#load @"../../../.paket/load/netstandard2.0/Fable.PowerPack.fsx" 
+#load @"../../../.paket/load/netstandard2.0/Fable.React.fsx" 
+#r "../../../../../../.nuget/packages/fable.elmish.react/1.0.0/lib/netstandard1.6/Fable.Elmish.React.dll" 
