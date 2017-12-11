@@ -5,7 +5,7 @@ open FsCheck
 open State
 open Types
 type ScalarType = ScalarType of GamePrimitive
-type TwoScalarType = TwoScalarType of GamePrimitive * GamePrimitive
+type TwoSimilarTypes = TwoSimilarTypes of GamePrimitive * GamePrimitive
 type DistType = DistType of GamePrimitive
 type ListType = ListType of GamePrimitive
 
@@ -24,23 +24,31 @@ let genCheck ofType =
             Gen.map (Check.Fail) ofType
             // Gen.map2 (fun a b -> Check.Tuple(a,b)) genPrimitive genPrimitive
         ]
-        
-let genScalarType = Gen.oneof [Gen.map Check (genCheck genPrimitive);(genNumber id)] |> Gen.map ScalarType
-let genTwoScalarSameType =
-    Gen.oneof
-        [ Gen.two genFloat  |> Gen.filter (fun (_,v) -> match v with Float f when f >= 0.0 -> true | _ -> false)  
-          Gen.two genInt    |> Gen.filter (fun (_,v) -> match v with Int i when i >= 0 -> true | _ -> false) 
-          Gen.two (Gen.map Check (genCheck genFloat)) |> Gen.filter (fun (_,v) -> match v with Check(Check.CheckValue(Float f)) when f >= 0.0 -> true | _ -> false)            
-          Gen.two (Gen.map Check (genCheck genInt))   |> Gen.filter (fun (_,v) -> match v with Check(Check.CheckValue(Int i)) when i >= 0 -> true | _ -> false)
-          Gen.two (Gen.constant NoValue)]
-    |> Gen.map TwoScalarType
 
-let genGpDist = 
+let genGpDist gen = 
     let probabilities = Gen.filter (fun f -> f >= 0.0 && f <= 1.0) Arb.generate<_>
-    let pair = genListOfPrimitive |> Gen.map (fun ls -> List.zip (ls)  <| (Gen.sample (List.length ls) probabilities |> List.ofArray) )
-    Gen.map Dist pair
+    let pair = gen |> Gen.map (fun ls -> List.zip (ls)  <| (Gen.sample (List.length ls) probabilities |> List.ofArray) )
+    Gen.map Dist pair        
+let genScalarType = Gen.oneof [Gen.map Check (genCheck genPrimitive);(genNumber id)] |> Gen.map ScalarType
+
+let similarCombo g = 
+    let otherValues = seq {
+        yield g 
+        yield Gen.listOf g |> genGpDist
+        yield Gen.map Check (genCheck g)
+        yield Gen.constant NoValue      
+    }
+    seq { for a in otherValues do
+                for b in otherValues do 
+                    yield Gen.zip a b }
+
+let genTwoSimilarTypes =
+    Seq.collect similarCombo [ genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
+                               genInt   |> Gen.filter (fun v -> match v with Int i   when i >= 0   -> true | _ -> false)]
+    |> Gen.oneof
+    |> Gen.map TwoSimilarTypes
 let genDistType = 
-    genGpDist  |> Gen.map DistType
+    genGpDist genListOfPrimitive |> Gen.map DistType
 let genListType = 
     Gen.map (List.map Value >> ParamArray >> ListType) genListOfPrimitive
 
@@ -52,7 +60,7 @@ let genGp =
             Gen.oneof [
                 genPrimitive
                 Gen.map Check (genCheck genPrimitive)
-                genGpDist
+                genGpDist genListOfPrimitive
             ] 
     Gen.sized genGp'
 let genDie = 
@@ -103,7 +111,7 @@ type GamePrimitiveGen() = static member GamePrimitive() : Arbitrary<GamePrimitiv
 type DistTypeGen() = static member DistType() : Arbitrary<DistType> = genDistType |> Arb.fromGen 
 type ListTypeGen() = static member ListType() : Arbitrary<ListType> = genListType |> Arb.fromGen 
 type ScalarTypeGen() = static member ScalarType() : Arbitrary<ScalarType> = genScalarType |> Arb.fromGen 
-type TwoScalarTypeGen() = static member ScalarType() : Arbitrary<TwoScalarType> = genTwoScalarSameType |> Arb.fromGen 
+type TwoScalarTypeGen() = static member ScalarType() : Arbitrary<TwoSimilarTypes> = genTwoSimilarTypes |> Arb.fromGen 
 
 type DieGen() = static member Die() : Arbitrary<Die> = Arb.fromGen genDie
 type GenOp() = static member Operation() : Arbitrary<Operation> = Arb.fromGen genOp

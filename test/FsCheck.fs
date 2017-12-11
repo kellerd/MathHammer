@@ -14,16 +14,16 @@ module ExpectoFsCheck =
     let runner (config: FsCheckConfig) =
       { new IRunner with
           /// Called before a group of properties on a type are checked.
-          member __.OnStartFixture typ =
+          member __.OnStartFixture _ =
             ()
 
           /// Called whenever arguments are generated and after the test is run.
-          member __.OnArguments (testNumber, args, formatOnEvery) =
+          member __.OnArguments (testNumber, args, _) =
             config.receivedArgs config name testNumber args
             |> Async.RunSynchronously
 
           /// Called on a succesful shrink.
-          member __.OnShrink (values, formatValues) =
+          member __.OnShrink (values, _) =
             config.successfulShrink config name values
             |> Async.RunSynchronously
 
