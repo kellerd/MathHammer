@@ -67,6 +67,8 @@ type GamePrimitive with
         | Dist d, gp 
         | gp, Dist d -> Distribution.map ((+) gp) d |> Distribution.normalize |> Dist
         | Check (r1),Check(r2) -> Check.add r1 r2 |> Check
+        | a, Check(b)
+        | Check(b), a -> Check.add (Check.Pass a) b  |> Check
         | Float(x), Int(y) 
         | Int(y), Float(x)  -> Float(x + float y)
         | Tuple(a,b), Tuple(x,y) -> Tuple(a+x,b+y)

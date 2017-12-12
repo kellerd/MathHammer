@@ -8,8 +8,9 @@ let (==?) x y =
     //printfn "%A" x
     //printfn "%A" y
     Expect.equal x y ""
-type GamePrimitiveType = Scalar of string | List of GamePrimitiveType | Distr of GamePrimitiveType | Empty | Mixed | Unknown
+type GamePrimitiveType = Scalar of string | List of GamePrimitiveType | Chk of GamePrimitiveType | Distr of GamePrimitiveType | Empty | Mixed | Unknown
 let rec toString = function 
+    | Chk a -> sprintf "Check<%s" <| toString a
     | Scalar s -> sprintf "Scalar<%s>" s 
     | List gpt -> sprintf "List<%s>" <| toString gpt
     | Distr gpt -> sprintf "Dist<%s>" <| toString gpt
@@ -21,7 +22,7 @@ let toTyped op =
         | Int _                             -> Scalar "Int"  
         | Str(_)                            -> Scalar "Str"  
         | Float(_)                          -> Scalar "Float"
-        | Check(Check.CheckValue(gp))       -> Scalar (doCheck gp |> toString) 
+        | Check(Check.CheckValue(gp))       -> Chk (doCheck gp) 
         | NoValue                           -> Unknown
         | ParamArray(ops)  -> 
             match List.distinctBy (function Value v -> doCheck v | _ ->  Unknown) ops with 
@@ -70,6 +71,10 @@ let tests =
         let value2Type = value2 |> Value |> toTyped
         let result = [Value value1;Value value2] |> opList |> call Total >>= "result" |> es "result" |> toTyped
         match value1Type,value2Type,result with 
+        | Chk a, (Scalar _ as a'),  Chk a''  
+        | (Scalar _ as a'), Chk a, Chk a'' -> Expect.allEqual [a; a'; a'' ] a'' "Chka + Scalara = Chka" 
+        | Chk a, Distr (Scalar _ as a'), Distr(Chk a'') 
+        | Distr (Scalar _ as a'), Chk a, Distr(Chk a'') -> Expect.allEqual [a; a'; a'' ] a'' "Distra + Chka = Distr Chka" 
         | Scalar a, Scalar a', Scalar a''  -> Expect.allEqual [a; a'; a'' ] a'' "Scalara + Scalara = Scalara"
         | Unknown,         a',        a''  -> Expect.allEqual [a';a'' ] a''     "NoValue + Scalara = Scalara"
         |        a, Unknown  ,        a''  -> Expect.allEqual [a; a'' ] a''     "Scalara + NoValue = Scalara"
