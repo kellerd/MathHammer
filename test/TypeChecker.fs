@@ -70,10 +70,14 @@ let tests =
         let value2Type = value2 |> Value |> toTyped
         let result = [Value value1;Value value2] |> opList |> call Total >>= "result" |> es "result" |> toTyped
         match value1Type,value2Type,result with 
-        | Scalar a, Scalar a', Scalar a'' -> Expect.isTrue (a = a'' && a' = a'') "Scalara + Scalara = Scalara"
-        | Unknown,  Scalar a', Scalar a'' -> Expect.isTrue (           a' = a'') "NoValue + Scalara = Scalara"
-        | Scalar a, Unknown  , Scalar a'' -> Expect.isTrue (           a  = a'') "Scalara + NoValue = Scalara"
-        | Unknown , Unknown  , Unknown    -> ()
+        | Scalar a, Scalar a', Scalar a''  -> Expect.allEqual [a; a'; a'' ] a'' "Scalara + Scalara = Scalara"
+        | Unknown,         a',        a''  -> Expect.allEqual [a';a'' ] a''     "NoValue + Scalara = Scalara"
+        |        a, Unknown  ,        a''  -> Expect.allEqual [a; a'' ] a''     "Scalara + NoValue = Scalara"
+        | Distr Empty,     _ , Distr Empty
+        |      _ ,Distr Empty, Distr Empty -> ()
+        | Distr a,   Distr a', Distr a''   -> Expect.allEqual [a; a'; a'' ] a'' "Distra + Distra = Distra"
+        | Distr a,  (Scalar _ as a'), Distr a''   -> Expect.allEqual [a; a'; a'' ] a'' "Distra + Scalara = Distra"
+        | (Scalar _ as a), Distr a', Distr a''    -> Expect.allEqual [a; a'; a'' ] a'' "Distra + Scalara = Distra"
         | a,b,c -> failwith <| sprintf "Values don't all have the correct dimension %A+%A=%A?" a b c
     //Double D6 = Scalara x Scalara Dist = Scalara Dist
     //3 × 3 = Scalara × Scalara = Scalara
@@ -83,7 +87,7 @@ let tests =
         let result = [Value value1;Value value2] |> opList |> call Product >>= "result" |> es "result" |> toTyped
         match value1Type,value2Type,result with 
         | Scalar a,         Distr(Scalar a'), Distr(Scalar a'') 
-        | Distr(Scalar a'), Scalar a ,        Distr(Scalar a'') -> Expect.isTrue (a = a'' && a  = a') "Scalars not same type"
+        | Distr(Scalar a'), Scalar a ,        Distr(Scalar a'') -> Expect.isTrue (a = a'' && a  = a' ) "Scalars not same type"
         | Scalar a,         Scalar a',        Scalar a''        -> Expect.isTrue (a = a'' && a' = a'') "Scalars not same type"
         | Unknown ,         _  ,              Unknown    
         | _ ,               Unknown  ,        Unknown    -> ()
