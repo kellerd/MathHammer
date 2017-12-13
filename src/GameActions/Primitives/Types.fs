@@ -72,6 +72,7 @@ type GamePrimitive with
         | Float(x), Int(y) 
         | Int(y), Float(x)  -> Float(x + float y)
         | Tuple(a,b), Tuple(x,y) -> Tuple(a+x,b+y)
+        | ParamArray a, ParamArray b -> List.append a b |> ParamArray
         | x,y -> failwith <| sprintf "Cannot add these two primitives %A, %A" x y
     static member (*) (x,y) = 
         match (x,y) with 

@@ -5,6 +5,7 @@ open FsCheck
 open State
 open Types
 type ScalarType = ScalarType of GamePrimitive
+type TwoSimilarScalarTypes = TwoSimilarScalarTypes of GamePrimitive * GamePrimitive
 type TwoSimilarTypes = TwoSimilarTypes of GamePrimitive * GamePrimitive
 type DistType = DistType of GamePrimitive
 type ListType = ListType of GamePrimitive
@@ -43,10 +44,22 @@ let similarCombo g =
                     yield Gen.zip a b }
 
 let genTwoSimilarTypes =
-    Seq.collect similarCombo [ genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
-                               genInt   |> Gen.filter (fun v -> match v with Int i   when i >= 0   -> true | _ -> false)]
+    let positiveInt = genInt   |> Gen.filter (fun v -> match v with Int i   when i >= 0   -> true | _ -> false)
+    let positiveFloat = genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
+    Seq.collect similarCombo [ positiveInt
+                               positiveFloat
+                               Gen.listOf positiveInt |> Gen.map (List.map Value >> ParamArray)
+                               Gen.listOf positiveFloat |> Gen.map (List.map Value >> ParamArray)]
     |> Gen.oneof
     |> Gen.map TwoSimilarTypes
+let genTwoSimilarScalarTypes =
+    let positiveInt = genInt   |> Gen.filter (fun v -> match v with Int i   when i >= 0   -> true | _ -> false)
+    let positiveFloat = genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
+    Seq.collect similarCombo [ positiveInt
+                               positiveFloat ]
+    |> Gen.oneof
+    |> Gen.map TwoSimilarScalarTypes
+
 let genDistType = 
     genGpDist genListOfPrimitive |> Gen.map DistType
 let genListType = 
@@ -111,7 +124,8 @@ type GamePrimitiveGen() = static member GamePrimitive() : Arbitrary<GamePrimitiv
 type DistTypeGen() = static member DistType() : Arbitrary<DistType> = genDistType |> Arb.fromGen 
 type ListTypeGen() = static member ListType() : Arbitrary<ListType> = genListType |> Arb.fromGen 
 type ScalarTypeGen() = static member ScalarType() : Arbitrary<ScalarType> = genScalarType |> Arb.fromGen 
-type TwoScalarTypeGen() = static member ScalarType() : Arbitrary<TwoSimilarTypes> = genTwoSimilarTypes |> Arb.fromGen 
+type TwoSimilarTypeGen() = static member ScalarType() : Arbitrary<TwoSimilarTypes> = genTwoSimilarTypes |> Arb.fromGen 
+type TwoSimilarScalarTypeGen() = static member ScalarType() : Arbitrary<TwoSimilarScalarTypes> = genTwoSimilarScalarTypes |> Arb.fromGen 
 
 type DieGen() = static member Die() : Arbitrary<Die> = Arb.fromGen genDie
 type GenOp() = static member Operation() : Arbitrary<Operation> = Arb.fromGen genOp
@@ -120,7 +134,8 @@ let config = { FsCheckConfig.defaultConfig with
                                 :: (typeof<DistTypeGen>)
                                 :: (typeof<ListTypeGen>)
                                 :: (typeof<ScalarTypeGen>)
-                                :: (typeof<TwoScalarTypeGen>)
+                                :: (typeof<TwoSimilarTypeGen>)
+                                :: (typeof<TwoSimilarScalarTypeGen>)
                                 :: (typeof<GamePrimitiveGen>)
                                 :: (typeof<DieGen>)
                                 ::FsCheckConfig.defaultConfig.arbitrary }
