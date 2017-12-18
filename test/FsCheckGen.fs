@@ -9,7 +9,8 @@ type TwoSimilarScalarTypes = TwoSimilarScalarTypes of GamePrimitive * GamePrimit
 type TwoSimilarTypes = TwoSimilarTypes of GamePrimitive * GamePrimitive
 type DistType = DistType of GamePrimitive
 type ListType = ListType of GamePrimitive
-
+type ListDistScalarType = ScalarGamePrimitive of GamePrimitive | DistGamePrimitive of GamePrimitive | ListGamePrimitive of GamePrimitive
+    with member x.ToGamePrimitive() = x |> function | ScalarGamePrimitive g | DistGamePrimitive g | ListGamePrimitive g -> g
 let genFloat = Gen.map (fun (NormalFloat f) -> Float f) Arb.generate<_>
 let genInt = Gen.map Int Arb.generate<_>
 let genStr = Gen.map (fun (NonEmptyString s) -> Str s) Arb.generate<_>
@@ -32,15 +33,16 @@ let genGpDist gen =
     Gen.map Dist pair        
 let genScalarType = Gen.oneof [Gen.map Check (genCheck genPrimitive);(genNumber id)] |> Gen.map ScalarType
 
-let similarCombo g = 
-    let otherValues = seq {
+let baseTypes g = seq {
         yield g 
         yield Gen.listOf g |> genGpDist
         yield Gen.map Check (genCheck g)
         yield Gen.constant NoValue      
-    }
-    seq { for a in otherValues do
-                for b in otherValues do 
+    } 
+
+let similarCombo g = 
+    seq { for a in baseTypes g do
+                for b in baseTypes g do 
                     yield Gen.zip a b }
 
 let genTwoSimilarTypes =
@@ -64,6 +66,20 @@ let genDistType =
     genGpDist genListOfPrimitive |> Gen.map DistType
 let genListType = 
     Gen.map (List.map Value >> ParamArray >> ListType) genListOfPrimitive
+let genListDistScalarType = 
+    let positiveInt = genInt   |> Gen.filter (fun v -> match v with Int i   when i >= 0   -> true | _ -> false)
+    let positiveFloat = genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
+    [baseTypes positiveInt; baseTypes positiveFloat] 
+    |> Seq.collect id 
+    |> Gen.oneof
+    |> Gen.map (function | Dist(d) -> DistGamePrimitive(Dist(d))
+                         | ParamArray(ops) -> ListGamePrimitive(ParamArray(ops))
+                         | Int _       
+                         | Str _       
+                         | Float _     
+                         | Check _     
+                         | NoValue  _  
+                         | Tuple _ as g     -> ScalarGamePrimitive g)
 
  
 let genGp = 
@@ -124,9 +140,9 @@ type GamePrimitiveGen() = static member GamePrimitive() : Arbitrary<GamePrimitiv
 type DistTypeGen() = static member DistType() : Arbitrary<DistType> = genDistType |> Arb.fromGen 
 type ListTypeGen() = static member ListType() : Arbitrary<ListType> = genListType |> Arb.fromGen 
 type ScalarTypeGen() = static member ScalarType() : Arbitrary<ScalarType> = genScalarType |> Arb.fromGen 
-type TwoSimilarTypeGen() = static member ScalarType() : Arbitrary<TwoSimilarTypes> = genTwoSimilarTypes |> Arb.fromGen 
-type TwoSimilarScalarTypeGen() = static member ScalarType() : Arbitrary<TwoSimilarScalarTypes> = genTwoSimilarScalarTypes |> Arb.fromGen 
-
+type TwoSimilarTypeGen() = static member TwoSimilarType() : Arbitrary<TwoSimilarTypes> = genTwoSimilarTypes |> Arb.fromGen 
+type TwoSimilarScalarTypeGen() = static member TwoSimilarScalarType() : Arbitrary<TwoSimilarScalarTypes> = genTwoSimilarScalarTypes |> Arb.fromGen 
+type ListDistScalarTypeGen() = static member ListDistScalarType() : Arbitrary<ListDistScalarType>  = genListDistScalarType |> Arb.fromGen
 type DieGen() = static member Die() : Arbitrary<Die> = Arb.fromGen genDie
 type GenOp() = static member Operation() : Arbitrary<Operation> = Arb.fromGen genOp
 let config = { FsCheckConfig.defaultConfig with 
@@ -137,5 +153,6 @@ let config = { FsCheckConfig.defaultConfig with
                                 :: (typeof<TwoSimilarTypeGen>)
                                 :: (typeof<TwoSimilarScalarTypeGen>)
                                 :: (typeof<GamePrimitiveGen>)
+                                :: (typeof<ListDistScalarTypeGen>)
                                 :: (typeof<DieGen>)
                                 ::FsCheckConfig.defaultConfig.arbitrary }

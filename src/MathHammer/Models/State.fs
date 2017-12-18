@@ -1,7 +1,7 @@
 module MathHammer.Models.State
 
 open Elmish
-open Types
+open MathHammer.Models.Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open Determinism 
@@ -39,22 +39,6 @@ let rec evalDie d : Distribution.Distribution<_> =
                   else return roll                        
             }
 
-let rec evalCall dieFunc func v env  =
-    let repeat lam op2 = 
-        let rec repeatOps lam times =
-            let newOps = 
-                match times with
-                | NoValue
-                // | Check(Check.List []) 
-                | Check(Check.Fail (_)) -> []
-                | Int (n) 
-                // | tuple(Int(n),_))
-                | Check(Check.Pass (Int(n))) -> List.init (max 0 n) (fun n -> App(lam,vInt n)) 
-                | Dist(times) -> 
-                    match times |> Distribution.map(repeatOps lam) |> fromDistribution with
-                    | NoResult -> printfn "No Result %A" times; [noValue]     
-                    | Deterministic d -> [d]
-                    | NonDeterministic _ -> printfn "Non deterministic result %A" times;[noValue]
                 // | Check(Check.List xs) -> 
                 //     let n = 
                 //         List.fold (fun c elem -> 
@@ -64,7 +48,26 @@ let rec evalCall dieFunc func v env  =
                 //                     | Check.Tuple(Int(x),_) -> c + x 
                 //                     | _ -> c) 0 xs
                 //     List.init n  (fun n -> App(lam,vInt n)) 
-                | _ -> []
+let rec evalCall dieFunc func v env  =
+    let lam = Lam ("unusedVariable",Value (Dist [(Float 1.0, 0.3636363636)]))
+    let op2 = Value (Dist [(Float 1.0, 0.3636363636)])
+    let dieFunc = (evalDie >> Distribution.map (Int)  >> Dist >> Value)
+    let env = Map.empty<_,_>
+    let times = [(Float 1.0, 0.3636363636)]
+    let repeat lam op2 = 
+        let rec repeatOps lam times : Operation =
+            let newOps = 
+                match times with
+                | NoValue
+                | Check(Check.Fail (_)) -> []
+                | Int (n) 
+                | Check(Check.Pass (Int(n))) -> List.init (max 0 n) (fun n -> App(lam,vInt n)) 
+                | Dist(times) -> times |> Distribution.map(fun gp -> [repeatOps lam gp] |> ParamArray) |> Dist |> Value |> List.singleton
+                | Str(_) -> failwith "Not Implemented"
+                | Float(_) -> failwith "Not Implemented"
+                | Check(_) -> failwith "Not Implemented"
+                | ParamArray(_) -> failwith "Not Implemented"
+                | Tuple(_, _) -> failwith "Not Implemented"
             evalOp (evalCall dieFunc) env (opList newOps)
 
         let times = evalOp (evalCall dieFunc) env op2  

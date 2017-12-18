@@ -127,7 +127,7 @@ let tests =
             //Defer check
             | List a,     List a',   List a''  -> checkTypes (a, a', a'')
             | Scalar a, Scalar a', Scalar a''  -> Expect.allEqual [a; a'; a'' ] a'' "Scalara + Scalara = Scalara"
-            |        a,         b,          c  -> failwith <| sprintf "Values don't all have the correct dimension %A+%A=%A?\nValue: %A" a b c result
+            |        a,         b,          c  -> failtest <| sprintf "Values don't all have the correct dimension %A+%A=%A?\nValue: %A" a b c result
         checkTypes (value1Type,value2Type,resultType)
     //Double D6 = Scalara x Scalara Dist = Scalara Dist
     //3 × 3 = Scalara × Scalara = Scalara
@@ -160,44 +160,40 @@ let tests =
             |        a,   Fail _ ,   Fail a''  -> checkTypes (a , a , a'')   
             //Defer check
             | Scalar a, Scalar a', Scalar a''  -> Expect.allEqual [a; a'; a'' ] a'' "Scalara + Scalara = Scalara"
-            |        a,         b,          c  -> failwith <| sprintf "Values don't all have the correct dimension %A+%A=%A?\nValue: %A" a b c result
+            |        a,         b,          c  -> failtest <| sprintf "Values don't all have the correct dimension %A+%A=%A?\nValue: %A" a b c result
         checkTypes (value1Type,value2Type,resultType)
 
-    let ``3 x 3 = Repeat 3 3 = Scalara x Scalarb = Scalara list`` (ScalarType value1) (ScalarType value2) =
-        let value1Type = value1 |> Value |> toTyped
-        let value2Type = value2 |> Value |> toTyped
-        let result = repeatOp (Value value1) (Value value2) >>= "result" |> es "result" |> toTyped
-        match value1Type,value2Type,result with
-        | Scalar a, _, List (Scalar a'') -> Expect.isTrue (a = a'') "Scalars not same type"
-        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
-    let ``3D6 = Repeat D6 3 = Scalara Dist x Scalarb  = Scalara Dist List`` (DistType value1) (ScalarType value2) =
-        let value1Type = value1 |> Value |> toTyped
-        let value2Type = value2 |> Value |> toTyped
-        let result = repeatOp (Value value1) (Value value2) >>= "result" |> es "result" |> toTyped
-        match value1Type,value2Type,result with
-        | Distr(Scalar a), _, List (Distr(Scalar a'')) -> Expect.isTrue (a = a'') "Scalars not same type"
-        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
-
-    let ``D3D6s = Repeat D6 D3 = Scalara Dist x Scalarb Dist = Scalara Dist List Dist`` (DistType value1) (DistType value2) =
-        let value1Type = value1 |> Value |> toTyped
-        let value2Type = value2 |> Value |> toTyped
-        let result = repeatOp (Value value1) (Value value2) >>= "result" |> es "result" |> toTyped
-        match value1Type,value2Type,result with
-        | Distr(Scalar a), Distr(Scalar _), Distr(List(Distr(Scalar a''))) -> Expect.isTrue (a = a'') "Scalars not same type"
-        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
-    let ``D6 3 = Repeat 3 D6 = Scalara x Scalarb Dist = Scalara Dist List`` (ScalarType value1) (DistType value2) =
-        let value1Type = value1 |> Value |> toTyped
-        let value2Type = value2 |> Value |> toTyped
-        let result = repeatOp (Value value1) (Value value2) >>= "result" |> es "result" |> toTyped
-        match value1Type,value2Type,result with
-        | Distr(Scalar a), Distr(Scalar _), List(Distr(Scalar a'')) -> Expect.isTrue (a = a'') "Scalars not same type"
-        | a,b,c -> failwith <| sprintf "%A, %A, %A don't all have the same dimension" a b c
+    let ``Repeat Tests`` (value1:ListDistScalarType) (value2:ListDistScalarType) =
+        let value1' = value1.ToGamePrimitive() 
+        let value2' = value2.ToGamePrimitive() 
+        let value1' = (Dist []) 
+        let value2' = (Dist [(Float 1.0, 0.3636363636)])
+        let value1Type = value1' |> Value |> toTyped
+        let value2Type = value2' |> Value |> toTyped
+        let result = repeatOp (Value value1') (Value value2') >>= "result" |> es "result"
+        let resultType = result |> toTyped
+        let rec checkTypes (value1Type,value2Type,resultType) =
+            match value1Type,value2Type,resultType with
+            | _,        Distr Empty    , Distr Empty        -> ()
+            | _,        List Empty    ,  List Empty         -> ()
+            | _,        Pass Empty    ,  Pass Empty         -> ()
+            | _,        Empty,           Empty              -> ()
+            | _,        Distr Unknown    , Distr Unknown        -> ()
+            | _,        List Unknown    ,  List Unknown         -> ()
+            | _,        Pass Unknown    ,  Pass Unknown         -> ()
+            | _,        Unknown,         Unknown            -> ()
+            | _,        Fail _,          Empty              -> ()
+            | Pass a,   Pass(a'),        a''         
+            | a,        Pass(a'),        a''         
+            | Pass a,   a',              a''                -> checkTypes (a, a', a'')
+            | a,        Distr(a'),       Distr(a'')         -> checkTypes (a, a', a'') //"D3D6s\nD6 x 3\n[A;b;c] x D6  = \nRepeat D6 D3\nRepeat 3 D6\nRepeat D6 [a;b;c] = \nA x B Scalar Dist = A List Dist"
+            | a,        List a',         List (a'')         -> checkTypes (a, a', a'')
+            | a,        Scalar _,        List (a'')         -> Expect.isTrue (a = a'') "3 x 3\n3D6\n[A;b;c] x 3 = \nRepeat 3 3\nRepeat D6 3\nRepeat 3 [a;b;c] =\nA x B = A list"
+            |        a,         b,          c  -> failtest <| sprintf "Values don't all have the correct dimension %A+%A=%A?\nValue: %A" a b c result
+        checkTypes (value1Type,value2Type,resultType)        
     //let ``Repeat [4] 3 = List Scalara x Scalarb = List List Scalar a``  =
     testList "Repeat Tests" [
         testPropertyWithConfig config "3 + 3" ``Test Addition``
         testPropertyWithConfig config "3 * 3, Double D6" ``Test Multiplication``
-        testPropertyWithConfig config "3 x 3 = Repeat 3 3 = Scalara x Scalarb = Scalara list" ``3 x 3 = Repeat 3 3 = Scalara x Scalarb = Scalara list``
-        testPropertyWithConfig config "3D6 = Repeat D6 3 = Scalara Dist x Scalarb  = Scalara Dist List" ``3D6 = Repeat D6 3 = Scalara Dist x Scalarb  = Scalara Dist List``
-        testPropertyWithConfig config "D3D6s = Repeat D6 D3 = Scalara Dist x Scalarb Dist = Scalara Dist List Dist" ``D3D6s = Repeat D6 D3 = Scalara Dist x Scalarb Dist = Scalara Dist List Dist``
-        testPropertyWithConfig config "D6 3 = Repeat 3 D6 = Scalara x Scalarb Dist = Scalara Dist List" ``D6 3 = Repeat 3 D6 = Scalara x Scalarb Dist = Scalara Dist List``
+        testPropertyWithConfig config "3 x D3 = Repeat 3 D3, D3 x 3, D3 x D6, 3 x 3" ``Repeat Tests``
     ]

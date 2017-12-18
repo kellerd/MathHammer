@@ -19,7 +19,7 @@ let tests =
             test "WS Test Std" {
                 match ws |> es "WS" with 
                 | (Value(Dist(result))) -> Expect.containsAll result expectedWS ""
-                | x -> failwith <| sprintf "Result is wrong type %A" x
+                | x -> failtest <| sprintf "Result is wrong type %A" x
             }
             test "WS Test avg" {
                 let result = ws |> ea "WS"
@@ -30,7 +30,7 @@ let tests =
             test "WS Test Sample" {
                 match  ws |> e "WS" with
                 | Value result -> Expect.contains (List.map fst expectedWS) result ""
-                | x -> failwith <| sprintf "Result is wrong type %A" x
+                | x -> failtest <| sprintf "Result is wrong type %A" x
             }
         ]    
     let psychicDiceTest = 
@@ -52,7 +52,7 @@ let tests =
                 | (Value(ParamArray[Value(a);Value(b)])) ->
                     Expect.contains expected a ""
                     Expect.contains expected b ""
-                | x -> failwith <| sprintf "Result is wrong type %A" x
+                | x -> failtest <| sprintf "Result is wrong type %A" x
             }
         ]
     let psychicTotalTest = 
@@ -66,7 +66,7 @@ let tests =
                 } 
                 match psychicTest |> es "PsychicTest" with 
                 | Value(Dist(result)) -> Expect.containsAll result expected ""
-                | x -> failwith <| sprintf "Result is wrong type %A" x
+                | x -> failtest <| sprintf "Result is wrong type %A" x
             }
             test "Psychic Total avg" {
                 let result = psychicTest |> ea "PsychicTest"
@@ -77,7 +77,7 @@ let tests =
                 let expected = [2..12] |> List.map (Int) 
                 match psychicTest |> e "PsychicTest" with 
                 | Value result -> Expect.contains expected result ""
-                | x -> failwith <| sprintf "Result is wrong type %A" x
+                | x -> failtest <| sprintf "Result is wrong type %A" x
             }
         ]    
 

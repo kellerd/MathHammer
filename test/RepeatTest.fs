@@ -23,7 +23,7 @@ let tests =
         | Value(ParamArray((head::tail) as result)) -> 
             Expect.equal (List.length result) (max x 0) "Length of repeat should be same as length input, or 0 if < 1"
             Expect.allEqual tail head "All elements in repeat should be the same"
-        | x -> failwith <| sprintf "Result is wrong type %A" x
+        | x -> failtest <| sprintf "Result is wrong type %A" x
     let ``Repeat is same as List.init`` functionToCall operation = 
         let passOrFailCount = operation |> List.map (Value) |> opList |> call Count
         let times = 3
