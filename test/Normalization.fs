@@ -82,13 +82,14 @@ let ``Ski Combinators`` =
         ]
     ]
 let ``Getting a property test`` =
-    let c = opList [opList [Value (Str "M"); Value(Int 8)]; opList [Value (Str "T"); Value(Float 6.)]]
+    let six = Value(Str "six") //Value(Float 6.)  
+    let c = opList [opList [Value (Str "M"); Value(Int 8)]; opList [Value (Str "T"); six]]
     testList "Getting a property test" [
         test "Get First Property" {
             PropertyGet("M", c) |> normalizeOp ==? Value(Int 8)    
         }
         test "Get Second Property" {
-            PropertyGet("T", c) |> normalizeOp ==? Value(Float 6.)   
+            PropertyGet("T", c) |> normalizeOp ==? six
         }
         test "Can't find property does nothing" {
             PropertyGet("H", c) |> normalizeOp ==? PropertyGet("H", c)    

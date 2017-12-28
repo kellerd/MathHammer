@@ -30,7 +30,7 @@ let toTyped op =
     let rec doCheck = function
         | Int _                             -> Scalar "Int"
         | Str(_)                            -> Scalar "Str"
-        | Float(_)                          -> Scalar "Float"
+        //| Float(_)                          -> Scalar "Float"
         | Check(Check.Fail(gp))             -> Fail (doCheck gp)
         | Check(Check.Pass(gp))             -> Pass (doCheck gp)
         | NoValue                           -> Unknown
@@ -89,7 +89,7 @@ let toTyped op =
 // [[d] |> opList; d] |> opList |> toTyped |> toString
 
 let es x op = get x |> op |> evalOp standardCall Map.empty<_,_>
-let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_>
+//let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_>
 let e x op = get x |> op |> evalOp sampleCall Map.empty<_,_>
 
 [<Tests>]
@@ -166,8 +166,6 @@ let tests =
     let ``Repeat Tests`` (value1:ListDistScalarType) (value2:ListDistScalarType) =
         let value1' = value1.ToGamePrimitive() 
         let value2' = value2.ToGamePrimitive() 
-        let value1' = (Dist []) 
-        let value2' = (Dist [(Float 1.0, 0.3636363636)])
         let value1Type = value1' |> Value |> toTyped
         let value2Type = value2' |> Value |> toTyped
         let result = repeatOp (Value value1') (Value value2') >>= "result" |> es "result"
@@ -186,9 +184,11 @@ let tests =
             | Pass a,   Pass(a'),        a''         
             | a,        Pass(a'),        a''         
             | Pass a,   a',              a''                -> checkTypes (a, a', a'')
-            | a,        Distr(a'),       Distr(a'')         -> checkTypes (a, a', a'') //"D3D6s\nD6 x 3\n[A;b;c] x D6  = \nRepeat D6 D3\nRepeat 3 D6\nRepeat D6 [a;b;c] = \nA x B Scalar Dist = A List Dist"
-            | a,        List a',         List (a'')         -> checkTypes (a, a', a'')
-            | a,        Scalar _,        List (a'')         -> Expect.isTrue (a = a'') "3 x 3\n3D6\n[A;b;c] x 3 = \nRepeat 3 3\nRepeat D6 3\nRepeat 3 [a;b;c] =\nA x B = A list"
+            //Adds a distr to the outside
+            | a,        Distr a',        Distr(a'')         -> checkTypes (a, a', a'') //"D3D6s\nD6 x 3\n[A;b;c] x D6  = \nRepeat D6 D3\nRepeat 3 D6\nRepeat D6 [a;b;c] = \nA x B Scalar Dist = A List Dist"
+            //Adds a List to the outside
+            | a,        List  a',        List (a'')         -> checkTypes (a, a', a'')
+            | a,        Scalar _,        List (a'')         -> Expect.equal a a'' "3 x 3\n3D6\n[A;b;c] x 3 = \nRepeat 3 3\nRepeat D6 3\nRepeat 3 [a;b;c] =\nA x B = A list"
             |        a,         b,          c  -> failtest <| sprintf "Values don't all have the correct dimension %A+%A=%A?\nValue: %A" a b c result
         checkTypes (value1Type,value2Type,resultType)        
     //let ``Repeat [4] 3 = List Scalara x Scalarb = List List Scalar a``  =

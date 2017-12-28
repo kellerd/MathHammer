@@ -6,7 +6,7 @@ type Die =
 type GamePrimitive =
     | Int of int
     | Str of string
-    | Float of float
+    //| Float of float
     | Check of Check.Check<GamePrimitive>
     | NoValue 
     | ParamArray of Operation list
@@ -50,7 +50,7 @@ let (|IntCheck|_|) = function
     | Check(_) -> None
     | NoValue -> Check.Fail 0 |> Some
     | Dist(_) -> None
-    | Float _ -> None
+    //| Float _ -> None
     | ParamArray(_) -> None
     | Tuple(_) ->None
 
@@ -61,7 +61,7 @@ type GamePrimitive with
         | NoValue,Dist z | Dist z,NoValue -> z |> Distribution.normalize |> Dist 
         | NoValue,z | z,NoValue -> z
         | Int(a),Int(b) -> Int(a+b)
-        | Float(a),Float(b) -> Float(a+b)
+        //| Float(a),Float(b) -> Float(a+b)
         | Str(a),Str(b) -> Str(a+b)
         | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
         | Dist d, gp 
@@ -69,8 +69,8 @@ type GamePrimitive with
         | Check (r1),Check(r2) -> Check.add r1 r2 |> Check
         | a, Check(b)
         | Check(b), a -> Check.add (Check.Pass a) b  |> Check
-        | Float(x), Int(y) 
-        | Int(y), Float(x)  -> Float(x + float y)
+        //| Float(x), Int(y) 
+        //| Int(y), Float(x)  -> Float(x + float y)
         | Tuple(a,b), Tuple(x,y) -> Tuple(a+x,b+y)
         | ParamArray a, ParamArray b -> List.append a b |> ParamArray
         | x,y -> failwith <| sprintf "Cannot add these two primitives %A, %A" x y
@@ -78,7 +78,7 @@ type GamePrimitive with
         match (x,y) with 
         | NoValue,_ | _,NoValue -> NoValue
         | Int(a),Int(b) -> Int(a*b)
-        | Float(a),Float(b) -> Float(a*b)
+        //| Float(a),Float(b) -> Float(a*b)
         | Tuple(a,b), Tuple(x,y) -> Tuple(a*x,b*y)
         | Check r1, Check r2 -> Check.mult r1 r2 |> Check
         | a, Check(b)
@@ -123,9 +123,9 @@ let greaterThan =
     GamePrimitive.map2 (fun gp gp2 -> 
         match gp,gp2 with 
         | Int(i),  Int(i2)  -> (if i > i2 then  Int(i) |> Check.Pass  else Int(i) |> Check.Fail) |> Check
-        | Float(i),  Float(i2)  -> (if i > i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
-        | Int a, Float b -> (if float a > b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
-        | Float a, Int b -> (if a > float b then Float(a) |> Check.Pass else Float(a) |> Check.Fail) |> Check
+        //| Float(i),  Float(i2)  -> (if i > i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
+        //| Int a, Float b -> (if float a > b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
+        //| Float a, Int b -> (if a > float b then Float(a) |> Check.Pass else Float(a) |> Check.Fail) |> Check
         | Str(s),Str(s2) -> (if s > s2 then  Str(s) |> Check.Pass  else Str(s) |> Check.Fail) |> Check
         | NoValue,NoValue -> Check.Fail NoValue |> Check
         | (Tuple _ as t), (Tuple _ as t2) -> (if t > t2 then  t |> Check.Pass  else t |> Check.Fail) |> Check
@@ -140,9 +140,9 @@ let lessThan =
     GamePrimitive.map2 (fun gp gp2 -> 
         match gp,gp2 with 
         | Int(i),  Int(i2)  -> (if i < i2 then  Int(i) |> Check.Pass  else Int(i) |> Check.Fail) |> Check
-        | Float(i),  Float(i2)  -> (if i < i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
-        | Int a, Float b -> (if float a < b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
-        | Float a, Int b -> (if a < float b then Float(a) |> Check.Pass else Float(a) |> Check.Fail) |> Check
+        //| Float(i),  Float(i2)  -> (if i < i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
+        //| Int a, Float b -> (if float a < b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
+        //| Float a, Int b -> (if a < float b then Float(a) |> Check.Pass else Float(a) |> Check.Fail) |> Check
         | Str(s),Str(s2) -> (if s < s2 then  Str(s) |> Check.Pass  else Str(s) |> Check.Fail) |> Check    
         | NoValue,NoValue -> Check.Fail NoValue |> Check
         | (Tuple _ as t), (Tuple _ as t2) -> (if t < t2 then  t |> Check.Pass  else t |> Check.Fail) |> Check
@@ -157,9 +157,9 @@ let equals =
     GamePrimitive.map2 (fun gp gp2 -> 
         match gp,gp2 with 
         | Int(i),  Int(i2)  -> (if i = i2 then  Int(i) |> Check.Pass  else Int(i) |> Check.Fail) |> Check
-        | Float(i),  Float(i2)  -> (if i = i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
-        | Int a, Float b ->  (if float a = b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
-        | Float a, Int b -> (if float b = a then Float(a) |> Check.Pass else Float(a) |> Check.Fail) |> Check
+        // | Float(i),  Float(i2)  -> (if i = i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
+        // | Int a, Float b ->  (if float a = b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
+        // | Float a, Int b -> (if float b = a then Float(a) |> Check.Pass else Float(a) |> Check.Fail) |> Check
         | Str(s),Str(s2) -> (if s = s2 then  Str(s) |> Check.Pass  else Str(s) |> Check.Fail) |> Check
         | NoValue,NoValue -> Check.Pass NoValue |> Check
         | ParamArray ops, ParamArray ops2 ->  (if ops = ops2 then ParamArray ops |> Check.Pass  else ParamArray ops |> Check.Fail) |> Check
@@ -175,8 +175,8 @@ let rec notEquals =
     GamePrimitive.map2 (fun gp gp2 -> 
         match gp,gp2 with 
         | Int(i),  Int(i2)  -> (if i <> i2 then  Int(i) |> Check.Pass  else Int(i) |> Check.Fail) |> Check
-        | Float(i),  Float(i2)  -> (if i <> i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
-        | Int a, Float b | Float b, Int a -> (if float a <> b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
+        // | Float(i),  Float(i2)  -> (if i <> i2 then  Float(i) |> Check.Pass  else Float(i) |> Check.Fail) |> Check
+        // | Int a, Float b | Float b, Int a -> (if float a <> b then Int(a) |> Check.Pass else Int(a) |> Check.Fail) |> Check
         | Str(s),Str(s2) -> (if s <>s2 then  Str(s) |> Check.Pass  else Str(s) |> Check.Fail) |> Check
         | (Tuple _ as t), (Tuple _ as t2) -> (if t <> t2 then  t |> Check.Pass  else t |> Check.Fail) |> Check
         | ParamArray ops, ParamArray ops2 ->  (if ops <> ops2 then ParamArray ops |> Check.Pass  else ParamArray ops |> Check.Fail) |> Check

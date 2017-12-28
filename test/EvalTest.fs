@@ -27,6 +27,6 @@ let tests =
         result ==? expected 
     testList "Test normalize and eval" [
         testPropertyWithConfig config "Std Call normalize then eval, same as eval" (``Normalize and eval should be the same with`` standardCall)
-        testPropertyWithConfig config "Avg Call normalize then eval, same as eval" (``Normalize and eval should be the same with`` avgCall)
+        //testPropertyWithConfig config "Avg Call normalize then eval, same as eval" (``Normalize and eval should be the same with`` avgCall)
         testPropertyWithConfig config "Single Call normalize then eval, same as eval" (``Normalize and eval should be the same with`` firstCall)
     ]

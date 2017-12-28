@@ -11,14 +11,18 @@ type DistType = DistType of GamePrimitive
 type ListType = ListType of GamePrimitive
 type ListDistScalarType = ScalarGamePrimitive of GamePrimitive | DistGamePrimitive of GamePrimitive | ListGamePrimitive of GamePrimitive
     with member x.ToGamePrimitive() = x |> function | ScalarGamePrimitive g | DistGamePrimitive g | ListGamePrimitive g -> g
-let genFloat = Gen.map (fun (NormalFloat f) -> Float f) Arb.generate<_>
+//let genFloat = Gen.map (fun (NormalFloat f) -> Float f) Arb.generate<_>
 let genInt = Gen.map Int Arb.generate<_>
 let genStr = Gen.map (fun (NonEmptyString s) -> Str s) Arb.generate<_>
 let genNoVal = Gen.constant (Value(NoValue))
 let genFOfPrim f = 
-    Gen.oneof [ f genFloat;f  genInt;f  genStr; f (Gen.constant NoValue) ]
+    Gen.oneof [ //f genFloat
+                f  genInt
+                f  genStr
+                f (Gen.constant NoValue) ]
 let genPrimitive = genFOfPrim id
-let genNumber f = Gen.oneof [ f genFloat; f genInt ]
+let genNumber f = Gen.oneof [ //f genFloat;
+                              f genInt ]
 let genListOfPrimitive = genFOfPrim (Gen.listOf)  
 let genCheck ofType = 
         Gen.oneof [
@@ -47,18 +51,20 @@ let similarCombo g =
 
 let genTwoSimilarTypes =
     let positiveInt = genInt   |> Gen.filter (fun v -> match v with Int i   when i >= 0   -> true | _ -> false)
-    let positiveFloat = genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
+    //let positiveFloat = genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
     Seq.collect similarCombo [ positiveInt
-                               positiveFloat
+                               //positiveFloat
                                Gen.listOf positiveInt |> Gen.map (List.map Value >> ParamArray)
-                               Gen.listOf positiveFloat |> Gen.map (List.map Value >> ParamArray)]
+                               //Gen.listOf positiveFloat |> Gen.map (List.map Value >> ParamArray) 
+                             ]
     |> Gen.oneof
     |> Gen.map TwoSimilarTypes
 let genTwoSimilarScalarTypes =
     let positiveInt = genInt   |> Gen.filter (fun v -> match v with Int i   when i >= 0   -> true | _ -> false)
-    let positiveFloat = genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
+    //let positiveFloat = genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
     Seq.collect similarCombo [ positiveInt
-                               positiveFloat ]
+                              // positiveFloat 
+                             ]
     |> Gen.oneof
     |> Gen.map TwoSimilarScalarTypes
 
@@ -68,15 +74,18 @@ let genListType =
     Gen.map (List.map Value >> ParamArray >> ListType) genListOfPrimitive
 let genListDistScalarType = 
     let positiveInt = genInt   |> Gen.filter (fun v -> match v with Int i   when i >= 0   -> true | _ -> false)
-    let positiveFloat = genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
-    [baseTypes positiveInt; baseTypes positiveFloat] 
+    //let positiveFloat = genFloat |> Gen.filter (fun v -> match v with Float f when f >= 0.0 -> true | _ -> false)
+    [ 
+        baseTypes positiveInt
+      //baseTypes positiveFloat
+    ] 
     |> Seq.collect id 
     |> Gen.oneof
     |> Gen.map (function | Dist(d) -> DistGamePrimitive(Dist(d))
                          | ParamArray(ops) -> ListGamePrimitive(ParamArray(ops))
                          | Int _       
                          | Str _       
-                         | Float _     
+                         //| Float _     
                          | Check _     
                          | NoValue  _  
                          | Tuple _ as g     -> ScalarGamePrimitive g)

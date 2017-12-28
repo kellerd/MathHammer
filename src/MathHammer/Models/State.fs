@@ -1,10 +1,9 @@
 module MathHammer.Models.State
 
 open Elmish
-open MathHammer.Models.Types
+open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open Determinism 
 
 let init name =
     { PosX=0.
@@ -49,26 +48,24 @@ let rec evalDie d : Distribution.Distribution<_> =
                 //                     | _ -> c) 0 xs
                 //     List.init n  (fun n -> App(lam,vInt n)) 
 let rec evalCall dieFunc func v env  =
-    let lam = Lam ("unusedVariable",Value (Dist [(Float 1.0, 0.3636363636)]))
-    let op2 = Value (Dist [(Float 1.0, 0.3636363636)])
-    let dieFunc = (evalDie >> Distribution.map (Int)  >> Dist >> Value)
-    let env = Map.empty<_,_>
-    let times = [(Float 1.0, 0.3636363636)]
+    //let lam = Lam ("unusedVariable",Value (Dist [(Float 1.0, 0.3636363636)]))
+    //let op2 = Value (Dist [(Float 1.0, 0.3636363636)])
+    //let dieFunc = (evalDie >> Distribution.map (Int)  >> Dist >> Value)
+    //let env = Map.empty<_,_>
+    //let times = [(Float 1.0, 0.3636363636)]
     let repeat lam op2 = 
         let rec repeatOps lam times : Operation =
-            let newOps = 
-                match times with
+            let rec repeatOp : GamePrimitive->Operation = function
                 | NoValue
-                | Check(Check.Fail (_)) -> []
-                | Int (n) 
-                | Check(Check.Pass (Int(n))) -> List.init (max 0 n) (fun n -> App(lam,vInt n)) 
-                | Dist(times) -> times |> Distribution.map(fun gp -> [repeatOps lam gp] |> ParamArray) |> Dist |> Value |> List.singleton
+                | Check(Check.Fail (_)) -> noValue
+                | Int (n) -> List.init (max 0 n) (fun n -> App(lam,vInt n)) |> opList
+                | Dist(times) -> times |> Distribution.map(fun gp -> [repeatOps lam gp] |> ParamArray) |> Dist |> Value
                 | Str(_) -> failwith "Not Implemented"
-                | Float(_) -> failwith "Not Implemented"
-                | Check(_) -> failwith "Not Implemented"
-                | ParamArray(_) -> failwith "Not Implemented"
-                | Tuple(_, _) -> failwith "Not Implemented"
-            evalOp (evalCall dieFunc) env (opList newOps)
+                //| Float(_) -> failwith "Not Implemented"
+                | Check(Check.Pass (n)) -> repeatOp n
+                | ParamArray(times) -> times |> List.map(function Value(gp) -> repeatOps lam gp | _ -> noValue ) |> ParamArray |> Value
+                | Tuple(n, m) -> [Value n;Value m] |> ParamArray |> repeatOp
+            evalOp (evalCall dieFunc) env (repeatOp times)
 
         let times = evalOp (evalCall dieFunc) env op2  
         match times with 
@@ -121,7 +118,7 @@ let rec evalCall dieFunc func v env  =
             | Tuple (_)           -> tuple(Int(1),Int(0)) 
             | Int(_)              -> tuple(Int(1),Int(0))
             | Str(_)              -> tuple(Int(1),Int(0))
-            | Float(_)            -> tuple(Int(1),Int(0))
+            //| Float(_)            -> tuple(Int(1),Int(0))
             | Dist(_)             -> tuple(Int(1),Int(0)) 
             | NoValue             -> tuple(Int(0),Int(1))
             | Check(Check.Fail _) -> tuple(Int(0),Int(1))
@@ -146,7 +143,7 @@ let rec evalCall dieFunc func v env  =
 
 let standardCall = (evalCall (evalDie >> Distribution.map (Int)  >> Dist >> Value))
 let sampleCall = (evalCall (evalDie >> Distribution.sample >> Int >> Value))
-let avgCall = (evalCall (evalDie >> Distribution.expectation(float) >> Float >> Value))
+//let avgCall = (evalCall (evalDie >> Distribution.expectation(float) >> Float >> Value))
 let (|ContainsVar|_|) env key = Map.tryFind key env
 let update msg model =
       match msg with
@@ -156,10 +153,10 @@ let update msg model =
       | Rebind (initial) -> 
             let normalized = model.Rules |> normalizeOp 
             let sampled = normalized |> evalOp sampleCall initial
-            let average = normalized |> evalOp avgCall initial
+            //let average = normalized |> evalOp avgCall initial
             let probability = normalized |> evalOp standardCall initial
             let cmds = []
             { model with SampleRules = sampled
-                         AverageRules = average
+                         AverageRules = probability
                          NormalizedRules = normalized
                          ProbabilityRules = probability }, Cmd.batch cmds

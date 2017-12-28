@@ -9,7 +9,7 @@ let (==?) x y =
     //printfn "%A" y
     Expect.equal x y ""
 let es x op = get x |> op |> evalOp standardCall Map.empty<_,_> 
-let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
+//let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
 let e x op = get x |> op |> evalOp sampleCall Map.empty<_,_> 
 
 [<Tests>]
@@ -30,14 +30,14 @@ let tests =
         let ``Three Passes`` = List.init times (fun _ -> passOrFailCount) |> opList |> call functionToCall >>= "ThreePasses"
         let ``Three Passes Repeat`` = repeat (Lam("_", passOrFailCount)) (vInt times) |> call functionToCall >>= "ThreePasses"
         (es  "ThreePasses" ``Three Passes``) ==? (es "ThreePasses" ``Three Passes Repeat``)
-        (ea  "ThreePasses" ``Three Passes``) ==? (ea "ThreePasses" ``Three Passes Repeat``)
+        //(ea  "ThreePasses" ``Three Passes``) ==? (ea "ThreePasses" ``Three Passes Repeat``)
         (e   "ThreePasses" ``Three Passes``) ==? (e  "ThreePasses" ``Three Passes Repeat``)
 
     let ``Repeat Sum is the same as product`` x y =
         let result = repeatOp x y |> call Total >>= "TotalSum" 
         let product = [x;y] |> opList |> call Product >>= "TotalProduct" 
         (result |> es "TotalSum") ==? (product |> es "TotalProduct")
-        (result |> ea "TotalSum") ==? (product |> ea "TotalProduct")
+        //(result |> ea "TotalSum") ==? (product |> ea "TotalProduct")
         (result |> e  "TotalSum") ==? (product |> e  "TotalProduct")
     testList "Repeat Tests" [
         testPropertyWithConfig config "Repeating an operation gives correct length" ``Repeating an operation gives correct length``

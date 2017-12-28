@@ -9,7 +9,7 @@ let (==?) actual expected = Expect.equal expected actual ""
 [<Tests>]
 let tests = 
     let es x op = get x |> op |> evalOp standardCall Map.empty<_,_> 
-    let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
+    //let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
     let e x op = get x |> op |> evalOp sampleCall Map.empty<_,_> 
     let d6Dist =  [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
     let plusTest plus = 
@@ -21,12 +21,12 @@ let tests =
                 | (Value(Dist(result))) -> Expect.containsAll result expectedWS ""
                 | x -> failtest <| sprintf "Result is wrong type %A" x
             }
-            test "WS Test avg" {
-                let result = ws |> ea "WS"
-                let wrap f = Value(Check(f(Float(3.5))))
-                let expected = if 3.5 >= float plus then wrap Check.Pass else wrap Check.Fail
-                result ==? expected
-            }
+            // test "WS Test avg" {
+            //     let result = ws |> ea "WS"
+            //     let wrap f = Value(Check(f(Float(3.5))))
+            //     let expected = if 3.5 >= float plus then wrap Check.Pass else wrap Check.Fail
+            //     result ==? expected
+            // }
             test "WS Test Sample" {
                 match  ws |> e "WS" with
                 | Value result -> Expect.contains (List.map fst expectedWS) result ""
@@ -41,10 +41,10 @@ let tests =
                 let result = psychicDice |> es "PsychicDice"
                 result ==? opList[d6Dist;d6Dist]                    
             }
-            test "Psychic Dice avg" {
-                let result = psychicDice |> ea "PsychicDice"
-                result ==? opList[Value(Float(3.5));Value(Float(3.5))]                    
-            }
+            // test "Psychic Dice avg" {
+            //     let result = psychicDice |> ea "PsychicDice"
+            //     result ==? opList[Value(Float(3.5));Value(Float(3.5))]                    
+            // }
             test "Psychic Dice sample" {
                 let result = psychicDice |> e "PsychicDice"
                 let expected = [1..6] |> List.map (Int) 
@@ -68,11 +68,11 @@ let tests =
                 | Value(Dist(result)) -> Expect.containsAll result expected ""
                 | x -> failtest <| sprintf "Result is wrong type %A" x
             }
-            test "Psychic Total avg" {
-                let result = psychicTest |> ea "PsychicTest"
-                let expected = Value (Float 7.0)
-                result ==? expected            
-            }
+            // test "Psychic Total avg" {
+            //     let result = psychicTest |> ea "PsychicTest"
+            //     let expected = Value (Float 7.0)
+            //     result ==? expected            
+            // }
             test "Psychic Total sample" {
                 let expected = [2..12] |> List.map (Int) 
                 match psychicTest |> e "PsychicTest" with 
@@ -87,7 +87,7 @@ let tests =
             let variableName = "A"
             let results = 
                 [ input >>= variableName |> es variableName
-                  input >>= variableName |> ea variableName
+                  //input >>= variableName |> ea variableName
                   input >>= variableName |> e variableName ]
             Expect.allEqual results input "All should return straight values"
         }

@@ -31,7 +31,7 @@ let initialMap = Map.add "Defender" defApplied Map.empty<string,Operation>
 let attApplied = applyArgs attacker seargent |> normalizeOp
 
 let eps x op = getp x op |> evalOp standardCall initialMap
-let epa x op = getp x op |> evalOp avgCall initialMap
+//let epa x op = getp x op |> evalOp avgCall initialMap
 let ep x op = getp x op |> evalOp sampleCall initialMap
 let (|IsDPlus|_|) = function
     | Let (roll,App (Call (Dice D6),Value NoValue),
@@ -52,14 +52,14 @@ let tests =
         |> List.map(function 
                     | key,IsDPlus plus -> key,List.init 6 ((+) 1 >> fun i -> if i >= plus then Check(Check.Pass(Int(i))) else Check(Check.Fail(Int(i)))) |> Distribution.uniformDistribution |> List.rev |> Dist |> Value
                     | key,op -> key,op)
-    let expectedAvg = 
-        pairs
-        |> List.map(function 
-                    | key,IsDPlus plus -> 
-                        if 3.5 >= float plus then key,Value (Check (Check.Pass (Float 3.5)))
-                        else key,Value (Check (Check.Fail (Float 3.5)))
-                    | key,op -> 
-                        key,op)                                                                                                               
+    // let expectedAvg = 
+    //     pairs
+    //     |> List.map(function 
+    //                 | key,IsDPlus plus -> 
+    //                     if 3.5 >= float plus then key,Value (Check (Check.Pass (Float 3.5)))
+    //                     else key,Value (Check (Check.Fail (Float 3.5)))
+    //                 | key,op -> 
+    //                     key,op)                                                                                                               
 
     testList "Attacker Tests" [
         expectedStd 
@@ -70,9 +70,9 @@ let tests =
         |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { ep key attApplied ==~ expected })  
         |> testList "Sample Tests";
         
-        expectedAvg
-        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key)  { epa key attApplied ==? expected })  
-        |> testList "Avg Tests";
+        // expectedAvg
+        // |> List.map(fun (key,expected) -> test (sprintf "Check %s" key)  { epa key attApplied ==? expected })  
+        // |> testList "Avg Tests";
 
     ] 
 

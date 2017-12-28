@@ -50,7 +50,7 @@ and unparseDist (dist:Distribution.Distribution<GamePrimitive>) =
                       | Check(Check.Pass _ ) -> colourA (float 0xFF) |> Some
                       | Check(Check.Fail _ ) -> colourA (float 0x00) |> Some
                       | Tuple (x,y) when x = y ->  colourA (float 0xFF)  |> Some
-                      | Tuple (Float x,Float y) -> (x / (x + y) ) * float 0xFF |> colourA |> Some
+                      //| Tuple (Float x,Float y) -> (x / (x + y) ) * float 0xFF |> colourA |> Some
                       | Tuple (Int x,Int y) -> (float x / (float x + float y) ) * float 0xFF  |> colourA|> Some
                       | Int _ -> colourDefault |> Some
                       | _ -> None
@@ -64,7 +64,7 @@ and unparseDist (dist:Distribution.Distribution<GamePrimitive>) =
             |> div []       
 and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function   
     | Int(i) -> string i |> str
-    | Float(f) -> sprintf "%.1f" f |> str
+    //| Float(f) -> sprintf "%.1f" f |> str
     | Dist(d) -> unparseDist d
     | NoValue -> "--" |> str
     | Str s -> b  [] [str s]
