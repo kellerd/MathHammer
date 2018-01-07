@@ -11,7 +11,7 @@ let (==?) x y = Expect.equal x y ""
 [<Tests>]
 let tests = 
     testList "Operation Tests" [
-        let stdEval = normalizeOp >> evalOp standardCall Map.empty<_,_>
+        let stdEval = normalize>> evalOp standardCall Map.empty<_,_>
         yield test "Evalled D6 equal std distribution of integers, reversed" {
             let result = stdEval d6
             let expected = [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
@@ -29,7 +29,7 @@ let tests =
             let evaled' = Value(v) |> f |> evalOp standardCall Map.empty<_,_> 
             evaled ==? evaled'
         yield testPropertyWithConfig config "let x = 3 returns 3 evaluated without normalization" (retValueIsSame id)
-        yield testPropertyWithConfig config "let x = 3 returns 3 evaluated with normalization" (retValueIsSame normalizeOp)
+        yield testPropertyWithConfig config "let x = 3 returns 3 evaluated with normalization" (retValueIsSame normalize)
         //Let x = some number in
         //x + some other number
         let addition x y  =   

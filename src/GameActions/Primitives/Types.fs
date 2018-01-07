@@ -34,11 +34,6 @@ and Call =
     | And
     | Or
 
-// let x = 
-//     <@ 
-//         let a = 5
-//         let b = 10
-//         if a > b then "" elif a >= b then "a" else "ab" @>    
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
     | _ -> None
@@ -80,33 +75,21 @@ type GamePrimitive with
         | Int(a),Int(b) -> Int(a*b)
         //| Float(a),Float(b) -> Float(a*b)
         | Tuple(a,b), Tuple(x,y) -> Tuple(a*x,b*y)
+        | ParamArray ops, ParamArray ops2 when List.length ops = List.length ops2 ->
+            List.zip ops ops2 |> List.map (function (Value a,Value b) -> a * b |> Value | _ -> Value NoValue) |> ParamArray
+        | ParamArray [], _ | _, ParamArray [] -> NoValue 
+        | ParamArray ops, b | b,  ParamArray ops ->
+            ops 
+            |> List.map (fun a -> match a with Value a -> a * b |> Value | _ -> Value NoValue) |> ParamArray
         | Check r1, Check r2 -> Check.mult r1 r2 |> Check
         | a, Check(b)
         | Check(b), a -> Check.mult (Check.Pass a) b  |> Check
-        | Tuple(Int(n),_), Dist d2
-        | Dist d2, Tuple(Int(n),_)
-        | Check(Check.Pass (Int(n))), Dist d2 
-        | Dist d2, Check(Check.Pass (Int(n)))
-        | Dist d2, Int (n) 
-        | Int (n), Dist d2 -> 
-                match List.replicate n d2 with 
-                | [] -> [] 
-                | head::tail -> tail |> List.fold (fun d d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (a,b) -> a + b)) head
-                |> Dist
-        // | Dist d2, Check(Check.List xs)
-        // | Check(Check.List xs), Dist d2-> 
-        //     let n = 
-        //         List.fold (fun c elem -> 
-        //                     match elem with 
-        //                     | Check.Pass _ -> c + 1 
-        //                     | Check.Fail _ -> c 
-        //                     | Check.Tuple(Int(x),_) -> c + x 
-        //                     | _ -> c) 0 xs    
-        //     match List.replicate n d2 with 
-        //     | [] -> [] 
-        //     | head::tail -> tail |> List.fold (fun d d2 -> Distribution.cartesian d d2 |> Distribution.map (fun (a,b) -> a + b)) head
-        //     |> Dist                       
-        | x,y -> failwith <| sprintf "Cannot multiply these two primitives %A, %A" x y
+        | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
+        | Dist d, gp 
+        | gp, Dist d -> Distribution.map ((*) gp) d |> Distribution.normalize |> Dist
+        | Str _, _ | _, Str _ -> NoValue
+        | Tuple _,_ | _,Tuple _ -> NoValue
+
 
 module GamePrimitive =
     let map2 f x y =
@@ -188,22 +171,7 @@ let rec notEquals =
         | Dist _, _ | _, Dist _
         | ParamArray _, _ | _, ParamArray _ -> NoValue //printfn "Couldn't compare %A > %A" gp gp2;
     )
-// open GameActions.Primitives.Types
-// let d6 = Distribution.uniformDistribution [1..6] |> Distribution.map (fun i -> if i > 3 then Check.Pass (Int i) else Check.Fail (Int i)) 
-// let d6' = Distribution.uniformDistribution [1..6] |> Distribution.map (fun i -> if i < 2 then Check.Pass (Int i) else Check.Fail (Int i))
 
-// let dx = Distribution.pair d6 d6' |> Distribution.map (Check.either >> Check.map (fun (a,b) -> ParamArray[Value(Check a);Value(Check b)]))
-
-// let d'' = Distribution.dist {
-//     let! x = d6
-//     let! y = d6'
-//     if Check.IsPass x || x = y then
-//         return x 
-//     else if Check.IsPass y then 
-//         return y
-//     else 
-//         return x
-//   }
 let checkGp f = 
     let (|AsCheck|) v = 
         match v with
@@ -224,35 +192,7 @@ let checkGp f =
 let rec andGp = checkGp Check.all
 let rec orGp = checkGp Check.either
 
-    // | Dist(a), Dist(b) -> Distribution.dist {
-    //         let! d1
-    //     }
-
-    // | (Check (Pass _) as a), Check _ 
-    // | Check _, (Check (Pass _) as a) -> a
-    // | (Check (Fail _)), (Check _ as b)
-    // | (Check _ as b), (Check (Fail _)) -> b
-    // | Check _, b 
-    // | b, Check _ -> Pass b |> Check
-    // | 
-    // | Int(i) as a,  Int(i2)  -> Int(i) |> Pass  else Int(i) |> Fail) |> Check
-    // | Float(i) as a,  Float(i2)  -> (if i < i2 then  Float(i) |> Pass  else Float(i) |> Fail) |> Check
-    // | Int a, Float b -> (if float a < b then Int(a) |> Pass else Int(a) |> Fail) |> Check
-    // | Float a, Int b -> (if a < float b then Float(a) |> Pass else Float(a) |> Fail) |> Check
-    // | Dist(r), Dist(r2) -> Distribution.bind (fun a -> Distribution.map(fun b -> lessThan a b ) r2) r |> Dist
-    // | Check(r), Check(r2) -> Check.bind (fun a -> Check.map(fun b -> lessThan a b ) r2) r |> Check
-    // | Str(s),Str(s2) -> (if s < s2 then  Str(s) |> Pass  else Str(s) |> Fail) |> Check    
-    // | gp,Dist(r) -> Distribution.map(fun b -> lessThan gp b) r |> Dist
-    // | Dist(r), gp -> Distribution.map(fun a -> lessThan a gp) r |> Dist
-    // | gp,Check(r) -> Check.map(fun b -> lessThan gp b) r |> Check
-    // | Check(r), gp -> Check.map(fun a -> lessThan a gp) r |> Check
-    // | NoValue,NoValue -> Fail NoValue |> Check
-    // | _, NoValue _ | NoValue _, _ 
-    // | Str _, _ | _, Str _ -> 
-    //     //printfn "Couldn't compare %A < %A" op op2; 
-    //     NoValue
-
-type NormalizedOperation = Normal | Next of Operation    
+type NormalizedOperation = Normal | Next of Operation   
 
 type [<Measure>] ft 
 and [<Measure>] inch

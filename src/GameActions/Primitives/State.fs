@@ -100,6 +100,17 @@ let d6Test = [d6] |> opList |> total >>= "D6Test"
 let d3Test = [d3] |> opList |> total >>= "D3Test"
 
 
+let rec isInUse s = function
+      | Var (v) -> v = s
+      | App (f, a) -> isInUse s f || isInUse s a 
+      | Lam (p, x) -> p <> s && isInUse s x
+      | Value(ParamArray(ops)) -> List.fold (fun used op -> used || isInUse s op) false ops
+      | Value _ -> false
+      | Let (n, v, op) -> isInUse s v || (n <> s && isInUse s op)
+      | Call _ -> false
+      | PropertyGet(_, op) -> isInUse s op
+      | IfThenElse(ifExpr, thenExpr, None) -> isInUse s ifExpr || isInUse s thenExpr
+      | IfThenElse(ifExpr, thenExpr, Some elseExpr) -> isInUse s ifExpr || isInUse s thenExpr || isInUse s elseExpr
 
 let rec subst arg s = function
       | Var (v) -> if (v) = s then arg else Var (v)
@@ -220,8 +231,8 @@ let tryFindLabel name operation =
     match operation with 
     | FirstIsName v -> Some v
     | Value(ParamArray(ops)) -> List.tryPick (function FirstIsName v -> Some v | _ -> None) ops
-    | _ -> None        
-let normalizeOp op = 
+    | _ -> None   
+let normalize op = 
     let all = freeIds op
     let rec reduce = function
         | Var _ -> Normal
@@ -229,32 +240,36 @@ let normalizeOp op =
         | App (Lam (p, b), a) ->
               let redex = a, p, b
               match rename all redex with
-                  | Renamed x -> Next x
-                  | Fine -> Next (subst a p b)
+              | Renamed x -> Next x
+              | Fine -> Next (subst a p b)
         | App (f, a) ->
               match reduce f with
-                  | Next rf -> Next (App (rf, a))
-                  | _ ->
-                      match reduce a with
-                          | Next ra -> Next (App (f, ra))
-                          | _ -> Normal
+              | Next rf -> Next (App (rf, a))
+              | _ ->
+                  match reduce a with
+                  | Next ra -> Next (App (f, ra))
+                  | _ -> Normal
         | Lam (p, b) ->
               match reduce b with
-                  | Next b -> Next (Lam (p, b))
-                  | _ -> Normal
+              | Next b -> 
+                    if not (isInUse p b) then Next b
+                    else Next (Lam (p, b))
+              | _ -> 
+                    if not (isInUse p b) then Next b
+                    else Normal
         | PropertyGet (p, b) ->
               match reduce b with
-                  | Next b ->  Next (PropertyGet (p, b))
-                  | _ -> 
-                        match tryFindLabel p b with 
-                        | Some op -> Next(op) 
-                        | None -> Normal
+              | Next b ->  Next (PropertyGet (p, b))
+              | _ -> 
+                    match tryFindLabel p b with 
+                    | Some op -> Next(op) 
+                    | None -> Normal
         | Value(ParamArray(ops)) -> 
             let (rops,expr) = 
                 ops 
                 |> List.map (fun op -> match reduce op with 
-                                                  | Normal -> op,Normal
-                                                  | Next rop -> rop,Next rop)
+                                       | Normal -> op,Normal
+                                       | Next rop -> rop,Next rop)
                 |> List.unzip                            
             if List.exists(function Next _ -> true | Normal -> false) expr then
                 Next (Value(ParamArray(rops)))
@@ -324,7 +339,7 @@ let rec evalOp evalCall env (operation:Operation) =
         match evalOp evalCall env f, evalOp evalCall env value with 
         | (Call f),v -> evalCall f v env 
         | Lam(x, op),v -> evalOp evalCall env <| App(Lam(x, op),v) 
-        | x -> failwith <| sprintf "Cannot apply to something not a function %A" x
+        | f',x' -> failwith <| sprintf "Cannot apply to something not a function App(%A,%A) = %A,%A" f value f' x'
 // let attackerLam = <@ 
 //     let m = 6
 //     let a = 5

@@ -170,27 +170,29 @@ let tests =
         let value2Type = value2' |> Value |> toTyped
         let result = repeatOp (Value value1') (Value value2') >>= "result" |> es "result"
         let resultType = result |> toTyped
-        let rec checkTypes (value1Type,value2Type,resultType) =
+        let rec checkTypes (value1Type,value2,value2Type,resultType) =
             match value1Type,value2Type,resultType with
-            | _,        Distr Empty    , Distr Empty        -> ()
-            | _,        List Empty    ,  List Empty         -> ()
-            | _,        Pass Empty    ,  Pass Empty         -> ()
+            | _,        Distr Empty,     Distr Empty        -> ()
+            | _,        List Empty,      List Empty         -> ()
+            | _,        Pass Empty,      Pass Empty         -> ()
             | _,        Empty,           Empty              -> ()
-            | _,        Distr Unknown    , Distr Unknown        -> ()
-            | _,        List Unknown    ,  List Unknown         -> ()
-            | _,        Pass Unknown    ,  Pass Unknown         -> ()
+            | _,        Distr Unknown,   Distr Unknown      -> ()
+            | _,        List Unknown,    List Unknown       -> ()
+            | _,        Pass Unknown,    Pass Unknown       -> ()
             | _,        Unknown,         Unknown            -> ()
-            | _,        Fail _,          Empty              -> ()
-            | Pass a,   Pass(a'),        a''         
-            | a,        Pass(a'),        a''         
-            | Pass a,   a',              a''                -> checkTypes (a, a', a'')
+            | _,        Fail _,          Unknown            -> ()
+            | _,        Scalar "Int",    List Empty         when value2 = Int 0 || value2 = Check (Check.Pass (Int 0)) 
+                                                            -> ()
+            // | Pass a,   Pass(a'),        a''         
+            | a,        Pass(a'),        a''                -> checkTypes (a, value2, a', a'')
+            // | Pass a,   a',              a''                
             //Adds a distr to the outside
-            | a,        Distr a',        Distr(a'')         -> checkTypes (a, a', a'') //"D3D6s\nD6 x 3\n[A;b;c] x D6  = \nRepeat D6 D3\nRepeat 3 D6\nRepeat D6 [a;b;c] = \nA x B Scalar Dist = A List Dist"
+            | a,        Distr a',        Distr(a'')         -> checkTypes (a, value2,a', a'') //"D3D6s\nD6 x 3\n[A;b;c] x D6  = \nRepeat D6 D3\nRepeat 3 D6\nRepeat D6 [a;b;c] = \nA x B Scalar Dist = A List Dist"
             //Adds a List to the outside
-            | a,        List  a',        List (a'')         -> checkTypes (a, a', a'')
-            | a,        Scalar _,        List (a'')         -> Expect.equal a a'' "3 x 3\n3D6\n[A;b;c] x 3 = \nRepeat 3 3\nRepeat D6 3\nRepeat 3 [a;b;c] =\nA x B = A list"
+            | a,        List  a',        List (a'')         -> checkTypes (a, value2,a', a'')
+            | a,        Scalar _,        List (a'')         ->  Expect.equal a a'' "3 x 3\n3D6\n[A;b;c] x 3 = \nRepeat 3 3\nRepeat D6 3\nRepeat 3 [a;b;c] =\nA x B = A list"
             |        a,         b,          c  -> failtest <| sprintf "Values don't all have the correct dimension %A+%A=%A?\nValue: %A" a b c result
-        checkTypes (value1Type,value2Type,resultType)        
+        checkTypes (value1Type,value2',value2Type,resultType)        
     //let ``Repeat [4] 3 = List Scalara x Scalarb = List List Scalar a``  =
     testList "Repeat Tests" [
         testPropertyWithConfig config "3 + 3" ``Test Addition``

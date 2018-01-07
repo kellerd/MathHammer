@@ -25,10 +25,10 @@ let ld = vInt 8
 let sv = threePlus
 let invSave = noValue
 let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;] 
-let defApplied = applyArgs defender seargent |> normalizeOp |> evalOp standardCall Map.empty<string,Operation>
+let defApplied = applyArgs defender seargent |> normalize|> evalOp standardCall Map.empty<string,Operation>
 let initialMap = Map.add "Defender" defApplied Map.empty<string,Operation>
 
-let attApplied = applyArgs attacker seargent |> normalizeOp
+let attApplied = applyArgs attacker seargent |> normalize
 
 let eps x op = getp x op |> evalOp standardCall initialMap
 //let epa x op = getp x op |> evalOp avgCall initialMap
@@ -59,7 +59,7 @@ let tests =
     //                     if 3.5 >= float plus then key,Value (Check (Check.Pass (Float 3.5)))
     //                     else key,Value (Check (Check.Fail (Float 3.5)))
     //                 | key,op -> 
-    //                     key,op)                                                                                                               
+    //                     key,op)               
 
     testList "Attacker Tests" [
         expectedStd 

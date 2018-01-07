@@ -8,7 +8,7 @@ let bindModelToEnvironment initial key =
     Option.map (fun (m : Models.Types.Model) -> 
         let evaluatedRule = 
             m.Rules 
-            |> normalizeOp 
+            |> normalize
             |>  evalOp Models.State.standardCall initial
         let scopeWithBoundDude = Map.add key evaluatedRule initial
         let modelMsg = UnitList.Types.ModelMsg(Models.Types.Msg.Rebind scopeWithBoundDude, m.Name)
@@ -65,7 +65,7 @@ let update msg model : Model * Cmd<Types.Msg> =
             let initial = Map.empty<_,_>
             model.GlobalOperations 
             |> Map.map(fun _ (_,op) -> op 
-                                         |> normalizeOp 
+                                         |> normalize
                                          |>  evalOp Models.State.standardCall initial) 
         {model with Environment = environment}, Cmd.batch [ Cmd.ofMsg BindDefender
                                                             Cmd.ofMsg BindAttacker ]

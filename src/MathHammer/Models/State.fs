@@ -58,8 +58,10 @@ let rec evalCall dieFunc func v env  =
             let rec repeatOp : GamePrimitive->Operation = function
                 | NoValue
                 | Check(Check.Fail (_)) -> noValue
-                | Int (n) -> List.init (max 0 n) (fun n -> App(lam,vInt n)) |> opList
-                | Dist(times) -> times |> Distribution.map(fun gp -> [repeatOps lam gp] |> ParamArray) |> Dist |> Value
+                | Int (n) -> List.init (max 0 n) (fun n -> match lam with 
+                                                           | Lam _ -> App(lam,vInt n)
+                                                           | notLam -> notLam) |> opList
+                | Dist(times) -> times |> Distribution.map(fun gp -> match repeatOps lam gp with Value(gp) -> gp | op -> ParamArray[op]) |> Dist |> Value
                 | Str(_) -> failwith "Not Implemented"
                 //| Float(_) -> failwith "Not Implemented"
                 | Check(Check.Pass (n)) -> repeatOp n
@@ -151,7 +153,7 @@ let update msg model =
       | Select _ -> model, Cmd.none
       | Msg.Let _ ->  model, Cmd.none
       | Rebind (initial) -> 
-            let normalized = model.Rules |> normalizeOp 
+            let normalized = model.Rules |> normalize
             let sampled = normalized |> evalOp sampleCall initial
             //let average = normalized |> evalOp avgCall initial
             let probability = normalized |> evalOp standardCall initial
