@@ -3,6 +3,7 @@ module GameActions.Primitives.View
 open Fable.Helpers.React
 open Props
 open Types
+open State
 open Probability.View
 
 let paren react = div [] <| str "(" :: react @ [str ")"]
@@ -79,12 +80,12 @@ and unparse operation : Fable.Import.React.ReactElement list =
     | Value(v)-> [unparseValue v]
     | Var (v) -> [sprintf "%s" v |> str]
     | Lam(_) -> []
-    | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(D6)),_); Value(Int(i))]))) ->  [string (i+1) + "+" |> str]
-    | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(D3)),_); Value(Int(i))]))) ->  [string (i+1) + "+ on D3" |> str]
-    | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D6))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
-    | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D3))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
-    | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
-        [unparse (App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(List.distinct (is @ is2),d))),Value NoValue); Value(Int(i))])))) |> div []]
+    | IsDPlus(D6,plus) ->  [string (plus) + "+" |> str]
+    | IsDPlus(D3,plus) ->  [string (plus) + "+ on D3" |> str]
+    // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D6))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
+    // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D3))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
+    // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
+    //     [unparse (App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(List.distinct (is @ is2),d))),Value NoValue); Value(Int(i))])))) |> div []]
     | App(Lam(_,x),_) -> unparse x //paren (unparse (Lam(p,x))) + " " + argstring a
     | App(f,(Var(v))) -> unparse f @ [div [] [sprintf "%s" v |> str]]
     | App(f,a) -> unparse f @ [div [] (unparse a)]

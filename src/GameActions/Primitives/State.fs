@@ -41,6 +41,17 @@ let dPlus d v =
 
     let dp = Let ("roll", ``D#`` d, (Let("gt", gt, Let ("eq", eq,  gte))))
     dp
+let (|IsDPlus|_|) = function
+    | Let (roll,App (Call (Dice die),Value NoValue),
+           Let (gt, App (Call GreaterThan,Value (ParamArray [Var roll'; Value (Int d)])),
+                Let (eq, App (Call Equals,Value (ParamArray [Var roll''; Value (Int d')])),
+                     App (Call Or,Value (ParamArray [Var eq'; Var gt']))))) 
+        when roll = roll' && roll' = roll'' &&
+             gt = gt' &&
+             eq = eq' &&
+             d = d'
+             -> Some (die,d)
+    | _ -> None
 // dp |> evalOp standardCall (Map.add "roll" (``D#`` d) Map.empty<_,_>    )
 // eq |> evalOp standardCall (Map.add "roll" (``D#`` d) Map.empty<_,_>    )
 // dPlus D6 3 |> evalOp standardCall Map.empty<_,_>    

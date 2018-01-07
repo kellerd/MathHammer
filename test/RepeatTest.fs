@@ -33,6 +33,13 @@ let tests =
         //(ea  "ThreePasses" ``Three Passes``) ==? (ea "ThreePasses" ``Three Passes Repeat``)
         (e   "ThreePasses" ``Three Passes``) ==? (e  "ThreePasses" ``Three Passes Repeat``)
 
+
+    // let x = repeatOp (vInt 4) (vInt 4) |> evalOp standardCall initialMap  
+    // let x = repeatOp (d6) (vInt 4) |> evalOp standardCall initialMap  
+    // let x = repeatOp (vInt 4) (d6)  |> evalOp standardCall initialMap 
+    // let x = repeatOp (d6) (d6)  |> evalOp standardCall initialMap  
+    // let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp standardCall initialMap 
+    // let x = repeatOp (Value(ParamArray([vInt 3; vInt 2]))) (vInt 4)  |> evalOp standardCall initialMap 
     let ``Repeat Sum is the same as product`` (TwoSimilarTypes (x,y)) =
         let result =  
             repeatOp (Value x) (Value y) 
