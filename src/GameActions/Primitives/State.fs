@@ -8,11 +8,11 @@ let opList ops = ParamArray(ops) |> Value
 let pair x y = opList [x;y]
 let call f op = App(Call f, op)
 let tuple ab = Tuple(ab)
-let count v = v |> call Count
+let count = call Count
 let repeat ``(fun op -> 't)`` op2 = opList [``(fun op -> 't)``; op2;] |> call Repeat
-let repeatOp op op2 = opList [Lam("unusedVariable", op); op2] |> call Repeat
-let total v = v |> call Total
-let product v = v |> call Product
+let repeatOp op = ("unusedVariable", op) |> Lam |> repeat
+let total = call Total
+let product = call Product
 let bindVal text op = Let(text,op,Var text)
 
 let bindOp v op inBody = Let(v,op, inBody)
