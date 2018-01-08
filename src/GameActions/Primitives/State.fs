@@ -98,10 +98,11 @@ let  table ifThen =
     | Some o -> o
 
 let sVsT = 
-    [ get "SvsT" |> call GreaterThan, dPlus D6 3
+    [ get "SvsT" |> call GreaterThan, dPlus D6 3 
       get "SvsT" |> call LessThan, dPlus D6 5
       get "SvsT" |> call Equals, dPlus D6 4 ]
     |> table
+    |> count
 let woundResults = repeatOp (svtOps sVsT) (get "HitResults") >>= "WoundResults"
 let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
 let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"

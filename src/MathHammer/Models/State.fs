@@ -64,9 +64,10 @@ let rec evalCall dieFunc func v env  =
                 | Dist(times) -> times |> Distribution.map(fun gp -> match repeatOps lam gp with Value(gp) -> gp | op -> ParamArray[op]) |> Dist |> Value
                 | Str(_) -> failwith "Not Implemented"
                 //| Float(_) -> failwith "Not Implemented"
+                | Tuple(Check(Check.Pass(n)), Check(Check.Fail(_))) 
                 | Check(Check.Pass (n)) -> repeatOp n
                 | ParamArray(times) -> times |> List.map(function Value(gp) -> repeatOps lam gp | _ -> noValue ) |> ParamArray |> Value
-                | Tuple(n, m) -> [Value n;Value m] |> ParamArray |> repeatOp
+                | Tuple(n, m) -> [n |> repeatOp; m |> repeatOp] |> ParamArray |> Value
             evalOp (evalCall dieFunc) env (repeatOp times)
 
         let times = evalOp (evalCall dieFunc) env op2  
@@ -115,15 +116,14 @@ let rec evalCall dieFunc func v env  =
     | Count, Value(ParamArray ops) ->
         let toCount result = 
             match result with 
-            | ParamArray _        -> tuple(Int(1),Int(0))
-            | Check(Check.Pass _) -> tuple(Int(1),Int(0))
-            | Tuple (_)           -> tuple(Int(1),Int(0)) 
-            | Int(_)              -> tuple(Int(1),Int(0))
-            | Str(_)              -> tuple(Int(1),Int(0))
-            //| Float(_)            -> tuple(Int(1),Int(0))
-            | Dist(_)             -> tuple(Int(1),Int(0)) 
-            | NoValue             -> tuple(Int(0),Int(1))
-            | Check(Check.Fail _) -> tuple(Int(0),Int(1))
+            | ParamArray _        -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
+            | Check(Check.Pass _) -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
+            | Tuple (_)           -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
+            | Int(_)              -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
+            | Str(_)              -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
+            | Dist(_)             -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
+            | NoValue             -> tuple(Check (Check.Pass(Int(0))),Check(Check.Fail(Int(1))))
+            | Check(Check.Fail _) -> tuple(Check (Check.Pass(Int(0))),Check(Check.Fail(Int(1))))
         let zero = GamePrimitive.Zero 
         (zero,zero) 
         |> tuple

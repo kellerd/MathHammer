@@ -40,6 +40,7 @@ let tests =
     // let x = repeatOp (d6) (d6)  |> evalOp standardCall initialMap  
     // let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp standardCall initialMap 
     // let x = repeatOp (Value(ParamArray([vInt 3; vInt 2]))) (vInt 4)  |> evalOp standardCall initialMap 
+    
     let ``Repeat Sum is the same as product`` (TwoSimilarTypes (x,y)) =
         let result =  
             repeatOp (Value x) (Value y) 

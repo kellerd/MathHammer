@@ -27,9 +27,7 @@ let invSave = noValue
 let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;] 
 let defApplied = applyArgs defender seargent |> normalize|> evalOp standardCall Map.empty<string,Operation>
 let initialMap = Map.add "Defender" defApplied Map.empty<string,Operation>
-
 let attApplied = applyArgs attacker seargent |> normalize
-
 let eps x op = getp x op |> evalOp standardCall initialMap
 //let epa x op = getp x op |> evalOp avgCall initialMap
 let ep x op = getp x op |> evalOp sampleCall initialMap
@@ -61,4 +59,123 @@ let tests =
 
     ] 
 
+// let hitResults = [Int 1;Int 1;Int 0] |> Distribution.uniformDistribution |> Distribution.normalize |> Dist |> Value
+// let newTest = 
+//     repeatOp (repeatOp (svtOps sVsT) hitResults) hitResults  >>= "WoundResults"
+//     //svtOps sVsT |> count  >>= "WoundResults"
+// repeatOp (repeatOp (svtOps sVsT) hitResults) hitResults   |> evalOp standardCall initialMap    
+// eps "HitResults" attApplied   |> total |> evalOp standardCall initialMap
+// eps "WoundResults" attApplied |> total |> evalOp standardCall initialMap
 
+
+// let woundResultsTest = 
+//    Let
+//     ("HitResults",
+//      App
+//        (Call Count,
+//         Value
+//           (ParamArray
+//              [Let
+//                 ("roll",App (Call (Dice D6),Value NoValue),
+//                  Let
+//                    ("gt",
+//                     App
+//                       (Call GreaterThan,
+//                        Value (ParamArray [Var "roll"; Value (Int 3)])),
+//                     Let
+//                       ("eq",
+//                        App
+//                          (Call Equals,
+//                           Value (ParamArray [Var "roll"; Value (Int 3)])),
+//                        App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))))])),
+//       Let
+//         ("WoundResults",
+//          App
+//            (Call Repeat,
+//             Value
+//               (ParamArray
+//                  [Let
+//                     ("SvsT",
+//                      Value
+//                        (ParamArray
+//                           [Value (Int 4);
+//                            PropertyGet ("T",Var "Defender")]),
+//                      IfThenElse
+//                        (App (Call GreaterThan,Var "SvsT"),
+//                         Let
+//                           ("roll",App (Call (Dice D6),Value NoValue),
+//                            Let
+//                              ("gt",
+//                               App
+//                                 (Call GreaterThan,
+//                                  Value
+//                                    (ParamArray
+//                                       [Var "roll"; Value (Int 3)])),
+//                               Let
+//                                 ("eq",
+//                                  App
+//                                    (Call Equals,
+//                                     Value
+//                                       (ParamArray
+//                                          [Var "roll"; Value (Int 3)])),
+//                                  App
+//                                    (Call Or,
+//                                     Value
+//                                       (ParamArray [Var "eq"; Var "gt"]))))),
+//                         Some
+//                           (IfThenElse
+//                              (App (Call LessThan,Var "SvsT"),
+//                               Let
+//                                 ("roll",
+//                                  App (Call (Dice D6),Value NoValue),
+//                                  Let
+//                                    ("gt",
+//                                     App
+//                                       (Call GreaterThan,
+//                                        Value
+//                                          (ParamArray
+//                                             [Var "roll"; Value (Int 5)])),
+//                                     Let
+//                                       ("eq",
+//                                        App
+//                                          (Call Equals,
+//                                           Value
+//                                             (ParamArray
+//                                                [Var "roll";
+//                                                 Value (Int 5)])),
+//                                        App
+//                                          (Call Or,
+//                                           Value
+//                                             (ParamArray
+//                                                [Var "eq"; Var "gt"]))))),
+//                               Some
+//                                 (IfThenElse
+//                                    (App (Call Equals,Var "SvsT"),
+//                                     Let
+//                                       ("roll",
+//                                        App
+//                                          (Call (Dice D6),Value NoValue),
+//                                        Let
+//                                          ("gt",
+//                                           App
+//                                             (Call GreaterThan,
+//                                              Value
+//                                                (ParamArray
+//                                                   [Var "roll";
+//                                                    Value (Int 4)])),
+//                                           Let
+//                                             ("eq",
+//                                              App
+//                                                (Call Equals,
+//                                                 Value
+//                                                   (ParamArray
+//                                                      [Var "roll";
+//                                                       Value (Int 4)])),
+//                                              App
+//                                                (Call Or,
+//                                                 Value
+//                                                   (ParamArray
+//                                                      [Var "eq";
+//                                                       Var "gt"]))))),
+//                                     None)))))); Var "HitResults"])), Var "WoundResults"))
+// woundResultsTest |> evalOp standardCall initialMap

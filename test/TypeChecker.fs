@@ -164,7 +164,7 @@ let tests =
         checkTypes (value1Type,value2Type,resultType)
 
     let ``Repeat Tests`` (value1:ListDistScalarType) (value2:ListDistScalarType) =
-        let (value1,value2) =DistGamePrimitive (Dist [(Int 3, 4.940656458e-324)]), DistGamePrimitive (Dist [(Int 0, 4.940656458e-324)])
+        //let (value1,value2) =DistGamePrimitive (Dist [(Int 3, 4.940656458e-324)]), DistGamePrimitive (Dist [(Int 0, 4.940656458e-324)])
         let value1' = value1.ToGamePrimitive() 
         let value2' = value2.ToGamePrimitive() 
         let value1Type = value1' |> Value |> toTyped

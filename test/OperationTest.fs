@@ -75,7 +75,7 @@ let tests =
             let result =
                 Let("x", v ,App(Call Count, v)) 
                 |> evalOp standardCall Map.empty<_,_>
-            let expected = Value(Dist(Distribution.always (Tuple (Int(1),Int(0)))))
+            let expected = Value(Dist(Distribution.always (Tuple (Check (Check.Pass (Int(1))),Check( Check.Fail(Int(0)))))))
             result ==? expected
         yield testPropertyWithConfig config "Count of one passed result is 1"  countOfOneXIsOneX 
     ]
