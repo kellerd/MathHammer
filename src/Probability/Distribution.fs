@@ -75,6 +75,8 @@ module Distribution
  
     let dist= DistrBuilder()   
     let map f = bind (f >> returnM) 
+    let mapProbility f (x : Distribution<_>)  : Distribution<_> = List.map (fun(a,p) -> a,f p) x  |> normalize
+    let multiplyProbability p = mapProbility ((*) p)
     let groupBy projection mapping (x: Distribution<'a>) : Distribution<'a> = 
         List.groupBy (fst >> projection) x
         |> List.choose (function (_,[]) -> None | (_,h::tail) -> Some <| List.fold (fun (c,p) (n,p2) -> mapping c n, (p + p2)) h tail)

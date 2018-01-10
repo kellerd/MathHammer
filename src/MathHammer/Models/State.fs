@@ -37,22 +37,7 @@ let rec evalDie d : Distribution.Distribution<_> =
                         return! evalDie d
                   else return roll                        
             }
-
-                // | Check(Check.List xs) -> 
-                //     let n = 
-                //         List.fold (fun c elem -> 
-                //                     match elem with 
-                //                     | Check.Pass _ -> c + 1 
-                //                     | Check.Fail _ -> c 
-                //                     | Check.Tuple(Int(x),_) -> c + x 
-                //                     | _ -> c) 0 xs
-                //     List.init n  (fun n -> App(lam,vInt n)) 
 let rec evalCall dieFunc func v env  =
-    //let lam = Lam ("unusedVariable",Value (Dist [(Float 1.0, 0.3636363636)]))
-    //let op2 = Value (Dist [(Float 1.0, 0.3636363636)])
-    //let dieFunc = (evalDie >> Distribution.map (Int)  >> Dist >> Value)
-    //let env = Map.empty<_,_>
-    //let times = [(Float 1.0, 0.3636363636)]
     let repeat lam op2 = 
         let rec repeatOps lam times : Operation =
             let rec repeatOp : GamePrimitive->Operation = function
@@ -61,7 +46,16 @@ let rec evalCall dieFunc func v env  =
                 | Int (n) -> List.init (max 0 n) (fun n -> match lam with 
                                                            | Lam _ -> App(lam,vInt n)
                                                            | notLam -> notLam) |> opList
-                | Dist(times) -> times |> Distribution.map(fun gp -> match repeatOps lam gp with Value(gp) -> gp | op -> ParamArray[op]) |> Dist |> Value
+                | Dist(times) -> 
+                    times 
+                    |> List.collect (fun (gp,p) -> 
+                        match repeatOps lam gp with 
+                        | Value(ParamArray[Value(Dist d)]) -> d |> Distribution.multiplyProbability p |> Distribution.choose(function ParamArray[] -> None | a -> Some a)
+                        | Value(gp) -> [gp,p] 
+                        | op -> [ParamArray[op],p] ) 
+                    |> Distribution.normalize 
+                    |> Dist 
+                    |> Value
                 | Str(_) -> failwith "Not Implemented"
                 //| Float(_) -> failwith "Not Implemented"
                 | Tuple(Check(Check.Pass(n)), Check(Check.Fail(_))) 
@@ -74,7 +68,6 @@ let rec evalCall dieFunc func v env  =
         match times with 
         | Value(gp) -> repeatOps lam gp
         | _ -> printfn "Times is not a value %A" times; noValue
-    
     let fold folder ops state =
       ops 
       |> List.fold (fun reduced1 op -> 
@@ -127,8 +120,6 @@ let rec evalCall dieFunc func v env  =
         let zero = GamePrimitive.Zero 
         (zero,zero) 
         |> tuple
-        |> Distribution.always 
-        |> Dist 
         |> Value
         |> fold (fun r1 r2 -> r1 + toCount r2) ops
     | GreaterThan, Value(ParamArray([Value(gp);Value(gp2)])) -> greaterThan gp gp2 |> Value

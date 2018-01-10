@@ -164,7 +164,7 @@ let tests =
         checkTypes (value1Type,value2Type,resultType)
 
     let ``Repeat Tests`` (value1:ListDistScalarType) (value2:ListDistScalarType) =
-        //let (value1,value2) =DistGamePrimitive (Dist [(Int 3, 4.940656458e-324)]), DistGamePrimitive (Dist [(Int 0, 4.940656458e-324)])
+        let (value1,value2) = DistGamePrimitive (Dist []), DistGamePrimitive   (Dist [(Int 0, 4.940656458e-324); (Int 0, 4.940656458e-324); (Int 2, 4.940656458e-324)])
         let value1' = value1.ToGamePrimitive() 
         let value2' = value2.ToGamePrimitive() 
         let value1Type = value1' |> Value |> toTyped
@@ -189,9 +189,13 @@ let tests =
             // | Pass a,   a',              a''                
             //Adds a distr to the outside
             | _,       Distr(Scalar "Int"), Distr(List Empty) ->
-                let (Dist value2') = value2
-                if List.forall(fun (a,b) -> a = Int 0 || a = Check (Check.Pass (Int 0)) ) value2' then () 
-                else failtest "Dist is empty, but scalar is not 0"
+                match value2 with 
+                | Dist value2' -> 
+                    if List.forall(fun (a,_) -> a = Int 0 || a = Check (Check.Pass (Int 0)) ) value2' then () 
+                    else failtest "Dist is empty, but scalar is not 0"
+                | _ -> failtest "Value2 expected to be a distribution"     
+            | Distr Empty,  Distr _,        Distr (List (Distr Empty))         -> () 
+            | Distr a,  Distr a',        Distr(a'')         -> checkTypes (a, value2,a', a'')                      
             | a,        Distr a',        Distr(a'')         -> checkTypes (a, value2,a', a'') //"D3D6s\nD6 x 3\n[A;b;c] x D6  = \nRepeat D6 D3\nRepeat 3 D6\nRepeat D6 [a;b;c] = \nA x B Scalar Dist = A List Dist"
             //Adds a List to the outside
             | a,        List  a',        List (a'')         -> checkTypes (a, value2,a', a'')

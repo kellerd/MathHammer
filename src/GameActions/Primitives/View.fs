@@ -6,11 +6,11 @@ open Types
 open State
 open Probability.View
 
-let paren react = div [] <| str "(" :: react @ [str ")"]
+let paren react = str "(" :: react @ [str ")"]
 
 let rec unparseCheck unparseV = function 
-    | Check.Pass(v) -> div [Style [Color (colour 255.) ]] [str "Pass: "; (unparseV v)]
-    | Check.Fail(v) -> div [Style [Color (colour 0.) ]] [str  "Fail: "; (unparseV v)]
+    | Check.Pass(v) -> span [Style [Color (colour 255.) ]] <| (str "Pass: ")::(unparseV v)
+    | Check.Fail(v) -> span [Style [Color (colour 0.) ]]   <| (str "Fail: ")::(unparseV v)
     // | Check.List(vs) -> div [] [
     //                             yield str "["
     //                             for result in vs do
@@ -61,23 +61,29 @@ and unparseDist (dist:Distribution.Distribution<GamePrimitive>) =
                           let alpha = opacity min max prob
                           Style [Color (colourValue alpha)] :> IHTMLProp) 
                     |> Option.toList 
-                  div colour [unparseValue r; str <| sprintf " %.1f%%" (prob / total * 100.)])
-            |> div []       
-and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function   
-    | Int(i) -> string i |> str
+                  match unparseValue r with 
+                  | [] -> None 
+                  | result -> result @ [str <| sprintf " %.1f%%" (prob / total * 100.)]
+                              |> div colour
+                              |> Some
+                  |> opt)                              
+            |> data []       
+and unparseValue = function   
+    | Int(i) -> [string i |> str]
     //| Float(f) -> sprintf "%.1f" f |> str
-    | Dist(d) -> unparseDist d
-    | NoValue -> "--" |> str
-    | Str s -> b  [] [str s]
-    | Tuple(v,v2) -> div [] [paren <| unparseValue v::(str ",")::[unparseValue v2]]
-    | Check c -> unparseCheck unparseValue c
-    | ParamArray ([Value (Str _); Value(NoValue)]) ->  opt None
-    | ParamArray ([Value (Str _); Var _]) ->   opt None
-    | ParamArray(m) -> div [] [displayParamArray m]
+    | Dist(d) -> [unparseDist d]
+    | NoValue -> [str "--" ] 
+    | Str s -> [b  [] [str s]]
+    | Tuple(v,v2) -> paren <| unparseValue v@(str ",")::unparseValue v2
+    | Check c -> [unparseCheck unparseValue c]
+    | ParamArray ([]) ->  []
+    | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
+    | ParamArray ([Value (Str _); Var _]) ->   []
+    | ParamArray(m) -> [displayParamArray m]
 and unparse operation : Fable.Import.React.ReactElement list = 
     match operation with 
     | Call f -> [unparseCall f]
-    | Value(v)-> [unparseValue v]
+    | Value(v)-> unparseValue v
     | Var (v) -> [sprintf "%s" v |> str]
     | Lam(_) -> []
     | IsDPlus(D6,plus) ->  [string (plus) + "+" |> str]

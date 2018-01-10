@@ -22,7 +22,6 @@ let urlUpdate (result: Option<Page>) model =
     model,Navigation.modifyUrl (toHash model.currentPage)
   | Some page ->
       { model with currentPage = page }, []
-open GameActions.Primitives.Types
 let init result =
   let (mathHammer, mathHammerCmd) = MathHammer.State.init()
   let (gameActions, gameActionsCmd) = GameActions.State.init()
@@ -36,7 +35,7 @@ let init result =
 
   let mapScale scale = 
     List.mapi 
-        (fun i (x : MathHammer.Models.Types.Model,_) -> 
+        (fun _ (x : MathHammer.Models.Types.Model,_) -> 
           x.Name, {x with Scale = scale} )
     >> Map.ofList
 

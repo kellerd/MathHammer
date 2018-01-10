@@ -4,7 +4,6 @@
 #r "../../../../.nuget/packages/FsCheck/3.0.0-alpha2/lib/netstandard1.6/FsCheck.dll"
 #load "../src/Check/Check.fs"
 #load "../src/Probability/Distribution.fs"
-#load "../src/Probability/Determinism.fs"
 #load "../src/Probability/View.fs"
 #load "../src/GameActions/Primitives/Types.fs"
 #load "../src/GameActions/Primitives/State.fs"
