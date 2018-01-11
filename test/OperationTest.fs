@@ -5,9 +5,6 @@ open GameActions.Primitives.State
 open MathHammer.Models.State
 open FsCheckGen
 let (==?) x y = Expect.equal x y ""
-
-
-
 [<Tests>]
 let tests = 
     testList "Operation Tests" [
@@ -23,6 +20,13 @@ let tests =
             let expected = [1..3] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
             result ==? expected
         }
+        yield testPropertyWithConfig config "IfThenElse NoValue returns Else" <| fun thenPart elsePart ->
+            let ifThenElse = IfThenElse(Value NoValue,thenPart,elsePart)
+            let result = stdEval ifThenElse 
+            match elsePart with 
+            | Some elsePart -> result ==? stdEval elsePart 
+            | None -> result ==? Value NoValue
+        
         //Let x = 3 returns 3 as well as binding to environment
         let retValueIsSame f v = 
             let evaled = Let("x", Value(v) ,Var ("x")) |> f |> evalOp standardCall Map.empty<_,_> 
