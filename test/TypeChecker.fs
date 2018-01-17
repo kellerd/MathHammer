@@ -8,7 +8,16 @@ let (==?) x y =
     //printfn "%A" x
     //printfn "%A" y
     Expect.equal x y ""
-type GamePrimitiveType = Scalar of string | List of GamePrimitiveType | Pass of GamePrimitiveType | Fail of GamePrimitiveType | Distr of GamePrimitiveType | Empty | Mixed | Unknown
+type GamePrimitiveType = 
+| Pair of GamePrimitiveType * GamePrimitiveType
+| List of GamePrimitiveType 
+| Pass of GamePrimitiveType 
+| Fail of GamePrimitiveType 
+| Distr of GamePrimitiveType 
+| Empty 
+| Mixed 
+| Unknown
+| Scalar of string
 let rec toString = function
     | Fail a -> sprintf "Check<%s>" <| toString a
     | Pass a -> sprintf "Check<%s>" <| toString a
@@ -18,6 +27,7 @@ let rec toString = function
     | Mixed -> "Mixed"
     | Unknown -> "Unknown"
     | Empty -> "Empty"
+    | Pair (s,t) -> sprintf "Pair<%s,%s>" (toString s) (toString t)
 
 let toTyped op =
     let rec (|IsEmpty|_|) = function 
@@ -25,12 +35,14 @@ let toTyped op =
         | List(IsEmpty(e)) 
         | Distr(IsEmpty(e)) 
         | Pass(IsEmpty(e)) 
+        | Pair(IsEmpty(e), _)
+        | Pair(_, IsEmpty(e))
         | Fail(IsEmpty(e)) -> Some e
         | _ -> None 
     let rec doCheck = function
         | Int _                             -> Scalar "Int"
         | Str(_)                            -> Scalar "Str"
-        //| Float(_)                          -> Scalar "Float"
+        //| Float(_)                          -> Scalar (Primitive "Float")
         | Check(Check.Fail(gp))             -> Fail (doCheck gp)
         | Check(Check.Pass(gp))             -> Pass (doCheck gp)
         | NoValue                           -> Unknown
@@ -46,7 +58,8 @@ let toTyped op =
                     | (a,_) -> a
                 | _ -> Unknown ) Empty
             |> List
-        | Tuple(a, b) -> Scalar (sprintf "Scalar<%s,%s>" (doCheck a |> toString) ((doCheck b |> toString)))
+        | Tuple(s, t) -> 
+            Pair ((doCheck s),(doCheck t))
         | Dist(vs) ->
             vs
             |> List.fold (fun acc (elem,_) ->
@@ -59,34 +72,21 @@ let toTyped op =
     match op with
     | Value(gp) -> doCheck gp
     | _ -> Unknown
-// [(ParamArray [], 4.940656458e-324);
-//       (ParamArray [Value (Float 0.0)], 4.940656458e-324);
-//       (ParamArray [], 0.07142857143); (ParamArray [], 0.5862068966)] 
-//             |> List.scan (fun acc (elem,_) ->
-//                 match acc,doCheck elem with
-//                   | IsEmpty c, a -> printfn "A: %A" c;a
-//                   | a, IsEmpty c -> printfn "B: %A" c;a
-//                   | (a, b) when a <> b -> Mixed
-//                   | (a,_) -> printfn "C: %A" acc; a ) Empty   
-// [(ParamArray [], 4.940656458e-324); (ParamArray [], 4.940656458e-324);
-//   (ParamArray [Value (Int 0); Value (Int 0)], 4.940656458e-324);
-//   (ParamArray [], 4.940656458e-324)]  |> Dist |> Value |> toTyped
-// vInt 6 |> toTyped |> toString
-// [vInt 6; vInt 5] |> opList |> toTyped  |> toString
-// [vInt 6; Value(Float(5.))] |> opList |> toTyped  |> toString
-// Call Repeat |> toTyped  |> toString
-// opList [] |> toTyped  |> toString
-// [vInt 6; vInt 5] |> opList |> toTyped  |> toString
-// let d = Distribution.uniformDistribution [1..6] |> Distribution.map Int |> GameActions.Primitives.Types.Dist |> Value
-// let d2 = Distribution.uniformDistribution [1.0..6.0] |> Distribution.map Float |> GameActions.Primitives.Types.Dist |> Value
-// d |> toTyped |> toString
-// d2 |> toTyped |> toString
-// [d;d] |> opList |> toTyped |> toString
-// [[d;d] |> opList] |> opList |> toTyped |> toString
-// [d;d2] |> opList |> toTyped |> toString
-// [[d;d2] |> opList] |> opList |> toTyped |> toString
-// [[d] |> opList; d2] |> opList |> toTyped |> toString
-// [[d] |> opList; d] |> opList |> toTyped |> toString
+//For ease of use, there should be only one Check value, and it should fall down to the leaves of the tree.
+let floor gpType = 
+    let rec aux isPass acc =
+        let f = match isPass with Some true -> Pass | Some false -> Fail | None -> id
+        match acc with
+        | Pair(p,p2) -> Pair(aux isPass p,aux isPass p2)
+        | Pass gp -> aux (Option.orElse (Some true) isPass) gp
+        | Fail gp -> aux (Some false) gp
+        | Distr p -> Distr (aux isPass p)
+        | Empty -> acc 
+        | Mixed -> acc 
+        | Unknown -> acc 
+        | Scalar _ -> f acc        
+        | List p -> List (aux isPass p)  
+    aux None gpType
 
 let es x op = get x |> op |> evalOp standardCall Map.empty<_,_>
 //let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_>
@@ -98,6 +98,7 @@ let tests =
     //3 + NoValue = T + Unknown = T
     //NoValue + 3 = Unknown + T = T
     let ``Test Addition`` (TwoSimilarTypes (value1,value2)) =
+        //let (value1,value2) = (Check (Check.Pass (Int 4)),Check (Check.Fail (Int 3)))
         let value1Type = value1 |> Value |> toTyped
         let value2Type = value2 |> Value |> toTyped
         let result = [Value value1;Value value2] |> opList |> call Total >>= "result" |> es "result" 
@@ -113,10 +114,10 @@ let tests =
             | Distr Empty,     _ , Distr Empty
             |      _ ,Distr Empty, Distr Empty -> ()
             //Autolift. Fails are ignored, things are automatically made passing
-            |   Fail _,   Pass a',   Pass a''   
-            |   Fail _,        a',   Pass a''  -> checkTypes (a', a', a'')  
-            |   Pass a,   Fail _ ,   Pass a''                  
-            |        a,   Fail _ ,   Pass a''  -> checkTypes (a , a , a'')  
+            |   Fail a,   Pass a',   Pair(Pass a'', Fail _)
+            |   Fail a,        a',   Pair(Pass a'', Fail _)  -> checkTypes (a, a', a'')  
+            |   Pass a,   Fail _ ,   Pair(Pass a'', Fail _)                  
+            |        a,   Fail _ ,   Pair(Pass a'', Fail _)  -> checkTypes (a , a , a'')  
             |   Pass a,   Pass a',   Pass a''   
             |   Pass a,        a',   Pass a''    
             |        a,   Pass a',   Pass a''   
@@ -125,7 +126,9 @@ let tests =
             |  Distr a,        a',  Distr a''  
             |        a,  Distr a',  Distr a''    
             //Defer check
-            | List a,     List a',   List a''  -> checkTypes (a, a', a'')
+            | List (Fail a), List( a'), Pair(List(Pass a''), List(Fail _))
+            | List a,    List(Fail a'), Pair(List(Pass a''), List(Fail _))
+            | List a,     List a',   List a''  -> checkTypes (floor a, floor a', floor a'')
             | Scalar a, Scalar a', Scalar a''  -> Expect.allEqual [a; a'; a'' ] a'' "Scalara + Scalara = Scalara"
             |        a,         b,          c  -> failtest <| sprintf "Values don't all have the correct dimension %A+%A=%A?\nValue: %A" a b c result
         checkTypes (value1Type,value2Type,resultType)
@@ -159,12 +162,11 @@ let tests =
             |   Pass a,   Fail _ ,   Fail a''  // Pass * Fail = Fail, like -1          
             |        a,   Fail _ ,   Fail a''  -> checkTypes (a , a , a'')   
             //Defer check
-            | Scalar a, Scalar a', Scalar a''  -> Expect.allEqual [a; a'; a'' ] a'' "Scalara + Scalara = Scalara"
-            |        a,         b,          c  -> failtest <| sprintf "Values don't all have the correct dimension %A+%A=%A?\nValue: %A" a b c result
+            | Scalar a, Scalar a', Scalar a''  -> Expect.allEqual [a; a'; a'' ] a'' "Scalara * Scalara = Scalara"
+            |        a,         b,          c  -> failtest <| sprintf "Values don't all have the correct dimension %A*%A=%A?\nValue: %A" a b c result
         checkTypes (value1Type,value2Type,resultType)
 
     let ``Repeat Tests`` (value1:ListDistScalarType) (value2:ListDistScalarType) =
-        let (value1,value2) = DistGamePrimitive (Dist []), DistGamePrimitive   (Dist [(Int 0, 4.940656458e-324); (Int 0, 4.940656458e-324); (Int 2, 4.940656458e-324)])
         let value1' = value1.ToGamePrimitive() 
         let value2' = value2.ToGamePrimitive() 
         let value1Type = value1' |> Value |> toTyped
@@ -181,12 +183,10 @@ let tests =
             | _,        List Unknown,    List Unknown       -> ()
             | _,        Pass Unknown,    Pass Unknown       -> ()
             | _,        Unknown,         Unknown            -> ()
-            | _,        Fail _,          Unknown            -> ()
-            | _,        Scalar "Int",    List Empty         when value2 = Int 0 || value2 = Check (Check.Pass (Int 0)) 
+            | _,        Fail(Scalar "Int"),    List Empty         
+            | _,        Pass(Scalar "Int"),    List Empty         
+            | _,        Scalar "Int",    List Empty         when value2 = Int 0 || value2 = Check (Check.Pass (Int 0)) || value2 = Check (Check.Fail (Int 0)) 
                                                             -> ()
-            // | Pass a,   Pass(a'),        a''         
-            | a,        Pass(a'),        a''                -> checkTypes (a, value2, a', a'')
-            // | Pass a,   a',              a''                
             //Adds a distr to the outside
             | _,       Distr(Scalar "Int"), Distr(List Empty) ->
                 match value2 with 
@@ -195,12 +195,14 @@ let tests =
                     else failtest "Dist is empty, but scalar is not 0"
                 | _ -> failtest "Value2 expected to be a distribution"     
             | Distr Empty,  Distr _,        Distr (List (Distr Empty))         -> () 
-            | Distr a,  Distr a',        Distr(a'')         -> checkTypes (a, value2,a', a'')                      
+            //| Distr a,  Distr a',        Distr(a'')         -> checkTypes (a, value2,a', a'')                      
             | a,        Distr a',        Distr(a'')         -> checkTypes (a, value2,a', a'') //"D3D6s\nD6 x 3\n[A;b;c] x D6  = \nRepeat D6 D3\nRepeat 3 D6\nRepeat D6 [a;b;c] = \nA x B Scalar Dist = A List Dist"
             //Adds a List to the outside
             | a,        List  a',        List (a'')         -> checkTypes (a, value2,a', a'')
-            | a,        Scalar _,        List (a'')         ->  Expect.equal a a'' "3 x 3\n3D6\n[A;b;c] x 3 = \nRepeat 3 3\nRepeat D6 3\nRepeat 3 [a;b;c] =\nA x B = A list"
-            |        a,         b,          c  -> failtest <| sprintf "Values don't all have the correct dimension %A+%A=%A?\nValue: %A" a b c result
+            | a,        Fail(Scalar _),  List (a'')         ->  Expect.equal (floor (Fail a)) (floor a'')  <| sprintf "3 x 3\n3D6\n[A;b;c] x 3 = \nRepeat 3 3\nRepeat D6 3\nRepeat 3 [a;b;c] =\nA x B = A list %Ax%A=%A" value1' value2' result
+            | a,        Pass(Scalar _),  List (a'')         ->  Expect.equal (floor (Pass a)) (floor a'')  <| sprintf "3 x 3\n3D6\n[A;b;c] x 3 = \nRepeat 3 3\nRepeat D6 3\nRepeat 3 [a;b;c] =\nA x B = A list %Ax%A=%A" value1' value2' result
+            | a,        Scalar _,        List (a'')         ->  Expect.equal (floor a) (floor a'') <| sprintf  "3 x 3\n3D6\n[A;b;c] x 3 = \nRepeat 3 3\nRepeat D6 3\nRepeat 3 [a;b;c] =\nA x B = A list %Ax%A=%A" value1' value2' result
+            |        a,         b,          c  -> failtest <| sprintf "Values don't all have the correct dimension %Ax%A=%A?\nValue: %A" a b c result
         checkTypes (value1Type,value2',value2Type,resultType)        
     //let ``Repeat [4] 3 = List Scalara x Scalarb = List List Scalar a``  =
     testList "Repeat Tests" [

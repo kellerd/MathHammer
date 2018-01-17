@@ -39,34 +39,48 @@ let rec evalDie d : Distribution.Distribution<_> =
             }
 let rec evalCall dieFunc func v env  =
     let repeat lam op2 = 
-        let rec repeatOps lam times : Operation =
+        let create n = List.init (max 0 n) (fun n -> match lam with | Lam _ -> App(lam,vInt n) | notLam -> notLam
+                                                     |> evalOp (evalCall dieFunc) env) |> opList
+        let nestCheck check op = 
+            let rec fixGp check = function 
+                | NoValue 
+                | Str _ 
+                | Int _ as gp -> gp |> check
+                | Check(Check.Fail gp) -> fixGp (Check.Fail >> Check) gp
+                | Check(Check.Pass gp) -> fixGp check gp
+                | ParamArray ops -> List.map (fixOp check) ops |> ParamArray
+                | Tuple(gp, gp2) -> Tuple(fixGp check gp, fixGp check gp2)
+                | Dist(gps) -> Distribution.map (fixGp check) gps |> Dist
+            and fixOp check = function 
+                | Call _
+                | Var _ as gp -> gp
+                | PropertyGet(v, body) -> PropertyGet(v, fixOp check body)
+                | App(f, value) -> App(fixOp check f, fixOp check value)
+                | Lam(param, body) -> Lam(param, fixOp check body)
+                | Let(v, value, body) -> Let(v, fixOp check value, fixOp check body)
+                | IfThenElse(ifExpr, thenExpr, elseExpr) -> IfThenElse(fixOp check ifExpr, fixOp check thenExpr, Option.map (fixOp check) elseExpr)
+                | Value v -> Value(fixGp check v)
+            fixOp check op
+        let rec repeatOps times : Operation =
             let rec repeatOp : GamePrimitive->Operation = function
-                | NoValue
-                | Check(Check.Fail (_)) -> noValue
-                | Int (n) -> List.init (max 0 n) (fun n -> match lam with 
-                                                           | Lam _ -> App(lam,vInt n)
-                                                           | notLam -> notLam) |> opList
-                | Dist(times) -> 
-                    times 
-                    |> List.collect (fun (gp,p) -> 
-                        match repeatOps lam gp with 
-                        | Value(ParamArray[Value(Dist d)]) -> d |> Distribution.multiplyProbability p |> Distribution.choose(function ParamArray[] -> None | a -> Some a)
-                        | Value(gp) -> [gp,p] 
-                        | op -> [ParamArray[op],p] ) 
-                    |> Distribution.normalize 
-                    |> Dist 
-                    |> Value
+                | NoValue -> noValue
+                | Check(Check.Fail (m)) -> 
+                    repeatOp m |> nestCheck (Check.Fail >> Check)
+                | Check(Check.Pass (n)) -> 
+                    repeatOp n |> nestCheck (Check.Pass >> Check)
+                | Int (n) -> create n
+                | Dist(times) -> times |> Distribution.map(fun gp -> match repeatOps gp with Value(gp) -> gp | op -> ParamArray[op]) |> Dist |> Value
                 | Str(_) -> failwith "Not Implemented"
                 //| Float(_) -> failwith "Not Implemented"
-                | Tuple(Check(Check.Pass(n)), Check(Check.Fail(_))) 
-                | Check(Check.Pass (n)) -> repeatOp n
-                | ParamArray(times) -> times |> List.map(function Value(gp) -> repeatOps lam gp | _ -> noValue ) |> ParamArray |> Value
+                // | Tuple(Check(Check.Pass(n)), Check(Check.Fail(m))) -> 
+                //     Tuple(mapToCheck Check.Pass n, mapToCheck Check.Fail m) |> Value
+                | ParamArray(times) -> times |> List.map(function Value(gp) -> repeatOps gp | _ -> noValue ) |> ParamArray |> Value
                 | Tuple(n, m) -> [n |> repeatOp; m |> repeatOp] |> ParamArray |> Value
-            evalOp (evalCall dieFunc) env (repeatOp times)
+            repeatOp times
 
         let times = evalOp (evalCall dieFunc) env op2  
         match times with 
-        | Value(gp) -> repeatOps lam gp
+        | Value(gp) -> repeatOps gp
         | _ -> printfn "Times is not a value %A" times; noValue
     let fold folder ops state =
       ops 
@@ -96,7 +110,7 @@ let rec evalCall dieFunc func v env  =
     match func,v with 
     | Dice d, Value(NoValue) -> dieFunc d  
     | Total, Value(ParamArray []) -> 
-        GamePrimitive.Zero |> Value
+        Int 0 |> Value
     | Total, Value(ParamArray (head::tail)) -> 
         fold (+) tail head
     | Product, Value(ParamArray []) -> 
@@ -107,19 +121,19 @@ let rec evalCall dieFunc func v env  =
         let zero = GamePrimitive.Zero 
         (zero,zero) |> tuple |> Value
     | Count, Value(ParamArray ops) ->
-        let toCount result = 
+        let rec toCount result = 
             match result with 
-            | ParamArray _        -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
-            | Check(Check.Pass _) -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
-            | Tuple (_)           -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
-            | Int(_)              -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
-            | Str(_)              -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
-            | Dist(_)             -> tuple(Check (Check.Pass(Int(1))),Check(Check.Fail(Int(0))))
-            | NoValue             -> tuple(Check (Check.Pass(Int(0))),Check(Check.Fail(Int(1))))
-            | Check(Check.Fail _) -> tuple(Check (Check.Pass(Int(0))),Check(Check.Fail(Int(1))))
+            | Int _               -> Int(1) 
+            | Str(_)              -> Int(1) 
+            | NoValue             -> Int(0)     
+            | Dist d              -> Distribution.map (toCount) d |> Dist                  
+            | ParamArray []       -> Int(0)
+            | ParamArray ops      -> ops |> List.map (function | Value(gp) -> toCount gp |> Value | op -> op ) |> ParamArray
+            | Check(Check.Pass gp)-> Check.Pass (toCount gp) |> Check
+            | Tuple (n, m)        -> tuple(toCount n,toCount m)
+            | Check(Check.Fail gp) -> Check.Fail (toCount gp) |> Check
         let zero = GamePrimitive.Zero 
-        (zero,zero) 
-        |> tuple
+        zero
         |> Value
         |> fold (fun r1 r2 -> r1 + toCount r2) ops
     | GreaterThan, Value(ParamArray([Value(gp);Value(gp2)])) -> greaterThan gp gp2 |> Value
@@ -142,7 +156,6 @@ let update msg model =
       match msg with
       | ChangePosition (x,y,scale) -> {model with PosX = x; PosY = y; Scale=scale}, Cmd.none
       | Select _ -> model, Cmd.none
-      | Msg.Let _ ->  model, Cmd.none
       | Rebind (initial) -> 
             let normalized = model.Rules |> normalize
             let sampled = normalized |> evalOp sampleCall initial

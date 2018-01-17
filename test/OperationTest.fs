@@ -74,12 +74,4 @@ let tests =
                 |> evalOp standardCall Map.empty<_,_>
             result ==? expected
         yield testPropertyWithConfig config "Total of x is x" totalOfXIsX
-        let countOfOneXIsOneX x = 
-            let v = Value(Check(Check.Pass(x)))
-            let result =
-                Let("x", v ,App(Call Count, v)) 
-                |> evalOp standardCall Map.empty<_,_>
-            let expected = Value(Tuple (Check (Check.Pass (Int(1))),Check( Check.Fail(Int(0)))))
-            result ==? expected
-        yield testPropertyWithConfig config "Count of one passed result is 1"  countOfOneXIsOneX 
     ]
