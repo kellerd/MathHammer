@@ -83,7 +83,7 @@ let allProps =
           labelVar "D6Test"
           labelVar "D3Test" ]
 
-let hitResults = get "WS" |> single |> count >>= "HitResults"
+let hitResults = repeatOp (get "WS" |> count) (get "A") |> single |> count >>= "HitResults"
 let defenderMap = "Defender"
 let attackerMap = "Attacker"
 let svtOps = [get "S";getp "T" (get defenderMap)] |> opList >>= "SvsT"
@@ -335,16 +335,15 @@ let rec evalOp evalCall env (operation:Operation) =
             noValue
     | Lam _ as l -> l
     | IfThenElse(gp, thenPart, elsePart) -> 
-        match evalOp evalCall env gp, elsePart with 
-        | (Value(Check(Check.Pass(_)))),_ -> evalOp evalCall env thenPart
-        | (Value(Check(Check.Fail(_))),Some elsePart) -> evalOp evalCall env elsePart
-        | (Value(Check(Check.Fail(_))),None) 
-        | Value NoValue,None -> noValue;
-        | Value v,_ -> 
-            v |> ignore
-            evalOp evalCall env thenPart // truthy
-        | _ -> //printfn "Invalid type, cannot check if/else with %A" gp; 
-            noValue  
+        let result = evalOp evalCall env gp
+        match result with 
+        | Value(Check(Check.Fail(_)) | NoValue) -> elsePart 
+        | Value _ -> Some thenPart
+        | _ -> None
+        |> Option.map (evalOp evalCall env)
+        |> function 
+        | Some v -> v
+        | None -> noValue
     | App(Lam(x, op),value) ->
         evalOp evalCall (Map.add x value env) op 
     | App(f, value) -> 
