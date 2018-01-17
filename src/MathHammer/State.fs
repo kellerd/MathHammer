@@ -10,11 +10,7 @@ let bindModelToEnvironment initial key =
             m.Rules 
             |> normalize
             |>  evalOp Models.State.standardCall initial
-        let scopeWithBoundDude = Map.add key evaluatedRule initial
-        let modelMsg = UnitList.Types.ModelMsg(Models.Types.Msg.Rebind scopeWithBoundDude, m.Name)
-        UnitListMsg(modelMsg, Some key) 
-        |> Cmd.ofMsg) 
-    >> Option.toList
+        Map.add key evaluatedRule initial)
 let init () : Model * Cmd<Types.Msg> =
     let (attacker,attackerCmd) = UnitList.State.init attackerMap () 
     let (defender,defenderCmd) = UnitList.State.init defenderMap () 
@@ -35,13 +31,19 @@ let init () : Model * Cmd<Types.Msg> =
                        Cmd.ofMsg RebindEnvironment ]
 
 let update msg model : Model * Cmd<Types.Msg> =
+    let rebind environment source nameOpt = 
+        Option.map (fun name -> 
+            let rebind = MathHammer.Models.Types.Msg.Rebind environment
+            let mmsg = UnitList.Types.ModelMsg(rebind, name)
+            Cmd.ofMsg (UnitListMsg(mmsg, source))
+        ) nameOpt
+            
     match msg with
-    | UnitListMsg (UnitList.Types.ModelMsg(Models.Types.Msg.Let(name,dist), _), _) -> 
-        {model with Environment = Map.add (name) dist model.Environment}, Cmd.none
     | UnitListMsg (UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), Some "Attacker") -> 
-        {model with SelectedAttacker = Some m}, Cmd.ofMsg RebindEnvironment
+        {model with SelectedAttacker = Some m}, Cmd.batch [ Cmd.ofMsg BindAttacker ]
     | UnitListMsg (UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), Some "Defender") -> 
-        {model with SelectedDefender = Some m}, Cmd.ofMsg RebindEnvironment
+        {model with SelectedDefender = Some m}, Cmd.batch [ Cmd.ofMsg BindDefender
+                                                            Cmd.ofMsg BindAttacker ]
     | UnitListMsg (msg, Some "Attacker")-> 
         let (ula,ulCmdsa) = UnitList.State.update msg model.Attacker
         { model with Attacker = ula }, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some "Attacker")) ulCmdsa]
@@ -73,13 +75,33 @@ let update msg model : Model * Cmd<Types.Msg> =
         match model.SelectedDefender with 
         | None -> model, Cmd.none
         | Some defender -> 
-            model, (Map.tryFind defender model.Defender.Models
-            |> bindModelToEnvironment model.Environment defenderMap 
-            |> Cmd.batch)
+            let newEnvironment = 
+                Map.tryFind defender model.Defender.Models 
+                |> bindModelToEnvironment model.Environment defenderMap 
+            match newEnvironment with 
+            | Some environment -> 
+                let commands = 
+                    [ rebind environment (Some defenderMap) model.SelectedDefender
+                      rebind environment (Some attackerMap) model.SelectedAttacker ] 
+                    |> List.choose id
+                    |> Cmd.batch
+                {model with Environment = environment}, commands
+            | None -> model, Cmd.none
     | BindAttacker -> 
         match model.SelectedAttacker with 
         | None -> model, Cmd.none
         | Some attacker -> 
-            model, (Map.tryFind attacker model.Attacker.Models 
-            |> bindModelToEnvironment model.Environment attackerMap 
-            |> Cmd.batch)
+            let newEnvironment = 
+                Map.tryFind attacker model.Attacker.Models 
+                |> bindModelToEnvironment model.Environment attackerMap
+            match newEnvironment with 
+            | Some environment -> 
+                let commands = 
+                    [ rebind environment (Some defenderMap) model.SelectedDefender
+                      rebind environment (Some attackerMap) model.SelectedAttacker ] 
+                    |> List.choose id
+                    |> Cmd.batch
+                {model with Environment = environment}, commands
+            | None -> model, Cmd.none
+
+
