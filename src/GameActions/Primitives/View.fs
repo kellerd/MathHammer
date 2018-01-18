@@ -35,7 +35,7 @@ and unparseCall func =
     | _  -> sprintf "%A" func |> str
 and unparseDist (dist:Distribution.Distribution<GamePrimitive>) = 
     let result = 
-          dist 
+          dist.Probabilities 
           |> List.groupBy fst
           |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
     match result with 

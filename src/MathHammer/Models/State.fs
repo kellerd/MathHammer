@@ -107,16 +107,26 @@ let rec evalCall dieFunc func v env  =
                 folder a b |> Value
             | _ -> NoValue |> Value
             ) state
+    let evalFuncAsGp = (fun v -> evalCall dieFunc func (Value v) env |> function Value(gp) -> gp | op -> ParamArray [op])           
     match func,v with 
     | Dice d, Value(NoValue) -> dieFunc d  
+    | Total, (Value(Int _) as v) -> v
+    | Total, (Value(Str _) as v) -> v
+    | Total, (Value(NoValue) as v) -> v 
     | Total, Value(ParamArray []) -> 
-        Int 0 |> Value
+        NoValue |> Value
     | Total, Value(ParamArray (head::tail)) -> 
         fold (+) tail head
+    | Product, (Value(Int _) as v) -> v
+    | Product, (Value(Str _) as v) -> v
+    | Product, (Value(NoValue) as v) -> v 
     | Product, Value(ParamArray []) -> 
         GamePrimitive.Zero |> Value
     | Product, Value(ParamArray (head::tail)) -> 
         fold (*) tail head
+    | Count, Value(Int _) -> vInt 1
+    | Count, Value(Str _) -> vInt 1
+    | Count, Value(NoValue) -> vInt 0 
     | Count, Value(ParamArray []) -> 
         let zero = GamePrimitive.Zero 
         (zero,zero) |> tuple |> Value
@@ -143,9 +153,9 @@ let rec evalCall dieFunc func v env  =
     | And, Value(ParamArray([Value(gp);Value(gp2)])) -> andGp gp gp2 |> Value
     | Or,       Value(ParamArray([Value(gp);Value(gp2)])) -> orGp gp gp2  |> Value
     | Repeat, Value(ParamArray([lam;op2])) -> repeat lam op2 
-    | Total, Value _
-    | Product,  Value _ 
-    | Count,  Value _ -> evalCall dieFunc func (opList [v]) env  //Eval with only one operation
+    | (Total|Product|Count), Value(Check v) -> Check.map evalFuncAsGp v |> Check |> Value
+    | (Total|Product|Count), Value(Tuple(t1,t2)) -> Tuple(evalFuncAsGp t1, evalFuncAsGp t2) |> Value
+    | (Total|Product|Count), Value(Dist d) -> Distribution.map evalFuncAsGp d |> Dist |> Value 
     | _ -> failwith "Cannot eval any other call with those params" 
 
 let standardCall = (evalCall (evalDie >> Distribution.map (Int)  >> Dist >> Value))

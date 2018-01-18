@@ -7,7 +7,7 @@ open FsCheckGen
 
 let (==?) x y = Expect.equal x y ""
 
-let firstCall = (evalCall (evalDie >> (Seq.map (fst) >> Seq.head) >> Int >> Value))
+let firstCall = (evalCall (evalDie >> (Distribution.get >> Seq.map (fst) >> Seq.head) >> Int >> Value))
 
 [<Tests>]
 let tests = 

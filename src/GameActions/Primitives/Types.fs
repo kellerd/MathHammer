@@ -53,14 +53,14 @@ type GamePrimitive with
     static member Zero = NoValue
     static member (+) (x,y) = 
         match (x,y) with 
-        | NoValue,Dist z | Dist z,NoValue -> z |> Distribution.normalize |> Dist 
+        | NoValue,Dist z | Dist z,NoValue -> Dist z
         | NoValue,z | z,NoValue -> z
         | Int(a),Int(b) -> Int(a+b)
         //| Float(a),Float(b) -> Float(a+b)
         | Str(a),Str(b) -> Str(a+b)
         | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
         | Dist d, gp 
-        | gp, Dist d -> Distribution.map ((+) gp) d |> Distribution.normalize |> Dist
+        | gp, Dist d -> Distribution.map ((+) gp) d  |> Dist
         | Check (Check.Pass(r1)), Tuple(Check (Check.Pass(l)),Check (Check.Fail(r))) -> Tuple(Check (Check.Pass(l + r1)),Check (Check.Fail(r)))
         | Check (Check.Fail(r2)), Tuple(Check (Check.Pass(l)),Check (Check.Fail(r))) -> Tuple(Check (Check.Pass(l)),Check (Check.Fail(r2 + r)))
         | Check (Check.Fail(r1)), Check (Check.Fail(r2)) -> Check(Check.Fail(r1 + r2))
@@ -95,7 +95,7 @@ type GamePrimitive with
         | Check(b), a -> Check.mult (Check.Pass a) b  |> Check
         | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
         | Dist d, gp 
-        | gp, Dist d -> Distribution.map ((*) gp) d |> Distribution.normalize |> Dist
+        | gp, Dist d -> Distribution.map ((*) gp) d |> Dist
         | Str _, _ | _, Str _ -> NoValue
         | Tuple _,_ | _,Tuple _ -> NoValue
 

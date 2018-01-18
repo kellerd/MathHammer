@@ -33,7 +33,7 @@ let genCheck ofType =
 
 let genGpDist gen = 
     let probabilities = Gen.filter (fun f -> f >= 0.0 && f <= 1.0) Arb.generate<_>
-    let pair = gen |> Gen.map (fun ls -> List.zip (ls)  <| (Gen.sample (List.length ls) probabilities |> List.ofArray) )
+    let pair = gen |> Gen.map (fun ls -> List.zip (ls)  <| (Gen.sample (List.length ls) probabilities |> List.ofArray) |> Distribution.create)
     Gen.map Dist pair        
 let genScalarType = Gen.oneof [Gen.map Check (genCheck genPrimitive);(genNumber id)] |> Gen.map ScalarType
 

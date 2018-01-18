@@ -61,7 +61,7 @@ let toTyped op =
         | Tuple(s, t) -> 
             Pair ((doCheck s),(doCheck t))
         | Dist(vs) ->
-            vs
+            vs.Probabilities
             |> List.fold (fun acc (elem,_) ->
                 match acc,doCheck elem with
                   | IsEmpty(_), a -> a
@@ -191,7 +191,7 @@ let tests =
             | _,       Distr(Scalar "Int"), Distr(List Empty) ->
                 match value2 with 
                 | Dist value2' -> 
-                    if List.forall(fun (a,_) -> a = Int 0 || a = Check (Check.Pass (Int 0)) ) value2' then () 
+                    if List.forall(fun (a,_) -> a = Int 0 || a = Check (Check.Pass (Int 0)) ) value2'.Probabilities then () 
                     else failtest "Dist is empty, but scalar is not 0"
                 | _ -> failtest "Value2 expected to be a distribution"     
             | Distr Empty,  Distr _,        Distr (List (Distr Empty))         -> () 

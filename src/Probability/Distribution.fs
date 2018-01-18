@@ -1,35 +1,6 @@
 [<RequireQualifiedAccess>]
 module Distribution 
-    type Probability = double
-    type Distribution<'a> = ('a * Probability) list
-    type Event<'a> = 'a -> bool
- 
-    let printDistribution (v : Distribution<_>) =
-        let negate x = -x
-        v |> List.sortBy (snd >> negate) |> List.iter (fun (a,p) -> printfn "%A: %.2f%%" a (p * 100.0))
-    let always (a : 'a) : Distribution<_> =
-        [a, 1.0]
-    let never (a : 'a) : Distribution<_> =
-        [a, 0.0]
-    let expectation (predicate:'a -> float) (v : Distribution<_>) : float = 
-        List.foldBack (fun  (a,prob) acc -> acc + predicate a * prob) v 0.0
-    let rnd = System.Random()
-    let sample (v : Distribution<_>)  = 
-        let prob = rnd.NextDouble()
-        v |> Seq.scan (fun (_,acc) (n,prob) -> Some n, acc + prob )  (None, 0.0) 
-        |> Seq.pairwise
-        |> Seq.pick(fun ((_,p1),(a,p2)) -> if prob >= p1 && prob < p2 then a else None)
-    let uniformDistribution (ls : 'a list) : Distribution<_> =
-        let ws = 1.0 / float (List.length ls)
-        List.map (fun l -> (l, ws)) ls
-    let calcProbabilityOfEvent (e : Event<'a>) (vs : Distribution<_>) : Probability =
-        vs |> List.filter (fst >> e)
-           |> List.sumBy snd
- 
-    let (>?) a b = calcProbabilityOfEvent b a
-
-
-    let normalize (v : Distribution<_>) : (Distribution<_>) =
+    let normalize v = 
         let total = v |> Seq.sumBy snd
         v 
         |> Seq.groupBy fst 
@@ -37,14 +8,59 @@ module Distribution
             if total > 1.0 then k,Seq.sumBy snd vals / total
             else k,Seq.sumBy snd vals)
         |> Seq.toList
+    type Probability = double
+    [<CustomEquality; CustomComparison>]
+    type Distribution<'a when 'a : equality and 'a :comparison> = {Probabilities:('a * Probability) list} with
+        member v.Normalize : (Distribution<_>) =
+            let norm = v.Probabilities |> normalize
+            {v with Probabilities = norm}
+        override x.GetHashCode() =
+            hash (x.Normalize).Probabilities
+        override x.Equals(obj) = 
+            match obj with 
+            | :? Distribution<'a> as y -> (x.Normalize).Probabilities = (y.Normalize).Probabilities
+            | _ -> false
+        interface System.IComparable with
+            member x.CompareTo yobj =
+              match yobj with
+              | :? Distribution<'a> as y -> compare x.Probabilities y.Probabilities
+              | _ -> invalidArg "yobj" "cannot compare values of different types"
+    type Event<'a> = 'a -> bool
+    let create probabilities = {Probabilities = normalize probabilities}
+    let printDistribution (v : Distribution<_>) =
+        let negate x = -x
+        v.Probabilities |> List.sortBy (snd >> negate) |> List.iter (fun (a,p) -> printfn "%A: %.2f%%" a (p * 100.0))
+    let always (a : 'a) : Distribution<_> =
+        create [a, 1.0]
+    let never (a : 'a) : Distribution<_> =
+        create [a, 0.0]
+    let expectation (predicate:'a -> float) (v : Distribution<_>) : float = 
+        List.foldBack (fun  (a,prob) acc -> acc + predicate a * prob) v.Probabilities 0.0
+    let rnd = System.Random()
+    let sample (v : Distribution<_>)  = 
+        let prob = rnd.NextDouble()
+        v.Probabilities |> Seq.scan (fun (_,acc) (n,prob) -> Some n, acc + prob )  (None, 0.0) 
+        |> Seq.pairwise
+        |> Seq.pick(fun ((_,p1),(a,p2)) -> if prob >= p1 && prob < p2 then a else None)
+    let uniformDistribution (ls : 'a list) : Distribution<_> =
+        let ws = 1.0 / float (List.length ls)
+        List.map (fun l -> (l, ws)) ls
+        |> create
+    let calcProbabilityOfEvent (e : Event<'a>) (vs : Distribution<_>) : Probability =
+        vs.Probabilities
+           |> List.filter (fst >> e)
+           |> List.sumBy snd
+ 
+    let (>?) a b = calcProbabilityOfEvent b a
+
     let coinFlip (pFirst : float) (d1 : Distribution<'T>) (d2 : Distribution<'T>) = 
         if pFirst < 0.0 || pFirst > 1.0 then failwith "invalid probability in coinFlip"
-        let d1' = d1 |> List.map (fun (a,prob) -> a,prob * pFirst) 
-        let d2' = d2 |> List.map (fun (b,prob) -> b,prob * (1.0 - pFirst)) 
+        let d1' = d1.Probabilities |> List.map (fun (a,prob) -> a,prob * pFirst) 
+        let d2' = d2.Probabilities |> List.map (fun (b,prob) -> b,prob * (1.0 - pFirst)) 
         let combined = List.append d1' d2' 
-        combined |> normalize
+        combined |> create
     let either (d1 : Distribution<'T>) (d2 : Distribution<'T>) = coinFlip 0.5 d1 d2
-    let combine  (vs : Distribution<'T> seq) : Distribution<'T> = List.concat vs |> normalize
+    let combine  (vs : Distribution<'T> seq) : Distribution<'T> = Seq.collect (fun v -> v.Probabilities) vs |> List.ofSeq |> create
 
     let weightedCases (inp : ('T * float) list) =
         let rec coinFlips w l =
@@ -60,10 +76,10 @@ module Distribution
         always a
 
     let bind (f : 'a -> Distribution<'b>) (v : Distribution<_>) : Distribution<'b> =
-        [ for (a,p) in v do
-          for (b,p') in f a do
+        [ for (a,p) in v.Probabilities do
+          for (b,p') in (f a).Probabilities do
           yield (b, p*p')
-        ] |> normalize
+        ] |> create
     
     let (>>=) x f = bind f x
 
@@ -75,18 +91,12 @@ module Distribution
  
     let dist= DistrBuilder()   
     let map f = bind (f >> returnM) 
-    let mapProbility f (x : Distribution<_>)  : Distribution<_> = List.map (fun(a,p) -> a,f p) x  |> normalize
+    let mapProbility f (x : Distribution<_>)  : Distribution<_> = List.map (fun(a,p) -> a,f p) x.Probabilities  |> create
     let multiplyProbability p = mapProbility ((*) p)
     let groupBy projection mapping (x: Distribution<'a>) : Distribution<'a> = 
-        List.groupBy (fst >> projection) x
+        List.groupBy (fst >> projection) x.Probabilities
         |> List.choose (function (_,[]) -> None | (_,h::tail) -> Some <| List.fold (fun (c,p) (n,p2) -> mapping c n, (p + p2)) h tail)
-    let apply f v = 
-        dist {
-            let! v' = v
-            let! f' = f
-            return f' v'
-        }
-
+        |> create
     let traverseResultM f list =
         // define a "cons" function
         let cons head tail = head :: tail
@@ -99,7 +109,8 @@ module Distribution
             returnM (cons h t) ))
 
         List.foldBack folder list initState 
-    let choose f (xs : Distribution<_>) : Distribution<_> = List.choose (fun (a,p) -> f a |> Option.map (fun a' -> a',p) ) xs   
+    let get d = d.Probabilities
+    let choose f (xs : Distribution<_>) : Distribution<_> = List.choose (fun (a,p) -> f a |> Option.map (fun a' -> a',p) ) xs.Probabilities |> create  
     let sequenceResultM x = traverseResultM id x
     let rec takeN (v : Distribution<_>) (n : int) : Distribution<'a list> =
         dist{
@@ -115,8 +126,10 @@ module Distribution
             return d1', d2'
         }
 
-    let cartesian (xs:Distribution<_>) (ys:Distribution<_>) = 
-        xs |> List.collect (fun (x,px) -> ys |> List.map (fun (y,py) -> (x,y), (px*py)) |> normalize) |> normalize
+    let cartesian (xs:Distribution<'a>) (ys:Distribution<'b>) : Distribution<'a*'b> = 
+        xs.Probabilities 
+        |> List.collect (fun (x,px) -> ys.Probabilities |> List.map (fun (y,py) -> (x,y), (px*py))) 
+        |> create
       
     module Example =
         let singleDice : Distribution<int> = uniformDistribution [1..6] 

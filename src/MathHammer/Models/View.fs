@@ -19,11 +19,11 @@ let showAttributes ((key:string), operation) dispatch =
             br []
             div [] (GameActions.Primitives.View.root operation dispatch) ]
 let rangeStops (dist:Distribution.Distribution<_>)  = 
-    let length = List.length dist
+    let length = List.length dist.Probabilities
     let minRange, maxRange,_,_ =
-        dist 
-        |> List.rev
+        { dist with Probabilities = dist.Probabilities |> List.rev }
         |> Distribution.choose (function IntCheck (i) -> Check.map ((*) 1<inch>) i |> Some | _ -> None)
+        |> Distribution.get
         |> List.fold (fun (currMinRange,currMaxRange,currMin,currMax) (range,prob) -> 
             min currMinRange range, max currMaxRange range,
             min currMin prob, max currMax prob ) (Check.Pass (28<ft> * 12<inch/ft>),Check.Pass 0<inch>,1.,0.)
@@ -41,8 +41,8 @@ let rangeStops (dist:Distribution.Distribution<_>)  =
 
     let stopsPercentGreenAndOpacity = 
         let stops = 
-            dist 
-            |> List.rev
+            { dist with Probabilities = dist.Probabilities |> List.rev }
+            |> Distribution.get
             |> List.toArray
             |> Array.mapi (fun i (range,prob) -> 
                 match range,prob with 

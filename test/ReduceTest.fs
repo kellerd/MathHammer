@@ -18,7 +18,7 @@ let tests =
         testList (sprintf "%d+ Tests" plus) [
             test "WS Test Std" {
                 match ws |> es "WS" with 
-                | (Value(Dist(result))) -> Expect.containsAll result expectedWS ""
+                | (Value(Dist(result))) -> Expect.containsAll result.Probabilities expectedWS.Probabilities ""
                 | x -> failtest <| sprintf "Result is wrong type %A" x
             }
             // test "WS Test avg" {
@@ -29,7 +29,7 @@ let tests =
             // }
             test "WS Test Sample" {
                 match  ws |> e "WS" with
-                | Value result -> Expect.contains (List.map fst expectedWS) result ""
+                | Value result -> Expect.contains (List.map fst expectedWS.Probabilities) result ""
                 | x -> failtest <| sprintf "Result is wrong type %A" x
             }
         ]    
@@ -65,7 +65,7 @@ let tests =
                     return Int(d1 + d2)
                 } 
                 match psychicTest |> es "PsychicTest" with 
-                | Value(Dist(result)) -> Expect.containsAll result expected ""
+                | Value(Dist(result)) -> Expect.containsAll result.Probabilities expected.Probabilities ""
                 | x -> failtest <| sprintf "Result is wrong type %A" x
             }
             // test "Psychic Total avg" {
