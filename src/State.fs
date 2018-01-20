@@ -40,7 +40,7 @@ let init result =
     >> Map.ofList
 
 
-  let attackers = [initMeq "Marine" attacker; initMeq "Captain" attacker ] 
+  let attackers = [initMeq "Marine" attacker; initSgt "Captain" attacker ] 
                   |> mapScale mathHammer.Attacker.Scale
   let defenders = ['a'..'z'] |> List.map (fun c -> initGeq (string c) defender)  |> mapScale mathHammer.Defender.Scale 
 

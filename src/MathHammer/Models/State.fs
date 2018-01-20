@@ -18,8 +18,12 @@ let init name =
       AverageRules = noValue
       ProbabilityRules = noValue}
 
+let initSgt name coreRules =
+    let attributes = [vInt 6; dPlus D6 3 ;dPlus D6 3; vInt 5; vInt 4; vInt 1; vInt 2; vInt 8; dPlus D6 3; noValue] 
+    let rules = applyArgs coreRules attributes
+    { (init name) with Rules = rules; Attributes = attributes }, Cmd.none
 let initMeq name coreRules =
-    let attributes = [vInt 6; dPlus D6 3 ;dPlus D6 3; vInt 4; vInt 4; vInt 1; vInt 2; vInt 8; dPlus D6 3; noValue] 
+    let attributes = [vInt 6; dPlus D6 3 ;dPlus D6 3; vInt 4; vInt 4; vInt 1; vInt 1; vInt 8; dPlus D6 3; noValue] 
     let rules = applyArgs coreRules attributes
     { (init name) with Rules = rules; Attributes = attributes }, Cmd.none
 let initGeq name coreRules =
