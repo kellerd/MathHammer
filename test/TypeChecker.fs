@@ -4,74 +4,12 @@ open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
+open TypeChecker
 let (==?) x y =
     //printfn "%A" x
     //printfn "%A" y
     Expect.equal x y ""
-type GamePrimitiveType = 
-| Pair of GamePrimitiveType * GamePrimitiveType
-| List of GamePrimitiveType 
-| Pass of GamePrimitiveType 
-| Fail of GamePrimitiveType 
-| Distr of GamePrimitiveType 
-| Empty 
-| Mixed 
-| Unknown
-| Scalar of string
-let rec toString = function
-    | Fail a -> sprintf "Check<%s>" <| toString a
-    | Pass a -> sprintf "Check<%s>" <| toString a
-    | Scalar s -> sprintf "Scalar<%s>" s
-    | List gpt -> sprintf "List<%s>" <| toString gpt
-    | Distr gpt -> sprintf "Dist<%s>" <| toString gpt
-    | Mixed -> "Mixed"
-    | Unknown -> "Unknown"
-    | Empty -> "Empty"
-    | Pair (s,t) -> sprintf "Pair<%s,%s>" (toString s) (toString t)
 
-let toTyped op =
-    let rec (|IsEmpty|_|) = function 
-        | Empty -> Some Empty
-        | List(IsEmpty(e)) 
-        | Distr(IsEmpty(e)) 
-        | Pass(IsEmpty(e)) 
-        | Pair(IsEmpty(e), _)
-        | Pair(_, IsEmpty(e))
-        | Fail(IsEmpty(e)) -> Some e
-        | _ -> None 
-    let rec doCheck = function
-        | Int _                             -> Scalar "Int"
-        | Str(_)                            -> Scalar "Str"
-        //| Float(_)                          -> Scalar (Primitive "Float")
-        | Check(Check.Fail(gp))             -> Fail (doCheck gp)
-        | Check(Check.Pass(gp))             -> Pass (doCheck gp)
-        | NoValue                           -> Unknown
-        | ParamArray(ops)  ->
-            ops
-            |> List.fold (fun acc elem ->
-                match elem with
-                | Value elem ->
-                    match acc,doCheck elem with
-                    | IsEmpty(_), a -> a
-                    | a, IsEmpty(_) -> a
-                    | (a, b) when a <> b -> Mixed
-                    | (a,_) -> a
-                | _ -> Unknown ) Empty
-            |> List
-        | Tuple(s, t) -> 
-            Pair ((doCheck s),(doCheck t))
-        | Dist(vs) ->
-            vs.Probabilities
-            |> List.fold (fun acc (elem,_) ->
-                match acc,doCheck elem with
-                  | IsEmpty(_), a -> a
-                  | a, IsEmpty(_) -> a
-                  | (a, b) when a <> b -> Mixed
-                  | (a,_) -> a ) Empty
-            |> Distr
-    match op with
-    | Value(gp) -> doCheck gp
-    | _ -> Unknown
 //For ease of use, there should be only one Check value, and it should fall down to the leaves of the tree.
 let floor gpType = 
     let rec aux isPass acc =
@@ -98,7 +36,7 @@ let tests =
     //3 + NoValue = T + Unknown = T
     //NoValue + 3 = Unknown + T = T
     let ``Test Addition`` (TwoSimilarTypes (value1,value2)) =
-        //let (value1,value2) = (Check (Check.Pass (Int 4)),Check (Check.Fail (Int 3)))
+        let (value1,value2) = (Check (Check.Fail (ParamArray [Value (Int 1); Value (Int 0); Value (Int 2); Value (Int 2)])),ParamArray [])
         let value1Type = value1 |> Value |> toTyped
         let value2Type = value2 |> Value |> toTyped
         let result = [Value value1;Value value2] |> opList |> call Total >>= "result" |> es "result" 
@@ -115,8 +53,10 @@ let tests =
             |      _ ,Distr Empty, Distr Empty -> ()
             //Autolift. Fails are ignored, things are automatically made passing
             |   Fail a,   Pass a',   Pair(Pass a'', Fail _)
+            |   Fail a, IsEmpty a',   Pair(Pass _, Fail a'') 
             |   Fail a,        a',   Pair(Pass a'', Fail _)  -> checkTypes (a, a', a'')  
-            |   Pass a,   Fail _ ,   Pair(Pass a'', Fail _)                  
+            |   Pass a,   Fail _ ,   Pair(Pass a'', Fail _)  
+            | IsEmpty _,  Fail a,   Pair(Pass _, Fail a'')                 
             |        a,   Fail _ ,   Pair(Pass a'', Fail _)  -> checkTypes (a , a , a'')  
             |   Pass a,   Pass a',   Pass a''   
             |   Pass a,        a',   Pass a''    

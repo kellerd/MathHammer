@@ -4,7 +4,7 @@ open Elmish
 open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-
+open TypeChecker
 let init name =
     { PosX=0.
       PosY=0.
@@ -69,13 +69,22 @@ let rec evalCall dieFunc func v env  =
                 | Check(Check.Pass (n)) -> 
                     repeatOp n |> nestCheck (Check.Pass >> Check)
                 | Int (n) -> create n
-                | Dist(times) -> times |> Distribution.map(fun gp -> match repeatOps gp with Value(gp) -> gp | op -> ParamArray[op]) |> Dist |> Value
+                | Dist(times) -> 
+                    times 
+                    |> Distribution.bind(fun gp -> 
+                        match repeatOps gp with 
+                        | Value(Dist(gp)) -> gp 
+                        | Value(gp) -> Distribution.always gp 
+                        | op -> Distribution.always (ParamArray[op])) |> Dist |> Value
                 | Str(_) -> failwith "Not Implemented"
                 //| Float(_) -> failwith "Not Implemented"
-                // | Tuple(Check(Check.Pass(n)), Check(Check.Fail(m))) -> 
-                //     Tuple(mapToCheck Check.Pass n, mapToCheck Check.Fail m) |> Value
                 | ParamArray(times) -> times |> List.map(function Value(gp) -> repeatOps gp | _ -> noValue ) |> ParamArray |> Value
-                | Tuple(n, m) -> [n |> repeatOp; m |> repeatOp] |> ParamArray |> Value
+                | Tuple(n, m) -> 
+                    match repeatOp n, repeatOp m with 
+                    | Value(ParamArray(n)), Value(ParamArray(m)) -> n @ m |> ParamArray
+                    | Value(n), Value(m) -> Tuple(n,m)
+                    | op,op2 -> [op;op2] |> ParamArray 
+                    |> Value
             repeatOp times
 
         let times = evalOp (evalCall dieFunc) env op2  
@@ -155,7 +164,21 @@ let rec evalCall dieFunc func v env  =
     | Repeat, Value(ParamArray([lam;op2])) -> repeat lam op2 
     | (Total|Product|Count), Value(Check v) -> Check.map evalFuncAsGp v |> Check |> Value
     | (Total|Product|Count), Value(Tuple(t1,t2)) -> Tuple(evalFuncAsGp t1, evalFuncAsGp t2) |> Value
-    | (Total|Product|Count), Value(Dist d) -> Distribution.map evalFuncAsGp d |> Dist |> Value 
+    | (Total|Product|Count), Value(Dist d) -> 
+        // Distribution.map evalFuncAsGp d |> Dist |> Value
+
+        Distribution.bind (fun v -> let value = evalCall dieFunc func (Value v) env 
+                                    value |> function 
+                                        | Value(Dist(gp)) -> gp 
+                                        | IsList(Distr _) & Value(ParamArray ops) -> 
+                                            ops 
+                                            |> List.map(function 
+                                                        | Value(Dist(d)) -> d 
+                                                        | Value(gp) -> Distribution.always gp 
+                                                        | op -> ParamArray[op] |> Distribution.always)
+                                            |> Distribution.combine
+                                        | Value(gp) -> Distribution.always gp 
+                                        | op -> Distribution.always (ParamArray [op]))  d |> Dist |> Value 
     | _ -> failwith "Cannot eval any other call with those params" 
 
 let standardCall = (evalCall (evalDie >> Distribution.map (Int)  >> Dist >> Value))

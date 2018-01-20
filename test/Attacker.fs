@@ -33,21 +33,20 @@ let eps x op = getp x op |> evalOp standardCall initialMap
 let ep x op = getp x op |> evalOp sampleCall initialMap
 
 // let x = repeatOp (vInt 4) (vInt 4) |> evalOp standardCall Map.empty<_,_>  
-let a' = vInt 2
-a'  |> evalOp standardCall Map.empty<_,_> 
-let ws' = dPlus D6 3
-ws' |> evalOp standardCall Map.empty<_,_> 
-ws' |> count |> evalOp standardCall Map.empty<_,_> 
-let hits' = repeatOp (ws' |> count ) (a') |> total |> evalOp standardCall Map.empty<_,_>  
-let svst' = dPlus D6 4 
-svst' |> evalOp standardCall Map.empty<_,_> 
-svst' |> count |> evalOp standardCall Map.empty<_,_> 
-let wounds' = repeatOp (svst' |> count ) (hits') |> evalOp standardCall Map.empty<_,_>
-let wounds'' = repeatOp (svst' |> count ) (hits') |> total |> evalOp standardCall Map.empty<_,_>  
-let wounds''' = repeatOp (svst' |> count |> total  ) (hits' |> total ) |> total |> evalOp standardCall Map.empty<_,_>  
-wounds' = wounds''
-wounds' = wounds'''
-let d6squared = repeatOp (d6 |> count) (d6)  |> total  |> evalOp standardCall Map.empty<_,_>  
+// let a' = vInt 2
+// a' |> count |> evalOp standardCall Map.empty<_,_> 
+// let ws' = dPlus D6 3
+// ws' |> evalOp standardCall Map.empty<_,_> 
+// ws' |> count |> evalOp standardCall Map.empty<_,_> 
+// let hits' = repeatOp (ws' |> count ) (a') |> total |> evalOp standardCall Map.empty<_,_>  
+// let svst' = dPlus D6 3 
+// svst' |> evalOp standardCall Map.empty<_,_> 
+// svst' |> count |> evalOp standardCall Map.empty<_,_> 
+// let wounds' = repeatOp (svst' |> count   ) (hits') |> evalOp standardCall Map.empty<_,_>
+// let wounds'' = repeatOp (svst' |> count ) (hits') |> total |> evalOp standardCall Map.empty<_,_>  
+// let x = d6 |> count  |> evalOp standardCall Map.empty<_,_>  
+// let D6D6s = repeatOp (d6) (d6)  |> total  |> evalOp standardCall Map.empty<_,_> 
+// let TwoD6 = repeatOp (d6) (vInt 2) |> total  |> evalOp standardCall Map.empty<_,_>  
 // let x = repeatOp (vInt 4) (d6)  |> evalOp standardCall Map.empty<_,_> 
 // let x = repeatOp (d6) (d6)  |> evalOp standardCall Map.empty<_,_>  
 // let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp standardCall Map.empty<_,_> 

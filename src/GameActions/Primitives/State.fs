@@ -3,7 +3,6 @@ module GameActions.Primitives.State
 open Types
 let get v = Var (v)
 let noValue = NoValue |> Value
-let single op = ParamArray(List.singleton op) |> Value
 let opList ops = ParamArray(ops) |> Value
 let pair x y = opList [x;y]
 let call f op = App(Call f, op)
@@ -83,7 +82,7 @@ let allProps =
           labelVar "D6Test"
           labelVar "D3Test" ]
 
-let hitResults = repeatOp (get "WS" |> count) (get "A") |> single |> count >>= "HitResults"
+let hitResults = repeatOp (get "WS" |> count) (get "A") |> total >>= "HitResults"
 let defenderMap = "Defender"
 let attackerMap = "Attacker"
 let svtOps = [get "S";getp "T" (get defenderMap)] |> opList >>= "SvsT"
@@ -102,8 +101,7 @@ let sVsT =
       get "SvsT" |> call LessThan, dPlus D6 5
       get "SvsT" |> call Equals, dPlus D6 4 ]
     |> table
-    |> count
-let woundResults = repeatOp (svtOps sVsT) (get "HitResults") >>= "WoundResults"
+let woundResults = repeatOp (svtOps sVsT |> count) (get "HitResults") |> total >>= "WoundResults"
 let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
 let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
 let shootingRange = get "WeaponRange" >>= "ShootingRange"
