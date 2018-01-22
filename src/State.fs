@@ -27,7 +27,7 @@ let init result =
   let (gameActions, gameActionsCmd) = GameActions.State.init()
 
   // attackerStats
-  let body = nestOps [hitResults;chargeRange;meleeRange;psychicTest;d6Test;d3Test;woundResults] allProps
+  let body = nestOps [hitResults;chargeRange;meleeRange;psychicTest;d6Test;d3Test;woundResults;unsavedWounds] allProps
   let defbody = nestOps [hitResults;shootingRange;psychicTest] allProps
   let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
   let attacker = createArgs stats body

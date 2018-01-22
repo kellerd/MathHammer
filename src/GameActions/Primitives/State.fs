@@ -76,17 +76,19 @@ let allProps =
           labelVar "ShootingRange"
           labelVar "PsychicTest"
           labelVar "HitResults"
+          labelVar "WoundResults"
+          labelVar "UnsavedWounds"
           labelVar "ChargeRange"
           labelVar "MeleeRange"
-          labelVar "WoundResults"
           labelVar "D6Test"
           labelVar "D3Test" ]
 
 let hitResults = repeatOp (get "WS" |> count) (get "A") |> total >>= "HitResults"
 let defenderMap = "Defender"
 let attackerMap = "Attacker"
-let svtOps = [get "S";getp "T" (get defenderMap)] |> opList >>= "SvsT"
-
+let getd p = getp p (get "Defender")
+let geta p = getp p (get "Attacker")
+let svtOps = [get "S";getd "T"] |> opList >>= "SvsT"
 let  table ifThen = 
     let rec acc x = 
         match x with 
@@ -101,7 +103,9 @@ let sVsT =
       get "SvsT" |> call LessThan, dPlus D6 5
       get "SvsT" |> call Equals, dPlus D6 4 ]
     |> table
+
 let woundResults = repeatOp (svtOps sVsT |> count) (get "HitResults") |> total >>= "WoundResults"
+let unsavedWounds = repeatOp (getd "Sv" |> count) (get "WoundResults") |> total >>= "UnsavedWounds"
 let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
 let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
 let shootingRange = get "WeaponRange" >>= "ShootingRange"

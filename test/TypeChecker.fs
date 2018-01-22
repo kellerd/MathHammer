@@ -36,7 +36,7 @@ let tests =
     //3 + NoValue = T + Unknown = T
     //NoValue + 3 = Unknown + T = T
     let ``Test Addition`` (TwoSimilarTypes (value1,value2)) =
-        let (value1,value2) = (Check (Check.Fail (ParamArray [Value (Int 1); Value (Int 0); Value (Int 2); Value (Int 2)])),ParamArray [])
+        //let (value1,value2) = (Check (Check.Fail (ParamArray [Value (Int 1); Value (Int 0); Value (Int 2); Value (Int 2)])),ParamArray [])
         let value1Type = value1 |> Value |> toTyped
         let value2Type = value2 |> Value |> toTyped
         let result = [Value value1;Value value2] |> opList |> call Total >>= "result" |> es "result" 
