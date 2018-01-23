@@ -10,14 +10,15 @@ open Probability.View
 
 let onClick x : IProp = OnClick(x) :> _
 
-let showActions dispatch operation  = 
-      GameActions.Primitives.View.root operation dispatch
+let showActions dispatch operation = GameActions.Primitives.View.probabilities operation dispatch
+let showAverages dispatch operation = GameActions.Primitives.View.averages operation dispatch
+let showSamples dispatch operation = GameActions.Primitives.View.sample operation dispatch
 
 let showAttributes ((key:string), operation) dispatch = 
       div [ClassName "has-text-centered column"]
           [ b  [] [str key]
             br []
-            div [] (GameActions.Primitives.View.root operation dispatch) ]
+            div [] (GameActions.Primitives.View.probabilities operation dispatch) ]
 let rangeStops (dist:Distribution.Distribution<_>)  = 
     let length = List.length dist.Probabilities
     let minRange, maxRange,_,_ =

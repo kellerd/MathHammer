@@ -18,22 +18,12 @@ let rec unparseCheck unparseV = function
     //                                 yield str ";" 
     //                             yield str "]"]
      
-      
-let rec displayParamArray ops =
-    match ops with
-    | ops when List.distinct ops = [State.``D#`` D6] -> sprintf "%dD6" (List.length ops) |> str
-    | ops when List.distinct ops = [State.``D#`` D3] -> sprintf "%dD3" (List.length ops) |> str
-    | ops -> section [ClassName "columns"] (List.choose (fun op -> 
-        match unparse op with 
-        | [] -> None 
-        | xs -> div [ClassName "column"] xs |> Some) ops)
-    //| ops -> List.map unparse ops |> List.reduce (fun l1 l2 -> l1 @ (str " + " :: l2)) |> div []
-and unparseCall func = 
+let unparseCall func = 
     match func with 
     | Dice(i) -> "D" + string i  |> str
     | Count -> sprintf "(Passes,Fails) in " |> str
-    | _  -> sprintf "%A" func |> str
-and unparseDist (dist:Distribution.Distribution<GamePrimitive>) = 
+    | _  -> sprintf "%A" func |> str  
+let unparseDist unparseValue (dist:Distribution.Distribution<GamePrimitive>) = 
     let result = 
           dist.Probabilities 
           |> List.groupBy fst
@@ -67,20 +57,17 @@ and unparseDist (dist:Distribution.Distribution<GamePrimitive>) =
                               |> div colour
                               |> Some
                   |> opt)                              
-            |> data []       
-and unparseValue = function   
-    | Int(i) -> [string i |> str]
-    //| Float(f) -> sprintf "%.1f" f |> str
-    | Dist(d) -> [unparseDist d]
-    | NoValue -> [str "--" ] 
-    | Str s -> [b  [] [str s]]
-    | Tuple(v,v2) -> paren <| unparseValue v@(str ",")::unparseValue v2
-    | Check c -> [unparseCheck unparseValue c]
-    | ParamArray ([]) ->  []
-    | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
-    | ParamArray ([Value (Str _); Var _]) ->   []
-    | ParamArray(m) -> [displayParamArray m]
-and unparse operation : Fable.Import.React.ReactElement list = 
+            |> data []    
+let rec displayParamArray unparseValue ops =
+    match ops with
+    | ops when List.distinct ops = [State.``D#`` D6] -> sprintf "%dD6" (List.length ops) |> str
+    | ops when List.distinct ops = [State.``D#`` D3] -> sprintf "%dD3" (List.length ops) |> str
+    | ops -> section [ClassName "columns"] (List.choose (fun op -> 
+        match unparse unparseValue op with 
+        | [] -> None 
+        | xs -> div [ClassName "column"] xs |> Some) ops)
+    //| ops -> List.map unparse ops |> List.reduce (fun l1 l2 -> l1 @ (str " + " :: l2)) |> div []
+and unparse unparseValue operation : Fable.Import.React.ReactElement list = 
     match operation with 
     | Call f -> [unparseCall f]
     | Value(v)-> unparseValue v
@@ -92,17 +79,60 @@ and unparse operation : Fable.Import.React.ReactElement list =
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D3))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
     //     [unparse (App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(List.distinct (is @ is2),d))),Value NoValue); Value(Int(i))])))) |> div []]
-    | App(Lam(_,x),_) -> unparse x //paren (unparse (Lam(p,x))) + " " + argstring a
-    | App(f,(Var(v))) -> unparse f @ [div [] [sprintf "%s" v |> str]]
-    | App(f,a) -> unparse f @ [div [] (unparse a)]
-    | Let(_, _, inner) ->  unparse inner
-    | PropertyGet(s,op) -> unparse op @ [str <| sprintf ".%s" s]
+    | App(Lam(_,x),_) -> unparse unparseValue x //paren (unparse (Lam(p,x))) + " " + argstring a
+    | App(f,(Var(v))) -> unparse unparseValue f @ [div [] [sprintf "%s" v |> str]]
+    | App(f,a) -> unparse unparseValue f @ [div [] (unparse unparseValue a)]
+    | Let(_, _, inner) ->  unparse unparseValue inner
+    | PropertyGet(s,op) -> unparse unparseValue op @ [str <| sprintf ".%s" s]
     | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
-        let ifPart = str "if " :: unparse ifExpr
-        let thenPart = str " then " :: br [] :: unparse thenExpr
-        let elsePart = Option.map(fun elseExpr -> br [] :: unparse elseExpr) elseExpr |> Option.toList |> List.collect id
+        let ifPart = str "if " :: unparse unparseValue ifExpr
+        let thenPart = str " then " :: br [] :: unparse unparseValue thenExpr
+        let elsePart = Option.map(fun elseExpr -> br [] :: unparse unparseValue elseExpr) elseExpr |> Option.toList |> List.collect id
         ifPart @ thenPart @ elsePart
 
+let unparseValue = 
+    let rec unparseV = function   
+    | Int(i) -> [string i |> str]
+    //| Float(f) -> sprintf "%.1f" f |> str
+    | Dist(d) -> [unparseDist unparseV d]
+    | NoValue -> [str "--" ] 
+    | Str s -> [b  [] [str s]]
+    | Tuple(v,v2) -> paren <| unparseV v@(str ",")::unparseV v2
+    | Check c -> [unparseCheck unparseV c]
+    | ParamArray ([]) ->  []
+    | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
+    | ParamArray ([Value (Str _); Var _]) ->   []
+    | ParamArray(m) -> [displayParamArray unparseV m]
+    unparseV
+
+let unparseAverage = 
+    let rec unparseV = function   
+    | Int(i) -> [string i |> str]
+    //| Float(f) -> sprintf "%.1f" f |> str
+    | Dist(d) -> [unparseDist unparseV d]
+    | NoValue -> [str "--" ] 
+    | Str s -> [b  [] [str s]]
+    | Tuple(v,v2) -> paren <| unparseV v@(str ",")::unparseV v2
+    | Check c -> [unparseCheck unparseV c]
+    | ParamArray ([]) ->  []
+    | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
+    | ParamArray ([Value (Str _); Var _]) ->   []
+    | ParamArray(m) -> [displayParamArray unparseV m]
+    unparseV
+let unparseSample = 
+    let rec unparseV = function   
+    | Int(i) -> [string i |> str]
+    //| Float(f) -> sprintf "%.1f" f |> str
+    | Dist(d) -> Distribution.sample d |> unparseV
+    | NoValue -> [str "--" ] 
+    | Str s -> [b  [] [str s]]
+    | Tuple(v,v2) -> paren <| unparseV v@(str ",")::unparseV v2
+    | Check c -> [unparseCheck unparseV c]
+    | ParamArray ([]) ->  []
+    | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
+    | ParamArray ([Value (Str _); Var _]) ->   []
+    | ParamArray(m) -> [displayParamArray unparseV m]
+    unparseV
 
 let alternateRoot model _ =
     let rec displayOperation operation = 
@@ -131,6 +161,7 @@ let alternateRoot model _ =
         | IfThenElse(_)  -> str ""
     displayOperation model  
 
-let root model _ =
-    unparse model
+let probabilities model _ = unparse unparseValue model
+let averages model _ = unparse unparseValue model
+let sample model _ = unparse unparseSample model
 
