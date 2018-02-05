@@ -1,11 +1,20 @@
 module NormalizationTests
 
+open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open Expecto
-
 let (==?) actual expected = Expect.equal expected actual ""
-
+let rec numify i = function 
+| Lam(p,b) -> Lam(i.ToString(), subst (Var (i.ToString())) p b |> numify (i + 1))
+| Call x -> Call x
+| PropertyGet(x, b) -> PropertyGet(x, numify i b)
+| Value(ParamArray(ops)) -> ops |> List.map (numify i) |> ParamArray |> Value
+| Value x -> Value x
+| Var x -> Var x
+| App(f, value) -> App(numify i f, numify i value) 
+| Let(x, value, body) -> Let(x, numify i value, numify (i + 1) body)
+| IfThenElse(ifExpr, thenExpr, Some elseExpr) -> IfThenElse( numify i ifExpr,  numify i thenExpr, Some ( numify i elseExpr))
+| IfThenElse(ifExpr, thenExpr, None) -> IfThenElse( numify i ifExpr,  numify i thenExpr, None)
 
 let zero = Lam("f",Lam("x", Var("x")))// fun f -> fun x -> x
 let one = Lam("f",Lam("x", App(Var "f", Var("x"))))// fun f -> fun x -> f x
@@ -18,7 +27,7 @@ let ``Lambda Calculus`` =
         | Value(Str "Zero") -> 0
         | x -> failtest (sprintf "Couldn't add unexpected value %A" x)
     let doTest (op,expected) = 
-        let result = Value(Str "Zero") |%> (Value(Str "Add 1") |%> op) |> normalizeOp |> doAdding    
+        let result = Value(Str "Zero") |%> (Value(Str "Add 1") |%> op) |> normalize |> doAdding    
         test (sprintf "Lambda for %d" expected) { result ==? expected }
     testList "Lambda Calculus Normalization" (List.map doTest [zero,0;one,1;two,2;three,3])
 
@@ -30,7 +39,7 @@ let ``Ski Combinators`` =
     let ``xz(yz)`` = App(xz,yz)
     let s = Lam("x", Lam ("y", Lam ("z", ``xz(yz)``)))
     
-    let ``false`` = App(s,k) |> normalizeOp
+    let ``false`` = App(s,k)
     let ``true`` = k 
     let ``not`` = App(``false``,``true``)
     let ``or`` = k
@@ -39,59 +48,64 @@ let ``Ski Combinators`` =
     testList "Ski Combinators" [
         test "I is identity" {
             let x' = vInt 6
-            App(i, x') |> normalizeOp ==? x'
+            App(i, x') |> normalize ==? x'
         }
         test "K returns first" {
             let x' = vInt 6
             let y' = vInt 8
-            App(App(k, x'),y') |> normalizeOp ==? x'
+            App(App(k, x'),y') |> normalize ==? x'
         }        
         testList "Test Boolean Functions" [
             test "F returns second" {
                 let x' = vInt 6
                 let y' = vInt 8
-                App(App(``false``, x'),y') |> normalizeOp ==? y'          
+                App(App(``false``, x'),y') |> normalize ==? y'          
             }
             test "T returns first" {
                 let x' = vInt 6
                 let y' = vInt 8
-                App(App(``true``, x'),y') |> normalizeOp ==? x'          
+                App(App(``true``, x'),y') |> normalize ==? x'          
             }
             test "NOT = (SK)(K)" {
-                let ``(SK)(K)`` = (App(App(s,k), k)) |> normalizeOp                
-                (``not`` |> normalizeOp) ==? ``(SK)(K)`` 
+                let ``(SK)(K)`` = (App(App(s,k), k)) |> normalize                
+                (``not`` |> normalize |> numify 0) ==? (``(SK)(K)``  |> numify 0)
             }
             test "True Not == False " {
-                (App(``true``,``not``) |> normalizeOp) ==? (``false`` |> normalizeOp) 
+                (App(``true``,``not``) |> normalize |> numify 0) ==? (``false`` |> normalize |> numify 0) 
             }
-            ptest "False Not == False " {
-                (App(``false``,``not``) |> normalizeOp) ==? (``true`` |> normalizeOp) 
+            test "False Not == False " {
+                (App(``false``,``not``) |> normalize |> numify 0) ==? (``true`` |> normalize |> numify 0) 
             }     
-            ptest "x OR y" {
-                (App(``true``,App(``or``,``true``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
-                (App(``false``,App(``or``,``true``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
-                (App(``true``,App(``or``,``false``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
-                (App(``false``,App(``or``,``false``))|> normalizeOp) ==? (``false`` |> normalizeOp)                 
+            test "x OR y" {
+                (App(``true``,App(``or``,``true``))  |> normalize |> numify 0) ==? (``true``  |> normalize |> numify 0)  
+                (App(``false``,App(``or``,``true``)) |> normalize |> numify 0) ==? (``true``  |> normalize |> numify 0)  
+                (App(``true``,App(``or``,``false``)) |> normalize |> numify 0) ==? (``true``  |> normalize |> numify 0)  
+                (App(``false``,App(``or``,``false``))|> normalize |> numify 0) ==? (``false`` |> normalize |> numify 0)                 
             } 
-            ptest "x AND y" {
-                (App(``true``,App(``true``,``and``))|> normalizeOp) ==? (``true`` |> normalizeOp)  
-                (App(``false``,App(``true``,``and``))|> normalizeOp) ==? (``false`` |> normalizeOp)  
-                (App(``true``,App(``false``,``and``))|> normalizeOp) ==? (``false`` |> normalizeOp)  
-                (App(``false``,App(``false``,``and``))|> normalizeOp) ==? (``false`` |> normalizeOp)                    
+            test "x AND y" {
+                (App(``true``,App(``true``,``and``))  |> normalize |> numify 0) ==? (``true``  |> normalize |> numify 0)  
+                (App(``false``,App(``true``,``and``)) |> normalize |> numify 0) ==? (``false`` |> normalize |> numify 0)  
+                (App(``true``,App(``false``,``and``)) |> normalize |> numify 0) ==? (``false`` |> normalize |> numify 0)  
+                (App(``false``,App(``false``,``and``))|> normalize |> numify 0) ==? (``false`` |> normalize |> numify 0)     
             }
         ]
     ]
+let ``Closure test`` = 
+    test "Inside lam scopes correctly" {
+        App(Lam("y",App(Lam("y", Var "y"),Value(Int(7)))),Value(Int(9))) |> normalize ==? Value(Int(7))
+    }
 let ``Getting a property test`` =
-    let c = opList [opList [Value (Str "M"); Value(Int 8)]; opList [Value (Str "T"); Value(Float 6.)]]
+    let six = Value(Str "six") //Value(Float 6.)  
+    let c = opList [opList [Value (Str "M"); Value(Int 8)]; opList [Value (Str "T"); six]]
     testList "Getting a property test" [
         test "Get First Property" {
-            PropertyGet("M", c) |> normalizeOp ==? Value(Int 8)    
+            PropertyGet("M", c) |> normalize ==? Value(Int 8)    
         }
         test "Get Second Property" {
-            PropertyGet("T", c) |> normalizeOp ==? Value(Float 6.)   
+            PropertyGet("T", c) |> normalize ==? six
         }
         test "Can't find property does nothing" {
-            PropertyGet("H", c) |> normalizeOp ==? PropertyGet("H", c)    
+            PropertyGet("H", c) |> normalize ==? PropertyGet("H", c)    
         }
         // 
     ]
@@ -101,15 +115,15 @@ let ``Counting call test`` =
         test "Count by Param Array" {
             let count ops = App(Call Count,opList (ops))
 
-            let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo] |> normalizeOp
-            let normalizedSecond = count [appliedTwo;appliedTwo;appliedTwo] |> normalizeOp
+            let normalizedFirst = count [normalize appliedTwo;normalize appliedTwo;normalize appliedTwo] |> normalize
+            let normalizedSecond = count [appliedTwo;appliedTwo;appliedTwo] |> normalize
 
             normalizedFirst ==? normalizedSecond
         }
         test "Count by repeat" {
             let count ops = App(Call Count,App(Call Repeat, opList(ops)))
-            let normalizedFirst = count [normalizeOp appliedTwo;normalizeOp appliedTwo;normalizeOp appliedTwo]|> normalizeOp
-            let normalizedSecond = count  [appliedTwo;appliedTwo;appliedTwo]  |> normalizeOp
+            let normalizedFirst = count [normalize appliedTwo;normalize appliedTwo;normalize appliedTwo]|> normalize
+            let normalizedSecond = count  [appliedTwo;appliedTwo;appliedTwo]  |> normalize
 
             normalizedFirst ==? normalizedSecond
         }
@@ -120,4 +134,5 @@ let tests =
         [ ``Counting call test``
           ``Getting a property test``
           ``Lambda Calculus``
-          ``Ski Combinators`` ]
+          ``Ski Combinators``
+          ``Closure test`` ]

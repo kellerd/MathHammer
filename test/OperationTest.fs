@@ -5,13 +5,10 @@ open GameActions.Primitives.State
 open MathHammer.Models.State
 open FsCheckGen
 let (==?) x y = Expect.equal x y ""
-
-
-
 [<Tests>]
 let tests = 
     testList "Operation Tests" [
-        let stdEval = normalizeOp >> evalOp standardCall Map.empty<_,_>
+        let stdEval = normalize>> evalOp standardCall Map.empty<_,_>
         yield test "Evalled D6 equal std distribution of integers, reversed" {
             let result = stdEval d6
             let expected = [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
@@ -23,13 +20,20 @@ let tests =
             let expected = [1..3] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
             result ==? expected
         }
+        yield testPropertyWithConfig config "IfThenElse NoValue returns Else" <| fun thenPart elsePart ->
+            let ifThenElse = IfThenElse(Value NoValue,thenPart,elsePart)
+            let result = stdEval ifThenElse 
+            match elsePart with 
+            | Some elsePart -> result ==? stdEval elsePart 
+            | None -> result ==? Value NoValue
+        
         //Let x = 3 returns 3 as well as binding to environment
         let retValueIsSame f v = 
             let evaled = Let("x", Value(v) ,Var ("x")) |> f |> evalOp standardCall Map.empty<_,_> 
             let evaled' = Value(v) |> f |> evalOp standardCall Map.empty<_,_> 
             evaled ==? evaled'
         yield testPropertyWithConfig config "let x = 3 returns 3 evaluated without normalization" (retValueIsSame id)
-        yield testPropertyWithConfig config "let x = 3 returns 3 evaluated with normalization" (retValueIsSame normalizeOp)
+        yield testPropertyWithConfig config "let x = 3 returns 3 evaluated with normalization" (retValueIsSame normalize)
         //Let x = some number in
         //x + some other number
         let addition x y  =   
@@ -70,12 +74,4 @@ let tests =
                 |> evalOp standardCall Map.empty<_,_>
             result ==? expected
         yield testPropertyWithConfig config "Total of x is x" totalOfXIsX
-        let countOfOneXIsOneX x = 
-            let v = Value(Check(Check.Pass(x)))
-            let result =
-                Let("x", v ,App(Call Count, v)) 
-                |> evalOp standardCall Map.empty<_,_>
-            let expected = Value(Dist(Distribution.always (Tuple (Int(1),Int(0)))))
-            result ==? expected
-        yield testPropertyWithConfig config "Count of one passed result is 1"  countOfOneXIsOneX 
     ]

@@ -1,6 +1,0 @@
-#load @"Fable.Core.fsx" 
-#load @"FSharp.Compiler.Service.fsx" 
-#load @"Newtonsoft.Json.fsx" 
-#load @"System.Collections.Immutable.fsx" 
-#load @"System.Reflection.Metadata.fsx" 
-#load @"System.Runtime.Loader.fsx" 

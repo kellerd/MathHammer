@@ -3,13 +3,14 @@ module GameActions.Primitives.View
 open Fable.Helpers.React
 open Props
 open Types
+open State
 open Probability.View
 
-let paren react = div [] <| str "(" :: react @ [str ")"]
+let paren react = str "(" :: react @ [str ")"]
 
 let rec unparseCheck unparseV = function 
-    | Check.Pass(v) -> div [Style [Color (colour 255.) ]] [str "Pass: "; (unparseV v)]
-    | Check.Fail(v) -> div [Style [Color (colour 0.) ]] [str  "Fail: "; (unparseV v)]
+    | Check.Pass(v) -> span [Style [Color (colour 255.) ]] <| (str "Pass: ")::(unparseV v)
+    | Check.Fail(v) -> span [Style [Color (colour 0.) ]]   <| (str "Fail: ")::(unparseV v)
     // | Check.List(vs) -> div [] [
     //                             yield str "["
     //                             for result in vs do
@@ -34,7 +35,7 @@ and unparseCall func =
     | _  -> sprintf "%A" func |> str
 and unparseDist (dist:Distribution.Distribution<GamePrimitive>) = 
     let result = 
-          dist 
+          dist.Probabilities 
           |> List.groupBy fst
           |> List.map(fun (f,probs) -> f, List.sumBy snd probs)
     match result with 
@@ -50,7 +51,7 @@ and unparseDist (dist:Distribution.Distribution<GamePrimitive>) =
                       | Check(Check.Pass _ ) -> colourA (float 0xFF) |> Some
                       | Check(Check.Fail _ ) -> colourA (float 0x00) |> Some
                       | Tuple (x,y) when x = y ->  colourA (float 0xFF)  |> Some
-                      | Tuple (Float x,Float y) -> (x / (x + y) ) * float 0xFF |> colourA |> Some
+                      //| Tuple (Float x,Float y) -> (x / (x + y) ) * float 0xFF |> colourA |> Some
                       | Tuple (Int x,Int y) -> (float x / (float x + float y) ) * float 0xFF  |> colourA|> Some
                       | Int _ -> colourDefault |> Some
                       | _ -> None
@@ -60,31 +61,37 @@ and unparseDist (dist:Distribution.Distribution<GamePrimitive>) =
                           let alpha = opacity min max prob
                           Style [Color (colourValue alpha)] :> IHTMLProp) 
                     |> Option.toList 
-                  div colour [unparseValue r; str <| sprintf " %.1f%%" (prob / total * 100.)])
-            |> div []       
-and unparseValue : GamePrimitive -> Fable.Import.React.ReactElement = function   
-    | Int(i) -> string i |> str
-    | Float(f) -> sprintf "%.1f" f |> str
-    | Dist(d) -> unparseDist d
-    | NoValue -> "--" |> str
-    | Str s -> b  [] [str s]
-    | Tuple(v,v2) -> div [] [paren <| unparseValue v::(str ",")::[unparseValue v2]]
-    | Check c -> unparseCheck unparseValue c
-    | ParamArray ([Value (Str _); Value(NoValue)]) ->  opt None
-    | ParamArray ([Value (Str _); Var _]) ->   opt None
-    | ParamArray(m) -> div [] [displayParamArray m]
+                  match unparseValue r with 
+                  | [] -> None 
+                  | result -> result @ [str <| sprintf " %.1f%%" (prob / total * 100.)]
+                              |> div colour
+                              |> Some
+                  |> opt)                              
+            |> data []       
+and unparseValue = function   
+    | Int(i) -> [string i |> str]
+    //| Float(f) -> sprintf "%.1f" f |> str
+    | Dist(d) -> [unparseDist d]
+    | NoValue -> [str "--" ] 
+    | Str s -> [b  [] [str s]]
+    | Tuple(v,v2) -> paren <| unparseValue v@(str ",")::unparseValue v2
+    | Check c -> [unparseCheck unparseValue c]
+    | ParamArray ([]) ->  []
+    | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
+    | ParamArray ([Value (Str _); Var _]) ->   []
+    | ParamArray(m) -> [displayParamArray m]
 and unparse operation : Fable.Import.React.ReactElement list = 
     match operation with 
     | Call f -> [unparseCall f]
-    | Value(v)-> [unparseValue v]
+    | Value(v)-> unparseValue v
     | Var (v) -> [sprintf "%s" v |> str]
     | Lam(_) -> []
-    | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(D6)),_); Value(Int(i))]))) ->  [string (i+1) + "+" |> str]
-    | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(D3)),_); Value(Int(i))]))) ->  [string (i+1) + "+ on D3" |> str]
-    | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D6))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
-    | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D3))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
-    | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
-        [unparse (App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(List.distinct (is @ is2),d))),Value NoValue); Value(Int(i))])))) |> div []]
+    | IsDPlus(D6,plus) ->  [string (plus) + "+" |> str]
+    | IsDPlus(D3,plus) ->  [string (plus) + "+ on D3" |> str]
+    // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D6))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
+    // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D3))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
+    // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
+    //     [unparse (App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(List.distinct (is @ is2),d))),Value NoValue); Value(Int(i))])))) |> div []]
     | App(Lam(_,x),_) -> unparse x //paren (unparse (Lam(p,x))) + " " + argstring a
     | App(f,(Var(v))) -> unparse f @ [div [] [sprintf "%s" v |> str]]
     | App(f,a) -> unparse f @ [div [] (unparse a)]

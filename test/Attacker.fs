@@ -6,7 +6,7 @@ open Expecto
 let (==?) x y = Expect.equal x y ""
 let (==~) x y = 
     match y with 
-    | Value(Dist(y)) -> Expect.contains (y |> List.map (fst >> Value)) x ""
+    | Value(Dist({Probabilities = y})) -> Expect.contains (y |> List.map (fst >> Value)) x ""
     | _ -> Expect.equal x y ""
 let body = nestOps [hitResults;chargeRange;meleeRange;psychicTest;woundResults] allProps
 let defbody = nestOps [hitResults;shootingRange;psychicTest] allProps
@@ -25,42 +25,46 @@ let ld = vInt 8
 let sv = threePlus
 let invSave = noValue
 let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;] 
-let defApplied = applyArgs defender seargent |> normalizeOp |> evalOp standardCall Map.empty<string,Operation>
+let defApplied = applyArgs defender seargent |> normalize|> evalOp standardCall Map.empty<string,Operation>
 let initialMap = Map.add "Defender" defApplied Map.empty<string,Operation>
-
-let attApplied = applyArgs attacker seargent |> normalizeOp
-
+let attApplied = applyArgs attacker seargent |> normalize
 let eps x op = getp x op |> evalOp standardCall initialMap
-let epa x op = getp x op |> evalOp avgCall initialMap
+//let epa x op = getp x op |> evalOp avgCall initialMap
 let ep x op = getp x op |> evalOp sampleCall initialMap
-let (|IsDPlus|_|) = function
-    | Let (roll,App (Call (Dice D6),Value NoValue),
-           Let (gt, App (Call GreaterThan,Value (ParamArray [Var roll'; Value (Int d)])),
-                Let (eq, App (Call Equals,Value (ParamArray [Var roll''; Value (Int d')])),
-                     App (Call Or,Value (ParamArray [Var eq'; Var gt']))))) 
-        when roll = roll' && roll' = roll'' &&
-             gt = gt' &&
-             eq = eq' &&
-             d = d'
-             -> Some d
-    | _ -> None
+
+// let x = repeatOp (vInt 4) (vInt 4) |> evalOp standardCall Map.empty<_,_>  
+let a' = vInt 2
+a'  |> evalOp standardCall Map.empty<_,_> 
+let ws' = dPlus D6 3
+ws' |> evalOp standardCall Map.empty<_,_> 
+ws' |> count |> evalOp standardCall Map.empty<_,_> 
+let hits' = repeatOp (ws' |> count ) (a') |> total |> evalOp standardCall Map.empty<_,_>  
+let svst' = dPlus D6 4 
+svst' |> evalOp standardCall Map.empty<_,_> 
+svst' |> count |> evalOp standardCall Map.empty<_,_> 
+let wounds' = repeatOp (svst' |> count ) (hits') |> evalOp standardCall Map.empty<_,_>
+let wounds'' = repeatOp (svst' |> count ) (hits') |> total |> evalOp standardCall Map.empty<_,_>  
+let wounds''' = repeatOp (svst' |> count |> total  ) (hits' |> total ) |> total |> evalOp standardCall Map.empty<_,_>  
+wounds' = wounds''
+wounds' = wounds'''
+let d6squared = repeatOp (d6 |> count) (d6)  |> total  |> evalOp standardCall Map.empty<_,_>  
+// let x = repeatOp (vInt 4) (d6)  |> evalOp standardCall Map.empty<_,_> 
+// let x = repeatOp (d6) (d6)  |> evalOp standardCall Map.empty<_,_>  
+// let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp standardCall Map.empty<_,_> 
+// let x = repeatOp (Value(ParamArray([vInt 3; vInt 2]))) (vInt 4)  |> evalOp standardCall Map.empty<_,_> 
+//|> count |> evalOp standardCall initialMap
+
 [<Tests>]
 let tests = 
     let pairs = List.zip stats seargent 
     let expectedStd = 
+        let expectedDice n plus = List.init n ((+) 1 >> fun i -> if i >= plus then Check(Check.Pass(Int(i))) else Check(Check.Fail(Int(i))))  |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
+        
         pairs        
         |> List.map(function 
-                    | key,IsDPlus plus -> key,List.init 6 ((+) 1 >> fun i -> if i >= plus then Check(Check.Pass(Int(i))) else Check(Check.Fail(Int(i)))) |> Distribution.uniformDistribution |> List.rev |> Dist |> Value
+                    | key,IsDPlus (D6,plus) -> key, expectedDice 6 plus
+                    | key,IsDPlus (D3,plus) -> key, expectedDice 3 plus
                     | key,op -> key,op)
-    let expectedAvg = 
-        pairs
-        |> List.map(function 
-                    | key,IsDPlus plus -> 
-                        if 3.5 >= float plus then key,Value (Check (Check.Pass (Float 3.5)))
-                        else key,Value (Check (Check.Fail (Float 3.5)))
-                    | key,op -> 
-                        key,op)                                                                                                               
-
     testList "Attacker Tests" [
         expectedStd 
         |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { eps key attApplied ==? expected })  
@@ -70,10 +74,8 @@ let tests =
         |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { ep key attApplied ==~ expected })  
         |> testList "Sample Tests";
         
-        expectedAvg
-        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key)  { epa key attApplied ==? expected })  
-        |> testList "Avg Tests";
+        // expectedAvg
+        // |> List.map(fun (key,expected) -> test (sprintf "Check %s" key)  { epa key attApplied ==? expected })  
+        // |> testList "Avg Tests";
 
     ] 
-
-

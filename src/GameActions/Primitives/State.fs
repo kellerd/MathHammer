@@ -8,11 +8,11 @@ let opList ops = ParamArray(ops) |> Value
 let pair x y = opList [x;y]
 let call f op = App(Call f, op)
 let tuple ab = Tuple(ab)
-let count v = v |> call Count
+let count = call Count
 let repeat ``(fun op -> 't)`` op2 = opList [``(fun op -> 't)``; op2;] |> call Repeat
-let repeatOp op op2 = opList [Lam("unusedVariable", op); op2] |> call Repeat
-let total v = v |> call Total
-let product v = v |> call Product
+let repeatOp op = ("unusedVariable", op) |> Lam |> repeat
+let total = call Total
+let product = call Product
 let bindVal text op = Let(text,op,Var text)
 
 let bindOp v op inBody = Let(v,op, inBody)
@@ -41,6 +41,17 @@ let dPlus d v =
 
     let dp = Let ("roll", ``D#`` d, (Let("gt", gt, Let ("eq", eq,  gte))))
     dp
+let (|IsDPlus|_|) = function
+    | Let (roll,App (Call (Dice die),Value NoValue),
+           Let (gt, App (Call GreaterThan,Value (ParamArray [Var roll'; Value (Int d)])),
+                Let (eq, App (Call Equals,Value (ParamArray [Var roll''; Value (Int d')])),
+                     App (Call Or,Value (ParamArray [Var eq'; Var gt']))))) 
+        when roll = roll' && roll' = roll'' &&
+             gt = gt' &&
+             eq = eq' &&
+             d = d'
+             -> Some (die,d)
+    | _ -> None
 // dp |> evalOp standardCall (Map.add "roll" (``D#`` d) Map.empty<_,_>    )
 // eq |> evalOp standardCall (Map.add "roll" (``D#`` d) Map.empty<_,_>    )
 // dPlus D6 3 |> evalOp standardCall Map.empty<_,_>    
@@ -72,7 +83,7 @@ let allProps =
           labelVar "D6Test"
           labelVar "D3Test" ]
 
-let hitResults = get "WS" |> single |> count >>= "HitResults"
+let hitResults = repeatOp (get "WS" |> count) (get "A") |> single |> count >>= "HitResults"
 let defenderMap = "Defender"
 let attackerMap = "Attacker"
 let svtOps = [get "S";getp "T" (get defenderMap)] |> opList >>= "SvsT"
@@ -87,10 +98,11 @@ let  table ifThen =
     | Some o -> o
 
 let sVsT = 
-    [ get "SvsT" |> call GreaterThan, dPlus D6 3
+    [ get "SvsT" |> call GreaterThan, dPlus D6 3 
       get "SvsT" |> call LessThan, dPlus D6 5
       get "SvsT" |> call Equals, dPlus D6 4 ]
     |> table
+    |> count
 let woundResults = repeatOp (svtOps sVsT) (get "HitResults") >>= "WoundResults"
 let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
 let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
@@ -100,6 +112,17 @@ let d6Test = [d6] |> opList |> total >>= "D6Test"
 let d3Test = [d3] |> opList |> total >>= "D3Test"
 
 
+let rec isInUse s = function
+      | Var (v) -> v = s
+      | App (f, a) -> isInUse s f || isInUse s a 
+      | Lam (p, x) -> p <> s && isInUse s x
+      | Value(ParamArray(ops)) -> List.fold (fun used op -> used || isInUse s op) false ops
+      | Value _ -> false
+      | Let (n, v, op) -> isInUse s v || (n <> s && isInUse s op)
+      | Call _ -> false
+      | PropertyGet(_, op) -> isInUse s op
+      | IfThenElse(ifExpr, thenExpr, None) -> isInUse s ifExpr || isInUse s thenExpr
+      | IfThenElse(ifExpr, thenExpr, Some elseExpr) -> isInUse s ifExpr || isInUse s thenExpr || isInUse s elseExpr
 
 let rec subst arg s = function
       | Var (v) -> if (v) = s then arg else Var (v)
@@ -220,8 +243,8 @@ let tryFindLabel name operation =
     match operation with 
     | FirstIsName v -> Some v
     | Value(ParamArray(ops)) -> List.tryPick (function FirstIsName v -> Some v | _ -> None) ops
-    | _ -> None        
-let normalizeOp op = 
+    | _ -> None   
+let normalize op = 
     let all = freeIds op
     let rec reduce = function
         | Var _ -> Normal
@@ -229,32 +252,36 @@ let normalizeOp op =
         | App (Lam (p, b), a) ->
               let redex = a, p, b
               match rename all redex with
-                  | Renamed x -> Next x
-                  | Fine -> Next (subst a p b)
+              | Renamed x -> Next x
+              | Fine -> Next (subst a p b)
         | App (f, a) ->
               match reduce f with
-                  | Next rf -> Next (App (rf, a))
-                  | _ ->
-                      match reduce a with
-                          | Next ra -> Next (App (f, ra))
-                          | _ -> Normal
+              | Next rf -> Next (App (rf, a))
+              | _ ->
+                  match reduce a with
+                  | Next ra -> Next (App (f, ra))
+                  | _ -> Normal
         | Lam (p, b) ->
               match reduce b with
-                  | Next b -> Next (Lam (p, b))
-                  | _ -> Normal
+              | Next b -> 
+                    if not (isInUse p b) then Next b
+                    else Next (Lam (p, b))
+              | _ -> 
+                    if not (isInUse p b) then Next b
+                    else Normal
         | PropertyGet (p, b) ->
               match reduce b with
-                  | Next b ->  Next (PropertyGet (p, b))
-                  | _ -> 
-                        match tryFindLabel p b with 
-                        | Some op -> Next(op) 
-                        | None -> Normal
+              | Next b ->  Next (PropertyGet (p, b))
+              | _ -> 
+                    match tryFindLabel p b with 
+                    | Some op -> Next(op) 
+                    | None -> Normal
         | Value(ParamArray(ops)) -> 
             let (rops,expr) = 
                 ops 
                 |> List.map (fun op -> match reduce op with 
-                                                  | Normal -> op,Normal
-                                                  | Next rop -> rop,Next rop)
+                                       | Normal -> op,Normal
+                                       | Next rop -> rop,Next rop)
                 |> List.unzip                            
             if List.exists(function Next _ -> true | Normal -> false) expr then
                 Next (Value(ParamArray(rops)))
@@ -308,23 +335,22 @@ let rec evalOp evalCall env (operation:Operation) =
             noValue
     | Lam _ as l -> l
     | IfThenElse(gp, thenPart, elsePart) -> 
-        match evalOp evalCall env gp, elsePart with 
-        | (Value(Check(Check.Pass(_)))),_ -> evalOp evalCall env thenPart
-        | (Value(Check(Check.Fail(_))),Some elsePart) -> evalOp evalCall env elsePart
-        | (Value(Check(Check.Fail(_))),None) 
-        | Value NoValue,None -> noValue;
-        | Value v,_ -> 
-            v |> ignore
-            evalOp evalCall env thenPart // truthy
-        | _ -> //printfn "Invalid type, cannot check if/else with %A" gp; 
-            noValue  
+        let result = evalOp evalCall env gp
+        match result with 
+        | Value(Check(Check.Fail(_)) | NoValue) -> elsePart 
+        | Value _ -> Some thenPart
+        | _ -> None
+        |> Option.map (evalOp evalCall env)
+        |> function 
+        | Some v -> v
+        | None -> noValue
     | App(Lam(x, op),value) ->
         evalOp evalCall (Map.add x value env) op 
     | App(f, value) -> 
         match evalOp evalCall env f, evalOp evalCall env value with 
         | (Call f),v -> evalCall f v env 
         | Lam(x, op),v -> evalOp evalCall env <| App(Lam(x, op),v) 
-        | x -> failwith <| sprintf "Cannot apply to something not a function %A" x
+        | f',x' -> failwith <| sprintf "Cannot apply to something not a function App(%A,%A) = %A,%A" f value f' x'
 // let attackerLam = <@ 
 //     let m = 6
 //     let a = 5

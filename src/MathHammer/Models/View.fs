@@ -19,11 +19,11 @@ let showAttributes ((key:string), operation) dispatch =
             br []
             div [] (GameActions.Primitives.View.root operation dispatch) ]
 let rangeStops (dist:Distribution.Distribution<_>)  = 
-    let length = List.length dist
+    let length = List.length dist.Probabilities
     let minRange, maxRange,_,_ =
-        dist 
-        |> List.rev
+        { dist with Probabilities = dist.Probabilities |> List.rev }
         |> Distribution.choose (function IntCheck (i) -> Check.map ((*) 1<inch>) i |> Some | _ -> None)
+        |> Distribution.get
         |> List.fold (fun (currMinRange,currMaxRange,currMin,currMax) (range,prob) -> 
             min currMinRange range, max currMaxRange range,
             min currMin prob, max currMax prob ) (Check.Pass (28<ft> * 12<inch/ft>),Check.Pass 0<inch>,1.,0.)
@@ -41,16 +41,16 @@ let rangeStops (dist:Distribution.Distribution<_>)  =
 
     let stopsPercentGreenAndOpacity = 
         let stops = 
-            dist 
-            |> List.rev
+            { dist with Probabilities = dist.Probabilities |> List.rev }
+            |> Distribution.get
             |> List.toArray
             |> Array.mapi (fun i (range,prob) -> 
                 match range,prob with 
                 | Check(Check.Fail _),_ | _,0.0 -> (stopPercent i length, colour 255.), 0.0
                 | Check(Check.Pass (Int(range))),_ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
-                | Check(Check.Pass (Float (range))),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
+                //| Check(Check.Pass (Float (range))),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
                 | Int (range),_ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
-                | Float (range),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
+                //| Float (range),_ -> (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
                 | _ -> failwith "invalid range calculation"
                 ) 
             |> Array.rev

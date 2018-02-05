@@ -34,4 +34,3 @@ type Msg =
     | ChangePosition of float * float * string
     | Rebind of Environment
     | Select
-    | Let of string * Operation
