@@ -61,7 +61,9 @@ type GamePrimitive with
         | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
         | Dist d, gp 
         | gp, Dist d -> Distribution.map ((+) gp) d  |> Dist
+        | Tuple (Check (Check.Pass(l)), Check (Check.Fail(r))), Check (Check.Pass(r1))
         | Check (Check.Pass(r1)), Tuple(Check (Check.Pass(l)),Check (Check.Fail(r))) -> Tuple(Check (Check.Pass(l + r1)),Check (Check.Fail(r)))
+        | Tuple (Check (Check.Pass(l)),Check (Check.Fail(r))), Check (Check.Fail(r2))
         | Check (Check.Fail(r2)), Tuple(Check (Check.Pass(l)),Check (Check.Fail(r))) -> Tuple(Check (Check.Pass(l)),Check (Check.Fail(r2 + r)))
         | Check (Check.Fail(r1)), Check (Check.Fail(r2)) -> Check(Check.Fail(r1 + r2))
         | Check (Check.Pass(r1)), Check (Check.Pass(r2)) -> Check(Check.Pass(r1 + r2))
@@ -75,7 +77,7 @@ type GamePrimitive with
         //| Int(y), Float(x)  -> Float(x + float y)
         | Tuple(a,b), Tuple(x,y) -> Tuple(a+x,b+y)
         | Tuple (a,b), x 
-        | x, Tuple (a,b) -> Tuple(a+x,b)
+        | x, Tuple (a,b) -> Tuple(a+x,b+x)
         | ParamArray a, ParamArray b -> List.append a b |> ParamArray
         | x,y -> failwith <| sprintf "Cannot add these two primitives %A, %A" x y
     static member (*) (x,y) = 
@@ -97,7 +99,8 @@ type GamePrimitive with
         | Dist d, gp 
         | gp, Dist d -> Distribution.map ((*) gp) d |> Dist
         | Str _, _ | _, Str _ -> NoValue
-        | Tuple _,_ | _,Tuple _ -> NoValue
+        | Tuple (a,b), x 
+        | x, Tuple (a,b) -> Tuple(a*x,b*x)
 
 
 module GamePrimitive =
@@ -237,4 +240,79 @@ type mm with
                           
 type Msg =  Unit  
 
+module TypeChecker = 
+    type GamePrimitiveType = 
+    | Pair of GamePrimitiveType * GamePrimitiveType
+    | List of GamePrimitiveType 
+    | Pass of GamePrimitiveType 
+    | Fail of GamePrimitiveType 
+    | Distr of GamePrimitiveType 
+    | Empty 
+    | Mixed 
+    | Unknown
+    | Scalar of string
 
+    let rec (|IsEmpty|_|) = function 
+        | Empty -> Some Empty
+        | List(IsEmpty(e)) 
+        | Distr(IsEmpty(e)) 
+        | Pass(IsEmpty(e)) 
+        | Pair(IsEmpty(e), _)
+        | Pair(_, IsEmpty(e))
+        | Fail(IsEmpty(e)) -> Some e
+        | _ -> None 
+    let toTyped op =
+        let rec doCheck = function
+            | Int _                             -> Scalar "Int"
+            | Str(_)                            -> Scalar "Str"
+            //| Float(_)                          -> Scalar (Primitive "Float")
+            | Check(Check.Fail(gp))             -> Fail (doCheck gp)
+            | Check(Check.Pass(gp))             -> Pass (doCheck gp)
+            | NoValue                           -> Unknown
+            | ParamArray(ops)  ->
+                ops
+                |> List.fold (fun acc elem ->
+                    match elem with
+                    | Value elem ->
+                        match acc,doCheck elem with
+                        | IsEmpty(_), a -> a
+                        | a, IsEmpty(_) -> a
+                        | (a, b) when a <> b -> Mixed
+                        | (a,_) -> a
+                    | _ -> Unknown ) Empty
+                |> List
+            | Tuple(s, t) -> 
+                Pair ((doCheck s),(doCheck t))
+            | Dist(vs) ->
+                vs.Probabilities
+                |> List.fold (fun acc (elem,_) ->
+                    match acc,doCheck elem with
+                      | IsEmpty(_), a -> a
+                      | a, IsEmpty(_) -> a
+                      | (a, b) when a <> b -> Mixed
+                      | (a,_) -> a ) Empty
+                |> Distr
+        match op with
+        | Value(gp) -> doCheck gp
+        | _ -> Unknown
+    let rec toString = function
+        | Fail a -> sprintf "Check<%s>" <| toString a
+        | Pass a -> sprintf "Check<%s>" <| toString a
+        | Scalar s -> sprintf "Scalar<%s>" s
+        | List gpt -> sprintf "List<%s>" <| toString gpt
+        | Distr gpt -> sprintf "Dist<%s>" <| toString gpt
+        | Mixed -> "Mixed"
+        | Unknown -> "Unknown"
+        | Empty -> "Empty"
+        | Pair (s,t) -> sprintf "Pair<%s,%s>" (toString s) (toString t)
+    let (|IsPair|IsCheck|IsList|IsDistr|IsScalar|IsOther|) operation = 
+        match toTyped operation with 
+        | Pair (gp,gp2) -> IsPair    (gp,gp2) 
+        | List   gp     -> IsList    (gp)
+        | Pass   gp     -> IsCheck   (gp)
+        | Fail   gp     -> IsCheck   (gp)
+        | Distr  gp     -> IsDistr   (gp)
+        | Empty         -> IsOther    
+        | Mixed         -> IsOther    
+        | Unknown       -> IsOther    
+        | Scalar gp     -> IsScalar  (gp)

@@ -18,7 +18,7 @@ let inline mult x y =
     let rec mult x y =
         match x,y with  
         | Pass a, Pass b -> Pass (a * b)
-        | Pass _, Fail b | Fail b, Pass _  -> Fail b
+        | Pass a, Fail b | Fail b, Pass a  -> Fail (a * b)
         | Fail a, Fail b -> Fail (a * b)
         // | List a, List b -> 
         //     [for a' in a do 

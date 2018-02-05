@@ -27,7 +27,7 @@ let init result =
   let (gameActions, gameActionsCmd) = GameActions.State.init()
 
   // attackerStats
-  let body = nestOps [hitResults;chargeRange;meleeRange;psychicTest;d6Test;d3Test;woundResults] allProps
+  let body = nestOps [hitResults;chargeRange;meleeRange;psychicTest;d6Test;d3Test;woundResults;unsavedWounds] allProps
   let defbody = nestOps [hitResults;shootingRange;psychicTest] allProps
   let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
   let attacker = createArgs stats body
@@ -40,7 +40,7 @@ let init result =
     >> Map.ofList
 
 
-  let attackers = [initMeq "Marine" attacker; initMeq "Captain" attacker ] 
+  let attackers = [initMeq "Marine" attacker; initSgt "Captain" attacker ] 
                   |> mapScale mathHammer.Attacker.Scale
   let defenders = ['a'..'z'] |> List.map (fun c -> initGeq (string c) defender)  |> mapScale mathHammer.Defender.Scale 
 

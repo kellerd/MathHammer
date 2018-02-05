@@ -1,16 +1,15 @@
 module ReduceTests
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open MathHammer.Models.State
 open Expecto
 
 let (==?) actual expected = Expect.equal expected actual ""
 
 [<Tests>]
 let tests = 
-    let es x op = get x |> op |> evalOp standardCall Map.empty<_,_> 
-    //let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
-    let e x op = get x |> op |> evalOp sampleCall Map.empty<_,_> 
+    let es x op = get x |> op |> evalOp Map.empty<_,_> 
+    //let ea x op = get x |> op |> evalOp Map.empty<_,_> 
+    let e x op = get x |> op |> evalOp Map.empty<_,_> 
     let d6Dist =  [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
     let plusTest plus = 
         let ws = dPlus D6 plus >>= "WS"

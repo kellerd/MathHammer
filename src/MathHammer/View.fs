@@ -62,9 +62,9 @@ let root model dispatch =
                 |> div [ClassName "columns"]  
             let getListOfOps = function | Value(ParamArray ops) -> ops | op -> [op]
             let actionsDiv = selected.NormalizedRules |> showActions dispatch |> div []
-            let averagesDiv = selected.AverageRules |> getListOfOps |> List.collect (showActions dispatch) |> columnsOf
+            let averagesDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showAverages dispatch) |> columnsOf
             let probabiltiesActionsDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showActions dispatch) |> columnsOf
-            let sampleActionsDiv = selected.SampleRules |> getListOfOps |> List.collect (showActions dispatch) |> columnsOf
+            let sampleActionsDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showSamples dispatch) |> columnsOf
 
             section [Id "selected"] [ title; attrDiv
                                       bar "Actions"; actionsDiv

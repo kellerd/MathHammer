@@ -5,19 +5,19 @@ open Props
 open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open State
 open Probability.View
 
 let onClick x : IProp = OnClick(x) :> _
 
-let showActions dispatch operation  = 
-      GameActions.Primitives.View.root operation dispatch
+let showActions dispatch operation = GameActions.Primitives.View.probabilities operation dispatch
+let showAverages dispatch operation = GameActions.Primitives.View.averages operation dispatch
+let showSamples dispatch operation = GameActions.Primitives.View.sample operation dispatch
 
 let showAttributes ((key:string), operation) dispatch = 
       div [ClassName "has-text-centered column"]
           [ b  [] [str key]
             br []
-            div [] (GameActions.Primitives.View.root operation dispatch) ]
+            div [] (GameActions.Primitives.View.probabilities operation dispatch) ]
 let rangeStops (dist:Distribution.Distribution<_>)  = 
     let length = List.length dist.Probabilities
     let minRange, maxRange,_,_ =
@@ -71,7 +71,7 @@ let groupFor model display =
     g [ SVGAttr.Transform (sprintf "translate(%f,%f)" model.PosX model.PosY)]
             [ g   [SVGAttr.Transform model.Scale ] display ]
 let rangeRoot name model =
-    let dist = model.ProbabilityRules |> getp name |> evalOp standardCall Map.empty<_,_>
+    let dist = model.ProbabilityRules |> getp name |> evalOp Map.empty<_,_>
     let ranges id (_:int<mm>,max:int<mm>,stops) = 
         g [] 
           [   defs  [] 
@@ -100,8 +100,5 @@ let root model dispatch =
                          Stroke "#000000"
                          SVGAttr.FontSize "25"] 
                          [ str model.Name ] ]
-            //
-            
-            
       groupFor model modelDisplay
 

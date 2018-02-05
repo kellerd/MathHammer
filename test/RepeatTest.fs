@@ -3,21 +3,20 @@ open FsCheckGen
 open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open MathHammer.Models.State
 let (==?) x y = 
     //printfn "%A" x
     //printfn "%A" y
     Expect.equal x y ""
-let es x op = get x |> op |> evalOp standardCall Map.empty<_,_> 
-//let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_> 
-let e x op = get x |> op |> evalOp sampleCall Map.empty<_,_> 
+let es x op = get x |> op |> evalOp Map.empty<_,_> 
+//let ea x op = get x |> op |> evalOp Map.empty<_,_> 
+let e x op = get x |> op |> evalOp Map.empty<_,_> 
 
 [<Tests>]
 let tests = 
     let ``Repeating an operation gives correct length`` (FsCheck.NonNegativeInt x) op = 
         let a = vInt x
         let repeat = repeatOp op a
-        let result = repeat |> evalOp standardCall Map.empty<_,_>
+        let result = repeat |> evalOp Map.empty<_,_>
         match result with 
         | Value(ParamArray([])) -> Expect.equal x 0 "X should be 0 if an empty list is the result"
         | Value(ParamArray((head::tail) as result)) -> 
@@ -33,13 +32,12 @@ let tests =
         //(ea  "ThreePasses" ``Three Passes``) ==? (ea "ThreePasses" ``Three Passes Repeat``)
         (e   "ThreePasses" ``Three Passes``) ==? (e  "ThreePasses" ``Three Passes Repeat``)
 
-
-    // let x = repeatOp (vInt 4) (vInt 4) |> evalOp standardCall Map.empty<_,_>  
-    // let x = repeatOp (d6) (vInt 4) |> evalOp standardCall Map.empty<_,_>  
-    // let x = repeatOp (vInt 4) (d6)  |> evalOp standardCall Map.empty<_,_> 
-    // let x = repeatOp (d6) (d6)  |> evalOp standardCall Map.empty<_,_>  
-    // let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp standardCall Map.empty<_,_> 
-    // let x = repeatOp (Value(ParamArray([vInt 3; vInt 2]))) (vInt 4)  |> evalOp standardCall Map.empty<_,_> 
+    // let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  
+    // let x = repeatOp (d6) (vInt 4) |> evalOp Map.empty<_,_>  
+    // let x = repeatOp (vInt 4) (d6)  |> evalOp Map.empty<_,_> 
+    // let x = repeatOp (d6) (d6)  |> evalOp Map.empty<_,_>  
+    // let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp Map.empty<_,_> 
+    // let x = repeatOp (Value(ParamArray([vInt 3; vInt 2]))) (vInt 4)  |> evalOp Map.empty<_,_> 
     
     let ``Repeat Sum is the same as product`` (TwoSimilarTypes (x,y)) =
         let result =  

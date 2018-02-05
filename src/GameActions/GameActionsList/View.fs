@@ -13,7 +13,7 @@ let mkRows hideAddButton dispatch row  =
                     else  a [ ClassName "button fa fa-pencil-square-o"; OnClick (fun _ -> EditRow(name) |> dispatch) ] [str "Edit"] )]
             
             td [] [str name] 
-            td [] (GameActions.Primitives.View.root gameAction dispatch)
+            td [] (GameActions.Primitives.View.probabilities gameAction dispatch)
         ]]
     | ReadWrite(text,op) -> 
         [ tr [] [
@@ -26,7 +26,7 @@ let mkRows hideAddButton dispatch row  =
                         DefaultValue text
                         AutoFocus true 
                         OnChange (fun ev -> !!ev.target?value |> ChangeNewRowName |> dispatch ) ] ]
-            td [] (GameActions.Primitives.View.root op dispatch) ]
+            td [] (GameActions.Primitives.View.probabilities op dispatch) ]
           tr [] [td [ColSpan 3.; ClassName "has-text-centered"] [GameActions.Primitives.View.alternateRoot op dispatch]]]
 
 let root ((model,hideAddButton):Model) dispatch =
