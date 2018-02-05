@@ -18,7 +18,14 @@ module Distribution
             hash (x.Normalize).Probabilities
         override x.Equals(obj) = 
             match obj with 
-            | :? Distribution<'a> as y -> (x.Normalize).Probabilities = (y.Normalize).Probabilities
+            | :? Distribution<'a> as y -> 
+                let convert = List.sortBy fst >> List.map(fun (a,b) -> a, System.BitConverter.DoubleToInt64Bits(b))
+                let x' = (x.Normalize).Probabilities |> convert
+                let y' = (y.Normalize).Probabilities |> convert
+                if x'.Length = y'.Length then
+                    List.zip x' y'
+                    |> List.forall (fun ((a,p),(b,p2)) -> a = b && abs(p - p2) < 5L )
+                else false
             | _ -> false
         interface System.IComparable with
             member x.CompareTo yobj =

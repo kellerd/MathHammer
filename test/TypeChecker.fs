@@ -25,9 +25,7 @@ let floor gpType =
         | List p -> List (aux isPass p)  
     aux None gpType
 
-let es x op = get x |> op |> evalOp Map.empty<_,_>
-//let ea x op = get x |> op |> evalOp Map.empty<_,_>
-let e x op = get x |> op |> evalOp Map.empty<_,_>
+let eval x op = get x |> op |> evalOp Map.empty<_,_>
 
 [<Tests>]
 let tests =
@@ -38,7 +36,7 @@ let tests =
         //let (value1,value2) = (Check (Check.Fail (ParamArray [Value (Int 1); Value (Int 0); Value (Int 2); Value (Int 2)])),ParamArray [])
         let value1Type = value1 |> Value |> toTyped
         let value2Type = value2 |> Value |> toTyped
-        let result = [Value value1;Value value2] |> opList |> call Total >>= "result" |> es "result" 
+        let result = [Value value1;Value value2] |> opList |> call Total >>= "result" |> eval "result" 
         let resultType = result |> toTyped
         let rec checkTypes (value1Type,value2Type,resultType) =
             match value1Type,value2Type,resultType with
@@ -76,7 +74,7 @@ let tests =
     let ``Test Multiplication`` (TwoSimilarScalarTypes (value1,value2)) =
         let value1Type = value1 |> Value |> toTyped
         let value2Type = value2 |> Value |> toTyped
-        let result = [Value value1;Value value2] |> opList |> call Product >>= "result" |> es "result" 
+        let result = [Value value1;Value value2] |> opList |> call Product >>= "result" |> eval "result" 
         let resultType = result |> toTyped
         let rec checkTypes (value1Type,value2Type,resultType) =
             match value1Type,value2Type,resultType with
@@ -110,7 +108,7 @@ let tests =
         let value2' = value2.ToGamePrimitive() 
         let value1Type = value1' |> Value |> toTyped
         let value2Type = value2' |> Value |> toTyped
-        let result = repeatOp (Value value1') (Value value2') >>= "result" |> es "result"
+        let result = repeatOp (Value value1') (Value value2') >>= "result" |> eval "result"
         let resultType = result |> toTyped
         let rec checkTypes (value1Type,value2,value2Type,resultType) =
             match value1Type,value2Type,resultType with

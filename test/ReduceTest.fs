@@ -7,28 +7,22 @@ let (==?) actual expected = Expect.equal expected actual ""
 
 [<Tests>]
 let tests = 
-    let es x op = get x |> op |> evalOp Map.empty<_,_> 
-    //let ea x op = get x |> op |> evalOp Map.empty<_,_> 
-    let e x op = get x |> op |> evalOp Map.empty<_,_> 
+    let eval x op = get x |> op |> evalOp Map.empty<_,_> 
     let d6Dist =  [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
     let plusTest plus = 
         let ws = dPlus D6 plus >>= "WS"
-        let expectedWS = List.init 6 ((+) 1 >> fun i -> if i >= plus then Check(Check.Pass(Int(i))) else Check(Check.Fail(Int(i)))) |> Distribution.uniformDistribution 
+        let expectedWS = 
+            [1..6] 
+            |> List.map (fun i -> 
+                            if i >= plus then 
+                                Check(Check.Pass (Int 1)),1.0 
+                            else 
+                                Check(Check.Fail (Int 1)),1.0) 
+            |> Distribution.countedCases
         testList (sprintf "%d+ Tests" plus) [
             test "WS Test Std" {
-                match ws |> es "WS" with 
-                | (Value(Dist(result))) -> Expect.containsAll result.Probabilities expectedWS.Probabilities ""
-                | x -> failtest <| sprintf "Result is wrong type %A" x
-            }
-            // test "WS Test avg" {
-            //     let result = ws |> ea "WS"
-            //     let wrap f = Value(Check(f(Float(3.5))))
-            //     let expected = if 3.5 >= float plus then wrap Check.Pass else wrap Check.Fail
-            //     result ==? expected
-            // }
-            test "WS Test Sample" {
-                match  ws |> e "WS" with
-                | Value result -> Expect.contains (List.map fst expectedWS.Probabilities) result ""
+                match ws |> eval "WS" with 
+                | (Value(Dist(result))) -> Expect.equal result expectedWS ""
                 | x -> failtest <| sprintf "Result is wrong type %A" x
             }
         ]    
@@ -37,21 +31,8 @@ let tests =
         
         testList "Some Tests" [
             test "Psychic Dice std" {
-                let result = psychicDice |> es "PsychicDice"
+                let result = psychicDice |> eval "PsychicDice"
                 result ==? opList[d6Dist;d6Dist]                    
-            }
-            // test "Psychic Dice avg" {
-            //     let result = psychicDice |> ea "PsychicDice"
-            //     result ==? opList[Value(Float(3.5));Value(Float(3.5))]                    
-            // }
-            test "Psychic Dice sample" {
-                let result = psychicDice |> e "PsychicDice"
-                let expected = [1..6] |> List.map (Int) 
-                match result with 
-                | (Value(ParamArray[Value(a);Value(b)])) ->
-                    Expect.contains expected a ""
-                    Expect.contains expected b ""
-                | x -> failtest <| sprintf "Result is wrong type %A" x
             }
         ]
     let psychicTotalTest = 
@@ -63,19 +44,8 @@ let tests =
                     let! d2 = Distribution.uniformDistribution [1..6]
                     return Int(d1 + d2)
                 } 
-                match psychicTest |> es "PsychicTest" with 
+                match psychicTest |> eval "PsychicTest" with 
                 | Value(Dist(result)) -> Expect.containsAll result.Probabilities expected.Probabilities ""
-                | x -> failtest <| sprintf "Result is wrong type %A" x
-            }
-            // test "Psychic Total avg" {
-            //     let result = psychicTest |> ea "PsychicTest"
-            //     let expected = Value (Float 7.0)
-            //     result ==? expected            
-            // }
-            test "Psychic Total sample" {
-                let expected = [2..12] |> List.map (Int) 
-                match psychicTest |> e "PsychicTest" with 
-                | Value result -> Expect.contains expected result ""
                 | x -> failtest <| sprintf "Result is wrong type %A" x
             }
         ]    
@@ -84,11 +54,8 @@ let tests =
         test "All evaluations of straight values return same value" {
             let input = Value(Int(6))
             let variableName = "A"
-            let results = 
-                [ input >>= variableName |> es variableName
-                  //input >>= variableName |> ea variableName
-                  input >>= variableName |> e variableName ]
-            Expect.allEqual results input "All should return straight values"
+            let results = input >>= variableName |> eval variableName
+            Expect.equal results input "All should return straight values"
         }
         plusTest 1
         plusTest 2
