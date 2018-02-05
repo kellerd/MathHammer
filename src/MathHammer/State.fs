@@ -25,6 +25,7 @@ let init () : Model * Cmd<Types.Msg> =
             SelectedDefender = None
             Board = 6<ft>,4<ft>
             GlobalOperations = Map.empty<_,_>
+            Mode = Probability
         }
     model, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap)) attackerCmd
                        Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap)) defenderCmd
@@ -56,6 +57,7 @@ let update msg model : Model * Cmd<Types.Msg> =
         let (uld,ulCmdsd) = UnitList.State.update msg model.Defender
         { model with Attacker = ula; Defender = uld }, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap)) ulCmdsa
                                                                    Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap)) ulCmdsd ]
+    | ChangeMode mode -> {model with Mode = mode}, Cmd.none
     | Swap -> { model with Attacker = { model.Attacker with Models = model.Defender.Models}    
                            Defender = { model.Defender with Models = model.Attacker.Models} 
                            SelectedAttacker = None

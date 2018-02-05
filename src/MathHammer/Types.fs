@@ -1,6 +1,13 @@
 module MathHammer.Types
 open GameActions.Primitives.Types
 open Models.Types
+type Mode = Probability | Average | Sample with
+    override x.ToString() =
+        match x with 
+        | Probability  -> "Probabilities"
+        | Average  -> "Averages"
+        | Sample -> "Sample"
+
 type Model = {
     Attacker : UnitList.Types.Model
     Defender : UnitList.Types.Model
@@ -9,11 +16,13 @@ type Model = {
     SelectedDefender : Option<string>
     Environment : Environment
     GlobalOperations : Map<string,Order*Operation>
+    Mode : Mode
 }
 
 type Msg = 
     | UnitListMsg of UnitList.Types.Msg * string option
-    | Swap
+    | Swap    
+    | ChangeMode of Mode
     | RebindEnvironment 
     | BindDefender
     | BindAttacker

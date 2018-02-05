@@ -56,20 +56,32 @@ let root model dispatch =
                     | Lam(var, LabeledParams xs lambda) -> (var,x) :: lambda
                     | _ -> []
             let (LabeledParams selected.Attributes attrs) = selected.Rules
-            let rec attrDiv = 
+            let attrDiv = 
                 attrs  
                 |> List.map (fun (key,op) -> showAttributes (key,op) dispatch)
                 |> div [ClassName "columns"]  
             let getListOfOps = function | Value(ParamArray ops) -> ops | op -> [op]
             let actionsDiv = selected.NormalizedRules |> showActions dispatch |> div []
-            let averagesDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showAverages dispatch) |> columnsOf
-            let probabiltiesActionsDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showActions dispatch) |> columnsOf
-            let sampleActionsDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showSamples dispatch) |> columnsOf
+            let (resultName, showFunction) = 
+                match model.Mode with
+                | Average     -> "Averages"     , showAverages
+                | Probability -> "Probabilities", showActions 
+                | Sample      -> "Sample"       , showSamples
+            let menuItem mode = 
+                let isActive = if model.Mode = mode then [ClassName "is-active" :> IHTMLProp] else []
+                li isActive [a [OnClick (fun _ -> dispatch (ChangeMode mode))]   [str (mode.ToString())     ]]
+               
+            let resultsDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showFunction dispatch)  |> columnsOf
 
-            section [Id "selected"] [ title; attrDiv
-                                      bar "Actions"; actionsDiv
-                                      bar "Averages"; averagesDiv
-                                      bar "Probabilities"; probabiltiesActionsDiv
-                                      bar "Sample"; sampleActionsDiv ]
-            
-    div [] [ swap; drawing; selected  ] 
+            section [Id "selected"] [ title 
+                                      attrDiv
+                                      div [ClassName "tabs is-fullwidth is-toggle is-toggle-rounded"] [
+                                          ul [] [
+                                              menuItem Average   
+                                              menuItem Probability
+                                              menuItem Sample   
+                                          ] 
+                                      ]
+                                      bar "Profile"; actionsDiv
+                                      bar resultName; resultsDiv ]
+    div [] [ swap; drawing; selected ] 
