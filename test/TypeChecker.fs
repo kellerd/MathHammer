@@ -3,7 +3,6 @@ open FsCheckGen
 open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open MathHammer.Models.State
 open TypeChecker
 let (==?) x y =
     //printfn "%A" x
@@ -26,9 +25,9 @@ let floor gpType =
         | List p -> List (aux isPass p)  
     aux None gpType
 
-let es x op = get x |> op |> evalOp standardCall Map.empty<_,_>
-//let ea x op = get x |> op |> evalOp avgCall Map.empty<_,_>
-let e x op = get x |> op |> evalOp sampleCall Map.empty<_,_>
+let es x op = get x |> op |> evalOp Map.empty<_,_>
+//let ea x op = get x |> op |> evalOp Map.empty<_,_>
+let e x op = get x |> op |> evalOp Map.empty<_,_>
 
 [<Tests>]
 let tests =

@@ -5,7 +5,7 @@ open Types
 
 let init name () : Model * Cmd<Msg> =
     {
-        Name = ""
+        Name = name
         Models=Map.empty<_,_>
         OffsetY=0<mm>
         BoxFill="#000000"
@@ -19,13 +19,9 @@ let init name () : Model * Cmd<Msg> =
     }, Cmd.ofMsg Distribute
 
 
-let distribute width height deployment (models:(string*MathHammer.Models.Types.Model) list) =
-    let width = 1830<mm>
-    let height = 1220<mm>
-    let deployment = 12<inch> |> inch.ToMM
+let distribute width deployment (models:(string*MathHammer.Models.Types.Model) list) =
     let spacing = models |> List.maxBy (fun m -> (snd m).Size) |> fun m -> (snd m).Size + inch.ToMM(2<inch>)
     let rowSize = (width / spacing)
-    let rows = (List.length models / rowSize) + 1
     let rowWidth = spacing
     [for i in 0 .. rowSize .. List.length models - 1 do
             let maxPage = min (i + rowSize - 1) (List.length models - 1)
@@ -46,7 +42,7 @@ let update msg model : Model * Cmd<Msg> =
             let (newModels, modelsCmds) =
                 model.Models
                 |> Map.toList
-                |> distribute model.Width model.Height model.Deployment
+                |> distribute model.Width model.Deployment
                 |> List.map(fun((_,m),x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y,model.Scale)) m)
                 |> List.fold(fun (map,cmds) (m,cmd) -> (Map.add m.Name m map), (Cmd.map (fun msg -> ModelMsg(msg,m.Name)) cmd)::cmds) (model.Models,[])
             {model with Models = newModels}, Cmd.batch (modelsCmds)

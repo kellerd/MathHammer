@@ -9,7 +9,7 @@ let bindModelToEnvironment initial key =
         let evaluatedRule = 
             m.Rules 
             |> normalize
-            |>  evalOp Models.State.standardCall initial
+            |>  evalOp initial
         Map.add key evaluatedRule initial)
 let init () : Model * Cmd<Types.Msg> =
     let (attacker,attackerCmd) = UnitList.State.init attackerMap () 
@@ -68,7 +68,7 @@ let update msg model : Model * Cmd<Types.Msg> =
             model.GlobalOperations 
             |> Map.map(fun _ (_,op) -> op 
                                          |> normalize
-                                         |>  evalOp Models.State.standardCall initial) 
+                                         |>  evalOp initial) 
         {model with Environment = environment}, Cmd.batch [ Cmd.ofMsg BindDefender
                                                             Cmd.ofMsg BindAttacker ]
     | BindDefender -> 

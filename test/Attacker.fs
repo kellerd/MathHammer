@@ -1,6 +1,5 @@
 module AttackerTests
 open GameActions.Primitives.Types
-open MathHammer.Models.State
 open GameActions.Primitives.State
 open Expecto
 let (==?) x y = Expect.equal x y ""
@@ -25,33 +24,33 @@ let ld = vInt 8
 let sv = threePlus
 let invSave = noValue
 let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;] 
-let defApplied = applyArgs defender seargent |> normalize|> evalOp standardCall Map.empty<string,Operation>
+let defApplied = applyArgs defender seargent |> normalize|> evalOp Map.empty<string,Operation>
 let initialMap = Map.add "Defender" defApplied Map.empty<string,Operation>
 let attApplied = applyArgs attacker seargent |> normalize
-let eps x op = getp x op |> evalOp standardCall initialMap
-//let epa x op = getp x op |> evalOp avgCall initialMap
-let ep x op = getp x op |> evalOp sampleCall initialMap
+let eps x op = getp x op |> evalOp initialMap
+//let epa x op = getp x op |> evalOp initialMap
+let ep x op = getp x op |> evalOp initialMap
 
-// let x = repeatOp (vInt 4) (vInt 4) |> evalOp standardCall Map.empty<_,_>  
+// let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  
 // let a' = vInt 2
-// a' |> count |> evalOp standardCall Map.empty<_,_> 
+// a' |> count |> evalOp Map.empty<_,_> 
 // let ws' = dPlus D6 3
-// ws' |> evalOp standardCall Map.empty<_,_> 
-// ws' |> count |> evalOp standardCall Map.empty<_,_> 
-// let hits' = repeatOp (ws' |> count ) (a') |> total |> evalOp standardCall Map.empty<_,_>  
+// ws' |> evalOp Map.empty<_,_> 
+// ws' |> count |> evalOp Map.empty<_,_> 
+// let hits' = repeatOp (ws' |> count ) (a') |> total |> evalOp Map.empty<_,_>  
 // let svst' = dPlus D6 3 
-// svst' |> evalOp standardCall Map.empty<_,_> 
-// svst' |> count |> evalOp standardCall Map.empty<_,_> 
-// let wounds' = repeatOp (svst' |> count   ) (hits') |> evalOp standardCall Map.empty<_,_>
-// let wounds'' = repeatOp (svst' |> count ) (hits') |> total |> evalOp standardCall Map.empty<_,_>  
-// let x = d6 |> count  |> evalOp standardCall Map.empty<_,_>  
-// let D6D6s = repeatOp (d6) (d6)  |> total  |> evalOp standardCall Map.empty<_,_> 
-// let TwoD6 = repeatOp (d6) (vInt 2) |> total  |> evalOp standardCall Map.empty<_,_>  
-// let x = repeatOp (vInt 4) (d6)  |> evalOp standardCall Map.empty<_,_> 
-// let x = repeatOp (d6) (d6)  |> evalOp standardCall Map.empty<_,_>  
-// let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp standardCall Map.empty<_,_> 
-// let x = repeatOp (Value(ParamArray([vInt 3; vInt 2]))) (vInt 4)  |> evalOp standardCall Map.empty<_,_> 
-//|> count |> evalOp standardCall initialMap
+// svst' |> evalOp Map.empty<_,_> 
+// svst' |> count |> evalOp Map.empty<_,_> 
+// let wounds' = repeatOp (svst' |> count   ) (hits') |> evalOp Map.empty<_,_>
+// let wounds'' = repeatOp (svst' |> count ) (hits') |> total |> evalOp Map.empty<_,_>  
+// let x = d6 |> count  |> evalOp Map.empty<_,_>  
+// let D6D6s = repeatOp (d6) (d6)  |> total  |> evalOp Map.empty<_,_> 
+// let TwoD6 = repeatOp (d6) (vInt 2) |> total  |> evalOp Map.empty<_,_>  
+// let x = repeatOp (vInt 4) (d6)  |> evalOp Map.empty<_,_> 
+// let x = repeatOp (d6) (d6)  |> evalOp Map.empty<_,_>  
+// let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp Map.empty<_,_> 
+// let x = repeatOp (Value(ParamArray([vInt 3; vInt 2]))) (vInt 4)  |> evalOp Map.empty<_,_> 
+//|> count |> evalOp initialMap
 
 [<Tests>]
 let tests = 
@@ -78,3 +77,53 @@ let tests =
         // |> testList "Avg Tests";
 
     ] 
+// let attackerLam = <@ 
+//     let m = 6
+//     let a = 5
+//     ["M",m; "A",a] @>
+// let meq = 
+//     emptyOp
+//     |> chargeRange
+//     |> (vInt 5 |~> "M") 
+
+// let test char = get char |> single |> count
+// let hitMelee = 
+//     get Attacker "A"
+//     |> repeatOp (test "WS")
+//     |> total 
+//     |> bindOp Attacker "Melee"
+
+// let shotsMelee = 
+//     [Var(Attacker, "A"); Var(Attacker, "A")]
+//     |> opList 
+//     |> product
+//     |> single
+//     |> count
+//     |> bindOp Attacker "Shots"
+
+// let dPlus d v = Value(DPlus(d,v))
+// let vInt i = Value(Int(i))
+// let d6 = Value(Dice(D6))
+
+// let chargeRange = [d6;d6] |> opList |> total |> bindOp Attacker "ChargeRange"
+// let meleeRange = [get Attacker "M"; chargeRange] |> opList |> total |> bindOp Attacker "MeleeRange"
+// let psychicTest = [d6;d6] |> opList |> total |> bindOp Attacker "PsychicTest"
+
+// let sUser = get Attacker "S"
+// let r = 
+//  <@
+//     let claws (a:int) (b:int) (c:int) = 
+//         let x = 5
+//         let y = 6
+//         x + 7 + y
+//     claws 5 3 1 @>
+//   Let (claws,
+//      Lambda (a,
+//              Lambda (b,
+//                      Lambda (c,
+//                              Let (x, Value (5),
+//                                   Let (y, Value (6),
+//                                        Call (None, op_Addition,
+//                                              [Call (None, op_Addition,
+//                                                     [x, Value (7)]), y])))))),
+//      Application (Application (Application (claws, Value (5)), Value (3))

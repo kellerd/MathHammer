@@ -2,12 +2,9 @@ module EvalTests
 open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open MathHammer.Models.State
 open FsCheckGen
 
 let (==?) x y = Expect.equal x y ""
-
-let firstCall = (evalCall (evalDie >> (Distribution.get >> Seq.map (fst) >> Seq.head) >> Int >> Value))
 
 [<Tests>]
 let tests = 
@@ -17,16 +14,14 @@ let tests =
             | Lam(_) as lam -> App(lam,vInt 3) |> eval |> doEval
             | op -> op
         op |> eval |> doEval |> normalize
-    let ``Normalize and eval should be the same with`` call op = 
+    let ``Normalize and eval should be the same with`` op = 
         let result = 
-            try op                |> evalAndRemoveLamdas (evalOp call Map.empty<_,_>)  |> Choice1Of2
+            try op                |> evalAndRemoveLamdas (evalOp Map.empty<_,_>)  |> Choice1Of2
             with ex -> Choice2Of2 (ex.Message.Substring(0,15))
         let expected = 
-            try op |> normalize|> evalAndRemoveLamdas (evalOp call Map.empty<_,_>)  |> Choice1Of2
+            try op |> normalize|> evalAndRemoveLamdas (evalOp Map.empty<_,_>)  |> Choice1Of2
             with ex -> Choice2Of2 (ex.Message.Substring(0,15))
         result ==? expected 
     testList "Test normalize and eval" [
-        testPropertyWithConfig config "Std Call normalize then eval, same as eval" (``Normalize and eval should be the same with`` standardCall)
-        //testPropertyWithConfig config "Avg Call normalize then eval, same as eval" (``Normalize and eval should be the same with`` avgCall)
-        testPropertyWithConfig config "Single Call normalize then eval, same as eval" (``Normalize and eval should be the same with`` firstCall)
+        testPropertyWithConfig config "Std Call normalize then eval, same as eval" (``Normalize and eval should be the same with``)
     ]

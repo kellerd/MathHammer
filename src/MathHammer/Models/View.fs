@@ -5,7 +5,6 @@ open Props
 open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open State
 open Probability.View
 
 let onClick x : IProp = OnClick(x) :> _
@@ -72,7 +71,7 @@ let groupFor model display =
     g [ SVGAttr.Transform (sprintf "translate(%f,%f)" model.PosX model.PosY)]
             [ g   [SVGAttr.Transform model.Scale ] display ]
 let rangeRoot name model =
-    let dist = model.ProbabilityRules |> getp name |> evalOp standardCall Map.empty<_,_>
+    let dist = model.ProbabilityRules |> getp name |> evalOp Map.empty<_,_>
     let ranges id (_:int<mm>,max:int<mm>,stops) = 
         g [] 
           [   defs  [] 
@@ -101,8 +100,5 @@ let root model dispatch =
                          Stroke "#000000"
                          SVGAttr.FontSize "25"] 
                          [ str model.Name ] ]
-            //
-            
-            
       groupFor model modelDisplay
 

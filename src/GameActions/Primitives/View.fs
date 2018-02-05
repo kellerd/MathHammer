@@ -6,6 +6,88 @@ open Types
 open State
 open Probability.View
 
+type DisplayType = 
+    | DInt of int
+    | DStr of string
+    | DFloat of float
+    | DCheck of Check.Check<DisplayType>
+    | DNoValue 
+    | DParamArray of Operation list
+    | DTuple of DisplayType * DisplayType
+    | DDist of Distribution.Distribution<DisplayType>
+let rec toDisplay = function 
+    | Int a        -> DInt a       
+    | Str a        -> DStr a       
+    | Check a      -> Check.map (toDisplay) a |> DCheck
+    | NoValue      -> DNoValue     
+    | ParamArray a -> DParamArray a
+    | Tuple (a,b)  -> DTuple (toDisplay a, toDisplay b)     
+    | Dist a       -> Distribution.map (toDisplay) a |> DDist 
+let rec toGamePrimitive = function 
+    | DInt a        -> Int a       
+    | DStr a        -> Str a  
+    | DFloat a      -> Int (int a)     
+    | DCheck a      -> Check.map (toGamePrimitive) a |> Check
+    | DNoValue      -> NoValue     
+    | DParamArray a -> ParamArray a
+    | DTuple (a,b)  -> Tuple (toGamePrimitive a, toGamePrimitive b)     
+    | DDist a       -> Distribution.map (toGamePrimitive) a |> Dist 
+type DisplayType with    
+    static member Zero = DNoValue
+    static member (+) (x,y) = 
+            match (x,y) with 
+            | DNoValue,DDist z | DDist z,DNoValue -> DDist z
+            | DNoValue,z | z,DNoValue -> z
+            | DInt(a),DInt(b) -> DInt(a+b)
+            | DFloat(a),DFloat(b) -> DFloat(a+b)
+            | DStr(a),DStr(b) -> DStr(a+b)
+            | DDist d, DDist d2 -> Distribution.combine [d;d2] |> DDist
+            | DDist d, gp 
+            | gp, DDist d -> Distribution.map ((+) gp) d  |> DDist
+            | DTuple (DCheck (Check.Pass(l)),DCheck (Check.Fail(r))), DCheck (Check.Pass(r1))
+            | DCheck (Check.Pass(r1)), DTuple (DCheck (Check.Pass(l)),DCheck (Check.Fail(r))) -> DTuple(DCheck (Check.Pass(l + r1)),DCheck (Check.Fail(r)))
+            | DTuple (DCheck (Check.Pass(l)),DCheck (Check.Fail(r))), DCheck (Check.Fail(r2))
+            | DCheck (Check.Fail(r2)), DTuple (DCheck (Check.Pass(l)),DCheck (Check.Fail(r))) -> DTuple(DCheck (Check.Pass(l)),DCheck (Check.Fail(r2 + r)))
+            | DCheck (Check.Fail(r1)), DCheck (Check.Fail(r2)) -> DCheck(Check.Fail(r1 + r2))
+            | DCheck (Check.Pass(r1)), DCheck (Check.Pass(r2)) -> DCheck(Check.Pass(r1 + r2))
+            | DCheck (Check.Pass(r1)), DCheck (Check.Fail(_) as r2)
+            | DCheck (Check.Fail(_) as r2), DCheck (Check.Pass(r1))
+            | r1, DCheck (Check.Fail(_) as r2)
+            | DCheck (Check.Fail(_) as r2), r1 -> DTuple(DCheck (Check.Pass(r1)),DCheck r2)
+            | a, DCheck(b)
+            | DCheck(b), a -> Check.add (Check.Pass a) b  |> DCheck
+            | DFloat(x), DInt(y) 
+            | DInt(y), DFloat(x)  -> DFloat(x + float y)
+            | DTuple(a,b), DTuple(x,y) -> DTuple(a+x,b+y)
+            | DTuple (a,b), x 
+            | x, DTuple (a,b) -> DTuple(a+x,b+x)
+            | DParamArray a, DParamArray b -> List.append a b |> DParamArray
+            | _ -> DNoValue
+    static member (*) (x,y) = 
+            match (x,y) with 
+            | DNoValue,_ | _,DNoValue -> DNoValue
+            | DInt(a),DInt(b) -> DInt(a*b)
+            | DFloat(a),DFloat(b) -> DFloat(a*b)
+            | DInt(a),DFloat(b) -> DFloat(float a*b)
+            | DFloat(a),DInt(b) -> DFloat(a*float b)
+            | DTuple(a,b), DTuple(x,y) -> DTuple(a*x,b*y)
+            | DParamArray ops, DParamArray ops2 when List.length ops = List.length ops2 ->
+                List.zip ops ops2 |> List.map (function (Value a,Value b) -> a * b |> Value | _ -> Value NoValue) |> DParamArray
+            | DParamArray [], _ | _, DParamArray [] -> DNoValue 
+            | DParamArray ops, b | b,  DParamArray ops ->
+                ops 
+                |> List.map (fun a -> match a with Value a -> (toDisplay a) * b |> toGamePrimitive |> Value | _ -> Value NoValue) |> DParamArray
+            | DCheck r1, DCheck r2 -> Check.mult r1 r2 |> DCheck
+            | a, DCheck(b)
+            | DCheck(b), a -> Check.mult (Check.Pass a) b  |> DCheck
+            | DDist d, DDist d2 -> Distribution.combine [d;d2] |> DDist
+            | DDist d, gp 
+            | gp, DDist d -> Distribution.map ((*) gp) d |> DDist
+            | DStr _, _ | _, DStr _ -> DNoValue
+            | DTuple (a,b), x 
+            | x, DTuple (a,b) -> DTuple(a*x,b*x)
+
+//DCheck(Check.Fail(DFloat 6.0)) + DCheck(Check.Pass(DFloat 12.0)) + DCheck(Check.Pass(DFloat 6.0)) + DCheck(Check.Pass(DFloat 12.0))         
 let paren react = str "(" :: react @ [str ")"]
 
 let rec unparseCheck unparseV = function 
@@ -107,18 +189,22 @@ let unparseValue =
 
 let unparseAverage = 
     let rec unparseV = function   
-    | Int(i) -> [string i |> str]
-    //| Float(f) -> sprintf "%.1f" f |> str
-    | Dist(d) -> [unparseDist unparseV d]
-    | NoValue -> [str "--" ] 
-    | Str s -> [b  [] [str s]]
-    | Tuple(v,v2) -> paren <| unparseV v@(str ",")::unparseV v2
-    | Check c -> [unparseCheck unparseV c]
-    | ParamArray ([]) ->  []
-    | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
-    | ParamArray ([Value (Str _); Var _]) ->   []
-    | ParamArray(m) -> [displayParamArray unparseV m]
-    unparseV
+    | DInt(i) -> [string i |> str]
+    | DFloat(f) -> [sprintf "%.7f" f |> str]
+    | DDist(d) -> 
+        d.Probabilities
+        |> List.sumBy (fun (a,p) -> a * (DFloat p)) 
+        |> unparseV
+    | DNoValue -> [str "--" ] 
+    | DStr s -> [b  [] [str s]]
+    | DTuple(v,v2) -> paren <| unparseV v@(str ",")::unparseV v2
+    | DCheck c -> [unparseCheck unparseV c]
+    | DParamArray ([]) ->  []
+    | DParamArray ([Value (Str _); Value(NoValue)]) ->  []
+    | DParamArray ([Value (Str _); Var _]) ->   []
+    | DParamArray(m) -> [displayParamArray (toDisplay >> unparseV) m]
+    toDisplay >> unparseV
+
 let unparseSample = 
     let rec unparseV = function   
     | Int(i) -> [string i |> str]
@@ -162,6 +248,6 @@ let alternateRoot model _ =
     displayOperation model  
 
 let probabilities model _ = unparse unparseValue model
-let averages model _ = unparse unparseValue model
+let averages model _ = unparse unparseAverage model
 let sample model _ = unparse unparseSample model
 

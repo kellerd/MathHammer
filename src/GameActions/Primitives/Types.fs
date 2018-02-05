@@ -61,7 +61,9 @@ type GamePrimitive with
         | Dist d, Dist d2 -> Distribution.combine [d;d2] |> Dist
         | Dist d, gp 
         | gp, Dist d -> Distribution.map ((+) gp) d  |> Dist
+        | Tuple (Check (Check.Pass(l)), Check (Check.Fail(r))), Check (Check.Pass(r1))
         | Check (Check.Pass(r1)), Tuple(Check (Check.Pass(l)),Check (Check.Fail(r))) -> Tuple(Check (Check.Pass(l + r1)),Check (Check.Fail(r)))
+        | Tuple (Check (Check.Pass(l)),Check (Check.Fail(r))), Check (Check.Fail(r2))
         | Check (Check.Fail(r2)), Tuple(Check (Check.Pass(l)),Check (Check.Fail(r))) -> Tuple(Check (Check.Pass(l)),Check (Check.Fail(r2 + r)))
         | Check (Check.Fail(r1)), Check (Check.Fail(r2)) -> Check(Check.Fail(r1 + r2))
         | Check (Check.Pass(r1)), Check (Check.Pass(r2)) -> Check(Check.Pass(r1 + r2))
@@ -75,7 +77,7 @@ type GamePrimitive with
         //| Int(y), Float(x)  -> Float(x + float y)
         | Tuple(a,b), Tuple(x,y) -> Tuple(a+x,b+y)
         | Tuple (a,b), x 
-        | x, Tuple (a,b) -> Tuple(a+x,b)
+        | x, Tuple (a,b) -> Tuple(a+x,b+x)
         | ParamArray a, ParamArray b -> List.append a b |> ParamArray
         | x,y -> failwith <| sprintf "Cannot add these two primitives %A, %A" x y
     static member (*) (x,y) = 
@@ -97,7 +99,8 @@ type GamePrimitive with
         | Dist d, gp 
         | gp, Dist d -> Distribution.map ((*) gp) d |> Dist
         | Str _, _ | _, Str _ -> NoValue
-        | Tuple _,_ | _,Tuple _ -> NoValue
+        | Tuple (a,b), x 
+        | x, Tuple (a,b) -> Tuple(a*x,b*x)
 
 
 module GamePrimitive =
