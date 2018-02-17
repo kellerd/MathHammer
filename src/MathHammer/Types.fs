@@ -16,11 +16,14 @@ type Model = {
     SelectedDefender : Option<string>
     Environment : Environment
     GlobalOperations : Map<string,Order*Operation>
+    Choices : Map<string, Set<string>>
+    SelectedChoices : Map<string,string>
     Mode : Mode
 }
 
 type Msg = 
     | UnitListMsg of UnitList.Types.Msg * string option
+    | Choose of string * string
     | Swap    
     | ChangeMode of Mode
     | RebindEnvironment 

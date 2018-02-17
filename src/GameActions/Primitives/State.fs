@@ -14,7 +14,6 @@ let repeatOp op = ("unusedVariable", op) |> Lam |> repeat
 let total = call Total
 let product = call Product
 let bindVal text op = Let(text,op,Var text)
-
 let bindOp v op inBody = Let(v,op, inBody)
 let lam s op = Lam (s,op)
 let opId = Lam ("v",get "v")
@@ -22,18 +21,15 @@ let ``D#`` d = App(Call(Dice(d)), noValue)
 let d6 = App(Call(Dice(D6)), noValue)
 let d3 = App(Call(Dice(D3)), noValue)
 let vStr s = Str s |> Value
-
-
 let vInt i = Value(Int(i))
 let emptyOp = noValue
 let label v o = pair (vStr v) o
-let labelVar v = pair (vStr v) (get v)
 let getp s op = PropertyGet(s, op)
+let labelVar v = pair (vStr v) (get v)
+let labelProp c v = pair (vStr v) (getp v (get c))
 let apply f x = App(f,x)
 let (|%>) x f = apply f x
 let (>>=) o s = bindOp s o
-let v = 3
-let d = D6
 let dPlus d v =
     let gt = [Var "roll"; Value(Int(v))] |> opList |> call GreaterThan
     let eq = [Var "roll"; Value(Int(v))] |> opList |> call Equals
@@ -71,16 +67,17 @@ let allProps =
           labelVar "Ld"
           labelVar "Sv"
           labelVar "InvSv"
-          labelVar "ShootingRange"
-          labelVar "PsychicTest"
-          labelVar "HitResults"
-          labelVar "WoundResults"
-          labelVar "UnsavedWounds"
-          labelVar "ChargeRange"
-          labelVar "MeleeRange"
           labelVar "D6Test"
-          labelVar "D3Test" ]
-
+          labelVar "D3Test"
+          labelProp "Actions" "ChargeRange"
+          labelProp "Actions" "MeleeRange"
+          labelProp "Actions" "HitReuslts"
+          labelProp "Actions" "WoundResults"
+          labelProp "Actions" "UnsavedWounds"
+          labelProp "Actions" "PsychicTest"
+          labelProp "Actions" "ShootingRange"
+          labelProp "Actions" "DenyTest" ]
+let choose name choiceList = Choice(name,choiceList)
 let hitResults = repeatOp (get "WS") (get "A") |> total >>= "HitResults"
 let defenderMap = "Defender"
 let attackerMap = "Attacker"
@@ -108,21 +105,45 @@ let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
 let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
 let shootingRange = get "WeaponRange" >>= "ShootingRange"
 let psychicTest = [d6;d6] |> opList |> total >>= "PsychicTest"
+let denyTest = [d6;d6] |> opList |> total >>= "DenyTest"
 let d6Test = [d6] |> opList |> total >>= "D6Test"
 let d3Test = [d3] |> opList |> total >>= "D3Test"
-
+let phaseActions = 
+    choose "Phase" 
+        [
+            "Melee", 
+                nestOps 
+                    [ chargeRange
+                      meleeRange
+                      hitResults
+                      woundResults
+                      unsavedWounds ] <| opList [ labelVar "ChargeRange"
+                                                  labelVar "MeleeRange"
+                                                  labelVar "HitResults"
+                                                  labelVar "WoundResults"
+                                                  labelVar "UnsavedWounds" ] 
+            "Shooting", (shootingRange) (labelVar "ShootingRange")
+            "Psychic", (psychicTest) (labelVar "PsychicTest")
+        ] >>= "Actions"
+let dPhaseActions =   
+    choose "Phase" 
+        [
+            "Melee", (shootingRange) (labelVar "ShootingRange")
+            "Psychic", (denyTest) (labelVar "DenyTest")
+        ] >>= "Actions"     
 
 let rec isInUse s = function
       | Var (v) -> v = s
       | App (f, a) -> isInUse s f || isInUse s a 
       | Lam (p, x) -> p <> s && isInUse s x
-      | Value(ParamArray(ops)) -> List.fold (fun used op -> used || isInUse s op) false ops
+      | Value(ParamArray(ops)) -> List.exists (isInUse s) ops
       | Value _ -> false
       | Let (n, v, op) -> isInUse s v || (n <> s && isInUse s op)
       | Call _ -> false
       | PropertyGet(_, op) -> isInUse s op
       | IfThenElse(ifExpr, thenExpr, None) -> isInUse s ifExpr || isInUse s thenExpr
       | IfThenElse(ifExpr, thenExpr, Some elseExpr) -> isInUse s ifExpr || isInUse s thenExpr || isInUse s elseExpr
+      | Choice(_, choices) -> List.exists (snd >> isInUse s) choices
 
 let rec subst arg s = function
       | Var (v) -> if (v) = s then arg else Var (v)
@@ -134,6 +155,7 @@ let rec subst arg s = function
       | Call x -> Call x
       | PropertyGet(a, op) -> PropertyGet(a, subst arg s op)
       | IfThenElse(ifExpr, thenExpr, elseExpr) -> IfThenElse(subst arg s ifExpr, subst arg s thenExpr, elseExpr |> Option.map (fun op -> subst arg s op) )
+      | Choice(name, choices) -> Choice(name, List.map (fun (k,op) -> k, subst arg s op) choices)
 let rec allIds = function
     | Var (v) -> Set.singleton v
     | Lam (p, x) -> Set.add p (allIds x)
@@ -148,7 +170,7 @@ let rec allIds = function
           elseExpr |> Option.map allIds ]
         |> List.choose id
         |> List.reduce Set.union
-
+    | Choice(_, choices) -> List.map(snd >> allIds) choices |> List.reduce Set.union
 let freeIds x =
     let rec halp bound = function
         | Var (v) -> if Set.contains v bound then Set.empty else Set.singleton v
@@ -164,6 +186,7 @@ let freeIds x =
               elseExpr |> Option.map (halp bound)  ]
             |> List.choose id
             |> List.reduce Set.union
+        | Choice(_, choices) -> List.map(snd >> halp bound) choices |> List.reduce Set.union        
     halp Set.empty x
 type ConflictResult =
     | Fine
@@ -225,6 +248,19 @@ let rename all (t, s, x) =
             | Renamed(Value(ParamArray(ops))) -> Renamed(Value(ParamArray(List.rev ops)))
             | Renamed (_) as r -> r   
             | _ -> Fine
+        | Choice(name,choices) -> 
+            choices 
+            |> List.map (fun (key,op) -> op,key,halp op)
+            |> List.fold (fun state (op,key,rop) -> 
+                          match state,rop with
+                          | Renamed(Choice(name,choices)),_ -> Renamed(Choice(name,(key,op)::choices))
+                          | Renamed (_) as r,_ -> r
+                          | Fine,Renamed rop -> Renamed(Choice(name,[key,rop]))
+                          | Fine,Fine -> Fine ) Fine 
+            |> function 
+            | Renamed(Choice(name,choices)) -> Renamed(Choice(name,List.rev choices))
+            | Renamed (_) as r -> r   
+            | _ -> Fine        
         | Call _ -> Fine
         | Value _ -> Fine
         | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
@@ -276,6 +312,16 @@ let normalize op =
                     match tryFindLabel p b with 
                     | Some op -> Next(op) 
                     | None -> Normal
+        | Choice(name,choices) -> 
+            let (rops,expr) = 
+                choices 
+                |> List.map (fun (key,op) -> match reduce op with 
+                                             | Normal -> (key,op),Normal
+                                             | Next rop -> (key,rop),Next rop)
+                |> List.unzip                            
+            if List.exists(function Next _ -> true | Normal -> false) expr then
+                Next (Choice(name,rops))
+            else Normal                    
         | Value(ParamArray(ops)) -> 
             let (rops,expr) = 
                 ops 
@@ -317,10 +363,11 @@ let rec evalDie d : Distribution.Distribution<_> =
                         return! evalDie d
                   else return roll                        
             }
-let rec evalCall func v env  =
+type EvalResult = (Map<string,Set<string>> * Operation)            
+let rec evalCall func v env : EvalResult =
     let repeat lam op2 = 
         let create n = List.init (max 0 n) (fun n -> match lam with | Lam _ -> App(lam,vInt n) | notLam -> notLam
-                                                     |> evalOp env) |> opList
+                                                     |> evalOp env |> snd) |> opList
         let nestCheck check op = 
             let rec fixGp check = function 
                 | NoValue 
@@ -338,6 +385,7 @@ let rec evalCall func v env  =
                 | App(f, value) -> App(fixOp check f, fixOp check value)
                 | Lam(param, body) -> Lam(param, fixOp check body)
                 | Let(v, value, body) -> Let(v, fixOp check value, fixOp check body)
+                | Choice(name,choices) -> Choice(name, List.map (fun (key,op) -> key,fixOp check op) choices)
                 | IfThenElse(ifExpr, thenExpr, elseExpr) -> IfThenElse(fixOp check ifExpr, fixOp check thenExpr, Option.map (fixOp check) elseExpr)
                 | Value v -> Value(fixGp check v)
             fixOp check op
@@ -369,56 +417,52 @@ let rec evalCall func v env  =
 
         let times = evalOp env op2  
         match times with 
-        | Value(gp) -> repeatOps gp
-        | _ -> printfn "Times is not a value %A" times; noValue
-    let fold folder ops state =
+        | choices,Value(gp) -> choices,repeatOps gp
+        | _ -> printfn "Times is not a value %A" times; (Map.empty<_,_>,noValue)
+    let fold folder ops state : EvalResult=
       ops 
-      |> List.fold (fun reduced1 op -> 
-            let reduced2 = evalOp env op
+      |> List.fold (fun (choices,reduced1) op -> 
+            let (newChoices,reduced2) = evalOp env op
             match reduced1,reduced2 with 
             | Value(Dist reduced1),Value(Dist reduced2) -> 
-                Distribution.dist {
+                (Map.mergeSets newChoices choices),Distribution.dist {
                       let! a' = reduced1
                       let! b' = reduced2
                       return folder a' b'                             
                 } |> Dist |> Value
             | Value(Dist reduced1),Value(b) ->
-                Distribution.dist {
+                (Map.mergeSets newChoices choices),Distribution.dist {
                       let! a' = reduced1
                       return folder a' b                             
                 } |> Dist |> Value
             |   Value(a), Value(Dist reduced2) ->
-                Distribution.dist {
+                (Map.mergeSets newChoices choices),Distribution.dist {
                       let! b' = reduced2
                       return folder a b'                             
                 } |> Dist |> Value
             | Value(a), Value(b) ->
-                folder a b |> Value
-            | _ -> NoValue |> Value
-            ) state
-    let evalFuncAsGp = (fun v -> evalCall func (Value v) env |> function Value(gp) -> gp | op -> ParamArray [op])           
+                (Map.mergeSets newChoices choices),folder a b |> Value
+            | _ -> Map.empty<_,_>,(NoValue |> Value)
+            ) (Map.empty<_,_>,state)
+    let evalFuncAsGp = (fun v -> evalCall func (Value v) env |> function (choices,Value(gp)) -> choices,gp | (choices,op) -> choices,ParamArray [op])           
     match func,v with 
-    | Dice d, Value(NoValue) -> evalDie d |> Distribution.map (Int) |> Dist |> Value 
-    | Total, (Value(Int _) as v) -> v
-    | Total, (Value(Str _) as v) -> v
-    | Total, (Value(NoValue) as v) -> v 
-    | Total, Value(ParamArray []) -> 
-        NoValue |> Value
-    | Total, Value(ParamArray (head::tail)) -> 
-        fold (+) tail head
-    | Product, (Value(Int _) as v) -> v
-    | Product, (Value(Str _) as v) -> v
-    | Product, (Value(NoValue) as v) -> v 
-    | Product, Value(ParamArray []) -> 
-        GamePrimitive.Zero |> Value
-    | Product, Value(ParamArray (head::tail)) -> 
-        fold (*) tail head
-    | Count, Value(Int _) -> vInt 1
-    | Count, Value(Str _) -> vInt 1
-    | Count, Value(NoValue) -> vInt 0 
-    | Count, Value(ParamArray []) -> 
+    | Dice d, Value(NoValue)           -> Map.empty<_,_>, evalDie d |> Distribution.map (Int) |> Dist |> Value 
+    | Total, (Value(Int _) as v)       -> Map.empty<_,_>, v
+    | Total, (Value(Str _) as v)       -> Map.empty<_,_>, v
+    | Total, (Value(NoValue) as v)     -> Map.empty<_,_>, v 
+    | Total, Value(ParamArray [])      -> Map.empty<_,_>, NoValue |> Value
+    | Total, Value(ParamArray(h::t))   -> fold (+) t h
+    | Product, (Value(Int _) as v)     -> Map.empty<_,_>, v
+    | Product, (Value(Str _) as v)     -> Map.empty<_,_>, v
+    | Product, (Value(NoValue) as v)   -> Map.empty<_,_>, v 
+    | Product, Value(ParamArray [])    -> Map.empty<_,_>, GamePrimitive.Zero |> Value
+    | Product, Value(ParamArray(h::t)) -> fold (*) t h
+    | Count, Value(Int _)              -> Map.empty<_,_>, vInt 1
+    | Count, Value(Str _)              -> Map.empty<_,_>, vInt 1
+    | Count, Value(NoValue)            -> Map.empty<_,_>, vInt 0 
+    | Count, Value(ParamArray [])      -> 
         let zero = GamePrimitive.Zero 
-        (zero,zero) |> tuple |> Value
+        Map.empty<_,_>, (zero,zero) |> tuple |> Value
     | Count, Value(ParamArray ops) ->
         let rec toCount result = 
             match result with 
@@ -435,70 +479,97 @@ let rec evalCall func v env  =
         zero
         |> Value
         |> fold (fun r1 r2 -> r1 + toCount r2) ops
-    | GreaterThan, Value(ParamArray([Value(gp);Value(gp2)])) -> greaterThan gp gp2 |> Value
-    | Equals, Value(ParamArray([Value(gp);Value(gp2)])) -> equals gp gp2  |> Value
-    | LessThan, Value(ParamArray([Value(gp);Value(gp2)])) -> notEquals gp gp2  |> Value
-    | NotEquals, Value(ParamArray([Value(gp);Value(gp2)])) -> lessThan gp gp2  |> Value
-    | And, Value(ParamArray([Value(gp);Value(gp2)])) -> andGp gp gp2 |> Value
-    | Or,       Value(ParamArray([Value(gp);Value(gp2)])) -> orGp gp gp2  |> Value
+    | GreaterThan, Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, greaterThan gp gp2 |> Value
+    | Equals, Value(ParamArray([Value(gp);Value(gp2)]))      -> Map.empty<_,_>, equals gp gp2  |> Value
+    | LessThan, Value(ParamArray([Value(gp);Value(gp2)]))    -> Map.empty<_,_>, notEquals gp gp2  |> Value
+    | NotEquals, Value(ParamArray([Value(gp);Value(gp2)]))   -> Map.empty<_,_>, lessThan gp gp2  |> Value
+    | And, Value(ParamArray([Value(gp);Value(gp2)]))         -> Map.empty<_,_>, andGp gp gp2 |> Value
+    | Or,       Value(ParamArray([Value(gp);Value(gp2)]))    -> Map.empty<_,_>, orGp gp gp2  |> Value
     | Repeat, Value(ParamArray([lam;op2])) -> repeat lam op2 
-    | (Total|Product|Count), Value(Check v) -> Check.map evalFuncAsGp v |> Check |> Value
-    | (Total|Product|Count), Value(Tuple(t1,t2)) -> Tuple(evalFuncAsGp t1, evalFuncAsGp t2) |> Value
+    | (Total|Product|Count), Value(Check v)                  -> 
+        let chk = Check.map evalFuncAsGp v 
+        let value = Check.map snd chk
+        Check.(|CheckValue|) chk |> fst, value |> Check |> Value 
+    | (Total|Product|Count), Value(Tuple(t1,t2))             -> 
+        let (choices,t1') = evalFuncAsGp t1
+        let (choices2,t2') = evalFuncAsGp t2
+        Map.mergeSets choices choices2, Tuple(t1', t2') |> Value
     | (Total|Product|Count), Value(Dist d) -> 
-        Distribution.bind (fun v -> let value = evalCall func (Value v) env 
-                                    value |> function 
-                                        | Value(Dist(gp)) -> gp 
-                                        | IsList(Distr _) & Value(ParamArray ops) -> 
-                                            ops 
-                                            |> List.map(function 
-                                                        | Value(Dist(d)) -> d 
-                                                        | Value(gp) -> Distribution.always gp 
-                                                        | op -> ParamArray[op] |> Distribution.always)
-                                            |> Distribution.combine
-                                        | Value(gp) -> Distribution.always gp 
-                                        | op -> Distribution.always (ParamArray [op]))  d |> Dist |> Value 
+        let (choices,results) = 
+            Distribution.bind (fun v -> let (choices,value) = evalCall func (Value v) env 
+                                        value |> function 
+                                            | Value(Dist(gp)) -> gp |> Distribution.map(fun gp -> choices,gp)
+                                            | IsList(Distr _) & Value(ParamArray ops) -> 
+                                                ops 
+                                                |> List.map(function 
+                                                            | Value(Dist(d)) -> d |> Distribution.map(fun gp -> choices,gp)
+                                                            | Value(gp) -> Distribution.always (choices,gp)
+                                                            | op -> (choices,ParamArray[op]) |> Distribution.always)
+                                                |> Distribution.combine
+                                            | Value(gp) -> Distribution.always (choices,gp) 
+                                            | op -> Distribution.always (choices, ParamArray [op]))  d 
+            |> Distribution.unzip
+        (choices |> Distribution.values |> List.reduceSafe Map.empty<_,_> Map.mergeSets), results |> Dist |> Value
     | _ -> failwith "Cannot eval any other call with those params" 
-and evalOp env (operation:Operation) = 
-    //printfn "%A" operation
+and evalOp env (operation:Operation) : EvalResult = 
+    let getChoices (key,choices) = 
+        let keys = List.map (fst) choices |> Set.ofList
+        Map.add key keys Map.empty<_,_>
+    let (|MadeChoice|_|) env op =
+        match op with 
+        | Choice(key,choices) ->
+            Map.tryFind key env
+            |> Option.bind(function (Value(Str name)) -> List.tryFind(fst >> (=) name) choices | _ -> None)
+            |> Option.map (fun (_,op) -> getChoices (key,choices), op)
+        | _ -> None
     match operation with
-      
     | Value(ParamArray(ops)) -> 
-        ops
-        |> List.fold(fun acc op -> let newOp = evalOp env op
-                                   (newOp::acc)) [] 
-        |> List.rev 
-        |> ParamArray 
-        |> Value
-    | Value _ as v -> v
-    | Call _ as c -> c
+        let (choices,newOps) = 
+            ops
+            |> List.fold(fun acc op -> let newOp = evalOp env op
+                                       (newOp::acc)) [] 
+            |> List.rev 
+            |> List.unzip
+        List.reduceSafe Map.empty<_,_> Map.mergeSets choices, newOps|> ParamArray |> Value
+    | Value _ as v  -> Map.empty<_,_>, v
+    | Call  _ as c  -> Map.empty<_,_>, c
     | Var (var)  -> 
-        Map.tryFind (var) env 
+        Map.tryFind var env 
         |> function Some v -> v | None -> noValue 
         |> evalOp env
-    | Let(str, var, op) -> 
-        let result = evalOp env var
-        evalOp (Map.add str result env) op
+    | Let(str, v, op) -> 
+        let (choices,result) = evalOp env v
+        let (choices2,inner) = evalOp (Map.add str result env) op
+        Map.mergeSets choices2 choices, inner
     | PropertyGet(str, op) -> 
-        let result = evalOp env op
+        let (choices, result) = evalOp env op
         match tryFindLabel str result with 
-        | Some result -> result
+        | Some result -> 
+            choices, result
         | None -> //printfn "Couldn't find propert %s in %A" str op;
-            noValue
-    | Lam _ as l -> l
+            choices, noValue
+    | Lam _ as l -> Map.empty<_,_>,l
     | IfThenElse(gp, thenPart, elsePart) -> 
-        let result = evalOp env gp
+        let (choices, result) = evalOp env gp
         match result with 
         | Value(Check(Check.Fail(_)) | NoValue) -> elsePart 
         | Value _ -> Some thenPart
         | _ -> None
         |> Option.map (evalOp env)
         |> function 
-        | Some v -> v
-        | None -> noValue
+        | Some (choices2,v) -> Map.mergeSets choices2 choices, v
+        | None -> choices, noValue
+    | MadeChoice env (choices, selectedChoice) -> 
+        let (choices2,result) = evalOp env selectedChoice
+        Map.mergeSets choices2 choices, result
+    | Choice(name, choices) ->
+        (getChoices (name,choices)), Choice(name, choices)
     | App(Lam(x, op),value) ->
         evalOp (Map.add x value env) op 
     | App(f, value) -> 
         match evalOp env f, evalOp env value with 
-        | (Call f),v -> evalCall f v env 
-        | Lam(x, op),v -> evalOp env <| App(Lam(x, op),v) 
+        | (choices,Call f), (choices2,v) -> 
+            let (choices3,result) = evalCall f v env 
+            List.reduceSafe Map.empty<_,_> Map.mergeSets [choices;choices2;choices3],result 
+        | (_,Lam(x, op)),(_,v) -> App(Lam(x, op),v) |> evalOp env
         | f',x' -> failwith <| sprintf "Cannot apply to something not a function App(%A,%A) = %A,%A" f value f' x'

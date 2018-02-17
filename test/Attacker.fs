@@ -7,9 +7,9 @@ let (==~) x y =
     match y with 
     | Value(Dist({Probabilities = y})) -> Expect.contains (y |> List.map (fst >> Value)) x ""
     | _ -> Expect.equal x y ""
-let body = nestOps [hitResults;chargeRange;meleeRange;psychicTest;woundResults] allProps
-let defbody = nestOps [hitResults;shootingRange;psychicTest] allProps
-let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"] 
+let body = nestOps [phaseActions;d6Test;d3Test] allProps
+let defbody = nestOps [dPhaseActions] allProps
+let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
 let attacker = createArgs stats body
 let defender =  createArgs stats defbody
 let move = vInt 6
@@ -24,10 +24,13 @@ let ld = vInt 8
 let sv = threePlus
 let invSave = noValue
 let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;] 
-let defApplied = applyArgs defender seargent |> normalize|> evalOp Map.empty<string,Operation>
+let (_,defApplied) = applyArgs defender seargent |> normalize|> evalOp Map.empty<string,Operation>
 let initialMap = Map.add "Defender" defApplied Map.empty<string,Operation>
 let attApplied = applyArgs attacker seargent |> normalize
-let eval x op = getp x op |> evalOp initialMap
+let eval x op = getp x op |> evalOp initialMap 
+
+// getp "Actions" attApplied  |> (evalOp  initialMap )
+// getp "Actions" attApplied  |> (evalOp  <| Map.add "Phase" (Value(Str "Melee")) initialMap )
 
 // let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  
 // let a' = vInt 2
@@ -71,7 +74,7 @@ let tests =
                     | key,op -> key,op)
     testList "Attacker Tests" [
         expectedStd 
-        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { eval key attApplied ==? expected })  
+        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { eval key attApplied |> snd ==? expected })  
         |> testList "Std eval Tests";
     ] 
 // let attackerLam = <@ 

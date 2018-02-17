@@ -7,7 +7,7 @@ type Model = { PosX:float
                Name:string
                Scale:string
                Size:int<mm>
-               Attributes: Operation list
+               Attributes: Map<string,(Order*Operation)>
                Rules: Operation
                NormalizedRules:Operation
                ProbabilityRules:Operation }
@@ -15,5 +15,6 @@ type Model = { PosX:float
 
 type Msg = 
     | ChangePosition of float * float * string
+    | MakeChoice of string * Set<string>
     | Rebind of Environment
     | Select

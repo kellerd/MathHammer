@@ -16,10 +16,10 @@ let tests =
         op |> eval |> doEval |> normalize
     let ``Normalize and eval should be the same with`` op = 
         let result = 
-            try op                |> evalAndRemoveLamdas (evalOp Map.empty<_,_>)  |> Choice1Of2
+            try op                |> evalAndRemoveLamdas (evalOp Map.empty<_,_> >> snd)  |> Choice1Of2
             with ex -> Choice2Of2 (ex.Message.Substring(0,15))
         let expected = 
-            try op |> normalize|> evalAndRemoveLamdas (evalOp Map.empty<_,_>)  |> Choice1Of2
+            try op |> normalize|> evalAndRemoveLamdas (evalOp Map.empty<_,_> >> snd)  |> Choice1Of2
             with ex -> Choice2Of2 (ex.Message.Substring(0,15))
         result ==? expected 
     testList "Test normalize and eval" [

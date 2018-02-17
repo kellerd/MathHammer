@@ -25,7 +25,7 @@ let floor gpType =
         | List p -> List (aux isPass p)  
     aux None gpType
 
-let eval x op = get x |> op |> evalOp Map.empty<_,_>
+let eval x op = get x |> op |> evalOp Map.empty<_,_> |> snd
 
 [<Tests>]
 let tests =
@@ -112,8 +112,8 @@ let tests =
         let resultType = result |> toTyped
         let rec checkTypes (value1Type,value2,value2Type,resultType) =
             match value1Type,value2Type,resultType with
-            | _,        Distr Empty,     Distr Empty        -> ()
-            | _,        List Empty,      List Empty         -> ()
+            | _,        Distr Empty,     Unknown            -> ()
+            | _,        List Empty,      Unknown            -> ()
             | _,        Pass Empty,      Pass Empty         -> ()
             | _,        Empty,           Empty              -> ()
             | _,        Distr Unknown,   Distr Unknown      -> ()

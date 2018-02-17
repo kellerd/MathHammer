@@ -9,6 +9,7 @@ let rec numify i = function
 | Call x -> Call x
 | PropertyGet(x, b) -> PropertyGet(x, numify i b)
 | Value(ParamArray(ops)) -> ops |> List.map (numify i) |> ParamArray |> Value
+| Choice(name, choices) -> Choice(name, choices |> List.map (fun (key,op) -> key,numify i op))
 | Value x -> Value x
 | Var x -> Var x
 | App(f, value) -> App(numify i f, numify i value) 

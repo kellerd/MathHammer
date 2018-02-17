@@ -14,13 +14,16 @@ let root model dispatch =
                 [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
                 [ UnitList.View.rootBoard model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
                   UnitList.View.rootBoard model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
-                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("MeleeRange")) |> opt
-                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("MeleeRange")) |> opt
                   model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("ShootingRange")) |> opt
                   model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("ShootingRange")) |> opt
+                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("MeleeRange")) |> opt
+                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("MeleeRange")) |> opt
                   UnitList.View.root model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
                   UnitList.View.root model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch) ] ] 
-    let swap =  i [ClassName "column fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
+    let swap =  
+        i [ClassName "fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
+        |> List.singleton
+        |> div [ClassName "column has-text-centered "]
     let selected = 
         let titleBar text = 
             (section [ ClassName "hero is-primary  has-text-centered"]
@@ -41,27 +44,18 @@ let root model dispatch =
                  |> List.mapi (fun i m -> i,m)
                  |> List.partition (fun (i,_) -> i % 2 = 0)
                  |> toColumns                
-        //let sequence = model.Selected |> Option.map (fun selected -> div [] [ str selected.name ])
         
         match model.SelectedAttacker |> Option.bind (fun name -> Map.tryFind name model.Attacker.Models) with 
         | None ->  
             titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
-            let title = titleBar selected.Name
-            let rec (|LabeledParams|) args op =
-                match args with 
-                | [] -> []
-                | x :: xs ->
-                    match op with 
-                    | Lam(var, LabeledParams xs lambda) -> (var,x) :: lambda
-                    | _ -> []
-            let (LabeledParams selected.Attributes attrs) = selected.Rules
             let attrDiv = 
-                attrs  
-                |> List.map (fun (key,op) -> showAttributes (key,op) dispatch)
+                selected.Attributes
+                |> Map.toList  
+                |> List.sortBy (fun (_,(ord,_)) -> ord)
+                |> List.map    (fun (key,(_,op)) -> showAttributes (key,op) dispatch)
                 |> div [ClassName "columns"]  
             let getListOfOps = function | Value(ParamArray ops) -> ops | op -> [op]
-            let actionsDiv = selected.NormalizedRules |> showActions dispatch |> div []
             let (resultName, showFunction) = 
                 match model.Mode with
                 | Average     -> "Averages"     , showAverages
@@ -72,9 +66,38 @@ let root model dispatch =
                 li isActive [a [OnClick (fun _ -> dispatch (ChangeMode mode))]   [str (mode.ToString())     ]]
                
             let resultsDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showFunction dispatch)  |> columnsOf
+              
+            let inline chunkBySize size = Seq.ofList >> Seq.chunkBySize size >> Seq.map (Array.toList) >> Seq.toList
 
-            section [Id "selected"] [ title 
+            let choices = 
+                model.Choices
+                |> Map.toList
+                |> List.map (fun (name, choices) ->
+                    let radioButtons = 
+                        choices 
+                        |> Set.toList
+                        |> List.map (fun choice ->
+                            Fable.Helpers.React.label 
+                                [] 
+                                [ input [ Name name
+                                          Type "radio"
+                                          Props.HTMLAttr.Value choice
+                                          Checked (Map.tryFind name model.SelectedChoices |> Option.map((=) choice) |> Option.defaultValue false)
+                                          OnClick (fun _ -> Choose(name,choice) |> dispatch) ]
+                                  str choice
+                                  br [] ] )
+
+                    article [ ClassName "tile is-child box"] 
+                            (p [ClassName "title"] [str name] :: radioButtons) 
+                    |> List.singleton
+                    |> div [ ClassName "tile is-parent"] )
+                |> chunkBySize 4
+                |> List.map (function [] -> opt None | xs ->  div [ClassName "tile is-ancestor"] xs)
+                |> section [Id "choices"]
+            section [Id "selected"] [ titleBar  selected.Name 
+                                      bar       "Profile" 
                                       attrDiv
+                                      choices
                                       div [ClassName "tabs is-fullwidth is-toggle is-toggle-rounded"] [
                                           ul [] [
                                               menuItem Average   
@@ -82,6 +105,6 @@ let root model dispatch =
                                               menuItem Sample   
                                           ] 
                                       ]
-                                      bar "Profile"; actionsDiv
                                       bar resultName; resultsDiv ]
+
     div [] [ swap; drawing; selected ] 

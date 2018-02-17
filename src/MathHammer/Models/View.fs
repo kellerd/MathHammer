@@ -71,7 +71,7 @@ let groupFor model display =
     g [ SVGAttr.Transform (sprintf "translate(%f,%f)" model.PosX model.PosY)]
             [ g   [SVGAttr.Transform model.Scale ] display ]
 let rangeRoot name model =
-    let dist = model.ProbabilityRules |> getp name |> evalOp Map.empty<_,_>
+    let (_,dist) = model.ProbabilityRules |> getp name |> evalOp Map.empty<_,_>
     let ranges id (_:int<mm>,max:int<mm>,stops) = 
         g [] 
           [   defs  [] 

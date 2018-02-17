@@ -21,6 +21,7 @@ and Operation =
     | Lam of param:string * body:Operation
     | Let of string * value:Operation * body:Operation
     | IfThenElse of ifExpr:Operation * thenExpr:Operation * elseExpr:Operation option
+    | Choice of name : string * choices:(string * Operation) list
 and Call = 
     | Product
     | Total
@@ -204,7 +205,7 @@ let checkGp f =
 let rec andGp = checkGp Check.all
 let rec orGp = checkGp Check.either
 
-type NormalizedOperation = Normal | Next of Operation   
+type NormalizedOperation = Normal | Next of Operation
 
 type [<Measure>] ft 
 and [<Measure>] inch
@@ -238,7 +239,7 @@ type mm with
     static member FromInchf a = inch.ToMMf a
     static member FromFtf a = ft.ToMMf a
                           
-type Msg =  Unit  
+type Msg = Unit  
 
 module TypeChecker = 
     type GamePrimitiveType = 

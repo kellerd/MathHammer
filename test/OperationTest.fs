@@ -7,23 +7,23 @@ let (==?) x y = Expect.equal x y ""
 [<Tests>]
 let tests = 
     testList "Operation Tests" [
-        let stdEval = normalize>> evalOp Map.empty<_,_>
+        let eval = normalize >> evalOp Map.empty<_,_> >> snd
         yield test "Evalled D6 equal std distribution of integers, reversed" {
-            let result = stdEval d6
+            let result = eval d6
             let expected = [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
             result ==? expected
         }
         
         yield test "Evalled D3 equal std distribution of integers, reversed" {
-            let result = stdEval d3
+            let result = eval d3
             let expected = [1..3] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
             result ==? expected
         }
         yield testPropertyWithConfig config "IfThenElse NoValue returns Else" <| fun thenPart elsePart ->
             let ifThenElse = IfThenElse(Value NoValue,thenPart,elsePart)
-            let result = stdEval ifThenElse 
+            let result = eval ifThenElse 
             match elsePart with 
-            | Some elsePart -> result ==? stdEval elsePart 
+            | Some elsePart -> result ==? eval elsePart 
             | None -> result ==? Value NoValue
         
         //Let x = 3 returns 3 as well as binding to environment
@@ -39,7 +39,8 @@ let tests =
             let result = 
                 try 
                     Let("y", Value(y) ,App(Call Total, opList[Value(x);Var ("y")]))
-                    |> evalOp Map.empty<_,_>
+                    |> evalOp Map.empty<_,_> 
+                    |> snd
                     |> Choice1Of2
                 with ex -> Choice2Of2 (ex.Message.Substring(0,30))
             let expected = 
@@ -71,6 +72,7 @@ let tests =
             let result =
                 Let("x", expected ,App(Call Total, Var("x"))) 
                 |> evalOp Map.empty<_,_>
+                |> snd
             result ==? expected
         yield testPropertyWithConfig config "Total of x is x" totalOfXIsX
     ]

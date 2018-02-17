@@ -6,19 +6,18 @@ open GameActions.Primitives.Types
 open GameActions.Primitives.State
 let bindModelToEnvironment initial key = 
     Option.map (fun (m : Models.Types.Model) -> 
-        let evaluatedRule = 
+        let (choices,evaluatedRule) = 
             m.Rules 
             |> normalize
             |>  evalOp initial
-        Map.add key evaluatedRule initial)
+        choices, Map.add key evaluatedRule initial)
 let init () : Model * Cmd<Types.Msg> =
     let (attacker,attackerCmd) = UnitList.State.init attackerMap () 
     let (defender,defenderCmd) = UnitList.State.init defenderMap () 
     
     let model : Model = 
-        
         { 
-            Environment = Map.empty<_,_>
+            Environment = Map.empty<_,_> |> Map.add "Phase" (Str "Melee" |> Value)
             Attacker = { attacker with BoxFill="#FFCCCC"; ElementFill="#79CE0B"; ElementStroke="#396302"; OffsetY = ft.ToMM 2<ft>; Scale="scale(1,-1)" }
             Defender = { defender with BoxFill="#CCCCFF"; ElementFill="#0B79CE"; ElementStroke="#023963" }
             SelectedAttacker = None
@@ -26,6 +25,8 @@ let init () : Model * Cmd<Types.Msg> =
             Board = 6<ft>,4<ft>
             GlobalOperations = Map.empty<_,_>
             Mode = Probability
+            Choices = Map.empty<_,_>
+            SelectedChoices = Map.empty<_,_>
         }
     model, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap)) attackerCmd
                        Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap)) defenderCmd
@@ -38,8 +39,8 @@ let update msg model : Model * Cmd<Types.Msg> =
             let mmsg = UnitList.Types.ModelMsg(rebind, name)
             Cmd.ofMsg (UnitListMsg(mmsg, source))
         ) nameOpt
-            
     match msg with
+    | UnitListMsg (UnitList.Types.ModelMsg(Models.Types.Msg.MakeChoice(key, options), _), _) -> { model with Choices = Map.mergeSet model.Choices key options }, []
     | UnitListMsg (UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), Some "Attacker") -> 
         {model with SelectedAttacker = Some m}, Cmd.batch [ Cmd.ofMsg BindAttacker ]
     | UnitListMsg (UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), Some "Defender") -> 
@@ -51,6 +52,8 @@ let update msg model : Model * Cmd<Types.Msg> =
     | UnitListMsg (msg, Some "Defender")-> 
         let (uld,ulCmdsd) = UnitList.State.update msg model.Defender
         { model with Defender = uld }, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some "Defender")) ulCmdsd]
+    | Choose (key,value) -> 
+        { model with SelectedChoices = Map.add key value model.SelectedChoices }, Cmd.ofMsg RebindEnvironment
     | UnitListMsg (_, Some _)-> failwith "No list of that name"
     | UnitListMsg (msg, None) -> 
         let (ula,ulCmdsa) = UnitList.State.update msg model.Attacker
@@ -64,15 +67,17 @@ let update msg model : Model * Cmd<Types.Msg> =
                            SelectedDefender = None }, 
                            Cmd.batch [ Cmd.ofMsg ((fun msg -> UnitListMsg(msg, None)) UnitList.Types.Distribute)
                                        Cmd.ofMsg RebindEnvironment ]
-    | RebindEnvironment ->      
-        let environment = 
-            let initial = Map.empty<_,_>
+    | RebindEnvironment -> 
+        let initial = 
+            model.SelectedChoices 
+            |> Map.map (fun _ value -> Value(Str value))
+        let (choices, environment) = 
             model.GlobalOperations 
-            |> Map.map(fun _ (_,op) -> op 
-                                         |> normalize
-                                         |>  evalOp initial) 
-        {model with Environment = environment}, Cmd.batch [ Cmd.ofMsg BindDefender
-                                                            Cmd.ofMsg BindAttacker ]
+            |> Map.fold(fun (choices,env) key (_,op) -> 
+                let (newChoices,result) = op |> normalize |> evalOp env
+                Map.mergeSets choices newChoices, Map.add key result env) (Map.empty<_,_>, initial)
+        let cmds = Cmd.batch [ Cmd.ofMsg BindDefender; Cmd.ofMsg BindAttacker ]            
+        { model with Environment = environment; Choices = choices }, cmds  
     | BindDefender -> 
         match model.SelectedDefender with 
         | None -> model, Cmd.none
@@ -81,13 +86,13 @@ let update msg model : Model * Cmd<Types.Msg> =
                 Map.tryFind defender model.Defender.Models 
                 |> bindModelToEnvironment model.Environment defenderMap 
             match newEnvironment with 
-            | Some environment -> 
-                let commands = 
+            | Some (choices,environment) -> 
+                let cmds = 
                     [ rebind environment (Some defenderMap) model.SelectedDefender
                       rebind environment (Some attackerMap) model.SelectedAttacker ] 
                     |> List.choose id
                     |> Cmd.batch
-                {model with Environment = environment}, commands
+                { model with Environment = environment; Choices = Map.mergeSets choices model.Choices }, cmds
             | None -> model, Cmd.none
     | BindAttacker -> 
         match model.SelectedAttacker with 
@@ -97,13 +102,13 @@ let update msg model : Model * Cmd<Types.Msg> =
                 Map.tryFind attacker model.Attacker.Models 
                 |> bindModelToEnvironment model.Environment attackerMap
             match newEnvironment with 
-            | Some environment -> 
-                let commands = 
+            | Some (choices,environment) -> 
+                let cmds = 
                     [ rebind environment (Some defenderMap) model.SelectedDefender
                       rebind environment (Some attackerMap) model.SelectedAttacker ] 
                     |> List.choose id
                     |> Cmd.batch
-                {model with Environment = environment}, commands
+                { model with Environment = environment; Choices = Map.mergeSets choices model.Choices }, cmds
             | None -> model, Cmd.none
 
 

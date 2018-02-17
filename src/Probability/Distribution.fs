@@ -87,7 +87,12 @@ module Distribution
           for (b,p') in (f a).Probabilities do
           yield (b, p*p')
         ] |> create
-    
+    let unzip (v : Distribution<'a*'b>) :  Distribution<'a> * Distribution<'b> =
+        let (a,b) = 
+            v.Probabilities
+            |> List.map(fun ((a,b),p) -> (a,p),(b,p))
+            |> List.unzip
+        {Probabilities = a},{Probabilities = b}
     let (>>=) x f = bind f x
 
     type DistrBuilder () =
@@ -117,6 +122,7 @@ module Distribution
 
         List.foldBack folder list initState 
     let get d = d.Probabilities
+    let values d = d.Probabilities |> List.map fst
     let choose f (xs : Distribution<_>) : Distribution<_> = List.choose (fun (a,p) -> f a |> Option.map (fun a' -> a',p) ) xs.Probabilities |> create  
     let sequenceResultM x = traverseResultM id x
     let rec takeN (v : Distribution<_>) (n : int) : Distribution<'a list> =
