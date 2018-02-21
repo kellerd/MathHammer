@@ -452,6 +452,41 @@ let rec evalCall func v env : EvalResult =
     | Total, (Value(NoValue) as v)     -> Map.empty<_,_>, v 
     | Total, Value(ParamArray [])      -> Map.empty<_,_>, NoValue |> Value
     | Total, Value(ParamArray(h::t))   -> fold (+) t h
+    | Max, (Value(Int _) as v)         -> Map.empty<_,_>, v
+    | Max, (Value(Str _) as v)         -> Map.empty<_,_>, v
+    | Max, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
+    | Max, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
+    | Max, Value(ParamArray(h::t))     -> fold (_) t h
+    | Min, (Value(Int _) as v)         -> Map.empty<_,_>, v
+    | Min, (Value(Str _) as v)         -> Map.empty<_,_>, v
+    | Min, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
+    | Min, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
+    | Min, Value(ParamArray(h::t))     -> fold (_) t h
+    | Sub, (Value(Int _) as v)         -> Map.empty<_,_>, v
+    | Sub, (Value(Str _) as v)         -> Map.empty<_,_>, v
+    | Sub, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
+    | Sub, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
+    | Sub, Value(ParamArray(h::t))     -> fold (_) t h
+    | Median, (Value(Int _) as v)         -> Map.empty<_,_>, v
+    | Median, (Value(Str _) as v)         -> Map.empty<_,_>, v
+    | Median, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
+    | Median, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
+    | Median, Value(ParamArray(h::t))     -> fold (_) t h
+    | Mode, (Value(Int _) as v)         -> Map.empty<_,_>, v
+    | Mode, (Value(Str _) as v)         -> Map.empty<_,_>, v
+    | Mode, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
+    | Mode, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
+    | Mode, Value(ParamArray(h::t))     -> fold (_) t h
+    | Least n, (Value(Int _) as v)         -> Map.empty<_,_>, v
+    | Least n, (Value(Str _) as v)         -> Map.empty<_,_>, v
+    | Least n, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
+    | Least n, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
+    | Least n, Value(ParamArray(h::t))     -> fold (_) t h
+    | Largest n, (Value(Int _) as v)         -> Map.empty<_,_>, v
+    | Largest n, (Value(Str _) as v)         -> Map.empty<_,_>, v
+    | Largest n, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
+    | Largest n, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
+    | Largest n, Value(ParamArray(h::t))     -> fold (_) t h
     | Product, (Value(Int _) as v)     -> Map.empty<_,_>, v
     | Product, (Value(Str _) as v)     -> Map.empty<_,_>, v
     | Product, (Value(NoValue) as v)   -> Map.empty<_,_>, v 
@@ -486,15 +521,15 @@ let rec evalCall func v env : EvalResult =
     | And, Value(ParamArray([Value(gp);Value(gp2)]))         -> Map.empty<_,_>, andGp gp gp2 |> Value
     | Or,       Value(ParamArray([Value(gp);Value(gp2)]))    -> Map.empty<_,_>, orGp gp gp2  |> Value
     | Repeat, Value(ParamArray([lam;op2])) -> repeat lam op2 
-    | (Total|Product|Count), Value(Check v)                  -> 
+    | (Total|Product|Count|Max|Min|Sub|Median|Mode|Least _|Largest _), Value(Check v)                  -> 
         let chk = Check.map evalFuncAsGp v 
         let value = Check.map snd chk
         Check.(|CheckValue|) chk |> fst, value |> Check |> Value 
-    | (Total|Product|Count), Value(Tuple(t1,t2))             -> 
+    | (Total|Product|Count|Max|Min|Sub|Median|Mode|Least _|Largest _), Value(Tuple(t1,t2))             -> 
         let (choices,t1') = evalFuncAsGp t1
         let (choices2,t2') = evalFuncAsGp t2
         Map.mergeSets choices choices2, Tuple(t1', t2') |> Value
-    | (Total|Product|Count), Value(Dist d) -> 
+    | (Total|Product|Count|Max|Min|Sub|Median|Mode|Least _|Largest _), Value(Dist d) -> 
         let (choices,results) = 
             Distribution.bind (fun v -> let (choices,value) = evalCall func (Value v) env 
                                         value |> function 
@@ -510,7 +545,6 @@ let rec evalCall func v env : EvalResult =
                                             | op -> Distribution.always (choices, ParamArray [op]))  d 
             |> Distribution.unzip
         (choices |> Distribution.values |> List.reduceSafe Map.empty<_,_> Map.mergeSets), results |> Dist |> Value
-    | _ -> failwith "Cannot eval any other call with those params" 
 and evalOp env (operation:Operation) : EvalResult = 
     let getChoices (key,choices) = 
         let keys = List.map (fst) choices |> Set.ofList

@@ -226,17 +226,6 @@ let alternateRoot model _ =
         match operation with 
         | Value(ParamArray ops)  when List.distinct ops = [State.``D#`` D3] -> str ""
         | Value(ParamArray ops)  when List.distinct ops = [State.``D#`` D6] -> str ""
-        | Call Product -> str ""
-        | Call Total  -> str ""
-        | Call Repeat  -> str ""
-        | Call (Dice _)  -> str ""
-        | Call Count -> str ""
-        | Call GreaterThan -> str ""
-        | Call LessThan -> str ""
-        | Call Equals -> str ""
-        | Call NotEquals -> str ""
-        | Call Or -> str ""
-        | Call And -> str ""
         | Value(Int(_)) -> str ""
         | Value(NoValue) -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []
         | Value(_) ->     str ""
@@ -246,6 +235,7 @@ let alternateRoot model _ =
         | Lam(_) -> str ""
         | PropertyGet _ -> str ""
         | IfThenElse(_)  -> str ""
+        | Call(_) -> str ""      
         | Choice _ -> str ""
     displayOperation model  
 

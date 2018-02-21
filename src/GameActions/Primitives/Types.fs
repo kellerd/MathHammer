@@ -34,6 +34,13 @@ and Call =
     | LessThan
     | And
     | Or
+    | Max
+    | Min
+    | Sub
+    | Median 
+    | Mode 
+    | Least of int 
+    | Largest of int
 
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d
