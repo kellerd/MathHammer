@@ -1,40 +1,20 @@
 [<RequireQualifiedAccess>]
 module Check
-//type Check< ^a when ^a: (static member Zero : ^a)> = Pass of  ^a | Fail of  ^a | List of Check<  ^a> list | Tuple of  ^a *  ^a 
-type Check<'a> = Pass of 'a | Fail of 'a //| List of Check< 'a> list | Tuple of 'a * 'a 
-let inline add x y = 
+type Check<'a> = Pass of 'a | Fail of 'a 
+let inline combineFavourPass f x y = 
     let rec add x y = 
         match x,y with  
-        | Pass a, Pass b -> Pass (a + b)
+        | Pass a, Pass b -> Pass (f a b)
         | Pass a, Fail _ | Fail _, Pass a  -> Pass (a)
-        | Fail a, Fail b -> Fail (a + b)
-        // | List a, List b -> List.map2 add a b |> List
-        // | a, List bs | List bs, a -> List.map (fun b -> add a b) bs |> List
-        // | Pass a, Tuple(a',c) | Tuple(a',c),Pass a -> Tuple(a' + a,c)
-        // | Fail a, Tuple(a',c) | Tuple(a',c),Fail a -> Tuple(a',c + a)
-        // | Tuple(a,c),Tuple(b,d) -> Tuple(a+b,c+d)
+        | Fail a, Fail b -> Fail (f a b)
     add x y
-let inline mult x y =
+let inline combineFavourFail f x y =
     let rec mult x y =
         match x,y with  
-        | Pass a, Pass b -> Pass (a * b)
-        | Pass a, Fail b | Fail b, Pass a  -> Fail (a * b)
-        | Fail a, Fail b -> Fail (a * b)
-        // | List a, List b -> 
-        //     [for a' in a do 
-        //         for b' in b do
-        //             yield List [a';b']] |> List
-        // | a, List bs | List bs, a -> List.map (fun b -> mult a b) bs |> List
-        // | Pass a, Tuple(a',c') | Tuple(a',c'),Pass a -> Tuple(a * a', a * c')
-        // | Fail c, Tuple(a',c') | Tuple(a',c'),Fail c -> Tuple(c * a', c * c')
-        // | Tuple(a,c),Tuple(b,d) -> Tuple(a * b,c * d)
+        | Pass a, Pass b -> Pass (f a b)
+        | Pass a, Fail b | Fail b, Pass a  -> Fail (f a b)
+        | Fail a, Fail b -> Fail (f a b)
     mult x y   
-// let inline count x y = 
-//     let addCounts r1 r2 =
-//           let toCount result =  
-//                 match result with | Pass _ -> Tuple (1,0) | Fail _ ->  Tuple(0,1) | Tuple _ as x -> x | _ -> failwith "Cannot count these" 
-//           add r1 (toCount r2)  
-//     addCounts x y          
 let inline map f x = 
     let rec map f x = 
         match x with 
@@ -79,22 +59,7 @@ let rec printCheckF =
         function
         | Pass x   -> sprintf "Pass %.2f" x 
         | Fail x  -> sprintf "Fail %.2f" x
-        // | List xs -> List.map printCheckF xs |> String.concat ";" |> sprintf "[%s]"
-        // | Tuple(x,y) -> sprintf "Passes: %.2f, Fails: %.2f" x y
 let rec printCheckD = 
         function
         | Pass x   -> sprintf "Pass %d" x 
         | Fail x  -> sprintf "Fail %d" x
-        // | List xs -> List.map printCheckD xs |> String.concat ";" |> sprintf "[%s]"
-        // | Tuple(x,y) -> sprintf "Passes: %d,Fails: %d" x y
-let resultListAverage list =
-    let divide x y = map (fun x' -> x' / y) x
-    match list with 
-    | [] -> Fail 0.
-    | xs ->
-        let mutable sum = Fail 0.
-        let mutable count = 0
-        for x in xs do
-            sum <- add x sum
-            count <- count + 1
-        divide sum (float count)

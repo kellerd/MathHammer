@@ -372,6 +372,7 @@ let rec evalCall func v env : EvalResult =
             let rec fixGp check = function 
                 | NoValue 
                 | Str _ 
+                | Float _
                 | Int _ as gp -> gp |> check
                 | Check(Check.Fail gp) -> fixGp (Check.Fail >> Check) gp
                 | Check(Check.Pass gp) -> fixGp check gp
@@ -405,7 +406,7 @@ let rec evalCall func v env : EvalResult =
                         | Value(gp) -> Distribution.always gp 
                         | op -> Distribution.always (ParamArray[op])) |> Dist |> Value
                 | Str(_) -> failwith "Not Implemented"
-                //| Float(_) -> failwith "Not Implemented"
+                | Float(_) -> failwith "Not Implemented"
                 | ParamArray(times) -> times |> List.map(function Value(gp) -> repeatOps gp | _ -> noValue ) |> ParamArray |> Value
                 | Tuple(n, m) -> 
                     match repeatOp n, repeatOp m with 
@@ -446,63 +447,31 @@ let rec evalCall func v env : EvalResult =
             ) (Map.empty<_,_>,state)
     let evalFuncAsGp = (fun v -> evalCall func (Value v) env |> function (choices,Value(gp)) -> choices,gp | (choices,op) -> choices,ParamArray [op])           
     match func,v with 
-    | Dice d, Value(NoValue)           -> Map.empty<_,_>, evalDie d |> Distribution.map (Int) |> Dist |> Value 
-    | Total, (Value(Int _) as v)       -> Map.empty<_,_>, v
-    | Total, (Value(Str _) as v)       -> Map.empty<_,_>, v
-    | Total, (Value(NoValue) as v)     -> Map.empty<_,_>, v 
-    | Total, Value(ParamArray [])      -> Map.empty<_,_>, NoValue |> Value
-    | Total, Value(ParamArray(h::t))   -> fold (+) t h
-    | Max, (Value(Int _) as v)         -> Map.empty<_,_>, v
-    | Max, (Value(Str _) as v)         -> Map.empty<_,_>, v
-    | Max, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
-    | Max, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
-    | Max, Value(ParamArray(h::t))     -> fold (_) t h
-    | Min, (Value(Int _) as v)         -> Map.empty<_,_>, v
-    | Min, (Value(Str _) as v)         -> Map.empty<_,_>, v
-    | Min, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
-    | Min, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
-    | Min, Value(ParamArray(h::t))     -> fold (_) t h
-    | Sub, (Value(Int _) as v)         -> Map.empty<_,_>, v
-    | Sub, (Value(Str _) as v)         -> Map.empty<_,_>, v
-    | Sub, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
-    | Sub, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
-    | Sub, Value(ParamArray(h::t))     -> fold (_) t h
-    | Median, (Value(Int _) as v)         -> Map.empty<_,_>, v
-    | Median, (Value(Str _) as v)         -> Map.empty<_,_>, v
-    | Median, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
-    | Median, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
-    | Median, Value(ParamArray(h::t))     -> fold (_) t h
-    | Mode, (Value(Int _) as v)         -> Map.empty<_,_>, v
-    | Mode, (Value(Str _) as v)         -> Map.empty<_,_>, v
-    | Mode, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
-    | Mode, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
-    | Mode, Value(ParamArray(h::t))     -> fold (_) t h
-    | Least n, (Value(Int _) as v)         -> Map.empty<_,_>, v
-    | Least n, (Value(Str _) as v)         -> Map.empty<_,_>, v
-    | Least n, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
-    | Least n, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
-    | Least n, Value(ParamArray(h::t))     -> fold (_) t h
-    | Largest n, (Value(Int _) as v)         -> Map.empty<_,_>, v
-    | Largest n, (Value(Str _) as v)         -> Map.empty<_,_>, v
-    | Largest n, (Value(NoValue) as v)       -> Map.empty<_,_>, v 
-    | Largest n, Value(ParamArray [])        -> Map.empty<_,_>, NoValue |> Value
-    | Largest n, Value(ParamArray(h::t))     -> fold (_) t h
-    | Product, (Value(Int _) as v)     -> Map.empty<_,_>, v
-    | Product, (Value(Str _) as v)     -> Map.empty<_,_>, v
-    | Product, (Value(NoValue) as v)   -> Map.empty<_,_>, v 
-    | Product, Value(ParamArray [])    -> Map.empty<_,_>, GamePrimitive.Zero |> Value
-    | Product, Value(ParamArray(h::t)) -> fold (*) t h
-    | Count, Value(Int _)              -> Map.empty<_,_>, vInt 1
-    | Count, Value(Str _)              -> Map.empty<_,_>, vInt 1
-    | Count, Value(NoValue)            -> Map.empty<_,_>, vInt 0 
-    | Count, Value(ParamArray [])      -> 
-        let zero = GamePrimitive.Zero 
-        Map.empty<_,_>, (zero,zero) |> tuple |> Value
+    | Dice d, _                          -> Map.empty<_,_>, evalDie d |> Distribution.map (Int) |> Dist |> Value 
+    | (Total|Division|Product|Max|Min|Sub|Median|Mode), (Value(Int _ | Float _ | Str _ | NoValue) as v)       -> Map.empty<_,_>, v
+    | (Least _|Largest _), (Value(Int _ | Float _ | Str _ | NoValue) as v) -> Map.empty<_,_>, ParamArray[v] |> Value
+    | (Total|Division|Product|Max|Min|Sub|Median|Mode|Least _|Largest _), Value(ParamArray []) -> Map.empty<_,_>,  GamePrimitive.Zero |> Value
+    | Total, Value(ParamArray (h::t))    -> fold (+) t h
+    | Max, Value(ParamArray(h::t))       -> fold maxGp t h
+    | Min, Value(ParamArray(h::t))       -> fold minGp t h
+    | Sub, Value(ParamArray(h::t))       -> fold (-) t h
+    | Division, Value(ParamArray(h::t))  -> fold (/) t h
+    | Mean, Value(ParamArray(ops))       -> Map.empty<_,_>, meanOp ops
+    | Median, Value(ParamArray(ops))     -> Map.empty<_,_>, medianGp ops
+    | Mode, Value(ParamArray(ops))       -> Map.empty<_,_>, modeGp ops
+    | Least n, Value(ParamArray(ops))    -> Map.empty<_,_>, leastOp n ops
+    | Largest n, Value(ParamArray(ops))  -> Map.empty<_,_>, largestOp n ops
+    | Product, Value(ParamArray(h::t))   -> fold (*) t h
+    | Count, Value(Int _)                -> Map.empty<_,_>, vInt 1
+    | Count, Value(Str _)                -> Map.empty<_,_>, vInt 1
+    | Count, Value(NoValue)              -> Map.empty<_,_>, vInt 0 
+    | Count, Value(ParamArray [])        -> Map.empty<_,_>, (GamePrimitive.Zero, GamePrimitive.Zero) |> tuple |> Value
     | Count, Value(ParamArray ops) ->
         let rec toCount result = 
             match result with 
             | Int _               -> Int(1) 
-            | Str(_)              -> Int(1) 
+            | Float _             -> Int(1)
+            | Str _               -> Int(1) 
             | NoValue             -> Int(0)     
             | Dist d              -> Distribution.map (toCount) d |> Dist                  
             | ParamArray []       -> Int(0)
@@ -514,22 +483,25 @@ let rec evalCall func v env : EvalResult =
         zero
         |> Value
         |> fold (fun r1 r2 -> r1 + toCount r2) ops
-    | GreaterThan, Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, greaterThan gp gp2 |> Value
-    | Equals, Value(ParamArray([Value(gp);Value(gp2)]))      -> Map.empty<_,_>, equals gp gp2  |> Value
-    | LessThan, Value(ParamArray([Value(gp);Value(gp2)]))    -> Map.empty<_,_>, notEquals gp gp2  |> Value
-    | NotEquals, Value(ParamArray([Value(gp);Value(gp2)]))   -> Map.empty<_,_>, lessThan gp gp2  |> Value
-    | And, Value(ParamArray([Value(gp);Value(gp2)]))         -> Map.empty<_,_>, andGp gp gp2 |> Value
-    | Or,       Value(ParamArray([Value(gp);Value(gp2)]))    -> Map.empty<_,_>, orGp gp gp2  |> Value
-    | Repeat, Value(ParamArray([lam;op2])) -> repeat lam op2 
-    | (Total|Product|Count|Max|Min|Sub|Median|Mode|Least _|Largest _), Value(Check v)                  -> 
+    | GreaterThan,  Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, greaterThan gp gp2 |> Value
+    | Equals,       Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, equals gp gp2      |> Value
+    | LessThan,     Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, notEquals gp gp2   |> Value
+    | NotEquals,    Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, lessThan gp gp2    |> Value
+    | And,          Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, andGp gp gp2       |> Value
+    | Or,           Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, orGp gp gp2        |> Value
+    | Repeat,       Value(ParamArray([lam;op2]))              -> repeat lam op2 
+    | (Total|Division|Product|Count|Max|Min|Sub|Mean|Median|Mode|Least _|Largest _), Value(Check v) -> 
         let chk = Check.map evalFuncAsGp v 
         let value = Check.map snd chk
         Check.(|CheckValue|) chk |> fst, value |> Check |> Value 
-    | (Total|Product|Count|Max|Min|Sub|Median|Mode|Least _|Largest _), Value(Tuple(t1,t2))             -> 
+    | (Total|Division|Product|Count|Max|Min|Sub|Mean|Median|Mode|Least _|Largest _), Value(Tuple(t1,t2)) -> 
         let (choices,t1') = evalFuncAsGp t1
         let (choices2,t2') = evalFuncAsGp t2
         Map.mergeSets choices choices2, Tuple(t1', t2') |> Value
-    | (Total|Product|Count|Max|Min|Sub|Median|Mode|Least _|Largest _), Value(Dist d) -> 
+    | Mean, Value(Dist d) -> 
+        let v = d.Probabilities |> List.sumBy (fun (a,p) -> a * (Float p))
+        evalCall func (Value v) env 
+    | (Total|Division|Product|Count|Max|Min|Sub|Mean|Median|Mode|Least _|Largest _), Value(Dist d) -> 
         let (choices,results) = 
             Distribution.bind (fun v -> let (choices,value) = evalCall func (Value v) env 
                                         value |> function 
@@ -545,6 +517,7 @@ let rec evalCall func v env : EvalResult =
                                             | op -> Distribution.always (choices, ParamArray [op]))  d 
             |> Distribution.unzip
         (choices |> Distribution.values |> List.reduceSafe Map.empty<_,_> Map.mergeSets), results |> Dist |> Value
+    | _ -> failwith "Invalid call"
 and evalOp env (operation:Operation) : EvalResult = 
     let getChoices (key,choices) = 
         let keys = List.map (fst) choices |> Set.ofList

@@ -1,4 +1,3 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -19,14 +18,13 @@
     <Compile Include="Normalization.fs" />
     <Compile Include="EvalTest.fs" />
     <Compile Include="RepeatTest.fs" />
+    <Compile Include="LeastLargestTest.fs" />
     <Compile Include="TypeChecker.fs" />
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Expecto" Version="5.*" />
     <PackageReference Include="FsCheck" Version="3.0.0-alpha2" />
-  </ItemGroup>
-  <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.DotNet.Watcher.Tools" Version="1.0.0" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />

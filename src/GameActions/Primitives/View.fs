@@ -16,7 +16,8 @@ type DisplayType =
     | DTuple of DisplayType * DisplayType
     | DDist of Distribution.Distribution<DisplayType>
 let rec toDisplay = function 
-    | Int a        -> DInt a       
+    | Int a        -> DInt a    
+    | Float a      -> DFloat a   
     | Str a        -> DStr a       
     | Check a      -> Check.map (toDisplay) a |> DCheck
     | NoValue      -> DNoValue     
@@ -55,7 +56,7 @@ type DisplayType with
             | r1, DCheck (Check.Fail(_) as r2)
             | DCheck (Check.Fail(_) as r2), r1 -> DTuple(DCheck (Check.Pass(r1)),DCheck r2)
             | a, DCheck(b)
-            | DCheck(b), a -> Check.add (Check.Pass a) b  |> DCheck
+            | DCheck(b), a -> Check.combineFavourPass (+) (Check.Pass a) b  |> DCheck
             | DFloat(x), DInt(y) 
             | DInt(y), DFloat(x)  -> DFloat(x + float y)
             | DTuple(a,b), DTuple(x,y) -> DTuple(a+x,b+y)
@@ -77,9 +78,9 @@ type DisplayType with
             | DParamArray ops, b | b,  DParamArray ops ->
                 ops 
                 |> List.map (fun a -> match a with Value a -> (toDisplay a) * b |> toGamePrimitive |> Value | _ -> Value NoValue) |> DParamArray
-            | DCheck r1, DCheck r2 -> Check.mult r1 r2 |> DCheck
+            | DCheck r1, DCheck r2 -> Check.combineFavourFail (*) r1 r2 |> DCheck
             | a, DCheck(b)
-            | DCheck(b), a -> Check.mult (Check.Pass a) b  |> DCheck
+            | DCheck(b), a -> Check.combineFavourFail (*) (Check.Pass a) b  |> DCheck
             | DDist d, DDist d2 -> Distribution.combine [d;d2] |> DDist
             | DDist d, gp 
             | gp, DDist d -> Distribution.map ((*) gp) d |> DDist
@@ -176,7 +177,7 @@ and unparse unparseValue operation : Fable.Import.React.ReactElement list =
 let unparseValue = 
     let rec unparseV = function   
     | Int(i) -> [string i |> str]
-    //| Float(f) -> sprintf "%.1f" f |> str
+    | Float(f) -> [sprintf "%.1f" f |> str]
     | Dist(d) -> [unparseDist unparseV d]
     | NoValue -> [str "--" ] 
     | Str s -> [b  [] [str s]]
@@ -209,7 +210,7 @@ let unparseAverage =
 let unparseSample = 
     let rec unparseV = function   
     | Int(i) -> [string i |> str]
-    //| Float(f) -> sprintf "%.1f" f |> str
+    | Float(f) -> [sprintf "%.1f" f |> str]
     | Dist(d) -> Distribution.sample d |> unparseV
     | NoValue -> [str "--" ] 
     | Str s -> [b  [] [str s]]

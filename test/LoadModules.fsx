@@ -28,27 +28,3 @@
 #load "../src/Global.fs"
 #load "../src/Types.fs"
 #load "../src/State.fs"
-
-open Probability.View
-open GameActions.Primitives.Types
-open GameActions.Primitives.State
-open GameActions.Primitives.View
-open GameActions.GameActionsList.Types
-open GameActions.GameActionsList.State
-open GameActions.GameActionsList.View
-open GameActions.Types
-open GameActions.State
-open GameActions.View
-open MathHammer.Models.Types
-open MathHammer.Models.State
-open MathHammer.Models.View
-open MathHammer.UnitList.Types
-open MathHammer.UnitList.State
-open MathHammer.UnitList.View
-open MathHammer.Types
-open MathHammer.State
-open MathHammer.View
-open Global
-open App.Types
-open App.State
-
