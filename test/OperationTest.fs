@@ -3,6 +3,7 @@ open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open FsCheckGen
+open GameActions.GameActionsList.State
 let (==?) x y = Expect.equal x y ""
 [<Tests>]
 let tests = 

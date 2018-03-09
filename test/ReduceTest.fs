@@ -2,6 +2,7 @@ module ReduceTests
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open Expecto
+open GameActions.GameActionsList.State
 
 let (==?) actual expected = Expect.equal expected actual ""
 

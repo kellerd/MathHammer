@@ -6,11 +6,34 @@ open GameActions.Primitives.Types
 open GameActions.Primitives.State
 
 let initRow () : Row * Cmd<Types.Msg> = 
-    ReadWrite("", noValue), Cmd.none
+    ReadWrite("",  Text None, noValue), Cmd.none
 
+let d6 = App(Call(Dice(D6)), noValue)
+let d3 = App(Call(Dice(D3)), noValue)
+let opId = Lam ("v",get "v")
+let chargeRange = [d6;d6] |> opList |> total 
+let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total 
+let shootingRange = get "WeaponRange"
+let psychicTest = [d6;d6] |> opList |> total 
+let denyTest = [d6;d6] |> opList |> total
+let hitResults = repeatOp (get "WS") (get "A") |> total
+let woundResults = repeatOp (svtOps sVsT) (get "HitResults") |> total 
+let unsavedWounds = repeatOp (getd "Sv") (get "WoundResults") |> total 
 let init () : Model * Cmd<Types.Msg> =
-    let readOnlyRow = ReadOnly ("HighFive", App(Call Total, opList [App(Call(Dice(D6)), noValue); Value(Int(3))]))
-    ([readOnlyRow],false), Cmd.none
+    let rows = 
+        [ "Id", Text None, opId
+          "D6", Special "D6", d6
+          "D3", Special "D3", d3
+          "ChargeRange", Text None, chargeRange
+          "MeleeRange", Text None, meleeRange
+          "ShootingRange", Text None, shootingRange
+          "PsychicTest", Text None, psychicTest
+          "DenyTest", Text None, denyTest
+          "HitResults", Text None, hitResults
+          "WoundResults", Text None, woundResults
+          "UnsavedWounds", Text None, unsavedWounds ]
+        |> List.map ReadOnly
+    (rows,false), Cmd.none
 
 
 let update msg model : Model * Cmd<Types.Msg> =
@@ -21,15 +44,27 @@ let update msg model : Model * Cmd<Types.Msg> =
     | AddRow,_ -> 
         model, Cmd.none
     | ChangeNewRowName(str),(rs,true) ->
-        let newRows = List.map(function ReadWrite(_,op) -> ReadWrite(str,op) | r -> r) rs
-        (newRows,true), Cmd.none
+        let newRows = List.map(function ReadWrite(_,icon, op) -> ReadWrite(str,icon, op) | r -> r) rs
+        (newRows,true), Cmd.none    
+    | ChangeIcon(""),(rs,true) ->
+        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Text None, op) | r -> r) rs
+        (newRows,true), Cmd.none 
+    | ChangeIcon("D6" | "D3" as s),(rs,true) ->
+        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Special s, op) | r -> r) rs
+        (newRows,true), Cmd.none 
+    | ChangeIcon(s),(rs,true) when s.StartsWith("fa-") -> 
+        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Icon ("fa " + s), op) | r -> r) rs
+        (newRows,true), Cmd.none       
+    | ChangeIcon(s),(rs,true) ->
+        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Text(Some s), op) | r -> r) rs
+        (newRows,true), Cmd.none        
     | SaveOp (name),(rs,true) -> 
-        let newRows = List.map(function ReadWrite(name',op) when name=name' -> ReadOnly(name',op) | r -> r ) rs
+        let newRows = List.map(function ReadWrite(name',icon, op) when name=name' -> ReadOnly(name',icon, op) | r -> r ) rs
         (newRows,false),Cmd.none
     | EditRow (name),(rs,false) -> 
-        let newRows = List.map(function ReadOnly(name',op) when name=name' -> ReadWrite(name',op) | r -> r ) rs
+        let newRows = List.map(function ReadOnly(name',icon, op) when name=name' -> ReadWrite(name',icon, op) | r -> r ) rs
         (newRows,true),Cmd.none 
-    | (SaveOp(_) | ChangeNewRowName(_) | EditRow(_)),_->
+    | (SaveOp(_) | ChangeNewRowName(_) | EditRow(_)),_ | ChangeIcon(_),_ ->
         model, Cmd.none
 
 // match msg with

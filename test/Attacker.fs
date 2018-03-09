@@ -2,12 +2,13 @@ module AttackerTests
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open Expecto
+open App.State
 let (==?) x y = Expect.equal x y ""
 let (==~) x y = 
     match y with 
     | Value(Dist({Probabilities = y})) -> Expect.contains (y |> List.map (fst >> Value)) x ""
     | _ -> Expect.equal x y ""
-let body = nestOps [phaseActions;d6Test;d3Test] allProps
+let body = nestOps [phaseActions] allProps
 let defbody = nestOps [dPhaseActions] allProps
 let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
 let attacker = createArgs stats body

@@ -16,10 +16,7 @@ let product = call Product
 let bindVal text op = Let(text,op,Var text)
 let bindOp v op inBody = Let(v,op, inBody)
 let lam s op = Lam (s,op)
-let opId = Lam ("v",get "v")
 let ``D#`` d = App(Call(Dice(d)), noValue)
-let d6 = App(Call(Dice(D6)), noValue)
-let d3 = App(Call(Dice(D3)), noValue)
 let vStr s = Str s |> Value
 let vInt i = Value(Int(i))
 let emptyOp = noValue
@@ -78,13 +75,12 @@ let allProps =
           labelProp "Actions" "ShootingRange"
           labelProp "Actions" "DenyTest" ]
 let choose name choiceList = Choice(name,choiceList)
-let hitResults = repeatOp (get "WS") (get "A") |> total >>= "HitResults"
 let defenderMap = "Defender"
 let attackerMap = "Attacker"
 let getd p = getp p (get "Defender")
 let geta p = getp p (get "Attacker")
 let svtOps = [get "S";getd "T"] |> opList >>= "SvsT"
-let  table ifThen = 
+let table ifThen = 
     let rec acc x = 
         match x with 
         | [] -> None
@@ -97,40 +93,7 @@ let sVsT =
     [ get "SvsT" |> call GreaterThan, dPlus D6 3 
       get "SvsT" |> call LessThan, dPlus D6 5
       get "SvsT" |> call Equals, dPlus D6 4 ]
-    |> table
-
-let woundResults = repeatOp (svtOps sVsT) (get "HitResults") |> total >>= "WoundResults"
-let unsavedWounds = repeatOp (getd "Sv") (get "WoundResults") |> total >>= "UnsavedWounds"
-let chargeRange = [d6;d6] |> opList |> total >>= "ChargeRange"
-let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total >>= "MeleeRange"
-let shootingRange = get "WeaponRange" >>= "ShootingRange"
-let psychicTest = [d6;d6] |> opList |> total >>= "PsychicTest"
-let denyTest = [d6;d6] |> opList |> total >>= "DenyTest"
-let d6Test = [d6] |> opList |> total >>= "D6Test"
-let d3Test = [d3] |> opList |> total >>= "D3Test"
-let phaseActions = 
-    choose "Phase" 
-        [
-            "Melee", 
-                nestOps 
-                    [ chargeRange
-                      meleeRange
-                      hitResults
-                      woundResults
-                      unsavedWounds ] <| opList [ labelVar "ChargeRange"
-                                                  labelVar "MeleeRange"
-                                                  labelVar "HitResults"
-                                                  labelVar "WoundResults"
-                                                  labelVar "UnsavedWounds" ] 
-            "Shooting", (shootingRange) (labelVar "ShootingRange")
-            "Psychic", (psychicTest) (labelVar "PsychicTest")
-        ] >>= "Actions"
-let dPhaseActions =   
-    choose "Phase" 
-        [
-            "Melee", (shootingRange) (labelVar "ShootingRange")
-            "Psychic", (denyTest) (labelVar "DenyTest")
-        ] >>= "Actions"     
+    |> table   
 
 let rec isInUse s = function
       | Var (v) -> v = s

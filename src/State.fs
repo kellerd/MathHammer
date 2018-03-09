@@ -8,6 +8,7 @@ open Global
 open Types
 open MathHammer.Models.State
 open GameActions.Primitives.State
+open GameActions.GameActionsList.State
 
 let pageParser: Parser<Page->Page,Page> =
   oneOf [
@@ -22,12 +23,38 @@ let urlUpdate (result: Option<Page>) model =
     model,Navigation.modifyUrl (toHash model.currentPage)
   | Some page ->
       { model with currentPage = page }, []
+
+let phaseActions = 
+    choose "Phase" 
+        [
+            "Melee", 
+                nestOps 
+                    [ chargeRange >>= "ChargeRange"
+                      meleeRange >>= "MeleeRange"
+                      hitResults >>= "HitResults"
+                      woundResults >>= "WoundResults"
+                      unsavedWounds >>= "UnsavedWounds"] 
+                                                          <| opList [ labelVar "ChargeRange"
+                                                                      labelVar "MeleeRange"
+                                                                      labelVar "HitResults"
+                                                                      labelVar "WoundResults"
+                                                                      labelVar "UnsavedWounds" ] 
+            "Shooting", (shootingRange >>= "ShootingRange") (labelVar "ShootingRange")
+            "Psychic", (psychicTest >>= "Psychichtest") (labelVar "PsychicTest")
+        ] >>= "Actions"
+let dPhaseActions =   
+    choose "Phase" 
+        [
+            "Melee", (shootingRange >>= "ShootingRange") (labelVar "ShootingRange")
+            "Psychic", (denyTest >>= "DenyTest") (labelVar "DenyTest")
+        ] >>= "Actions"  
+
 let init result =
   let (mathHammer, mathHammerCmd) = MathHammer.State.init()
   let (gameActions, gameActionsCmd) = GameActions.State.init()
 
   // attackerStats
-  let body = nestOps [phaseActions;d6Test;d3Test] allProps
+  let body = nestOps [phaseActions] allProps
   let defbody = nestOps [dPhaseActions] allProps
   let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
   let attacker = createArgs stats body
@@ -63,7 +90,7 @@ let mathHammerUpdate msg model =
 let update msg model =
   match msg with
   | MathHammerMsg (MathHammer.Types.RebindEnvironment as msg) ->
-    let operations = model.gameActions.Actions |> fst |> List.mapi (fun i -> function ReadWrite(str,op) -> str,(i,op) | ReadOnly (str,op) -> str,(i,op)) |> Map.ofList
+    let operations = model.gameActions.Actions |> fst |> List.mapi (fun i -> function ReadWrite(str,_,op) -> str,(i,op) | ReadOnly (str,_,op) -> str,(i,op)) |> Map.ofList
     mathHammerUpdate msg {model with mathHammer = {model.mathHammer with GlobalOperations = operations }}
   | MathHammerMsg msg ->
       mathHammerUpdate msg model
