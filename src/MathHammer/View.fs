@@ -9,17 +9,16 @@ open GameActions.Primitives.State
 let root model dispatch =
     let (boardX,boardY) = model.Board |> fun (x,y) -> ft.ToMM(x),ft.ToMM(y)
     let drawing =   
-        div [] 
-            [svg 
-                [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
-                [ UnitList.View.rootBoard model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
-                  UnitList.View.rootBoard model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
-                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("ShootingRange")) |> opt
-                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("ShootingRange")) |> opt
-                  model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("MeleeRange")) |> opt
-                  model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("MeleeRange")) |> opt
-                  UnitList.View.root model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
-                  UnitList.View.root model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch) ] ] 
+        svg 
+            [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
+            [ UnitList.View.rootBoard model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
+              UnitList.View.rootBoard model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
+              model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("ShootingRange")) |> ofOption
+              model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("ShootingRange")) |> ofOption
+              model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("MeleeRange")) |> ofOption
+              model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("MeleeRange")) |> ofOption
+              UnitList.View.root model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
+              UnitList.View.root model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch) ] 
     let swap =  
         i [ClassName "fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
         |> List.singleton
@@ -92,7 +91,7 @@ let root model dispatch =
                     |> List.singleton
                     |> div [ ClassName "tile is-parent"] )
                 |> chunkBySize 4
-                |> List.map (function [] -> opt None | xs ->  div [ClassName "tile is-ancestor"] xs)
+                |> List.map (function [] -> ofOption None | xs ->  div [ClassName "tile is-ancestor"] xs)
                 |> section [Id "choices"]
             section [Id "selected"] [ titleBar  selected.Name 
                                       bar       "Profile" 
@@ -107,4 +106,4 @@ let root model dispatch =
                                       ]
                                       bar resultName; resultsDiv ]
 
-    div [] [ swap; drawing; selected ] 
+    ofList [ swap; drawing; selected ] 

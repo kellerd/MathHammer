@@ -17,7 +17,7 @@ let showAttributes ((key:string), operation) dispatch =
       div [ClassName "has-text-centered column"]
           [ b  [] [str key]
             br []
-            div [] (GameActions.Primitives.View.probabilities operation dispatch) ]
+            ofList (GameActions.Primitives.View.probabilities operation dispatch) ]
 let rangeStops (dist:Distribution.Distribution<_>)  = 
     let length = List.length dist.Probabilities
     let minRange, maxRange,_,_ =

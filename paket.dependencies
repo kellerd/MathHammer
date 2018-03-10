@@ -9,6 +9,7 @@ nuget Fable.Elmish.React
 nuget Fable.Elmish.Browser
 nuget Fable.Elmish.Debugger
 nuget Expecto
-nuget FsCheck 3.0.0-alpha2
+nuget FsCheck 3.0.0-alpha3
+nuget Argu 3.7
 
 clitool dotnet-fable

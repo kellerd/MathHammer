@@ -88,19 +88,11 @@ type DisplayType with
             | DTuple (a,b), x 
             | x, DTuple (a,b) -> DTuple(a*x,b*x)
 
-//DCheck(Check.Fail(DFloat 6.0)) + DCheck(Check.Pass(DFloat 12.0)) + DCheck(Check.Pass(DFloat 6.0)) + DCheck(Check.Pass(DFloat 12.0))         
 let paren react = str "(" :: react @ [str ")"]
 
 let rec unparseCheck unparseV = function 
     | Check.Pass(v) -> span [Style [Color (colour 255.) ]] <| (str "Pass: ")::(unparseV v)
     | Check.Fail(v) -> span [Style [Color (colour 0.) ]]   <| (str "Fail: ")::(unparseV v)
-    // | Check.List(vs) -> div [] [
-    //                             yield str "["
-    //                             for result in vs do
-    //                                 yield unparseCheck unparseV result
-    //                                 yield str ";" 
-    //                             yield str "]"]
-     
 let unparseCall func = 
     match func with 
     | Dice(i) -> "D" + string i  |> str
@@ -139,7 +131,7 @@ let unparseDist unparseValue (dist:Distribution.Distribution<GamePrimitive>) =
                   | result -> result @ [str <| sprintf " %.1f%%" (prob / total * 100.)]
                               |> div colour
                               |> Some
-                  |> opt)                              
+                  |> ofOption)                              
             |> data []    
 let rec displayParamArray unparseValue ops =
     match ops with
@@ -149,7 +141,6 @@ let rec displayParamArray unparseValue ops =
         match unparse unparseValue op with 
         | [] -> None 
         | xs -> div [ClassName "column"] xs |> Some) ops)
-    //| ops -> List.map unparse ops |> List.reduce (fun l1 l2 -> l1 @ (str " + " :: l2)) |> div []
 and unparse unparseValue operation : Fable.Import.React.ReactElement list = 
     match operation with 
     | Call f -> [unparseCall f]
@@ -164,8 +155,8 @@ and unparse unparseValue operation : Fable.Import.React.ReactElement list =
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
     //     [unparse (App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(List.distinct (is @ is2),d))),Value NoValue); Value(Int(i))])))) |> div []]
     | App(Lam(_,x),_) -> unparse unparseValue x //paren (unparse (Lam(p,x))) + " " + argstring a
-    | App(f,(Var(v))) -> unparse unparseValue f @ [div [] [sprintf "%s" v |> str]]
-    | App(f,a) -> unparse unparseValue f @ [div [] (unparse unparseValue a)]
+    | App(f,(Var(v))) -> unparse unparseValue f @ [ofList [sprintf "%s" v |> str]]
+    | App(f,a) -> unparse unparseValue f @ [ofList (unparse unparseValue a)]
     | Let(_, _, inner) ->  unparse unparseValue inner
     | PropertyGet(s,op) -> unparse unparseValue op @ [str <| sprintf ".%s" s]
     | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
