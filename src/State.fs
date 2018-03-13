@@ -90,7 +90,7 @@ let mathHammerUpdate msg model =
 let update msg model =
   match msg with
   | MathHammerMsg (MathHammer.Types.RebindEnvironment as msg) ->
-    let operations = model.gameActions.Actions |> fst |> List.mapi (fun i -> function ReadWrite(str,_,op) -> str,(i,op) | ReadOnly (str,_,op) -> str,(i,op)) |> Map.ofList
+    let operations = model.gameActions.Actions.Functions |> List.mapi (fun i -> function ReadWrite(str,_,op) -> str,(i,op) | ReadOnly (str,_,op) -> str,(i,op)) |> Map.ofList
     mathHammerUpdate msg {model with mathHammer = {model.mathHammer with GlobalOperations = operations }}
   | MathHammerMsg msg ->
       mathHammerUpdate msg model

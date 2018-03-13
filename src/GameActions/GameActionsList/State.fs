@@ -33,49 +33,44 @@ let init () : Model * Cmd<Types.Msg> =
           "WoundResults", Text None, woundResults
           "UnsavedWounds", Text None, unsavedWounds ]
         |> List.map ReadOnly
-    (rows,false), Cmd.none
+    { Editing = false 
+      Functions = rows 
+      Dragging = None }, Cmd.none
 
 
 let update msg model : Model * Cmd<Types.Msg> =
-    match msg,model with
-    | AddRow,(rows,false) -> 
+    match msg with
+    | AddRow when not model.Editing -> 
         let (newRow,newRowCmd) = initRow()
-        (newRow::rows,true), newRowCmd
-    | AddRow,_ -> 
+        { model with Editing = true; Functions = newRow :: model.Functions }, newRowCmd
+    | ChangeNewRowName(str) when model.Editing ->
+        let newRows = List.map(function ReadWrite(_,icon, op) -> ReadWrite(str,icon, op) | r -> r) model.Functions
+        { model with Functions = newRows } , Cmd.none    
+    | ChangeIcon("") when model.Editing ->
+        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Text None, op) | r -> r) model.Functions
+        { model with Functions = newRows }, Cmd.none 
+    | ChangeIcon("D6" | "D3" as s) when model.Editing ->
+        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Special s, op) | r -> r) model.Functions
+        { model with Functions = newRows }, Cmd.none 
+    | ChangeIcon(s) when model.Editing && s.StartsWith("fa-") -> 
+        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Icon ("fa " + s), op) | r -> r) model.Functions
+        { model with Functions = newRows }, Cmd.none       
+    | ChangeIcon(s) when model.Editing ->
+        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Text(Some s), op) | r -> r) model.Functions
+        { model with Functions = newRows }, Cmd.none        
+    | SaveOp (name) when model.Editing -> 
+        let newRows = List.map(function ReadWrite(name',icon, op) when name=name' -> ReadOnly(name',icon, op) | r -> r ) model.Functions
+        { model with Editing = false; Functions = newRows },Cmd.none
+    | EditRow (name) when not model.Editing -> 
+        let newRows = List.map(function ReadOnly(name',icon, op) when name=name' -> ReadWrite(name',icon, op) | r -> r ) model.Functions
+        { model with Editing = true; Functions = newRows }, Cmd.none 
+    | Dragging s when model.Editing ->
+        { model with Dragging = Some s }, Cmd.none
+    | Dragged (name,op) when model.Editing -> 
+        match model.Dragging with 
+        | None -> model, Cmd.none 
+        | Some _ -> 
+            let newRows = List.map(function ReadWrite(name', icon, _) when name = name' -> ReadWrite(name, icon, op) | r -> r) model.Functions
+            { model with Dragging = None; Functions = newRows }, Cmd.none
+    | AddRow _ | SaveOp _ | ChangeNewRowName _ | EditRow _ | ChangeIcon _ | Dragged _ | Dragging _ ->
         model, Cmd.none
-    | ChangeNewRowName(str),(rs,true) ->
-        let newRows = List.map(function ReadWrite(_,icon, op) -> ReadWrite(str,icon, op) | r -> r) rs
-        (newRows,true), Cmd.none    
-    | ChangeIcon(""),(rs,true) ->
-        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Text None, op) | r -> r) rs
-        (newRows,true), Cmd.none 
-    | ChangeIcon("D6" | "D3" as s),(rs,true) ->
-        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Special s, op) | r -> r) rs
-        (newRows,true), Cmd.none 
-    | ChangeIcon(s),(rs,true) when s.StartsWith("fa-") -> 
-        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Icon ("fa " + s), op) | r -> r) rs
-        (newRows,true), Cmd.none       
-    | ChangeIcon(s),(rs,true) ->
-        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Text(Some s), op) | r -> r) rs
-        (newRows,true), Cmd.none        
-    | SaveOp (name),(rs,true) -> 
-        let newRows = List.map(function ReadWrite(name',icon, op) when name=name' -> ReadOnly(name',icon, op) | r -> r ) rs
-        (newRows,false),Cmd.none
-    | EditRow (name),(rs,false) -> 
-        let newRows = List.map(function ReadOnly(name',icon, op) when name=name' -> ReadWrite(name',icon, op) | r -> r ) rs
-        (newRows,true),Cmd.none 
-    | (SaveOp(_) | ChangeNewRowName(_) | EditRow(_)),_ | ChangeIcon(_),_ ->
-        model, Cmd.none
-
-// match msg with
-// | Distribute -> 
-//     let (newModels, modelsCmds) =
-//       model.Models
-//       |> Map.toList
-//       |> distribute 0. model.OffsetY 
-//       |> List.map(fun((_,m),x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y)) m)
-//       |> List.fold(fun (map,cmds) (m,cmd) -> (Map.add m.name m map), cmd::cmds) (model.Models,[])
-//     {model with Models = newModels}, Cmd.batch (modelsCmds)
-// | ModelMsg(msg,key) -> 
-//     let (newModel, modelCmds) = model.Models.Item(key) |> MathHammer.Models.State.update msg
-//     {model with Models = Map.add key newModel model.Models}, Cmd.map ModelMsg modelCmds
