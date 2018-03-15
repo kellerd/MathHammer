@@ -96,6 +96,11 @@ let update msg model =
       mathHammerUpdate msg model
   | GameActionsMsg(msg) ->
       let (gameActions, gameActionsCmd) = GameActions.State.update msg model.gameActions
-      let rebindCmd = Cmd.ofMsg (MathHammer.Types.RebindEnvironment)
-      { model with gameActions = gameActions }, Cmd.batch [ Cmd.map MathHammerMsg rebindCmd
-                                                            Cmd.map GameActionsMsg gameActionsCmd]
+      let rebindCmds = 
+        match msg with 
+        | GameActions.Types.Msg.GameActionListMsg(SaveOp _) -> 
+           Cmd.batch
+             [ Cmd.map MathHammerMsg (Cmd.ofMsg (MathHammer.Types.RebindEnvironment)) 
+               Cmd.map GameActionsMsg gameActionsCmd]
+        | _ -> Cmd.map GameActionsMsg gameActionsCmd                             
+      { model with gameActions = gameActions }, rebindCmds

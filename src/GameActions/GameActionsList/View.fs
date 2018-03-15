@@ -3,6 +3,8 @@ open Fable.Core.JsInterop
 open Fable.Helpers.React
 open Props
 open Types
+open GameActions.Primitives.Types
+open GameActions.Primitives.View
 let d6icon = 
     svg [ SVGAttr.Width 24
           SVGAttr.Height 24
@@ -25,26 +27,66 @@ let iconToDisplay  = function
    | Icon s       -> div [ClassName ("fa " + s)] [] |> Some
    | Text(Some s) -> strong [] [str s] |> Some
    | _            -> None      
+let unparseEquation icons operation : Fable.Import.React.ReactElement list = 
+    let rec unparseV = function   
+        | Int(i) -> [string i |> str]
+        | Float(f) -> [sprintf "%.1f" f |> str]
+        | Dist(d) -> [unparseDist unparseV d]
+        | NoValue -> [str "--" ] 
+        | Str s -> [b  [] [str s]]
+        | Tuple(v,v2) -> paren <| unparseV v@(str ",")::unparseV v2
+        | Check c -> [unparseCheck unparseV c]
+        | ParamArray ([]) ->  []
+        | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
+        | ParamArray ([Value (Str _); Var _]) ->   []
+        | ParamArray(m) -> List.collect unparseEq m
+    and unparseEq op : Fable.Import.React.ReactElement list = 
+        match op with 
+        | Call f -> [unparseCall f]
+        | Value(v)-> unparseV v
+        | Var (v) -> 
+            match icons |> Map.tryFind v with 
+            | Some icon -> [b [] [icon]]
+            | None -> [str v]
+        | Lam(_) -> []
+        | Choice(name, _) -> [str <| "Choose a " + name]
+        | App(Lam(_,x),_) -> unparseEq x 
+        | App(f,(Var(v))) -> unparseEq f @ [ofList [sprintf "%s" v |> str]]
+        | App(f,a) -> unparseEq f @ [ofList (unparseEq a)]
+        | Let(_, _, inner) ->  unparseEq inner
+        | PropertyGet(s,op) -> unparseEq op @ [str <| sprintf ".%s" s]
+        | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
+            let ifPart = str "if " :: unparseEq ifExpr
+            let thenPart = str " then " :: br [] :: unparseEq thenExpr
+            let elsePart = Option.map(fun elseExpr -> br [] :: unparseEq elseExpr) elseExpr |> Option.toList |> List.collect id
+            ifPart @ thenPart @ elsePart   
+    unparseEq operation 
 let mkRowDrag dispatch  = function
     | ReadOnly (name, icon, _) | ReadWrite(name, icon, _) -> 
         iconToDisplay icon
-        |> Option.map (List.singleton >> div [OnDragStart (fun _ -> Dragging(name) |> dispatch)])
+        |> Option.map (List.singleton >> div [Draggable true; OnDragStart (fun _ -> Dragging(name) |> dispatch)])
         |> ofOption
     
-let mkRows hideAddButton dispatch row  = 
+let mkRows hideAddButton dispatch icons row = 
+    let iconOptional name icon = 
+        match icon |> iconToDisplay with 
+        | Some icon -> Map.add name icon icons, [icon]
+        | None -> icons, []
     match row with 
     | ReadOnly (name, icon, gameAction) -> 
-        [tr [] [
+        let newIcons,iconDisplay = iconOptional name icon
+        tr [] [
             td [] [(if hideAddButton then str "" 
                     else  a [ ClassName "button fa fa-pencil-square-o"; OnClick (fun _ -> EditRow(name) |> dispatch) ] [str "Edit"] )]
             td [] [str name]
-            td [] (icon |> iconToDisplay |> Option.toList )
-            td [] (GameActions.Primitives.View.probabilities gameAction ignore) //dispatch)
-        ]]
+            td [] iconDisplay
+            td [] (unparseEquation icons gameAction) //dispatch)
+        ], newIcons
     | ReadWrite(name,icon,op) -> 
-        [ tr [] [
+        let newIcons,_ = iconOptional name icon
+        tr [] [
             td [] [ a [ ClassName "button fa fa-floppy-o"
-                        OnClick (fun _ -> SaveOp(name) |> dispatch)  ] [str "Save"] ]
+                        OnClick (fun _ -> SaveOp(name) |> dispatch)  ] [str "Close"] ]
             td [] [ 
                 input [ ClassName "input"
                         Type "text"
@@ -58,11 +100,12 @@ let mkRows hideAddButton dispatch row  =
                         Placeholder "FA Icon/Special/Text"
                         DefaultValue (icon |> function Special s  | Text(Some s) -> s | Icon s -> s.Remove(0,3) | Text None -> "")
                         OnChange (fun ev -> !!ev.target?value |> ChangeIcon |> dispatch ) ] ]         
-            td [] (GameActions.Primitives.View.probabilities op ignore) ] //dispatch) ]
-        ]
+            td [] (unparseEquation icons op) ], newIcons
 let root model dispatch =
+    let draggables = (p [] [str "Common"; br [] ; str "Functions"] )::(List.map (mkRowDrag dispatch) model.Functions)
+    let (tableRows,_) = List.mapFold (mkRows model.Editing dispatch) Map.empty<_,_> model.Functions
     [
-        div [ClassName "is-11"] [
+        div [ClassName "column is-11"] [
             table [ClassName "table is-fullwidth"] 
                 [   thead [] [
                         tr [] [
@@ -73,8 +116,8 @@ let root model dispatch =
                             th [] [ str "Action Name" ]
                             th [] [ str "Icon / Special Text" ]
                             th [] [ str "Equation / Steps"] ] ] 
-                    tbody [] (List.collect (mkRows model.Editing dispatch) model.Functions) ] ]
-        div [ClassName "is-1"] (List.map (mkRowDrag dispatch) model.Functions) ]
+                    tbody [] tableRows ] ]
+        div [ClassName "column is-1 has-text-centered"] draggables ]
     |> ofList                    
 
     

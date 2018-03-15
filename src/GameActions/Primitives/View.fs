@@ -134,10 +134,7 @@ let unparseDist unparseValue (dist:Distribution.Distribution<GamePrimitive>) =
                   |> ofOption)                              
             |> data []    
 let rec displayParamArray unparseValue ops =
-    match ops with
-    | ops when List.distinct ops = [State.``D#`` D6] -> sprintf "%dD6" (List.length ops) |> str
-    | ops when List.distinct ops = [State.``D#`` D3] -> sprintf "%dD3" (List.length ops) |> str
-    | ops -> section [ClassName "columns"] (List.choose (fun op -> 
+    section [ClassName "columns"] (List.choose (fun op -> 
         match unparse unparseValue op with 
         | [] -> None 
         | xs -> div [ClassName "column"] xs |> Some) ops)
@@ -145,11 +142,11 @@ and unparse unparseValue operation : Fable.Import.React.ReactElement list =
     match operation with 
     | Call f -> [unparseCall f]
     | Value(v)-> unparseValue v
-    | Var (v) -> [sprintf "%s" v |> str]
+    | Var (v) -> [str v]
     | Lam(_) -> []
     | IsDPlus(D6,plus) ->  [string (plus) + "+" |> str]
     | IsDPlus(D3,plus) ->  [string (plus) + "+ on D3" |> str]
-    | Choice(name, _) -> [str <| sprintf "Choose a %s" name]
+    | Choice(name, _) -> [str <| "Choose a " + name]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D6))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D3))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
