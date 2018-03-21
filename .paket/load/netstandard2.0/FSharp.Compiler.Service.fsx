@@ -1,4 +1,5 @@
-#load @"NETStandard.Library.fsx" 
+#load @"Microsoft.DiaSymReader.fsx" 
+#load @"Microsoft.DiaSymReader.PortablePdb.fsx" 
 #load @"System.Collections.Immutable.fsx" 
 #load @"System.Diagnostics.Process.fsx" 
 #load @"System.Diagnostics.TraceSource.fsx" 
@@ -7,4 +8,4 @@
 #load @"System.Reflection.TypeExtensions.fsx" 
 #load @"System.Runtime.Loader.fsx" 
 #load @"System.Security.Cryptography.Algorithms.fsx" 
-#r "../../../../../../.nuget/packages/fsharp.compiler.service/17.0.1/lib/netstandard1.6/FSharp.Compiler.Service.dll" 
+#r "../../../../../../.nuget/packages/fsharp.compiler.service/21.0.1/lib/netstandard2.0/FSharp.Compiler.Service.dll" 

@@ -6,6 +6,7 @@
     <Compile Include="Global.fs" />
     <Compile Include="Collections/Map.fs" />
     <Compile Include="Collections/List.fs" />
+    <Compile Include="Collections/Zipper.fs" />
     <Compile Include="Check/Check.fs" />
     <Compile Include="Probability/Distribution.fs" />
     <Compile Include="Probability/View.fs" />

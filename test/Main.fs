@@ -1,5 +1,5 @@
 ﻿#if INTERACTIVE
-#load "LoadModules.fsx"
+#load @"LoadModules.fsx"
 open Probability.View
 open GameActions.Primitives.Types
 open GameActions.Primitives.State

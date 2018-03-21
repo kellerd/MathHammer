@@ -1,7 +1,1 @@
-#load @"Microsoft.CSharp.fsx" 
-#load @"NETStandard.Library.fsx" 
-#load @"System.ComponentModel.TypeConverter.fsx" 
-#load @"System.Runtime.Serialization.Formatters.fsx" 
-#load @"System.Runtime.Serialization.Primitives.fsx" 
-#load @"System.Xml.XmlDocument.fsx" 
-#r "../../../../../../.nuget/packages/newtonsoft.json/10.0.3/lib/netstandard1.3/Newtonsoft.Json.dll" 
+#r "../../../../../../.nuget/packages/newtonsoft.json/11.0.1/lib/netstandard2.0/Newtonsoft.Json.dll" 

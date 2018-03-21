@@ -95,7 +95,7 @@ let rec unparseCheck unparseV = function
     | Check.Fail(v) -> span [Style [Color (colour 0.) ]]   <| (str "Fail: ")::(unparseV v)
 let unparseCall func = 
     match func with 
-    | Dice(i) -> "D" + string i  |> str
+    | Dice(i) -> string i  |> str
     | Count -> sprintf "(Passes,Fails) in " |> str
     | _  -> sprintf "%A" func |> str  
 let unparseDist unparseValue (dist:Distribution.Distribution<GamePrimitive>) = 
@@ -152,8 +152,8 @@ and unparse unparseValue operation : Fable.Import.React.ReactElement list =
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
     //     [unparse (App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(List.distinct (is @ is2),d))),Value NoValue); Value(Int(i))])))) |> div []]
     | App(Lam(_,x),_) -> unparse unparseValue x //paren (unparse (Lam(p,x))) + " " + argstring a
-    | App(f,(Var(v))) -> unparse unparseValue f @ [ofList [sprintf "%s" v |> str]]
-    | App(f,a) -> unparse unparseValue f @ [ofList (unparse unparseValue a)]
+    | App(f,(Var(v))) -> unparse unparseValue f @ [str v]
+    | App(f,a) -> unparse unparseValue f @ unparse unparseValue a
     | Let(_, _, inner) ->  unparse unparseValue inner
     | PropertyGet(s,op) -> unparse unparseValue op @ [str <| sprintf ".%s" s]
     | IfThenElse(ifExpr, thenExpr, elseExpr) -> 

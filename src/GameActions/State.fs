@@ -10,5 +10,5 @@ let init () : Model * Cmd<Msg> =
 let update msg model : Model * Cmd<Msg> =
     match msg with 
     | GameActionListMsg (msg) ->
-          let (gameActionsList, gameActionsListCmd) = GameActionsList.State.update msg model.Actions
-          { model with Actions = gameActionsList }, Cmd.map GameActionListMsg gameActionsListCmd
+        let (gameActionsList, gameActionsListCmd) = GameActionsList.State.update msg model.Actions
+        { model with Actions = gameActionsList }, Cmd.map GameActionListMsg gameActionsListCmd

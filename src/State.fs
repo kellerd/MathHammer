@@ -29,24 +29,24 @@ let phaseActions =
         [
             "Melee", 
                 nestOps 
-                    [ chargeRange >>= "ChargeRange"
-                      meleeRange >>= "MeleeRange"
-                      hitResults >>= "HitResults"
-                      woundResults >>= "WoundResults"
-                      unsavedWounds >>= "UnsavedWounds"] 
+                    [ get "ChargeRange"   >>= "ChargeRange"
+                      get "MeleeRange"    >>= "MeleeRange"
+                      get "HitResults"    >>= "HitResults"
+                      get "WoundResults"  >>= "WoundResults"
+                      get "UnsavedWounds" >>= "UnsavedWounds"] 
                                                           <| opList [ labelVar "ChargeRange"
                                                                       labelVar "MeleeRange"
                                                                       labelVar "HitResults"
                                                                       labelVar "WoundResults"
                                                                       labelVar "UnsavedWounds" ] 
-            "Shooting", (shootingRange >>= "ShootingRange") (labelVar "ShootingRange")
-            "Psychic", (psychicTest >>= "Psychichtest") (labelVar "PsychicTest")
+            "Shooting", (get "ShootingRange" >>= "ShootingRange") (labelVar "ShootingRange")
+            "Psychic", (get "PsychicTest" >>= "Psychichtest") (labelVar "PsychicTest")
         ] >>= "Actions"
 let dPhaseActions =   
     choose "Phase" 
         [
             "Melee", (shootingRange >>= "ShootingRange") (labelVar "ShootingRange")
-            "Psychic", (denyTest >>= "DenyTest") (labelVar "DenyTest")
+            "Psychic", (get "DenyTest" >>= "DenyTest") (labelVar "DenyTest")
         ] >>= "Actions"  
 
 let init result =
@@ -90,7 +90,7 @@ let mathHammerUpdate msg model =
 let update msg model =
   match msg with
   | MathHammerMsg (MathHammer.Types.RebindEnvironment as msg) ->
-    let operations = model.gameActions.Actions.Functions |> List.mapi (fun i -> function ReadWrite(str,_,op) -> str,(i,op) | ReadOnly (str,_,op) -> str,(i,op)) |> Map.ofList
+    let operations = model.gameActions.Actions.Functions |> List.mapi (fun i -> function ReadWrite(str,_,op) -> str,(i,op) | ReadOnly (str,_,op) -> str,(i,op)) 
     mathHammerUpdate msg {model with mathHammer = {model.mathHammer with GlobalOperations = operations }}
   | MathHammerMsg msg ->
       mathHammerUpdate msg model

@@ -60,17 +60,19 @@ let update msg model : Model * Cmd<Types.Msg> =
         { model with Functions = newRows }, Cmd.none        
     | SaveOp (name) when model.Editing -> 
         let newRows = List.map(function ReadWrite(name',icon, op) when name=name' -> ReadOnly(name',icon, op) | r -> r ) model.Functions
-        { model with Editing = false; Functions = newRows },Cmd.none
+        { model with Editing = false; Functions = newRows; Dragging = None }, Cmd.none
     | EditRow (name) when not model.Editing -> 
         let newRows = List.map(function ReadOnly(name',icon, op) when name=name' -> ReadWrite(name',icon, op) | r -> r ) model.Functions
-        { model with Editing = true; Functions = newRows }, Cmd.none 
+        { model with Editing = true; Functions = newRows; Dragging = None }, Cmd.none 
     | Dragging s when model.Editing ->
         { model with Dragging = Some s }, Cmd.none
+    | DragLeft ->
+        { model with Dragging = None }, Cmd.none
     | Dragged (name,op) when model.Editing -> 
         match model.Dragging with 
         | None -> model, Cmd.none 
         | Some _ -> 
             let newRows = List.map(function ReadWrite(name', icon, _) when name = name' -> ReadWrite(name, icon, op) | r -> r) model.Functions
             { model with Dragging = None; Functions = newRows }, Cmd.none
-    | AddRow _ | SaveOp _ | ChangeNewRowName _ | EditRow _ | ChangeIcon _ | Dragged _ | Dragging _ ->
+    | AddRow _ | SaveOp _ | ChangeNewRowName _ | EditRow _ | ChangeIcon _ | Dragged _ | Dragging _ | ReplaceOp _  ->
         model, Cmd.none

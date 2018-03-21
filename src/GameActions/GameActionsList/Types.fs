@@ -19,6 +19,8 @@ type Msg =
     | ChangeNewRowName of string
     | ChangeIcon of string
     | SaveOp of string
+    | ReplaceOp of string * Operation
     | EditRow of string
     | Dragging of string
+    | DragLeft 
     | Dragged of string * Operation

@@ -1,0 +1,6 @@
+#load @"Microsoft.DiaSymReader.fsx" 
+#load @"System.Collections.Immutable.fsx" 
+#load @"System.Linq.fsx" 
+#load @"System.Reflection.Metadata.fsx" 
+#load @"System.Threading.fsx" 
+#r "../../../../../../.nuget/packages/microsoft.diasymreader.portablepdb/1.4.0/lib/netstandard1.1/Microsoft.DiaSymReader.PortablePdb.dll" 

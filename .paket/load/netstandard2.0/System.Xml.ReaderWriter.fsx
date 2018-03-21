@@ -2,4 +2,4 @@
 #load @"System.IO.FileSystem.Primitives.fsx" 
 #load @"System.Text.RegularExpressions.fsx" 
 #load @"System.Threading.Tasks.Extensions.fsx" 
-#r "../../../../../../.nuget/packages/system.xml.readerwriter/4.3.0/lib/netstandard1.3/System.Xml.ReaderWriter.dll" 
+#r "../../../../../../.nuget/packages/system.xml.readerwriter/4.3.1/lib/netstandard1.3/System.Xml.ReaderWriter.dll" 
