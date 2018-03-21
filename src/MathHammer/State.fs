@@ -23,7 +23,7 @@ let init () : Model * Cmd<Types.Msg> =
             SelectedAttacker = None
             SelectedDefender = None
             Board = 6<ft>,4<ft>
-            GlobalOperations = Map.empty<_,_>
+            GlobalOperations = []
             Mode = Probability
             Choices = Map.empty<_,_>
             SelectedChoices = Map.empty<_,_>
@@ -68,14 +68,18 @@ let update msg model : Model * Cmd<Types.Msg> =
                            Cmd.batch [ Cmd.ofMsg ((fun msg -> UnitListMsg(msg, None)) UnitList.Types.Distribute)
                                        Cmd.ofMsg RebindEnvironment ]
     | RebindEnvironment -> 
-        let initial = 
+        let choices = 
             model.SelectedChoices 
-            |> Map.map (fun _ value -> Value(Str value))
+            |> Map.map (fun _ value -> Set.singleton value)
+        let initial = 
+            model.SelectedChoices
+            |> Map.map (fun _ value -> Value(Str value))            
         let (choices, environment) = 
-            model.GlobalOperations 
-            |> Map.fold(fun (choices,env) key (_,op) -> 
-                let (newChoices,result) = op |> normalize |> evalOp env
-                Map.mergeSets choices newChoices, Map.add key result env) (Map.empty<_,_>, initial)
+            model.GlobalOperations
+            |> List.sortBy (snd >> fst)
+            |> List.fold(fun (choices,env) (key,(_,op))-> 
+                    let (newChoices,result) = op |> normalize |> evalOp env
+                    Map.mergeSets choices newChoices, Map.add key result env) (choices, initial)   
         let cmds = Cmd.batch [ Cmd.ofMsg BindDefender; Cmd.ofMsg BindAttacker ]            
         { model with Environment = environment; Choices = choices }, cmds  
     | BindDefender -> 

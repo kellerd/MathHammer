@@ -3,6 +3,7 @@ open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open Expecto
 open App.State
+open GameActions.GameActionsList.State
 let (==?) x y = Expect.equal x y ""
 let (==~) x y = 
     match y with 
@@ -25,13 +26,37 @@ let ld = vInt 8
 let sv = threePlus
 let invSave = noValue
 let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;] 
-let (_,defApplied) = applyArgs defender seargent |> normalize|> evalOp Map.empty<string,Operation>
-let initialMap = Map.add "Defender" defApplied Map.empty<string,Operation>
+let globalOperations = 
+    [ "Id", opId
+      "D6",  d6
+      "D3", d3
+      "ChargeRange",  chargeRange
+      "MeleeRange",  meleeRange
+      "ShootingRange",  shootingRange
+      "PsychicTest",  psychicTest
+      "DenyTest",  denyTest
+      "HitResults",  hitResults
+      "WoundResults",  woundResults
+      "UnsavedWounds",  unsavedWounds ]
+    |> List.mapi(fun i (k,o) -> (k,(i,o)))
+let choices = 
+    ["Phase",  Set.singleton  "Melee"] |> Map.ofList
+let env = 
+    ["Phase",  Value (Str  "Melee")] |> Map.ofList
+let (newChoices,newEnv) = 
+    globalOperations
+    |> List.sortBy (snd >> fst)
+    |> List.fold(fun (choices,env) (key,(_,op))-> 
+            let (newChoices,result) = op |> normalize |> evalOp env
+            Map.mergeSets choices newChoices, Map.add key result env) (choices, env)    
+
+let (_,defApplied) = applyArgs defender seargent |> normalize|> evalOp newEnv
+let initialMap = Map.add "Defender" defApplied newEnv
 let attApplied = applyArgs attacker seargent |> normalize
 let eval x op = getp x op |> evalOp initialMap 
 
-// getp "Actions" attApplied  |> (evalOp  initialMap )
-// getp "Actions" attApplied  |> (evalOp  <| Map.add "Phase" (Value(Str "Melee")) initialMap )
+// getp "ChargeRange" attApplied  |> (evalOp  initialMap )
+// attApplied  |> (evalOp  <| Map.add "Phase" (Value(Str "Psychic")) initialMap )
 
 // let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  
 // let a' = vInt 2

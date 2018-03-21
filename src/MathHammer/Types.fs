@@ -15,7 +15,7 @@ type Model = {
     SelectedAttacker : Option<string>
     SelectedDefender : Option<string>
     Environment : Environment
-    GlobalOperations : Map<string,Order*Operation>
+    GlobalOperations : (string*(Order*Operation)) list
     Choices : Map<string, Set<string>>
     SelectedChoices : Map<string,string>
     Mode : Mode
