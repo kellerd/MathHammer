@@ -12,13 +12,24 @@ let d6 = App(Call(Dice(D6)), noValue)
 let d3 = App(Call(Dice(D3)), noValue)
 let opId = Lam ("v",get "v")
 let chargeRange = [get "D6";get "D6"] |> opList |> total 
-let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total 
+let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total |> lam "M"
 let shootingRange = get "WeaponRange"
 let psychicTest = [get "D6";get "D6"] |> opList |> total 
 let denyTest = [get "D6";get "D6"] |> opList |> total
-let hitResults = repeatOp (get "WS") (get "A") |> total
-let woundResults = repeatOp (svtOps sVsT) (get "HitResults") |> total 
-let unsavedWounds = repeatOp (getd "Sv") (get "WoundResults") |> total 
+let hitResults = 
+    repeatOp (get "WS") (get "A") 
+    |> total 
+    |> lam "A" 
+    |> lam "WS"
+let woundResults = 
+    repeatOp (svtOps sVsT) (get "HitResults") 
+    |> total 
+    |> lam "S" 
+    |> lam "Defender"
+let unsavedWounds = 
+    repeatOp (getd "Sv") (get "WoundResults") 
+    |> total 
+    |> lam "Defender"
 let init () : Model * Cmd<Types.Msg> =
     let rows = 
         [ "Id", Text None, opId

@@ -28,7 +28,9 @@ let ``Lambda Calculus`` =
         | Value(Str "Zero") -> 0
         | x -> failtest (sprintf "Couldn't add unexpected value %A" x)
     let doTest (op,expected) = 
-        let result = Value(Str "Zero") |%> (Value(Str "Add 1") |%> op) |> normalize |> doAdding    
+        let result = 
+            op <*> Value(Str "Add 1") <*> Value(Str "Zero")
+            |> normalize |> doAdding    
         test (sprintf "Lambda for %d" expected) { result ==? expected }
     testList "Lambda Calculus Normalization" (List.map doTest [zero,0;one,1;two,2;three,3])
 
@@ -111,7 +113,7 @@ let ``Getting a property test`` =
         // 
     ]
 let ``Counting call test`` = 
-    let appliedTwo = vInt 7 |%> (vInt 7 |%> two)
+    let appliedTwo = two <*> vInt 7 <*> vInt 7
     testList "Normalize function application" [
         test "Count by Param Array" {
             let count ops = App(Call Count,opList (ops))

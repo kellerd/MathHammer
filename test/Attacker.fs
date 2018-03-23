@@ -56,8 +56,9 @@ let attApplied = applyArgs attacker seargent |> normalize
 let eval x op = getp x op |> evalOp initialMap 
 
 // getp "ChargeRange" attApplied  |> (evalOp  initialMap )
+// getp "MeleeRange" attApplied  |> (evalOp  initialMap )
+// getp "HitResults" attApplied  |> (evalOp initialMap )
 // attApplied  |> (evalOp  <| Map.add "Phase" (Value(Str "Psychic")) initialMap )
-
 // let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  
 // let a' = vInt 2
 // a' |> count |> evalOp Map.empty<_,_> 

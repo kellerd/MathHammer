@@ -25,7 +25,7 @@ let getp s op = PropertyGet(s, op)
 let labelVar v = pair (vStr v) (get v)
 let labelProp c v = pair (vStr v) (getp v (get c))
 let apply f x = App(f,x)
-let (|%>) x f = apply f x
+let (<*>) = apply  
 let (>>=) o s = bindOp s o
 let dPlus d v =
     let gt = [Var "roll"; Value(Int(v))] |> opList |> call GreaterThan
@@ -68,7 +68,7 @@ let allProps =
           labelVar "D3Test"
           labelProp "Actions" "ChargeRange"
           labelProp "Actions" "MeleeRange"
-          labelProp "Actions" "HitReuslts"
+          labelProp "Actions" "HitResults"
           labelProp "Actions" "WoundResults"
           labelProp "Actions" "UnsavedWounds"
           labelProp "Actions" "PsychicTest"
