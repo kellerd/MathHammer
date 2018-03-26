@@ -355,7 +355,7 @@ let rec evalCall func v env : EvalResult =
             fixOp check op
         let rec repeatOps times : Operation =
             let rec repeatOp : GamePrimitive->Operation = function
-                | NoValue -> noValue
+                | NoValue -> create 0
                 | Check(Check.Fail (m)) -> 
                     repeatOp m |> nestCheck (Check.Fail >> Check)
                 | Check(Check.Pass (n)) -> 

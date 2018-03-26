@@ -119,7 +119,7 @@ let tests =
             | _,        Distr Unknown,   Distr Unknown      -> ()
             | _,        List Unknown,    List Unknown       -> ()
             | _,        Pass Unknown,    Pass Unknown       -> ()
-            | _,        Unknown,         Unknown            -> ()
+            | _,        Unknown,         List Empty         -> ()
             | _,        Fail(Scalar "Int"),    List Empty         
             | _,        Pass(Scalar "Int"),    List Empty         
             | _,        Scalar "Int",    List Empty         when value2 = Int 0 || value2 = Check (Check.Pass (Int 0)) || value2 = Check (Check.Fail (Int 0)) 
