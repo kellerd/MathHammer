@@ -383,48 +383,47 @@ let rec evalCall func v env : EvalResult =
         match times with 
         | choices,Value(gp) -> choices,repeatOps gp
         | _ -> printfn "Times is not a value %A" times; (Map.empty<_,_>,noValue)
-    let fold folder ops state : EvalResult=
+    let fold folder ops state =
       ops 
-      |> List.fold (fun (choices,reduced1) op -> 
-            let (newChoices,reduced2) = evalOp env op
-            match reduced1,reduced2 with 
+      |> List.fold (fun acc op -> 
+            match acc,op with 
             | Value(Dist reduced1),Value(Dist reduced2) -> 
-                (Map.mergeSets newChoices choices),Distribution.dist {
+                Distribution.dist {
                       let! a' = reduced1
                       let! b' = reduced2
                       return folder a' b'                             
                 } |> Dist |> Value
             | Value(Dist reduced1),Value(b) ->
-                (Map.mergeSets newChoices choices),Distribution.dist {
+                Distribution.dist {
                       let! a' = reduced1
                       return folder a' b                             
                 } |> Dist |> Value
             |   Value(a), Value(Dist reduced2) ->
-                (Map.mergeSets newChoices choices),Distribution.dist {
+                Distribution.dist {
                       let! b' = reduced2
                       return folder a b'                             
                 } |> Dist |> Value
             | Value(a), Value(b) ->
-                (Map.mergeSets newChoices choices),folder a b |> Value
-            | _ -> Map.empty<_,_>,(NoValue |> Value)
-            ) (Map.empty<_,_>,state)
+                folder a b |> Value
+            | _ -> (NoValue |> Value)
+            ) state
     let evalFuncAsGp = (fun v -> evalCall func (Value v) env |> function (choices,Value(gp)) -> choices,gp | (choices,op) -> choices,ParamArray [op])           
     match func,v with 
     | Dice d, _                          -> Map.empty<_,_>, evalDie d |> Distribution.map (Int) |> Dist |> Value 
     | (Total|Division|Product|Max|Min|Sub|Median|Mode), (Value(Int _ | Float _ | Str _ | NoValue) as v)       -> Map.empty<_,_>, v
     | (Least _|Largest _), (Value(Int _ | Float _ | Str _ | NoValue) as v) -> Map.empty<_,_>, ParamArray[v] |> Value
     | (Total|Division|Product|Max|Min|Sub|Median|Mode|Least _|Largest _), Value(ParamArray []) -> Map.empty<_,_>,  GamePrimitive.Zero |> Value
-    | Total, Value(ParamArray (h::t))    -> fold (+) t h
-    | Max, Value(ParamArray(h::t))       -> fold maxGp t h
-    | Min, Value(ParamArray(h::t))       -> fold minGp t h
-    | Sub, Value(ParamArray(h::t))       -> fold (-) t h
-    | Division, Value(ParamArray(h::t))  -> fold (/) t h
+    | Total, Value(ParamArray (h::t))    -> Map.empty<_,_>, fold (+) t h
+    | Max, Value(ParamArray(h::t))       -> Map.empty<_,_>, fold maxGp t h
+    | Min, Value(ParamArray(h::t))       -> Map.empty<_,_>, fold minGp t h
+    | Sub, Value(ParamArray(h::t))       -> Map.empty<_,_>, fold (-) t h
+    | Division, Value(ParamArray(h::t))  -> Map.empty<_,_>, fold (/) t h
     | Mean, Value(ParamArray(ops))       -> Map.empty<_,_>, meanOp ops
     | Median, Value(ParamArray(ops))     -> Map.empty<_,_>, medianGp ops
     | Mode, Value(ParamArray(ops))       -> Map.empty<_,_>, modeGp ops
     | Least n, Value(ParamArray(ops))    -> Map.empty<_,_>, leastOp n ops
     | Largest n, Value(ParamArray(ops))  -> Map.empty<_,_>, largestOp n ops
-    | Product, Value(ParamArray(h::t))   -> fold (*) t h
+    | Product, Value(ParamArray(h::t))   -> Map.empty<_,_>, fold (*) t h
     | Count, Value(Int _)                -> Map.empty<_,_>, vInt 1
     | Count, Value(Str _)                -> Map.empty<_,_>, vInt 1
     | Count, Value(NoValue)              -> Map.empty<_,_>, vInt 0 
@@ -443,9 +442,7 @@ let rec evalCall func v env : EvalResult =
             | Tuple (n, m)        -> tuple(toCount n,toCount m)
             | Check(Check.Fail gp) -> Check.Fail (toCount gp) |> Check
         let zero = GamePrimitive.Zero 
-        zero
-        |> Value
-        |> fold (fun r1 r2 -> r1 + toCount r2) ops
+        Map.empty<_,_>, zero |> Value |> fold (fun r1 r2 -> r1 + toCount r2) ops
     | GreaterThan,  Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, greaterThan gp gp2 |> Value
     | Equals,       Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, equals gp gp2      |> Value
     | LessThan,     Value(ParamArray([Value(gp);Value(gp2)])) -> Map.empty<_,_>, notEquals gp gp2   |> Value
