@@ -25,7 +25,7 @@ let floor gpType =
         | List p -> List (aux isPass p)  
     aux None gpType
 
-let eval x op = get x |> op |> evalOp Map.empty<_,_> |> snd
+let eval x op = get x |> op |> evalOp Map.empty<_,_>
 
 [<Tests>]
 let tests =

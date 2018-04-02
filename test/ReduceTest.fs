@@ -8,7 +8,7 @@ let (==?) actual expected = Expect.equal expected actual ""
 
 [<Tests>]
 let tests = 
-    let eval x op = get x |> op |> evalOp Map.empty<_,_> |> snd
+    let eval x op = get x |> op |> evalOp Map.empty<_,_>
     let d6Dist =  [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
     let plusTest plus = 
         let ws = dPlus D6 plus >>= "WS"

@@ -62,8 +62,8 @@ let update msg model =
       | Select _ -> model, Cmd.none
       | MakeChoice _ -> model, Cmd.none
       | Rebind (initial) -> 
-            let normalized = model.Rules |> normalize
-            let (choices,probability) = normalized |> evalOp initial
+            let (choices,normalized) = model.Rules |> normalize
+            let probability = normalized |> evalOp initial
             let cmds = choices |> Map.toList |> List.map (MakeChoice >> Cmd.ofMsg)
             { model with NormalizedRules = normalized
                          ProbabilityRules = probability }, Cmd.batch cmds

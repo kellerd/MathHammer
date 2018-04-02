@@ -400,7 +400,6 @@ let rec andGp = checkGp Check.all
 let rec orGp = checkGp Check.either
 
 type NormalizedOperation = Normal | Next of Operation
-
 type [<Measure>] ft 
 and [<Measure>] inch
 and [<Measure>] mm

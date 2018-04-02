@@ -47,12 +47,12 @@ let (newChoices,newEnv) =
     globalOperations
     |> List.sortBy (snd >> fst)
     |> List.fold(fun (choices,env) (key,(_,op))-> 
-            let (newChoices,result) = op |> normalize |> evalOp env
+            let (newChoices,normal) = op |> normalize 
+            let result = normal |> evalOp env
             Map.mergeSets choices newChoices, Map.add key result env) (choices, env)    
-
-let (_,defApplied) = applyArgs defender seargent |> normalize|> evalOp newEnv
+let defApplied = applyArgs defender seargent |> normalize |> snd |> evalOp newEnv
 let initialMap = Map.add "Defender" defApplied newEnv
-let attApplied = applyArgs attacker seargent |> normalize
+let attApplied = applyArgs attacker seargent |> normalize |> snd
 let eval x op = getp x op |> evalOp initialMap 
 
 // getp "ChargeRange" attApplied  |> (evalOp  initialMap )
@@ -101,7 +101,7 @@ let tests =
                     | key,op -> key,op)
     testList "Attacker Tests" [
         expectedStd 
-        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { eval key attApplied |> snd ==? expected })  
+        |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { eval key attApplied ==? expected })  
         |> testList "Std eval Tests";
     ] 
 // let attackerLam = <@ 

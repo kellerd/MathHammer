@@ -7,14 +7,14 @@ let (==?) x y =
     //printfn "%A" x
     //printfn "%A" y
     Expect.equal x y ""
-let eval x op = get x |> op |> evalOp Map.empty<_,_> |> snd
+let eval x op = get x |> op |> evalOp Map.empty<_,_>
 
 [<Tests>]
 let tests = 
     let ``Repeating an operation gives correct length`` (FsCheck.NonNegativeInt x) op = 
         let a = vInt x
         let repeat = repeatOp op a
-        let result = repeat |> evalOp Map.empty<_,_> |> snd
+        let result = repeat |> evalOp Map.empty<_,_>
         match result with 
         | Value(ParamArray([])) -> Expect.equal x 0 "X should be 0 if an empty list is the result"
         | Value(ParamArray((head::tail) as result)) -> 

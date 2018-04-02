@@ -12,7 +12,7 @@ let (==~) x y =
 [<Tests>]
 let tests = 
     testList "Least Largest Avg Tests" [
-        let eval = normalize >> evalOp Map.empty<_,_> >> snd
+        let eval = normalize >> snd >> evalOp Map.empty<_,_> 
         
         let largestTest data n = 
             let result =  data |> List.map Value |> opList |> call (Largest n) |> eval

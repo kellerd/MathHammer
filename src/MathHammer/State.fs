@@ -6,10 +6,8 @@ open GameActions.Primitives.Types
 open GameActions.Primitives.State
 let bindModelToEnvironment initial key = 
     Option.map (fun (m : Models.Types.Model) -> 
-        let (choices,evaluatedRule) = 
-            m.Rules 
-            |> normalize
-            |>  evalOp initial
+        let (choices,normalizedRule) = m.Rules |> normalize
+        let evaluatedRule = normalizedRule |> evalOp initial
         choices, Map.add key evaluatedRule initial)
 let init () : Model * Cmd<Types.Msg> =
     let (attacker,attackerCmd) = UnitList.State.init attackerMap () 
@@ -78,7 +76,8 @@ let update msg model : Model * Cmd<Types.Msg> =
             model.GlobalOperations
             |> List.sortBy (snd >> fst)
             |> List.fold(fun (choices,env) (key,(_,op))-> 
-                    let (newChoices,result) = op |> normalize |> evalOp env
+                    let (newChoices,normal) = op |> normalize 
+                    let result = normal |> evalOp env
                     Map.mergeSets choices newChoices, Map.add key result env) (choices, initial)   
         let cmds = Cmd.batch [ Cmd.ofMsg BindDefender; Cmd.ofMsg BindAttacker ]            
         { model with Environment = environment; Choices = choices }, cmds  

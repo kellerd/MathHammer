@@ -30,7 +30,7 @@ let ``Lambda Calculus`` =
     let doTest (op,expected) = 
         let result = 
             op <*> Value(Str "Add 1") <*> Value(Str "Zero")
-            |> normalize |> doAdding    
+            |> normalize |> snd |> doAdding    
         test (sprintf "Lambda for %d" expected) { result ==? expected }
     testList "Lambda Calculus Normalization" (List.map doTest [zero,0;one,1;two,2;three,3])
 
@@ -51,64 +51,64 @@ let ``Ski Combinators`` =
     testList "Ski Combinators" [
         test "I is identity" {
             let x' = vInt 6
-            App(i, x') |> normalize ==? x'
+            App(i, x') |> normalize |> snd ==? x'
         }
         test "K returns first" {
             let x' = vInt 6
             let y' = vInt 8
-            App(App(k, x'),y') |> normalize ==? x'
+            App(App(k, x'),y') |> normalize |> snd ==? x'
         }        
         testList "Test Boolean Functions" [
             test "F returns second" {
                 let x' = vInt 6
                 let y' = vInt 8
-                App(App(``false``, x'),y') |> normalize ==? y'          
+                App(App(``false``, x'),y') |> normalize |> snd ==? y'          
             }
             test "T returns first" {
                 let x' = vInt 6
                 let y' = vInt 8
-                App(App(``true``, x'),y') |> normalize ==? x'          
+                App(App(``true``, x'),y') |> normalize |> snd ==? x'          
             }
             test "NOT = (SK)(K)" {
-                let ``(SK)(K)`` = (App(App(s,k), k)) |> normalize                
-                (``not`` |> normalize |> numify 0) ==? (``(SK)(K)``  |> numify 0)
+                let ``(SK)(K)`` = (App(App(s,k), k)) |> normalize |> snd             
+                (``not`` |> normalize |> snd |> numify 0) ==? (``(SK)(K)``  |> numify 0)
             }
             test "True Not == False " {
-                (App(``true``,``not``) |> normalize |> numify 0) ==? (``false`` |> normalize |> numify 0) 
+                (App(``true``,``not``) |> normalize |> snd |> numify 0) ==? (``false`` |> normalize |> snd |> numify 0) 
             }
             test "False Not == False " {
-                (App(``false``,``not``) |> normalize |> numify 0) ==? (``true`` |> normalize |> numify 0) 
+                (App(``false``,``not``) |> normalize |> snd |> numify 0) ==? (``true`` |> normalize |> snd |> numify 0) 
             }     
             test "x OR y" {
-                (App(``true``,App(``or``,``true``))  |> normalize |> numify 0) ==? (``true``  |> normalize |> numify 0)  
-                (App(``false``,App(``or``,``true``)) |> normalize |> numify 0) ==? (``true``  |> normalize |> numify 0)  
-                (App(``true``,App(``or``,``false``)) |> normalize |> numify 0) ==? (``true``  |> normalize |> numify 0)  
-                (App(``false``,App(``or``,``false``))|> normalize |> numify 0) ==? (``false`` |> normalize |> numify 0)                 
+                (App(``true``,App(``or``,``true``))  |> normalize |> snd |> numify 0) ==? (``true``  |> normalize |> snd |> numify 0)  
+                (App(``false``,App(``or``,``true``)) |> normalize |> snd |> numify 0) ==? (``true``  |> normalize |> snd |> numify 0)  
+                (App(``true``,App(``or``,``false``)) |> normalize |> snd |> numify 0) ==? (``true``  |> normalize |> snd |> numify 0)  
+                (App(``false``,App(``or``,``false``))|> normalize |> snd |> numify 0) ==? (``false`` |> normalize |> snd |> numify 0)                 
             } 
             test "x AND y" {
-                (App(``true``,App(``true``,``and``))  |> normalize |> numify 0) ==? (``true``  |> normalize |> numify 0)  
-                (App(``false``,App(``true``,``and``)) |> normalize |> numify 0) ==? (``false`` |> normalize |> numify 0)  
-                (App(``true``,App(``false``,``and``)) |> normalize |> numify 0) ==? (``false`` |> normalize |> numify 0)  
-                (App(``false``,App(``false``,``and``))|> normalize |> numify 0) ==? (``false`` |> normalize |> numify 0)     
+                (App(``true``,App(``true``,``and``))  |> normalize |> snd |> numify 0) ==? (``true``  |> normalize |> snd |> numify 0)  
+                (App(``false``,App(``true``,``and``)) |> normalize |> snd |> numify 0) ==? (``false`` |> normalize |> snd |> numify 0)  
+                (App(``true``,App(``false``,``and``)) |> normalize |> snd |> numify 0) ==? (``false`` |> normalize |> snd |> numify 0)  
+                (App(``false``,App(``false``,``and``))|> normalize |> snd |> numify 0) ==? (``false`` |> normalize |> snd |> numify 0)     
             }
         ]
     ]
 let ``Closure test`` = 
     test "Inside lam scopes correctly" {
-        App(Lam("y",App(Lam("y", Var "y"),Value(Int(7)))),Value(Int(9))) |> normalize ==? Value(Int(7))
+        App(Lam("y",App(Lam("y", Var "y"),Value(Int(7)))),Value(Int(9))) |> normalize |> snd ==? Value(Int(7))
     }
 let ``Getting a property test`` =
     let six = Value(Str "six") //Value(Float 6.)  
     let c = opList [opList [Value (Str "M"); Value(Int 8)]; opList [Value (Str "T"); six]]
     testList "Getting a property test" [
         test "Get First Property" {
-            PropertyGet("M", c) |> normalize ==? Value(Int 8)    
+            PropertyGet("M", c) |> normalize |> snd ==? Value(Int 8)    
         }
         test "Get Second Property" {
-            PropertyGet("T", c) |> normalize ==? six
+            PropertyGet("T", c) |> normalize |> snd ==? six
         }
         test "Can't find property does nothing" {
-            PropertyGet("H", c) |> normalize ==? PropertyGet("H", c)    
+            PropertyGet("H", c) |> normalize |> snd ==? PropertyGet("H", c)    
         }
         // 
     ]
@@ -118,15 +118,15 @@ let ``Counting call test`` =
         test "Count by Param Array" {
             let count ops = App(Call Count,opList (ops))
 
-            let normalizedFirst = count [normalize appliedTwo;normalize appliedTwo;normalize appliedTwo] |> normalize
-            let normalizedSecond = count [appliedTwo;appliedTwo;appliedTwo] |> normalize
+            let normalizedFirst = count [normalize appliedTwo |> snd;normalize appliedTwo |> snd;normalize appliedTwo |> snd] |> normalize |> snd
+            let normalizedSecond = count [appliedTwo;appliedTwo;appliedTwo] |> normalize |> snd
 
             normalizedFirst ==? normalizedSecond
         }
         test "Count by repeat" {
             let count ops = App(Call Count,App(Call Repeat, opList(ops)))
-            let normalizedFirst = count [normalize appliedTwo;normalize appliedTwo;normalize appliedTwo]|> normalize
-            let normalizedSecond = count  [appliedTwo;appliedTwo;appliedTwo]  |> normalize
+            let normalizedFirst = count [normalize appliedTwo |> snd;normalize appliedTwo |> snd;normalize appliedTwo |> snd]|> normalize |> snd
+            let normalizedSecond = count  [appliedTwo;appliedTwo;appliedTwo]  |> normalize |> snd
 
             normalizedFirst ==? normalizedSecond
         }
