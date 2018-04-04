@@ -9,6 +9,57 @@ let (==~) x y =
     match y with 
     | Value(Dist({Probabilities = y})) -> Expect.contains (y |> List.map (fst >> Value)) x ""
     | _ -> Expect.equal x y ""
+
+let phaseActions = 
+    // choose "Phase" 
+    //     [
+    //         "Melee", 
+    //             nestOps 
+    //                 [ get "ChargeRange"     >>= "ChargeRange"
+    //                   get "MeleeRange"      <*> get "M" 
+    //                                         >>= "MeleeRange"
+                      get "HitResults"      <*> get "WS" 
+                                            <*> get "A" 
+                                            >>= "HitResults"
+                                        
+        //               get "WoundResults"    <*> get "Defender" 
+        //                                     <*> get "S" 
+        //                                     >>= "WoundResults"
+        //               get "UnsavedWounds"   <*> get "Defender"  
+        //                                     >>= "UnsavedWounds" ] 
+        //                                                   <| opList [ labelVar "ChargeRange"
+        //                                                               labelVar "MeleeRange"
+        //                                                               labelVar "HitResults"
+        //                                                               labelVar "WoundResults"
+        //                                                               labelVar "UnsavedWounds" ] 
+        //     "Shooting", (get "ShootingRange" >>= "ShootingRange") (labelVar "ShootingRange")
+        //     "Psychic", (get "PsychicTest" >>= "Psychichtest") (labelVar "PsychicTest")
+        // ] >>= "Actions"    
+
+let allProps = 
+    opList 
+        [ labelVar "M"
+          labelVar "WS"
+          labelVar "BS"
+          labelVar "S"
+          labelVar "T"
+          labelVar "W"
+          labelVar "A"
+          labelVar "Ld"
+          labelVar "Sv"
+          labelVar "InvSv"
+          labelVar "D6Test"
+          labelVar "D3Test"
+          labelVar "HitResults"
+        //   labelProp "Actions" "ChargeRange"
+        //   labelProp "Actions" "MeleeRange"
+        //   labelProp "Actions" "HitResults"
+        //   labelProp "Actions" "WoundResults"
+        //   labelProp "Actions" "UnsavedWounds"
+        //   labelProp "Actions" "PsychicTest"
+        //   labelProp "Actions" "ShootingRange"
+        //   labelProp "Actions" "DenyTest" 
+          ]
 let body = nestOps [phaseActions] allProps
 let defbody = nestOps [dPhaseActions] allProps
 let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
@@ -55,6 +106,34 @@ let initialMap = Map.add "Defender" defApplied newEnv
 let attApplied = applyArgs attacker seargent |> normalize |> snd
 let eval x op = getp x op |> evalOp initialMap 
 
+    // App
+    //    (App
+    //       (  Lam
+    //             ("WS",
+    //              Lam
+    //                ("A",
+    //                 App
+    //                   (Call Total,
+    //                    App
+    //                      (Call Repeat,
+    //                       Value (ParamArray [Lam ("unusedVariable",Var "WS"); Var "A"]))))),
+    //        App
+    //          (Call Count,
+    //           Let
+    //             ("roll",App (Call (Dice D6),Value NoValue),
+    //              Let
+    //                ("gt",
+    //                 App
+    //                   (Call GreaterThan,
+    //                    Value (ParamArray [Var "roll"; Value (Int 3)])),
+    //                 Let
+    //                   ("eq",
+    //                    App
+    //                      (Call Equals,
+    //                       Value (ParamArray [Var "roll"; Value (Int 3)])),
+    //                    App (Call Or,Value (ParamArray [Var "eq"; Var "gt"]))))))),
+    //     Value (Int 2))
+    // |> (evalOp  initialMap )
 // getp "ChargeRange" attApplied  |> (evalOp  initialMap )
 // getp "MeleeRange" attApplied  |> (evalOp  initialMap )
 // getp "HitResults" attApplied  |> (evalOp initialMap )

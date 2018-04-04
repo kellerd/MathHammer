@@ -423,7 +423,6 @@ let rec evalDie d : Distribution.Distribution<_> =
                         return! evalDie d
                   else return roll                        
             }
-type NormalizedOperation = (ChoiceSet * Operation)            
 let rec evalCall func v env : Operation =
     let repeat lam op2 = 
         let create n = List.init (max 0 n) (fun n -> match lam with | Lam _ -> App(lam,vInt n) | notLam -> notLam
@@ -476,10 +475,10 @@ let rec evalCall func v env : Operation =
                     |> Value
             repeatOp times
 
-        let times = evalOp env op2  
-        match times with 
+        //let times = evalOp env op2  
+        match op2 with 
         | Value(gp) -> repeatOps gp
-        | _ -> printfn "Times is not a value %A" times; noValue
+        | _ -> printfn "Times is not a value %A" op2; noValue
     let fold folder ops state =
       ops 
       |> List.fold (fun acc op -> 
@@ -572,8 +571,9 @@ let rec evalCall func v env : Operation =
                                             | Value(gp) -> Distribution.always (gp) 
                                             | op -> Distribution.always (ParamArray [op]))  d 
         results |> Dist |> Value
-    | _ -> failwith "Invalid call"
+    | x -> failwith <| sprintf "Invalid call %A" x
 and evalOp env (operation:Operation) : Operation = 
+   // printfn "%A" operation
     let (|MadeChoice|_|) env op : Operation option =
         match op with 
         | Choice(key,choices) ->
@@ -581,52 +581,53 @@ and evalOp env (operation:Operation) : Operation =
             |> Option.bind(function (Value(Str name)) -> List.tryFind(fst >> (=) name) choices | _ -> None)
             |> Option.map (fun (_,op) -> op)
         | _ -> None
-    match operation with
-    | Value(ParamArray(ops)) -> 
-        ops
-        |> List.fold(fun acc op -> let newOp = evalOp env op
-                                   (newOp::acc)) [] 
-        |> List.rev 
-        |> ParamArray 
-        |> Value
-    | Value _ as v  -> v
-    | Call  _ as c  -> c
-    | Var (var)  -> 
-        Map.tryFind var env 
-        |> function Some v -> v | None -> noValue 
-        |> evalOp env
-    | Let(str, v, op) -> 
-        let result = evalOp env v
-        let inner = evalOp (Map.add str result env) op
-        inner
-    | PropertyGet(str, op) -> 
-        let result = evalOp env op
-        match tryFindLabel str result with 
-        | Some result -> result
-        | None -> 
-            printfn "Couldn't find property %s in %A" str op;
-            noValue
-    | Lam _ as l -> 
-        printfn "Can't eval lambda %A" l
-        l
-    | IfThenElse(gp, thenPart, elsePart) -> 
-        let result = evalOp env gp
-        match result with 
-        | Value(Check(Check.Fail(_)) | NoValue) -> elsePart 
-        | Value _ -> Some thenPart
-        | _ -> None
-        |> Option.map (evalOp env)
-        |> function 
-        | Some (v) -> v
-        | None -> noValue
-    | MadeChoice env selectedChoice -> 
-        let result = evalOp env selectedChoice
-        result
-    | Choice(name, choices) -> Choice(name, choices)
-    | App(Lam(x, op),value) ->
-        evalOp (Map.add x value env) op 
-    | App(f, value) -> 
-        match evalOp env f, evalOp env value with 
-        | Call f, v -> evalCall f v env 
-        | Lam(x, op), v -> App(Lam(x, op),v) |> evalOp env
-        | f',x' -> failwith <| sprintf "Cannot apply to something not a function App(%A,%A) = %A,%A" f value f' x'
+    let r =         
+        match operation with
+        | Value(ParamArray(ops)) -> 
+            ops
+            |> List.fold(fun acc op -> let newOp = evalOp env op
+                                       (newOp::acc)) [] 
+            |> List.rev 
+            |> ParamArray 
+            |> Value
+        | Value _ as v  -> v
+        | Call  _ as c  -> c
+        | Var (var)  -> 
+            Map.tryFind var env 
+            |> function Some v -> evalOp env v | None -> Var (var) 
+        | Let(str, v, op) -> 
+            let result = evalOp env v
+            let inner = evalOp (Map.add str result env) op
+            inner
+        | PropertyGet(str, op) -> 
+            let result = evalOp env op
+            match tryFindLabel str result with 
+            | Some result -> result
+            | None -> 
+                //printfn "Couldn't find property %s in %A" str op;
+                PropertyGet(str, op)
+        | Lam (v,op) -> 
+            Lam(v, evalOp env op)
+        | IfThenElse(gp, thenPart, elsePart) -> 
+            let result = evalOp env gp
+            match result with 
+            | Value(Check(Check.Fail(_)) | NoValue) -> elsePart 
+            | Value _ -> Some thenPart
+            | _ -> None
+            |> Option.map (evalOp env)
+            |> function 
+            | Some (v) -> v
+            | None -> noValue
+        | MadeChoice env selectedChoice -> 
+            let result = evalOp env selectedChoice
+            result
+        | Choice(name, choices) -> Choice(name, choices)
+        | App(Lam(x, op),value) ->
+            evalOp (Map.add x value env) op 
+        | App(f, value) -> 
+            match evalOp env f, evalOp env value with 
+            | Call f, v -> evalCall f v env 
+            | Lam(x, op), v -> App(Lam(x, op),v) |> evalOp env
+            | f',x' -> failwith <| sprintf "Cannot apply to something not a function App(%A,%A) = %A,%A" f value f' x'
+    //printfn "%A" r
+    r

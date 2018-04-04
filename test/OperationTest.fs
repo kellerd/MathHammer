@@ -1,4 +1,5 @@
 module OperationTests
+open FsCheck
 open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
@@ -74,4 +75,39 @@ let tests =
                 |> evalOp Map.empty<_,_>
             result ==? expected
         yield testPropertyWithConfig config "Total of x is x" totalOfXIsX
+        yield test "Check primitive partial application" {
+            let value = 
+                Let ("f",
+                     Lam ("x",
+                             Lam ("y",
+                                     Lam ("z", Value(ParamArray[get "x"; get "y"; get "z"])))),
+                     Let ("g", App (get "f", Value (Int 6)),
+                          Let ("h", App (get "g", Value (Int 7)), App (get "h", Value (Int 8)))))
+            let result = value |> evalOp Map.empty<_,_>   
+            let f x y : int -> int list = fun z -> [x;y;z]
+            let g = f 6
+            let h = g 7
+            let expected = h 8 |> List.map (Int >> Value) |> opList                     
+            result ==? expected
+        }
+        yield test "Check primitive partial application 2" {
+            let value = App(App(Lam("X", Lam("Y", Value(ParamArray[get "X"; get "Y"]))),Value(Int 2)),Value(Int 3))
+            let result = value |> evalOp Map.empty<_,_>                          
+            let expected = (fun x y -> [x;y]) 2 3 |> List.map (Int >> Value) |> opList
+            result ==? expected
+        }
+        let partialApplication = 
+            let xs = FsCheckGen.genListOfPrimitive |> FsCheck.Gen.sample 1 |> Array.head |> List.map Value
+            let vars = xs |> List.mapi (fun i _ -> (string i)) 
+            let lams = 
+                vars
+                |> List.rev
+                |> List.fold (fun op var -> Lam(var, op)) (vars |> List.map (Var) |> ParamArray |> Value)
+            let apps =   
+                xs
+                |> List.fold (fun op v -> App(op,v)) lams
+            let result = apps |> (evalOp  Map.empty<_,_>)
+            let expected = Value(ParamArray (List.map (evalOp Map.empty<_,_>) xs))
+            result ==? expected
+        yield testPropertyWithConfig config "Partial application is in the correct order" partialApplication                
     ]
