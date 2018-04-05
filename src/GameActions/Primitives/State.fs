@@ -423,32 +423,58 @@ let rec evalDie d : Distribution.Distribution<_> =
                         return! evalDie d
                   else return roll                        
             }
+let closure env op = 
+    let rec fixGp  = function 
+        | NoValue 
+        | Str _ 
+        | Float _
+        | Int _ as gp -> gp
+        | Check(Check.Fail gp) -> Check.Fail (fixGp gp) |> Check
+        | Check(Check.Pass gp) -> Check.Pass (fixGp gp) |> Check
+        | ParamArray ops -> List.map (fixOp env) ops |> ParamArray
+        | Tuple(gp, gp2) -> Tuple(fixGp gp, fixGp gp2)
+        | Dist(gps) -> Distribution.map fixGp gps |> Dist
+    and fixOp env = function 
+        | Call _ as c -> c
+        | Var s -> Map.tryFind s env 
+                   |> function Some v -> v
+                               | None -> Var s
+        | PropertyGet(v, body) -> PropertyGet(v, fixOp env body)
+        | App(f, value) -> App(fixOp env f, fixOp env value)
+        | Lam(param, body) -> Lam(param, fixOp (Map.remove param env) body)
+        | Let(v, value, body) -> 
+            let v' = fixOp env value
+            Let(v, v' , fixOp (Map.add v v' env) body)
+        | Choice(name,choices) -> Choice(name, List.map (fun (key,op) -> key,fixOp env op) choices)
+        | IfThenElse(ifExpr, thenExpr, elseExpr) -> IfThenElse(fixOp env ifExpr, fixOp env thenExpr, Option.map (fixOp env) elseExpr)
+        | Value v -> Value(fixGp v)
+    fixOp env op   
+let nestCheck check op = 
+    let rec fixGp check = function 
+        | NoValue 
+        | Str _ 
+        | Float _
+        | Int _ as gp -> gp |> check
+        | Check(Check.Fail gp) -> fixGp (Check.Fail >> Check) gp
+        | Check(Check.Pass gp) -> fixGp check gp
+        | ParamArray ops -> List.map (fixOp check) ops |> ParamArray
+        | Tuple(gp, gp2) -> Tuple(fixGp check gp, fixGp check gp2)
+        | Dist(gps) -> Distribution.map (fixGp check) gps |> Dist
+    and fixOp check = function 
+        | Call _
+        | Var _ as gp -> gp
+        | PropertyGet(v, body) -> PropertyGet(v, fixOp check body)
+        | App(f, value) -> App(fixOp check f, fixOp check value)
+        | Lam(param, body) -> Lam(param, fixOp check body)
+        | Let(v, value, body) -> Let(v, fixOp check value, fixOp check body)
+        | Choice(name,choices) -> Choice(name, List.map (fun (key,op) -> key,fixOp check op) choices)
+        | IfThenElse(ifExpr, thenExpr, elseExpr) -> IfThenElse(fixOp check ifExpr, fixOp check thenExpr, Option.map (fixOp check) elseExpr)
+        | Value v -> Value(fixGp check v)
+    fixOp check op            
 let rec evalCall func v env : Operation =
     let repeat lam op2 = 
         let create n = List.init (max 0 n) (fun n -> match lam with | Lam _ -> App(lam,vInt n) | notLam -> notLam
                                                      |> evalOp env) |> opList
-        let nestCheck check op = 
-            let rec fixGp check = function 
-                | NoValue 
-                | Str _ 
-                | Float _
-                | Int _ as gp -> gp |> check
-                | Check(Check.Fail gp) -> fixGp (Check.Fail >> Check) gp
-                | Check(Check.Pass gp) -> fixGp check gp
-                | ParamArray ops -> List.map (fixOp check) ops |> ParamArray
-                | Tuple(gp, gp2) -> Tuple(fixGp check gp, fixGp check gp2)
-                | Dist(gps) -> Distribution.map (fixGp check) gps |> Dist
-            and fixOp check = function 
-                | Call _
-                | Var _ as gp -> gp
-                | PropertyGet(v, body) -> PropertyGet(v, fixOp check body)
-                | App(f, value) -> App(fixOp check f, fixOp check value)
-                | Lam(param, body) -> Lam(param, fixOp check body)
-                | Let(v, value, body) -> Let(v, fixOp check value, fixOp check body)
-                | Choice(name,choices) -> Choice(name, List.map (fun (key,op) -> key,fixOp check op) choices)
-                | IfThenElse(ifExpr, thenExpr, elseExpr) -> IfThenElse(fixOp check ifExpr, fixOp check thenExpr, Option.map (fixOp check) elseExpr)
-                | Value v -> Value(fixGp check v)
-            fixOp check op
         let rec repeatOps times : Operation =
             let rec repeatOp : GamePrimitive->Operation = function
                 | NoValue -> create 0
@@ -571,7 +597,7 @@ let rec evalCall func v env : Operation =
                                             | Value(gp) -> Distribution.always (gp) 
                                             | op -> Distribution.always (ParamArray [op]))  d 
         results |> Dist |> Value
-    | x -> failwith <| sprintf "Invalid call %A" x
+    | (f,x) -> App(Call f,x) //failwith <| sprintf "Invalid call %A\n%A" x (Map.toList env |> List.map fst)
 and evalOp env (operation:Operation) : Operation = 
    // printfn "%A" operation
     let (|MadeChoice|_|) env op : Operation option =
@@ -606,8 +632,7 @@ and evalOp env (operation:Operation) : Operation =
             | None -> 
                 //printfn "Couldn't find property %s in %A" str op;
                 PropertyGet(str, op)
-        | Lam (v,op) -> 
-            Lam(v, evalOp env op)
+        | Lam _ as l -> closure env l
         | IfThenElse(gp, thenPart, elsePart) -> 
             let result = evalOp env gp
             match result with 

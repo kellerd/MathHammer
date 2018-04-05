@@ -49,11 +49,11 @@ let tests =
             | Distr Empty,     _ , Distr Empty
             |      _ ,Distr Empty, Distr Empty -> ()
             //Autolift. Fails are ignored, things are automatically made passing
+            |   IsEmpty _,  Fail a,   Pair(Pass _, Fail a'')                 
+            |   Fail a, IsEmpty _,   Pair(Pass _, Fail a'') -> checkTypes (a, a, a'')  
             |   Fail a,   Pass a',   Pair(Pass a'', Fail _)
-            |   Fail a, IsEmpty a',   Pair(Pass _, Fail a'') 
             |   Fail a,        a',   Pair(Pass a'', Fail _)  -> checkTypes (a, a', a'')  
             |   Pass a,   Fail _ ,   Pair(Pass a'', Fail _)  
-            | IsEmpty _,  Fail a,   Pair(Pass _, Fail a'')                 
             |        a,   Fail _ ,   Pair(Pass a'', Fail _)  -> checkTypes (a , a , a'')  
             |   Pass a,   Pass a',   Pass a''   
             |   Pass a,        a',   Pass a''    

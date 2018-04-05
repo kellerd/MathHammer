@@ -48,3 +48,12 @@ open Expecto
 let main argv =
     runTestsInAssembly defaultConfig argv
 #endif
+
+// (Check (Check.Fail (ParamArray [Value (Int 0)])) + Check (Check.Pass (ParamArray [])))
+
+// (Check
+//      (Check.Fail
+//         (ParamArray
+//            [Value (Int 1); Value (Int 0); Value (Int 0); Value (Int 0);
+//             Value (Int 8); Value (Int 1); Value (Int 1)])) +
+//    Dist {Probabilities = [(ParamArray [], 4.940656458e-324)];})

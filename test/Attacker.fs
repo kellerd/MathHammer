@@ -11,30 +11,30 @@ let (==~) x y =
     | _ -> Expect.equal x y ""
 
 let phaseActions = 
-    // choose "Phase" 
-    //     [
-    //         "Melee", 
-    //             nestOps 
-    //                 [ get "ChargeRange"     >>= "ChargeRange"
-    //                   get "MeleeRange"      <*> get "M" 
-    //                                         >>= "MeleeRange"
+    choose "Phase" 
+        [
+            "Melee", 
+                nestOps 
+                    [ get "ChargeRange"     >>= "ChargeRange"
+                      get "MeleeRange"      <*> get "M" 
+                                            >>= "MeleeRange"
                       get "HitResults"      <*> get "WS" 
                                             <*> get "A" 
                                             >>= "HitResults"
                                         
-        //               get "WoundResults"    <*> get "Defender" 
-        //                                     <*> get "S" 
-        //                                     >>= "WoundResults"
-        //               get "UnsavedWounds"   <*> get "Defender"  
-        //                                     >>= "UnsavedWounds" ] 
-        //                                                   <| opList [ labelVar "ChargeRange"
-        //                                                               labelVar "MeleeRange"
-        //                                                               labelVar "HitResults"
-        //                                                               labelVar "WoundResults"
-        //                                                               labelVar "UnsavedWounds" ] 
-        //     "Shooting", (get "ShootingRange" >>= "ShootingRange") (labelVar "ShootingRange")
-        //     "Psychic", (get "PsychicTest" >>= "Psychichtest") (labelVar "PsychicTest")
-        // ] >>= "Actions"    
+                      get "WoundResults"    <*> get "Defender" 
+                                            <*> get "S" 
+                                            >>= "WoundResults"
+                      get "UnsavedWounds"   <*> get "Defender"  
+                                            >>= "UnsavedWounds" ] 
+                                                          <| opList [ labelVar "ChargeRange"
+                                                                      labelVar "MeleeRange"
+                                                                      labelVar "HitResults"
+                                                                      labelVar "WoundResults"
+                                                                      labelVar "UnsavedWounds" ] 
+            "Shooting", (get "ShootingRange" >>= "ShootingRange") (labelVar "ShootingRange")
+            "Psychic", (get "PsychicTest" >>= "Psychichtest") (labelVar "PsychicTest")
+        ] >>= "Actions"    
 
 let allProps = 
     opList 
@@ -51,14 +51,14 @@ let allProps =
           labelVar "D6Test"
           labelVar "D3Test"
           labelVar "HitResults"
-        //   labelProp "Actions" "ChargeRange"
-        //   labelProp "Actions" "MeleeRange"
-        //   labelProp "Actions" "HitResults"
-        //   labelProp "Actions" "WoundResults"
-        //   labelProp "Actions" "UnsavedWounds"
-        //   labelProp "Actions" "PsychicTest"
-        //   labelProp "Actions" "ShootingRange"
-        //   labelProp "Actions" "DenyTest" 
+          labelProp "Actions" "ChargeRange"
+          labelProp "Actions" "MeleeRange"
+          labelProp "Actions" "HitResults"
+          labelProp "Actions" "WoundResults"
+          labelProp "Actions" "UnsavedWounds"
+          labelProp "Actions" "PsychicTest"
+          labelProp "Actions" "ShootingRange"
+          labelProp "Actions" "DenyTest" 
           ]
 let body = nestOps [phaseActions] allProps
 let defbody = nestOps [dPhaseActions] allProps
@@ -134,9 +134,12 @@ let eval x op = getp x op |> evalOp initialMap
     //                    App (Call Or,Value (ParamArray [Var "eq"; Var "gt"]))))))),
     //     Value (Int 2))
     // |> (evalOp  initialMap )
+    
 // getp "ChargeRange" attApplied  |> (evalOp  initialMap )
 // getp "MeleeRange" attApplied  |> (evalOp  initialMap )
 // getp "HitResults" attApplied  |> (evalOp initialMap )
+// getp "WoundResults" attApplied  |> (evalOp initialMap )
+
 // attApplied  |> (evalOp  <| Map.add "Phase" (Value(Str "Psychic")) initialMap )
 // let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  
 // let a' = vInt 2
