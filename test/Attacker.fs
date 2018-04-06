@@ -89,10 +89,8 @@ let globalOperations =
       "ToWound",  woundResults
       "ArmourSave",  unsavedWounds ]
     |> List.mapi(fun i (k,o) -> (k,(i,o)))
-let choices = 
-    ["Phase",  Set.singleton  "Melee"] |> Map.ofList
-let env = 
-    ["Phase",  Value (Str  "Melee")] |> Map.ofList
+let choices = Map.empty<_,_>
+let env = Map.empty<_,_>
 let (newChoices,newEnv) = 
     globalOperations
     |> List.sortBy (snd >> fst)
@@ -102,7 +100,7 @@ let (newChoices,newEnv) =
             Map.mergeSets choices newChoices, Map.add key result env) (choices, env)    
 let defApplied = applyArgs defender seargent |> normalize |> snd |> evalOp newEnv
 let initialMap = Map.add "Defender" defApplied newEnv
-let attApplied = applyArgs attacker seargent |> normalize |> snd
+let (chc,attApplied) = applyArgs attacker seargent |> normalize 
 let eval x op = getp x op |> evalOp initialMap 
 
     // App
@@ -134,10 +132,10 @@ let eval x op = getp x op |> evalOp initialMap
     //     Value (Int 2))
     // |> (evalOp  initialMap )
 
-// getp "ChargeRange" attApplied  |> (evalOp  initialMap )
-// getp "MeleeRange" attApplied  |> (evalOp  initialMap )
-// getp "HitResults" attApplied  |> (evalOp initialMap )
-// getp "WoundResults" attApplied  |> (evalOp initialMap )
+// getp "ChargeRange" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Melee"))  initialMap )
+// getp "MeleeRange" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Melee"))  initialMap )
+// getp "HitResults" attApplied  |> (evalOp <| Map.add "Phase" (Value (Str  "Melee")) initialMap )
+// getp "WoundResults" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Melee")) initialMap )
 
 // attApplied  |> (evalOp  <| Map.add "Phase" (Value(Str "Psychic")) initialMap )
 // let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  

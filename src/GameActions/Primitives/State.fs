@@ -298,6 +298,8 @@ let tryFindLabel name operation =
     | _ -> None   
 
 type NormalizedResult =  ChoiceSet * NormalizedOperation    
+
+
 let normalize op : (ChoiceSet * Operation) = 
     let all = freeIds op
     let rec reduce : Operation -> NormalizedResult= function
@@ -331,6 +333,7 @@ let normalize op : (ChoiceSet * Operation) =
                     | Some op -> c, Next(op) 
                     | None    -> c, Normal
         | Choice(name,choices) -> 
+            let newChoices = Map.add name (Set.ofList (choices |> List.map fst)) Map.empty<_,_>
             let (cs,rops,expr) = 
                 choices 
                 |> List.map (fun (key,op) -> match reduce op with 
@@ -338,8 +341,8 @@ let normalize op : (ChoiceSet * Operation) =
                                              | c, Next rop ->  c, (key,rop),Next rop)
                 |> List.unzip3                            
             if List.exists(function Next _ -> true | Normal -> false) expr then
-                 List.reduceSafe Map.empty<_,_> Map.mergeSets cs, Next (Choice(name,rops))
-            else List.reduceSafe Map.empty<_,_> Map.mergeSets cs, Normal                    
+                 List.reduceSafe Map.empty<_,_> Map.mergeSets (newChoices::cs), Next (Choice(name,rops))
+            else List.reduceSafe Map.empty<_,_> Map.mergeSets (newChoices::cs), Normal                    
         | Value v -> 
             let rec halpGp = function
                 | NoValue 

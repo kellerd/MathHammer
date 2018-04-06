@@ -112,6 +112,136 @@ let ``Getting a property test`` =
         }
         // 
     ]
+let ``Choices`` =
+    let choices = 
+        Choice ("Phase",
+                    [("Melee", Value(NoValue))
+                     ("Movement", Value(NoValue))
+                     ("Shooting", Value(NoValue))])
+    let choiceTest = Map.ofList [("Test", Set.ofList ["Op"; "Op2"])]                       
+    let expected = Map.ofList [("Phase", Set.ofList ["Melee"; "Movement";"Shooting"])]   
+                      
+    let choices2 = 
+        Choice ("Phase",
+                    [("Psychic", Value(NoValue))
+                     ("Melee", Value(NoValue))])
+    let expected2 = Map.ofList [("Phase", Set.ofList ["Melee"; "Psychic"])]  
+    let expectedBoth = Map.ofList [("Phase", Set.ofList ["Melee"; "Psychic";"Melee"; "Movement";"Shooting"])]   
+    let v = ParamArray [choices]
+    let v2 = ParamArray [choices2]
+    let t = Tuple(v,v2)
+    let b = ParamArray [choices; choices2]
+    let op1 = Value(Check(Check.Pass v)) 
+    let op2 = Value(Check(Check.Fail v2)) 
+    let op3 = Value(Check(Check.Fail t)) 
+    let op4 = Value(v) 
+    let op5 = Value(v2) 
+    let op6 = Value(b) 
+    let op7 = Value(Check(Check.Fail b)) 
+    let op8 = Value(ParamArray [ Value v ]) 
+    let op9 = Value(ParamArray [ Value v2 ]) 
+    let op10 = Value(ParamArray [ Value b ]) 
+    let op11 = Value(Tuple ( v , v)) 
+    let op12 = Value(Tuple ( v2 , v2 )) 
+    let op13 = Value(Tuple ( v, v2 )) 
+    let op14 = Value(Tuple ( t, v2 )) 
+    let op15 = [v] |> Distribution.uniformDistribution |> Dist |> Value 
+    let op16 = [v;v] |> Distribution.uniformDistribution |> Dist |> Value 
+    let op17 = [v2;v2] |> Distribution.uniformDistribution |> Dist |> Value 
+    let op18 = [t] |> Distribution.uniformDistribution |> Dist |> Value 
+    let op19 = [b] |> Distribution.uniformDistribution |> Dist |> Value 
+    let op20 = [v;v2] |> Distribution.uniformDistribution |> Dist |> Value 
+    let op21 = [b;t] |> Distribution.uniformDistribution |> Dist |> Value 
+
+
+    let ops = [ op1 
+                op4 
+                op8 
+                op11
+                op15
+                op16
+                op8 
+                op11
+                op15
+                op16 ]
+    let ops2 =  [ op2 
+                  op5 
+                  op9 
+                  op12
+                  op17
+                  op2 
+                  op5 
+                  op9 
+                  op12
+                  op17  ]              
+    let opsBoth = [ op3 
+                    op6 
+                    op7 
+                    op10
+                    op13
+                    op14
+                    op18
+                    op19
+                    op20
+                    op21 ]
+
+    let createTests f ops title expected = 
+        ops
+        |> List.mapi (fun i op -> test (sprintf "%s %d" title i) { f op |> normalize |> fst ==? expected }   ) 
+        |> testList title
+
+    [     createTests id ops     "Value Fst"  expected    
+          createTests id ops2    "Value Snd"  expected2   
+          createTests id opsBoth "Value Both"  expectedBoth
+          createTests (fun op -> PropertyGet("x", op)) ops     "PropertyGet Fst"  expected    
+          createTests (fun op -> PropertyGet("x", op)) ops2    "PropertyGet Snd"  expected2   
+          createTests (fun op -> PropertyGet("x", op)) opsBoth "PropertyGet Both" expectedBoth
+          createTests (fun (op,op2) -> App(op, op2)) (List.zip ops    ops      ) "App Fst"  expected    
+          createTests (fun (op,op2) -> App(op, op2)) (List.zip ops2   ops2     ) "App Snd"  expected2   
+          createTests (fun (op,op2) -> App(op, op2)) (List.zip opsBoth opsBoth ) "App Both1" expectedBoth 
+          createTests (fun (op,op2) -> App(op, op2)) (List.zip ops    ops2     ) "App Fst2"  expectedBoth    
+          createTests (fun (op,op2) -> App(op, op2)) (List.zip ops2   ops      ) "App Snd2"  expectedBoth   
+          createTests (fun (op,op2) -> App(op, op2)) (List.zip ops2   opsBoth  ) "App Both2" expectedBoth   
+          createTests (fun (op,op2) -> App(op, op2)) (List.zip opsBoth ops     ) "App Both3" expectedBoth 
+          createTests (fun op -> Lam("x", op)) ops     "Lam Fst"  expected    
+          createTests (fun op -> Lam("x", op)) ops2    "Lam Snd"  expected2   
+          createTests (fun op -> Lam("x", op)) opsBoth "Lam Both" expectedBoth
+          
+          createTests (fun (op,op2) -> Let("x", op, op2)) (List.zip ops    ops      ) "Let Fst"  expected    
+          createTests (fun (op,op2) -> Let("x", op, op2)) (List.zip ops2   ops2     ) "Let Snd"  expected2   
+          createTests (fun (op,op2) -> Let("x", op, op2)) (List.zip opsBoth opsBoth ) "Let Both1" expectedBoth 
+          createTests (fun (op,op2) -> Let("x", op, op2)) (List.zip ops    ops2     ) "Let Fst2"  expectedBoth    
+          createTests (fun (op,op2) -> Let("x", op, op2)) (List.zip ops2   ops      ) "Let Snd2"  expectedBoth   
+          createTests (fun (op,op2) -> Let("x", op, op2)) (List.zip ops2   opsBoth  ) "Let Both2" expectedBoth   
+          createTests (fun (op,op2) -> Let("x", op, op2)) (List.zip opsBoth ops     ) "Let Both3" expectedBoth 
+
+          createTests (fun (op,op2) -> IfThenElse(op, op2, None)) (List.zip ops    ops      ) "IfThenElse Fst"  expected    
+          createTests (fun (op,op2) -> IfThenElse(op, op2, None)) (List.zip ops2   ops2     ) "IfThenElse Snd"  expected2   
+          createTests (fun (op,op2) -> IfThenElse(op, op2, None)) (List.zip opsBoth opsBoth ) "IfThenElse Both1" expectedBoth 
+          createTests (fun (op,op2) -> IfThenElse(op, op2, None)) (List.zip ops    ops2     ) "IfThenElse Fst2"  expectedBoth    
+          createTests (fun (op,op2) -> IfThenElse(op, op2, None)) (List.zip ops2   ops      ) "IfThenElse Snd2"  expectedBoth   
+          createTests (fun (op,op2) -> IfThenElse(op, op2, None)) (List.zip ops2   opsBoth  ) "IfThenElse Both2" expectedBoth   
+          createTests (fun (op,op2) -> IfThenElse(op, op2, None)) (List.zip opsBoth ops     ) "IfThenElse Both3" expectedBoth 
+
+          
+          createTests (fun (op,op2) -> IfThenElse(op, op, Some op2)) (List.zip ops    ops      ) "Else Fst"  expected    
+          createTests (fun (op,op2) -> IfThenElse(op, op, Some op2)) (List.zip ops2   ops2     ) "Else Snd"  expected2   
+          createTests (fun (op,op2) -> IfThenElse(op, op, Some op2)) (List.zip opsBoth opsBoth ) "Else Both1" expectedBoth 
+          createTests (fun (op,op2) -> IfThenElse(op, op, Some op2)) (List.zip ops    ops2     ) "Else Fst2"  expectedBoth    
+          createTests (fun (op,op2) -> IfThenElse(op, op, Some op2)) (List.zip ops2   ops      ) "Else Snd2"  expectedBoth   
+          createTests (fun (op,op2) -> IfThenElse(op, op, Some op2)) (List.zip ops2   opsBoth  ) "Else Both2" expectedBoth   
+          createTests (fun (op,op2) -> IfThenElse(op, op, Some op2)) (List.zip opsBoth ops     ) "Else Both3" expectedBoth 
+          
+          
+          createTests (fun (op,op2) -> Choice("Test", ["Op",op; "Op2",op2])) (List.zip ops    ops      ) "Choice Fst"   (Map.mergeSets expected     choiceTest )
+          createTests (fun (op,op2) -> Choice("Test", ["Op",op; "Op2",op2])) (List.zip ops2   ops2     ) "Choice Snd"   (Map.mergeSets expected2    choiceTest )
+          createTests (fun (op,op2) -> Choice("Test", ["Op",op; "Op2",op2])) (List.zip opsBoth opsBoth ) "Choice Both1" (Map.mergeSets expectedBoth choiceTest ) 
+          createTests (fun (op,op2) -> Choice("Test", ["Op",op; "Op2",op2])) (List.zip ops    ops2     ) "Choice Fst2"  (Map.mergeSets expectedBoth choiceTest )    
+          createTests (fun (op,op2) -> Choice("Test", ["Op",op; "Op2",op2])) (List.zip ops2   ops      ) "Choice Snd2"  (Map.mergeSets expectedBoth choiceTest )   
+          createTests (fun (op,op2) -> Choice("Test", ["Op",op; "Op2",op2])) (List.zip ops2   opsBoth  ) "Choice Both2" (Map.mergeSets expectedBoth choiceTest )   
+          createTests (fun (op,op2) -> Choice("Test", ["Op",op; "Op2",op2])) (List.zip opsBoth ops     ) "Choice Both3" (Map.mergeSets expectedBoth choiceTest ) ]
+        |> testList "Choices"
+``Choices`` |> Tests.runTests Tests.defaultConfig
 let ``Counting call test`` = 
     let appliedTwo = two <*> vInt 7 <*> vInt 7
     testList "Normalize function application" [
@@ -138,4 +268,5 @@ let tests =
           ``Getting a property test``
           ``Lambda Calculus``
           ``Ski Combinators``
-          ``Closure test`` ]
+          ``Closure test``
+          ``Choices`` ]

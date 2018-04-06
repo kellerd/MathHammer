@@ -1,5 +1,4 @@
 module OperationTests
-open FsCheck
 open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
