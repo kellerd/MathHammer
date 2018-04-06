@@ -40,9 +40,9 @@ let init () : Model * Cmd<Types.Msg> =
           "ShootingRange", Text None, shootingRange
           "PsychicTest", Text None, psychicTest
           "DenyTest", Text None, denyTest
-          "HitResults", Text None, hitResults
-          "WoundResults", Text None, woundResults
-          "UnsavedWounds", Text None, unsavedWounds ]
+          "ToHit", Text None, hitResults
+          "ToWound", Text None, woundResults
+          "ArmourSave", Text None, unsavedWounds ]
         |> List.map ReadOnly
     { Editing = false 
       Functions = rows 

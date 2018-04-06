@@ -31,14 +31,14 @@ let phaseActions =
                     [ get "ChargeRange"     >>= "ChargeRange"
                       get "MeleeRange"      <*> get "M" 
                                             >>= "MeleeRange"
-                      get "HitResults"      <*> get "WS" 
+                      get "ToHit"           <*> get "WS" 
                                             <*> get "A" 
                                             >>= "HitResults"
                                         
-                      get "WoundResults"    <*> get "Defender" 
+                      get "ToWound"         <*> get "Defender" 
                                             <*> get "S" 
                                             >>= "WoundResults"
-                      get "UnsavedWounds"   <*> get "Defender"  
+                      get "ArmourSave"      <*> get "Defender"  
                                             >>= "UnsavedWounds" ] 
                                                           <| opList [ labelVar "ChargeRange"
                                                                       labelVar "MeleeRange"

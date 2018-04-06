@@ -18,14 +18,14 @@ let phaseActions =
                     [ get "ChargeRange"     >>= "ChargeRange"
                       get "MeleeRange"      <*> get "M" 
                                             >>= "MeleeRange"
-                      get "HitResults"      <*> get "WS" 
+                      get "ToHit"           <*> get "WS" 
                                             <*> get "A" 
                                             >>= "HitResults"
                                         
-                      get "WoundResults"    <*> get "Defender" 
+                      get "ToWound"         <*> get "Defender" 
                                             <*> get "S" 
                                             >>= "WoundResults"
-                      get "UnsavedWounds"   <*> get "Defender"  
+                      get "ArmourSave"      <*> get "Defender"  
                                             >>= "UnsavedWounds" ] 
                                                           <| opList [ labelVar "ChargeRange"
                                                                       labelVar "MeleeRange"
@@ -50,7 +50,6 @@ let allProps =
           labelVar "InvSv"
           labelVar "D6Test"
           labelVar "D3Test"
-          labelVar "HitResults"
           labelProp "Actions" "ChargeRange"
           labelProp "Actions" "MeleeRange"
           labelProp "Actions" "HitResults"
@@ -86,9 +85,9 @@ let globalOperations =
       "ShootingRange",  shootingRange
       "PsychicTest",  psychicTest
       "DenyTest",  denyTest
-      "HitResults",  hitResults
-      "WoundResults",  woundResults
-      "UnsavedWounds",  unsavedWounds ]
+      "ToHit",  hitResults
+      "ToWound",  woundResults
+      "ArmourSave",  unsavedWounds ]
     |> List.mapi(fun i (k,o) -> (k,(i,o)))
 let choices = 
     ["Phase",  Set.singleton  "Melee"] |> Map.ofList
@@ -134,7 +133,7 @@ let eval x op = getp x op |> evalOp initialMap
     //                    App (Call Or,Value (ParamArray [Var "eq"; Var "gt"]))))))),
     //     Value (Int 2))
     // |> (evalOp  initialMap )
-    
+
 // getp "ChargeRange" attApplied  |> (evalOp  initialMap )
 // getp "MeleeRange" attApplied  |> (evalOp  initialMap )
 // getp "HitResults" attApplied  |> (evalOp initialMap )
