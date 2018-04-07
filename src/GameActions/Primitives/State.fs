@@ -52,28 +52,7 @@ let applyArgs body argValues =
     body::argValues
     |> List.reduce apply
 //Equations
-let allProps = 
-    opList 
-        [ labelVar "M"
-          labelVar "WS"
-          labelVar "BS"
-          labelVar "S"
-          labelVar "T"
-          labelVar "W"
-          labelVar "A"
-          labelVar "Ld"
-          labelVar "Sv"
-          labelVar "InvSv"
-          labelVar "D6Test"
-          labelVar "D3Test"
-          labelProp "Actions" "ChargeRange"
-          labelProp "Actions" "MeleeRange"
-          labelProp "Actions" "HitResults"
-          labelProp "Actions" "WoundResults"
-          labelProp "Actions" "UnsavedWounds"
-          labelProp "Actions" "PsychicTest"
-          labelProp "Actions" "ShootingRange"
-          labelProp "Actions" "DenyTest" ]
+
 let choose name choiceList = Choice(name,choiceList)
 let defenderMap = "Defender"
 let attackerMap = "Attacker"

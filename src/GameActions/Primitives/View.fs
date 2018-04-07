@@ -146,7 +146,7 @@ and unparse unparseValue operation : Fable.Import.React.ReactElement list =
     | Lam(_) -> []
     | IsDPlus(D6,plus) ->  [string (plus) + "+" |> str]
     | IsDPlus(D3,plus) ->  [string (plus) + "+ on D3" |> str]
-    | Choice(name, _) -> [str <| "Choose a " + name]
+    | Choice(name, _) -> [section [ClassName "columns"] [div [ClassName "column" ] [b   [] [str <| "Choose a " + name]]]]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D6))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D3))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
@@ -174,6 +174,8 @@ let unparseValue =
     | ParamArray ([]) ->  []
     | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
     | ParamArray ([Value (Str _); Var _]) ->   []
+    | ParamArray ([Value (Str _); PropertyGet(_,Value(NoValue))]) ->   []
+    | ParamArray ([Value (Str _); PropertyGet(_,Var _)]) ->   []
     | ParamArray(m) -> [displayParamArray unparseV m]
     unparseV
 

@@ -241,7 +241,6 @@ let ``Choices`` =
           createTests (fun (op,op2) -> Choice("Test", ["Op",op; "Op2",op2])) (List.zip ops2   opsBoth  ) "Choice Both2" (Map.mergeSets expectedBoth choiceTest )   
           createTests (fun (op,op2) -> Choice("Test", ["Op",op; "Op2",op2])) (List.zip opsBoth ops     ) "Choice Both3" (Map.mergeSets expectedBoth choiceTest ) ]
         |> testList "Choices"
-``Choices`` |> Tests.runTests Tests.defaultConfig
 let ``Counting call test`` = 
     let appliedTwo = two <*> vInt 7 <*> vInt 7
     testList "Normalize function application" [

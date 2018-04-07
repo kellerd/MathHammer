@@ -22,7 +22,6 @@ let urlUpdate (result: Option<Page>) model =
         model,Navigation.modifyUrl (toHash model.currentPage)
     | Some page ->
         { model with currentPage = page }, []
-
 let phaseActions = 
     choose "Phase" 
         [
@@ -61,8 +60,45 @@ let init result =
     let (gameActions, gameActionsCmd) = GameActions.State.init()
 
     // attackerStats
-    let body = nestOps [phaseActions] allProps
-    let defbody = nestOps [dPhaseActions] allProps
+    let body = 
+        nestOps [phaseActions]     
+           <| opList 
+                [ labelVar "M"
+                  labelVar "WS"
+                  labelVar "BS"
+                  labelVar "S"
+                  labelVar "T"
+                  labelVar "W"
+                  labelVar "A"
+                  labelVar "Ld"
+                  labelVar "Sv"
+                  labelVar "InvSv"
+                  labelVar "D6Test"
+                  labelVar "D3Test"
+                  labelProp "Actions" "ChargeRange"
+                  labelProp "Actions" "MeleeRange"
+                  labelProp "Actions" "HitResults"
+                  labelProp "Actions" "WoundResults"
+                  labelProp "Actions" "UnsavedWounds"
+                  labelProp "Actions" "PsychicTest"
+                  labelProp "Actions" "ShootingRange"  ]
+    let defbody = 
+        nestOps [dPhaseActions] 
+            <| opList 
+                [ labelVar "M"
+                  labelVar "WS"
+                  labelVar "BS"
+                  labelVar "S"
+                  labelVar "T"
+                  labelVar "W"
+                  labelVar "A"
+                  labelVar "Ld"
+                  labelVar "Sv"
+                  labelVar "InvSv"
+                  labelVar "D6Test"
+                  labelVar "D3Test"
+                  labelProp "Actions" "ShootingRange" 
+                  labelProp "Actions" "DenyTest" ]
     let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
     let attacker = createArgs stats body
     let defender =  createArgs stats defbody
