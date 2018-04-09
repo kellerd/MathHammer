@@ -194,6 +194,8 @@ let unparseAverage =
     | DParamArray ([]) ->  []
     | DParamArray ([Value (Str _); Value(NoValue)]) ->  []
     | DParamArray ([Value (Str _); Var _]) ->   []
+    | DParamArray ([Value (Str _); PropertyGet(_,Value(NoValue))]) ->   []
+    | DParamArray ([Value (Str _); PropertyGet(_,Var _)]) ->   []
     | DParamArray(m) -> [displayParamArray (toDisplay >> unparseV) m]
     toDisplay >> unparseV
 
@@ -209,6 +211,8 @@ let unparseSample =
     | ParamArray ([]) ->  []
     | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
     | ParamArray ([Value (Str _); Var _]) ->   []
+    | ParamArray ([Value (Str _); PropertyGet(_,Value(NoValue))]) ->   []
+    | ParamArray ([Value (Str _); PropertyGet(_,Var _)]) ->   []
     | ParamArray(m) -> [displayParamArray unparseV m]
     unparseV
 

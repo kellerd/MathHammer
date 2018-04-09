@@ -66,7 +66,10 @@ let rangeStops (dist:Distribution.Distribution<_>)  =
         
     (minRange,maxRange, stopsPercentGreenAndOpacity)
 
-
+let safe (id:string) = 
+    match id with 
+    | null -> ""
+    | id -> id.Replace(" ", "")
 let groupFor model display = 
     g [ SVGAttr.Transform (sprintf "translate(%f,%f)" model.PosX model.PosY)]
             [ g   [SVGAttr.Transform model.Scale ] display ]
@@ -75,9 +78,9 @@ let rangeRoot name model =
     let ranges id (_:int<mm>,max:int<mm>,stops) = 
         g [] 
           [   defs  [] 
-                    [ radialGradient [ Id id ]
+                    [ radialGradient [ Id (safe id) ]
                                        stops ]
-              circle [SVGAttr.Fill (sprintf "url(#%s)" id)
+              circle [SVGAttr.Fill (sprintf "url(#%s)" (safe id))
                       R (float max)] [] ]
 
     match dist with 

@@ -13,10 +13,10 @@ let root model dispatch =
             [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
             [ UnitList.View.rootBoard model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
               UnitList.View.rootBoard model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
-              model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("ShootingRange")) |> ofOption
-              model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("ShootingRange")) |> ofOption
-              model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("MeleeRange")) |> ofOption
-              model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("MeleeRange")) |> ofOption
+              model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("Shooting Range")) |> ofOption
+              model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("Shooting Range")) |> ofOption
+              model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("Assault Range")) |> ofOption
+              model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("Assault Range")) |> ofOption
               UnitList.View.root model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
               UnitList.View.root model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch) ] 
     let swap =  

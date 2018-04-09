@@ -37,7 +37,7 @@ let tests =
             }
         ]
     let psychicTotalTest = 
-        let psychicTest = [d6;d6] |> opList |> total >>= "PsychicTest"
+        let psychicTest = [d6;d6] |> opList |> total >>= "Psychic Test"
         testList "Some Tests" [
             test "Psychic Total std" {
                 let expected = Distribution.dist {
@@ -45,7 +45,7 @@ let tests =
                     let! d2 = Distribution.uniformDistribution [1..6]
                     return Int(d1 + d2)
                 } 
-                match psychicTest |> eval "PsychicTest" with 
+                match psychicTest |> eval "Psychic Test" with 
                 | Value(Dist(result)) -> Expect.containsAll result.Probabilities expected.Probabilities ""
                 | x -> failtest <| sprintf "Result is wrong type %A" x
             }

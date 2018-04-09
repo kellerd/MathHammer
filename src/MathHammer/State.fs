@@ -15,7 +15,7 @@ let init () : Model * Cmd<Types.Msg> =
     
     let model : Model = 
         { 
-            Environment = Map.empty<_,_> |> Map.add "Phase" (Str "Melee" |> Value)
+            Environment = Map.empty<_,_> |> Map.add "Phase" (Str "Assault" |> Value)
             Attacker = { attacker with BoxFill="#FFCCCC"; ElementFill="#79CE0B"; ElementStroke="#396302"; OffsetY = ft.ToMM 2<ft>; Scale="scale(1,-1)" }
             Defender = { defender with BoxFill="#CCCCFF"; ElementFill="#0B79CE"; ElementStroke="#023963" }
             SelectedAttacker = None

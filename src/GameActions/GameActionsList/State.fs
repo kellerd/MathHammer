@@ -12,8 +12,8 @@ let d6 = App(Call(Dice(D6)), noValue)
 let d3 = App(Call(Dice(D3)), noValue)
 let opId = Lam ("v",get "v")
 let chargeRange = [get "D6";get "D6"] |> opList |> total 
-let meleeRange = opList [ get "M"; get "ChargeRange" ] |> total |> lam "M"
-let shootingRange = get "WeaponRange"
+let meleeRange = opList [ get "M"; get "Charge Range" ] |> total |> lam "M"
+let shootingRange = get "Weapon Range"
 let psychicTest = [get "D6";get "D6"] |> opList |> total 
 let denyTest = [get "D6";get "D6"] |> opList |> total
 let hitResults = 
@@ -22,12 +22,12 @@ let hitResults =
     |> lam "A" 
     |> lam "WS"
 let woundResults = 
-    repeatOp (svtOps sVsT) (get "HitResults") 
+    repeatOp (svtOps sVsT) (get "Hit Results") 
     |> total 
     |> lam "S" 
     |> lam "Defender"
 let unsavedWounds = 
-    repeatOp (getd "Sv") (get "WoundResults") 
+    repeatOp (getd "Sv") (get "Wound Results") 
     |> total 
     |> lam "Defender"
 let init () : Model * Cmd<Types.Msg> =
@@ -35,14 +35,14 @@ let init () : Model * Cmd<Types.Msg> =
         [ "Id", Text None, opId
           "D6", Special "D6", d6
           "D3", Special "D3", d3
-          "ChargeRange", Text None, chargeRange
-          "MeleeRange", Text None, meleeRange
-          "ShootingRange", Text None, shootingRange
-          "PsychicTest", Text None, psychicTest
-          "DenyTest", Text None, denyTest
-          "ToHit", Text None, hitResults
-          "ToWound", Text None, woundResults
-          "ArmourSave", Text None, unsavedWounds ]
+          "Charge Range", Text None, chargeRange
+          "Assault Range", Text None, meleeRange
+          "Shooting Range", Text None, shootingRange
+          "Psychic Test", Text None, psychicTest
+          "Deny Test", Text None, denyTest
+          "To Hit", Text None, hitResults
+          "To Wound", Text None, woundResults
+          "Armour Save", Text None, unsavedWounds ]
         |> List.map ReadOnly
     { Editing = false 
       Functions = rows 

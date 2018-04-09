@@ -22,37 +22,39 @@ let urlUpdate (result: Option<Page>) model =
         model,Navigation.modifyUrl (toHash model.currentPage)
     | Some page ->
         { model with currentPage = page }, []
+let range = vInt
+
 let phaseActions = 
     choose "Phase" 
         [
-            "Melee", 
+            "Assault", 
                 nestOps 
-                    [ get "ChargeRange"     >>= "ChargeRange"
-                      get "MeleeRange"      <*> get "M" 
-                                            >>= "MeleeRange"
-                      get "ToHit"           <*> get "WS" 
+                    [ get "Assault Range"   <*> get "M" 
+                                            >>= "Assault Range"
+                      get "To Hit"          <*> get "WS" 
                                             <*> get "A" 
-                                            >>= "HitResults"
+                                            >>= "Hit Results"
                                         
-                      get "ToWound"         <*> get "Defender" 
+                      get "To Wound"        <*> get "Defender" 
                                             <*> get "S" 
-                                            >>= "WoundResults"
-                      get "ArmourSave"      <*> get "Defender"  
-                                            >>= "UnsavedWounds" ] 
-                                                          <| opList [ labelVar "ChargeRange"
-                                                                      labelVar "MeleeRange"
-                                                                      labelVar "HitResults"
-                                                                      labelVar "WoundResults"
-                                                                      labelVar "UnsavedWounds" ] 
-            "Shooting", (get "ShootingRange" >>= "ShootingRange") (labelVar "ShootingRange")
-            "Psychic", (get "PsychicTest" >>= "Psychichtest") (labelVar "PsychicTest")
+                                            >>= "Wound Results"
+                      get "Armour Save"     <*> get "Defender"  
+                                            >>= "Unsaved Wounds" ] 
+                                                          <| opList [ labelVar "Charge Range"
+                                                                      labelVar "Assault Range"
+                                                                      labelVar "Hit Results"
+                                                                      labelVar "Wound Results"
+                                                                      labelVar "Unsaved Wounds" ] 
+            "Shooting", (labelVar "Shooting Range")
+            "Psychic", (labelVar "Psychic Test")
         ] >>= "Actions"
 
-let dPhaseActions =   
+
+let dPhaseActions = 
     choose "Phase" 
         [
-            "Melee", ( get "ShootingRange" >>= "ShootingRange") (labelVar "ShootingRange")
-            "Psychic", (get "DenyTest" >>= "DenyTest") (labelVar "DenyTest")
+            "Assault", (choose "Weapon" ["Bolter", range 24; "Melta", range 12] >>= "Weapon Range") (labelVar "Shooting Range")
+            "Psychic", (labelVar "Deny Test")
         ] >>= "Actions"  
 
 let init result =
@@ -75,13 +77,13 @@ let init result =
                   labelVar "InvSv"
                   labelVar "D6Test"
                   labelVar "D3Test"
-                  labelProp "Actions" "ChargeRange"
-                  labelProp "Actions" "MeleeRange"
-                  labelProp "Actions" "HitResults"
-                  labelProp "Actions" "WoundResults"
-                  labelProp "Actions" "UnsavedWounds"
-                  labelProp "Actions" "PsychicTest"
-                  labelProp "Actions" "ShootingRange"  ]
+                  labelProp "Actions" "Charge Range"
+                  labelProp "Actions" "Assault Range"
+                  labelProp "Actions" "Hit Results"
+                  labelProp "Actions" "Wound Results"
+                  labelProp "Actions" "Unsaved Wounds"
+                  labelProp "Actions" "Psychic Test"
+                  labelProp "Actions" "Shooting Range"  ]
     let defbody = 
         nestOps [dPhaseActions] 
             <| opList 
@@ -97,8 +99,8 @@ let init result =
                   labelVar "InvSv"
                   labelVar "D6Test"
                   labelVar "D3Test"
-                  labelProp "Actions" "ShootingRange" 
-                  labelProp "Actions" "DenyTest" ]
+                  labelProp "Actions" "Shooting Range" 
+                  labelProp "Actions" "Deny Test" ]
     let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
     let attacker = createArgs stats body
     let defender =  createArgs stats defbody

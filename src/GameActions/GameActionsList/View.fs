@@ -129,7 +129,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                             | [] -> Option.toList newValuePlaceholder
                                             | _ -> joinStr :: acc
                                         unparseEq a (fun op' -> (f,l @ op'::r |> ParamArray |> Value) |> dispatch) @ tail ) ops' [] 
-                call  @ param
+                call  @  paren (param)
             | Value(NoValue) -> unparseEq f (fun op -> (op,a) |> dispatch)
             | _ -> unparseEq f (fun op -> (op,a) |> dispatch) @ unparseEq a (fun op -> (f,op) |> dispatch)  
         and unparseChoice dispatch (choices:(string*Operation) list) =
@@ -145,7 +145,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
             match func with 
             | Dice(i) -> string i  |> str
             | Count -> sprintf "(Passes,Fails) in " |> str
-            | _  -> sprintf "%A" func |> str  
+            | _  -> sprintf "%A " func |> str
         and unparseEq op (dispatch:Operation->unit) : Fable.Import.React.ReactElement list = 
             match op with 
             | Call f -> [unparseC (Call >> dispatch) f]

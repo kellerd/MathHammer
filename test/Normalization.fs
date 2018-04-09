@@ -115,18 +115,18 @@ let ``Getting a property test`` =
 let ``Choices`` =
     let choices = 
         Choice ("Phase",
-                    [("Melee", Value(NoValue))
+                    [("Assault", Value(NoValue))
                      ("Movement", Value(NoValue))
                      ("Shooting", Value(NoValue))])
     let choiceTest = Map.ofList [("Test", Set.ofList ["Op"; "Op2"])]                       
-    let expected = Map.ofList [("Phase", Set.ofList ["Melee"; "Movement";"Shooting"])]   
+    let expected = Map.ofList [("Phase", Set.ofList ["Assault"; "Movement";"Shooting"])]   
                       
     let choices2 = 
         Choice ("Phase",
                     [("Psychic", Value(NoValue))
-                     ("Melee", Value(NoValue))])
-    let expected2 = Map.ofList [("Phase", Set.ofList ["Melee"; "Psychic"])]  
-    let expectedBoth = Map.ofList [("Phase", Set.ofList ["Melee"; "Psychic";"Melee"; "Movement";"Shooting"])]   
+                     ("Assault", Value(NoValue))])
+    let expected2 = Map.ofList [("Phase", Set.ofList ["Assault"; "Psychic"])]  
+    let expectedBoth = Map.ofList [("Phase", Set.ofList ["Assault"; "Psychic";"Assault"; "Movement";"Shooting"])]   
     let v = ParamArray [choices]
     let v2 = ParamArray [choices2]
     let t = Tuple(v,v2)

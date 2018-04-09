@@ -42,7 +42,7 @@ let initMeq name coreRules =
     let rules = applyArgs coreRules (attributes |> List.map (fun (_,(_,c)) -> c))
     { (init name) with Rules = rules; Attributes =  Map.ofList attributes }, Cmd.none
 let initGeq name coreRules =
-    let attributes = [ "WeaponRange",( 1, vInt 30)
+    let attributes = [ "Weapon Range",( 1, vInt 30)
                        "M",          ( 2, vInt 6)
                        "WS",         ( 3, dPlus D6 3)
                        "BS",         ( 4, dPlus D6 3)
@@ -53,7 +53,7 @@ let initGeq name coreRules =
                        "Ld",         ( 9, vInt 8)
                        "Sv",         (10, dPlus D6 3)
                        "InvSv",      (11,  noValue  )]  
-    let rules = applyArgs (coreRules |> lam "WeaponRange") (attributes |> List.map (fun (_,(_,c)) -> c))
+    let rules = applyArgs (coreRules |> lam "Weapon Range") (attributes |> List.map (fun (_,(_,c)) -> c))
     { (init name) with Rules = rules; Attributes = Map.ofList attributes }, Cmd.none
 
 let update msg model =

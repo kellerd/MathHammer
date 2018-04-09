@@ -13,27 +13,27 @@ let (==~) x y =
 let phaseActions = 
     choose "Phase" 
         [
-            "Melee", 
+            "Assault", 
                 nestOps 
-                    [ get "ChargeRange"     >>= "ChargeRange"
-                      get "MeleeRange"      <*> get "M" 
-                                            >>= "MeleeRange"
-                      get "ToHit"           <*> get "WS" 
+                    [ get "Charge Range"     >>= "Charge Range"
+                      get "Assault Range"      <*> get "M" 
+                                            >>= "Assault Range"
+                      get "To Hit"           <*> get "WS" 
                                             <*> get "A" 
-                                            >>= "HitResults"
+                                            >>= "Hit Results"
                                         
-                      get "ToWound"         <*> get "Defender" 
+                      get "To Wound"         <*> get "Defender" 
                                             <*> get "S" 
-                                            >>= "WoundResults"
-                      get "ArmourSave"      <*> get "Defender"  
-                                            >>= "UnsavedWounds" ] 
-                                                          <| opList [ labelVar "ChargeRange"
-                                                                      labelVar "MeleeRange"
-                                                                      labelVar "HitResults"
-                                                                      labelVar "WoundResults"
-                                                                      labelVar "UnsavedWounds" ] 
-            "Shooting", (get "ShootingRange" >>= "ShootingRange") (labelVar "ShootingRange")
-            "Psychic", (get "PsychicTest" >>= "Psychichtest") (labelVar "PsychicTest")
+                                            >>= "Wound Results"
+                      get "Armour Save"      <*> get "Defender"  
+                                            >>= "Unsaved Wounds" ] 
+                                                          <| opList [ labelVar "Charge Range"
+                                                                      labelVar "Assault Range"
+                                                                      labelVar "Hit Results"
+                                                                      labelVar "Wound Results"
+                                                                      labelVar "Unsaved Wounds" ] 
+            "Shooting", (get "Shooting Range" >>= "Shooting Range") (labelVar "Shooting Range")
+            "Psychic", (get "Psychic Test" >>= "Psychichtest") (labelVar "Psychic Test")
         ] >>= "Actions"    
 
 let allProps = 
@@ -50,14 +50,14 @@ let allProps =
           labelVar "InvSv"
           labelVar "D6Test"
           labelVar "D3Test"
-          labelProp "Actions" "ChargeRange"
-          labelProp "Actions" "MeleeRange"
-          labelProp "Actions" "HitResults"
-          labelProp "Actions" "WoundResults"
-          labelProp "Actions" "UnsavedWounds"
-          labelProp "Actions" "PsychicTest"
-          labelProp "Actions" "ShootingRange"
-          labelProp "Actions" "DenyTest" 
+          labelProp "Actions" "Charge Range"
+          labelProp "Actions" "Assault Range"
+          labelProp "Actions" "Hit Results"
+          labelProp "Actions" "Wound Results"
+          labelProp "Actions" "Unsaved Wounds"
+          labelProp "Actions" "Psychic Test"
+          labelProp "Actions" "Shooting Range"
+          labelProp "Actions" "Deny Test" 
           ]
 let body = nestOps [phaseActions] allProps
 let defbody = nestOps [dPhaseActions] allProps
@@ -80,14 +80,14 @@ let globalOperations =
     [ "Id", opId
       "D6",  d6
       "D3", d3
-      "ChargeRange",  chargeRange
-      "MeleeRange",  meleeRange
-      "ShootingRange",  shootingRange
-      "PsychicTest",  psychicTest
-      "DenyTest",  denyTest
-      "ToHit",  hitResults
-      "ToWound",  woundResults
-      "ArmourSave",  unsavedWounds ]
+      "Charge Range",  chargeRange
+      "Assault Range",  meleeRange
+      "Shooting Range",  shootingRange
+      "Psychic Test",  psychicTest
+      "Deny Test",  denyTest
+      "To Hit",  hitResults
+      "To Wound",  woundResults
+      "Armour Save",  unsavedWounds ]
     |> List.mapi(fun i (k,o) -> (k,(i,o)))
 let choices = Map.empty<_,_>
 let env = Map.empty<_,_>
@@ -132,10 +132,10 @@ let eval x op = getp x op |> evalOp initialMap
     //     Value (Int 2))
     // |> (evalOp  initialMap )
 
-// getp "ChargeRange" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Melee"))  initialMap )
-// getp "MeleeRange" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Melee"))  initialMap )
-// getp "HitResults" attApplied  |> (evalOp <| Map.add "Phase" (Value (Str  "Melee")) initialMap )
-// getp "WoundResults" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Melee")) initialMap )
+// getp "Charge Range" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Assault"))  initialMap )
+// getp "Assault Range" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Assault"))  initialMap )
+// getp "Hit Results" attApplied  |> (evalOp <| Map.add "Phase" (Value (Str  "Assault")) initialMap )
+// getp "Wound Results" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Assault")) initialMap )
 
 // attApplied  |> (evalOp  <| Map.add "Phase" (Value(Str "Psychic")) initialMap )
 // let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  
@@ -193,13 +193,13 @@ let tests =
 //     |> (vInt 5 |~> "M") 
 
 // let test char = get char |> single |> count
-// let hitMelee = 
+// let hitAssault = 
 //     get Attacker "A"
 //     |> repeatOp (test "WS")
 //     |> total 
-//     |> bindOp Attacker "Melee"
+//     |> bindOp Attacker "Assault"
 
-// let shotsMelee = 
+// let shotsAssault = 
 //     [Var(Attacker, "A"); Var(Attacker, "A")]
 //     |> opList 
 //     |> product
@@ -211,9 +211,9 @@ let tests =
 // let vInt i = Value(Int(i))
 // let d6 = Value(Dice(D6))
 
-// let chargeRange = [d6;d6] |> opList |> total |> bindOp Attacker "ChargeRange"
-// let meleeRange = [get Attacker "M"; chargeRange] |> opList |> total |> bindOp Attacker "MeleeRange"
-// let psychicTest = [d6;d6] |> opList |> total |> bindOp Attacker "PsychicTest"
+// let chargeRange = [d6;d6] |> opList |> total |> bindOp Attacker "Charge Range"
+// let meleeRange = [get Attacker "M"; chargeRange] |> opList |> total |> bindOp Attacker "Assault Range"
+// let psychicTest = [d6;d6] |> opList |> total |> bindOp Attacker "Psychic Test"
 
 // let sUser = get Attacker "S"
 // let r = 
