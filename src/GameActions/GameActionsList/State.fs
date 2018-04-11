@@ -8,8 +8,8 @@ open GameActions.Primitives.State
 let initRow () : Row * Cmd<Types.Msg> = 
     ReadWrite("",  Text None, noValue), Cmd.none
 
-let d6 = App(Call(Dice(D6)), noValue)
-let d3 = App(Call(Dice(D3)), noValue)
+let d6 = App(Call(Dice), Value(Int 6))
+let d3 = App(Call(Dice), Value(Int 3))
 let opId = Lam ("v",get "v")
 let chargeRange = [get "D6";get "D6"] |> opList |> total 
 let meleeRange = opList [ get "M"; get "Charge Range" ] |> total |> lam "M"

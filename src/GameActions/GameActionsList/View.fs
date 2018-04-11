@@ -22,9 +22,50 @@ let d3icon =
               path [SVGAttr.Fill "#000000" 
                     D "M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10M7,5A2,2 0 0,0 5,7A2,2 0 0,0 7,9A2,2 0 0,0 9,7A2,2 0 0,0 7,5M17,15A2,2 0 0,0 15,17A2,2 0 0,0 17,19A2,2 0 0,0 19,17A2,2 0 0,0 17,15Z"] []
         ]
-                  
 
-let iconToDisplay  = function 
+open Microsoft.FSharp.Reflection
+
+let inline toString (x:'a) = 
+    let a = typeof<'a>
+    match FSharpValue.GetUnionFields(x, a) with
+    | case, _ -> case.Name
+
+let inline  fromString<'a> (s:string) =
+    match FSharpType.GetUnionCases typeof<'a> |> Array.filter (fun case -> case.Name = s) with
+    |[|case|] -> Some(FSharpValue.MakeUnion(case,[||]) :?> 'a)
+    |_ -> None
+let callList call = 
+    div [Class "field"] 
+        [
+            // p [ Class "control has-icons-left"]
+            //     [ span [Class "select" ] [
+                    select [ DefaultValue (toString call)] 
+                        [ option [ HTMLAttr.Value (toString Product)     ; Title "Product (...params...)"                ] [str (toString Product)    ] 
+                          option [ HTMLAttr.Value (toString Division)    ; Title "Division (...params...)"               ] [str (toString Division)   ] 
+                          option [ HTMLAttr.Value (toString Total)       ; Title "Total (...params...)"                  ] [str (toString Total)      ] 
+                          option [ HTMLAttr.Value (toString Count)       ; Title "Count (Passes,Fails) in (...params...)"] [str (toString Count)      ] 
+                          option [ HTMLAttr.Value (toString Repeat)      ; Title "Repeat (x,y)"                          ] [str (toString Repeat)     ] 
+                          option [ HTMLAttr.Value (toString Dice)        ; Title "Die of "                               ] [str (toString Dice)       ] 
+                          option [ HTMLAttr.Value (toString GreaterThan) ; Title "GreaterThan (x,y)"                     ] [str (toString GreaterThan)] 
+                          option [ HTMLAttr.Value (toString Equals)      ; Title "Equals (x,y)"                          ] [str (toString Equals)     ] 
+                          option [ HTMLAttr.Value (toString NotEquals)   ; Title "NotEquals (x,y)"                       ] [str (toString NotEquals)  ] 
+                          option [ HTMLAttr.Value (toString LessThan)    ; Title "LessThan (x,y)"                        ] [str (toString LessThan)   ] 
+                          option [ HTMLAttr.Value (toString And)         ; Title "And (x,y)"                             ] [str (toString And)        ] 
+                          option [ HTMLAttr.Value (toString Or)          ; Title "Or (x,y)"                              ] [str (toString Or)         ] 
+                          option [ HTMLAttr.Value (toString Max)         ; Title "Max (...params...)"                    ] [str (toString Max)        ] 
+                          option [ HTMLAttr.Value (toString Min)         ; Title "Min (...params...)"                    ] [str (toString Min)        ] 
+                          option [ HTMLAttr.Value (toString Sub)         ; Title "Sub (...params...)"                    ] [str (toString Sub)        ] 
+                          option [ HTMLAttr.Value (toString Median)      ; Title "Median (...params...)"                 ] [str (toString Median)     ] 
+                          option [ HTMLAttr.Value (toString Mean)        ; Title "Mean (...params...)"                   ] [str (toString Mean)       ] 
+                          option [ HTMLAttr.Value (toString Mode)        ; Title "Mode (...params...)"                   ] [str (toString Mode)       ] 
+                          option [ HTMLAttr.Value (toString Least)       ; Title "Least  (n, ...params...)"              ] [str (toString Least)      ] 
+                          option [ HTMLAttr.Value (toString Largest)     ; Title "Largest  (n, ...params...)"            ] [str (toString Largest)    ] 
+                        ] ]      
+                //   span [Class "icon is-small is-left"] [ i [Class "fa fa-terminal"] [] ]
+                // ]
+        // ]                  
+
+let (|HasIcon|_|)  = function 
    | Special "D6" -> d6icon |> Some
    | Special "D3" -> d3icon |> Some
    | Icon s       -> div [ClassName ("fa " + s)] [] |> Some
@@ -33,7 +74,7 @@ let iconToDisplay  = function
 
 let mkRowDrag dispatch  = function
     | ReadOnly (name, icon, _) | ReadWrite(name, icon, _) -> 
-        iconToDisplay icon
+        (|HasIcon|_|) icon 
         |> Option.map (List.singleton >> 
                        div [ Style [Cursor "move"]
                              Draggable true 
@@ -142,10 +183,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                      br [] ::
                                      unparseEq (snd a) (fun op' -> l @ (fst a,op')::r |> dispatch))  
         and unparseC dispatch func = 
-            match func with 
-            | Dice(i) -> string i  |> str
-            | Count -> sprintf "(Passes,Fails) in " |> str
-            | _  -> sprintf "%A " func |> str
+            callList func
         and unparseEq op (dispatch:Operation->unit) : Fable.Import.React.ReactElement list = 
             match op with 
             | Call f -> [unparseC (Call >> dispatch) f]
@@ -172,53 +210,63 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 let elsePart = Option.map(fun elseExpr -> br [] :: unparseEq elseExpr (fun op -> IfThenElse(ifExpr, thenExpr, Some op) |> dispatch )) elseExpr |> Option.toList |> List.collect id
                 ifPart @ thenPart @ elsePart   
         unparseEq operation dispatch
-    let iconOptional name icon = 
-        match icon |> iconToDisplay with 
-        | Some icon -> Map.add name icon icons, [icon]
-        | None -> icons, []
+    let iconDisplay name icon = 
+        match icon with 
+        | HasIcon icon -> Map.add name icon icons, [icon]
+        | _ -> icons, [str name]
     match row with 
     | ReadOnly (name, icon, gameAction) -> 
-        let newIcons,iconDisplay = iconOptional name icon
+        let newIcons,iconDisplay = iconDisplay name icon
         tr [] [
             td [] [(if hideAddButton then str "" 
                     else  a [ ClassName "button fa fa-pencil-square-o"; OnClick (fun _ -> EditRow(name) |> dispatch) ] [str "Edit"] )]
-            td [] [str name]
             td [] iconDisplay
             td [Style [Position "relative"]] [unparseEquation None gameAction ignore |> div [Class "columns" ]] //dispatch)
         ], newIcons
     | ReadWrite(name,icon,op) -> 
-        let newIcons,_ = iconOptional name icon
+        let newIcons,_ = iconDisplay name icon
         tr [] [
             td [] [ a [ ClassName "button fa fa-floppy-o"
                         OnClick (fun _ -> SaveOp(name) |> dispatch)  ] [str "Close"] ]
-            td [] [ 
-                input [ ClassName "input"
-                        Type "text"
-                        Placeholder "Type the action name"
-                        DefaultValue name
-                        AutoFocus true 
-                        OnChange (fun ev -> !!ev.target?value |> ChangeNewRowName |> dispatch ) ] ]
-            td [] [ 
-                input [ ClassName "input"
-                        Type "text"
-                        Placeholder "FA Icon/Special/Text"
-                        DefaultValue (icon |> function Special s  | Text(Some s) -> s | Icon s -> s.Remove(0,3) | Text None -> "")
-                        OnChange (fun ev -> !!ev.target?value |> ChangeIcon |> dispatch ) ] ]         
-            td [] (unparseEquation dragging op (fun op -> Dragged(name,op) |> dispatch)) ], newIcons
+            td [ColSpan 3.] [ 
+                div [ClassName "field"] 
+                    [
+                        label [ClassName "label"] [str "Icon"]
+                        input [ ClassName "input"
+                                Type "text"
+                                Placeholder "FA Icon/Special/Text"
+                                DefaultValue (icon |> function Special s  | Text(Some s) -> s | Icon s -> s.Remove(0,3) | Text None -> "")
+                                OnChange (fun ev -> !!ev.target?value |> ChangeIcon |> dispatch ) ]    
+                    ]
+                div [ClassName "field"] 
+                    [
+                        label [Class "label"] [str "Name"] 
+                        input [ ClassName "input"
+                                Type "text"
+                                Placeholder "Type the action name"
+                                DefaultValue name
+                                AutoFocus true 
+                                OnChange (fun ev -> !!ev.target?value |> ChangeNewRowName |> dispatch ) ]
+                    ]      
+                div [ClassName "field"] 
+                    [
+                        label [ClassName "label"] [str "Equation / Steps"]
+                        (unparseEquation dragging op (fun op -> Dragged(name,op) |> dispatch)) |> ofList
+                    ]
+            ] ], newIcons
 let root model dispatch =
     let draggables = (p [] [str "Common"; br [] ; str "Functions"] )::(List.map (mkRowDrag dispatch) model.Functions)
     let (tableRows,_) = List.mapFold (mkRows model.Dragging model.Editing dispatch) Map.empty<_,_> model.Functions
     [
         div [ClassName "column is-11"] [
-            table [ClassName "table is-fullwidth"] 
+            table [ClassName "table is-fullwidth  is-striped"] 
                 [   thead [] [
                         tr [] [
                             th [] [
                                 (if model.Editing then str "" 
                                 else a [ ClassName "button fa fa-plus-circle"; OnClick (fun _ -> AddRow |> dispatch) ] [str "Add"] )
                             ]        
-                            th [] [ str "Action Name" ]
-                            th [] [ str "Icon / Special Text" ]
+                            th [] [ str "Name" ]
                             th [] [ str "Equation / Steps"] ] ] 
                     tbody [] tableRows ] ]
         div [ClassName "column is-1 has-text-centered"] draggables ]

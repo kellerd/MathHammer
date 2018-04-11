@@ -15,8 +15,10 @@ let total = call Total
 let product = call Product
 let bindVal text op = Let(text,op,Var text)
 let bindOp v op inBody = Let(v,op, inBody)
+let largest n ops = call Largest (Value(ParamArray(Value(Int n)::ops)))
+let least n ops = call Least (Value(ParamArray(Value(Int n)::ops)))
 let lam s op = Lam (s,op)
-let ``D#`` d = App(Call(Dice(d)), noValue)
+let ``D#`` d = App(Call Dice, Value(Int d))
 let vStr s = Str s |> Value
 let vInt i = Value(Int(i))
 let emptyOp = noValue
@@ -27,16 +29,16 @@ let labelProp c v = pair (vStr v) (getp v (get c))
 let apply f x = App(f,x)
 let (<*>) = apply  
 let (>>=) o s = bindOp s o
-let dPlus d v =
-    let gt = [Var "roll"; Value(Int(v))] |> opList |> call GreaterThan
-    let eq = [Var "roll"; Value(Int(v))] |> opList |> call Equals
+let dPlus sides plusValue =
+    let gt = [Var "roll"; Value(Int(plusValue))] |> opList |> call GreaterThan
+    let eq = [Var "roll"; Value(Int(plusValue))] |> opList |> call Equals
     let gte = [Var "eq"; Var "gt" ]  |> opList |> call Or
 
-    let dp = Let ("roll", ``D#`` d, (Let("gt", gt, Let ("eq", eq,  gte))))
+    let dp = Let ("roll", ``D#`` sides, (Let("gt", gt, Let ("eq", eq,  gte))))
     dp |> count
 let (|IsDPlus|_|) = function
     | App
-        (Call Count, Let (roll,App (Call (Dice die),Value NoValue),
+        (Call Count, Let (roll,App (Call Dice,Value (Int die)),
                Let (gt, App (Call GreaterThan,Value (ParamArray [Var roll'; Value (Int d)])),
                     Let (eq, App (Call Equals,Value (ParamArray [Var roll''; Value (Int d')])),
                          App (Call Or,Value (ParamArray [Var eq'; Var gt']))))))
@@ -69,9 +71,9 @@ let table ifThen =
     | Some o -> o
 
 let sVsT = 
-    [ get "SvsT" |> call GreaterThan, dPlus D6 3 
-      get "SvsT" |> call LessThan, dPlus D6 5
-      get "SvsT" |> call Equals, dPlus D6 4 ]
+    [ get "SvsT" |> call GreaterThan, dPlus 6 3 
+      get "SvsT" |> call LessThan, dPlus 6 5
+      get "SvsT" |> call Equals, dPlus 6 4 ]
     |> table   
 
 let rec isInUse s = function
@@ -394,17 +396,17 @@ let normalize op : (ChoiceSet * Operation) =
             | Normal -> None) 
         (Next op)
     |> Seq.last
-let rec evalDie d : Distribution.Distribution<_> = 
-      match d with 
-      | D3 -> Distribution.uniformDistribution [3..-1..1]
-      | D6 -> Distribution.uniformDistribution [6..-1..1]
-      | Reroll(rerolls, d) -> 
-            Distribution.dist {
-                  let! roll = evalDie d
-                  if List.contains roll rerolls then
-                        return! evalDie d
-                  else return roll                        
-            }
+let rec evalDie n : Distribution.Distribution<_> = 
+      match n with 
+      | n when n > 0 -> Distribution.uniformDistribution [n .. -1 .. 1]
+      | _ -> Distribution.uniformDistribution []
+    //   | Reroll(rerolls, d) -> 
+    //         Distribution.dist {
+    //               let! roll = evalDie d
+    //               if List.contains roll rerolls then
+    //                     return! evalDie d
+    //               else return roll                        
+    //         }
 let closure env op = 
     let rec fixGp  = function 
         | NoValue 
@@ -513,7 +515,7 @@ let rec evalCall func v env : Operation =
             ) state
     let evalFuncAsGp = (fun v -> evalCall func (Value v) env |> function (Value(gp)) -> gp | op -> ParamArray [op])           
     match func,v with 
-    | Dice d, _                          -> evalDie d |> Distribution.map (Int) |> Dist |> Value 
+    | Dice, Value(Int d)                 -> evalDie d |> Distribution.map (Int) |> Dist |> Value 
     | (Total|Division|Product|Max|Min|Sub|Median|Mode), (Value(Int _ | Float _ | Str _ | NoValue) as v)       -> v
     | (Least _|Largest _), (Value(Int _ | Float _ | Str _ | NoValue) as v) -> ParamArray[v] |> Value
     | (Total|Division|Product|Max|Min|Sub|Median|Mode|Least _|Largest _), Value(ParamArray []) ->  GamePrimitive.Zero |> Value
@@ -525,8 +527,8 @@ let rec evalCall func v env : Operation =
     | Mean, Value(ParamArray(ops))       -> meanOp ops
     | Median, Value(ParamArray(ops))     -> medianGp ops
     | Mode, Value(ParamArray(ops))       -> modeGp ops
-    | Least n, Value(ParamArray(ops))    -> leastOp n ops
-    | Largest n, Value(ParamArray(ops))  -> largestOp n ops
+    | Least, Value(ParamArray(Value(Int n)::ops))  -> leastOp n ops
+    | Largest, Value(ParamArray(Value(Int n)::ops))  -> largestOp n ops
     | Product, Value(ParamArray(h::t))   -> fold (*) t h
     | Count, Value(Int _)                -> vInt 1
     | Count, Value(Str _)                -> vInt 1

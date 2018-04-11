@@ -93,11 +93,6 @@ let paren react = str "(" :: react @ [str ")"]
 let rec unparseCheck unparseV = function 
     | Check.Pass(v) -> span [Style [Color (colour 255.) ]] <| (str "Pass: ")::(unparseV v)
     | Check.Fail(v) -> span [Style [Color (colour 0.) ]]   <| (str "Fail: ")::(unparseV v)
-let unparseCall func = 
-    match func with 
-    | Dice(i) -> string i  |> str
-    | Count -> sprintf "(Passes,Fails) in " |> str
-    | _  -> sprintf "%A" func |> str  
 let unparseDist unparseValue (dist:Distribution.Distribution<GamePrimitive>) = 
     let result = 
           dist.Probabilities 
@@ -140,17 +135,19 @@ let rec displayParamArray unparseValue ops =
         | xs -> div [ClassName "column"] xs |> Some) ops)
 and unparse unparseValue operation : Fable.Import.React.ReactElement list = 
     match operation with 
-    | Call f -> [unparseCall f]
+    | Call f -> [str (f.ToString())]
     | Value(v)-> unparseValue v
     | Var (v) -> [str v]
     | Lam(_) -> []
-    | IsDPlus(D6,plus) ->  [string (plus) + "+" |> str]
-    | IsDPlus(D3,plus) ->  [string (plus) + "+ on D3" |> str]
-    | Choice(name, _) -> [section [ClassName "columns"] [div [ClassName "column" ] [b   [] [str <| "Choose a " + name]]]]
+    | IsDPlus(6,plus) ->  [string (plus) + "+" |> str]
+    | IsDPlus(n,plus) ->  [string (plus) + "+ on D" + (string n) |> str]
+    | Choice(name, _) -> [section [ClassName "columns"] [div [ClassName "column" ] [b   [] [str ("Choose a " + name)]]]]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D6))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D3))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
     //     [unparse (App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(List.distinct (is @ is2),d))),Value NoValue); Value(Int(i))])))) |> div []]
+    | App(Call Dice, Value(Int n)) -> [string n  |> str]   
+    | App(Call Count, x) -> (str "(Passes,Fails) in ") :: (unparse unparseValue x)
     | App(Lam(_,x),_) -> unparse unparseValue x //paren (unparse (Lam(p,x))) + " " + argstring a
     | App(f,(Var(v))) -> unparse unparseValue f @ [str v]
     | App(f,a) -> unparse unparseValue f @ unparse unparseValue a
@@ -219,8 +216,8 @@ let unparseSample =
 let alternateRoot model _ =
     let rec displayOperation operation = 
         match operation with 
-        | Value(ParamArray ops)  when List.distinct ops = [State.``D#`` D3] -> str ""
-        | Value(ParamArray ops)  when List.distinct ops = [State.``D#`` D6] -> str ""
+        | Value(ParamArray ops)  when List.distinct ops = [State.``D#`` 3] -> str ""
+        | Value(ParamArray ops)  when List.distinct ops = [State.``D#`` 6] -> str ""
         | Value(Int(_)) -> str ""
         | Value(NoValue) -> span [Style [BorderStyle "dotted"; MinWidth 50;MinHeight 50]] []
         | Value(_) ->     str ""

@@ -17,41 +17,41 @@ let init name =
 
 let initSgt name coreRules =
     let attributes = [ "M",     ( 1, vInt 6)
-                       "WS",    ( 2, dPlus D6 3)
-                       "BS",    ( 3, dPlus D6 3)
+                       "WS",    ( 2, dPlus 6 3)
+                       "BS",    ( 3, dPlus 6 3)
                        "S",     ( 4, vInt 5)
                        "T",     ( 5, vInt 4)
                        "W",     ( 6, vInt 1)
                        "A",     ( 7, vInt 2)
                        "Ld",    ( 8, vInt 8)
-                       "Sv",    ( 9, dPlus D6 3)
+                       "Sv",    ( 9, dPlus 6 3)
                        "InvSv", (10, noValue)] 
     let rules = applyArgs coreRules (attributes |> List.map (fun (_,(_,c)) -> c))
     { (init name) with Rules = rules; Attributes = Map.ofList attributes }, Cmd.none
 let initMeq name coreRules =
     let attributes = [ "M",     ( 1, vInt 6)
-                       "WS",    ( 2, dPlus D6 3)
-                       "BS",    ( 3, dPlus D6 3)
+                       "WS",    ( 2, dPlus 6 3)
+                       "BS",    ( 3, dPlus 6 3)
                        "S",     ( 4, vInt 5)
                        "T",     ( 5, vInt 4)
                        "W",     ( 6, vInt 1)
                        "A",     ( 7, vInt 1)
                        "Ld",    ( 8, vInt 8)
-                       "Sv",    ( 9, dPlus D6 3)
+                       "Sv",    ( 9, dPlus 6 3)
                        "InvSv", (10, noValue   )] 
     let rules = applyArgs coreRules (attributes |> List.map (fun (_,(_,c)) -> c))
     { (init name) with Rules = rules; Attributes =  Map.ofList attributes }, Cmd.none
 let initGeq name coreRules =
     let attributes = [ "Weapon Range",( 1, vInt 30)
                        "M",          ( 2, vInt 6)
-                       "WS",         ( 3, dPlus D6 3)
-                       "BS",         ( 4, dPlus D6 3)
+                       "WS",         ( 3, dPlus 6 3)
+                       "BS",         ( 4, dPlus 6 3)
                        "S",          ( 5, vInt 5)
                        "T",          ( 6, vInt 4)
                        "W",          ( 7, vInt 1)
                        "A",          ( 8, vInt 2)
                        "Ld",         ( 9, vInt 8)
-                       "Sv",         (10, dPlus D6 3)
+                       "Sv",         (10, dPlus 6 3)
                        "InvSv",      (11,  noValue  )]  
     let rules = applyArgs (coreRules |> lam "Weapon Range") (attributes |> List.map (fun (_,(_,c)) -> c))
     { (init name) with Rules = rules; Attributes = Map.ofList attributes }, Cmd.none

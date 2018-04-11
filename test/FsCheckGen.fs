@@ -103,10 +103,10 @@ let genGp =
     Gen.sized genGp'
 let genDie = 
     Gen.oneof [
-        Gen.constant D6
-        Gen.constant D3
-        [1..3] |> Seq.map Gen.constant |> Gen.oneof |> Gen.listOfLength 3 |> Gen.map (fun rs -> Reroll(List.distinct rs, D3))
-        [1..6] |> Seq.map Gen.constant |> Gen.oneof |> Gen.listOfLength 6 |> Gen.map (fun rs -> Reroll(List.distinct rs, D6))
+        Gen.constant 6
+        Gen.constant 3
+        // [1..3] |> Seq.map Gen.constant |> Gen.oneof |> Gen.listOfLength 3 |> Gen.map (fun rs -> Reroll(List.distinct rs, D3))
+        // [1..6] |> Seq.map Gen.constant |> Gen.oneof |> Gen.listOfLength 6 |> Gen.map (fun rs -> Reroll(List.distinct rs, D6))
     ]
 
 let genOp =
@@ -127,7 +127,7 @@ let genOp =
                 Gen.map3 (fun ifExpr thenExpr elseExpr -> IfThenElse(ifExpr, thenExpr, elseExpr)) subtree subtree (Gen.optionOf subtree)
                 Gen.oneof [
                     Gen.map2 (fun lam value -> App(lam,value)) lambda subtree
-                    Gen.map  (fun d           -> App(Call(Dice(d)), Value NoValue)) Arb.generate<_>
+                    Gen.map  (fun d           -> App(Call Dice, Value (Int d))) Arb.generate<_>
                     Gen.map  (fun ops         -> App(Call(Product), (ops |> List.map Value |> opList)))  (genNumber (Gen.listOf)) 
                     Gen.map  (fun ops         -> App(Call(Total),   (ops |> List.map Value |> opList)))  (genFOfPrim (Gen.listOf))        
                     Gen.map  (fun ops         -> App(Call(Count),   (ops |> List.map Value |> opList)))  (genFOfPrim (Gen.listOf))   
@@ -152,7 +152,7 @@ type ScalarTypeGen() = static member ScalarType() : Arbitrary<ScalarType> = genS
 type TwoSimilarTypeGen() = static member TwoSimilarType() : Arbitrary<TwoSimilarTypes> = genTwoSimilarTypes |> Arb.fromGen 
 type TwoSimilarScalarTypeGen() = static member TwoSimilarScalarType() : Arbitrary<TwoSimilarScalarTypes> = genTwoSimilarScalarTypes |> Arb.fromGen 
 type ListDistScalarTypeGen() = static member ListDistScalarType() : Arbitrary<ListDistScalarType>  = genListDistScalarType |> Arb.fromGen
-type DieGen() = static member Die() : Arbitrary<Die> = Arb.fromGen genDie
+type DieGen() = static member Die() : Arbitrary<int> = Arb.fromGen genDie
 type GenOp() = static member Operation() : Arbitrary<Operation> = Arb.fromGen genOp
 let config = { FsCheckConfig.defaultConfig with 
                     arbitrary =    (typeof<GenOp>) 

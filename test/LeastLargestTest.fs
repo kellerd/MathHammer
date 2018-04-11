@@ -15,13 +15,13 @@ let tests =
         let eval = normalize >> snd >> evalOp Map.empty<_,_> 
         
         let largestTest data n = 
-            let result =  data |> List.map Value |> opList |> call (Largest n) |> eval
+            let result =  data |> List.map Value |> largest n |> eval
             let sorted = List.sortDescending data 
             let expected = sorted |> Seq.truncate n |> Seq.toList |> List.map Value |> opList
             result ==~ expected
 
         let leastTest data n = 
-            let result =  data |> List.map Value |> opList |> call (Least n) |> eval
+            let result =  data |> List.map Value |> least n |> eval
             let sorted = List.sort data 
             let expected = sorted |> Seq.truncate n |> Seq.toList |> List.map Value |> opList
             result ==~ expected

@@ -11,7 +11,7 @@ let tests =
     let eval x op = get x |> op |> evalOp Map.empty<_,_>
     let d6Dist =  [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value
     let plusTest plus = 
-        let ws = dPlus D6 plus >>= "WS"
+        let ws = dPlus 6 plus >>= "WS"
         let expectedWS = 
             [1..6] 
             |> List.map (fun i -> 

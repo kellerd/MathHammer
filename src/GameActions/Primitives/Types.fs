@@ -1,8 +1,5 @@
 module GameActions.Primitives.Types
-type Die =
-    | D3
-    | D6
-    | Reroll of (int list) * Die
+
 type GamePrimitive =
     | Int of int
     | Str of string
@@ -28,7 +25,7 @@ and Call =
     | Total
     | Count
     | Repeat 
-    | Dice of Die
+    | Dice 
     | GreaterThan
     | Equals
     | NotEquals
@@ -41,8 +38,9 @@ and Call =
     | Median 
     | Mean
     | Mode 
-    | Least of int 
-    | Largest of int
+    | Least  
+    | Largest 
+    //| Reroll of (int list) * Die
 
 let rec (|IsDistribution|_|) = function
     | Value(Dist(d)) | Let(_,IsDistribution(d),_) -> Some d

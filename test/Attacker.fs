@@ -65,7 +65,7 @@ let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]
 let attacker = createArgs stats body
 let defender =  createArgs stats defbody
 let move = vInt 6
-let threePlus = dPlus D6 3
+let threePlus = dPlus 6 3
 let ws = threePlus
 let bs = threePlus
 let s = vInt 4
@@ -175,8 +175,8 @@ let tests =
             |> Value
         pairs        
         |> List.map(function 
-                    | key,IsDPlus (D6,plus) -> key, expectedDice 6 plus
-                    | key,IsDPlus (D3,plus) -> key, expectedDice 3 plus
+                    | key,IsDPlus (6,plus) -> key, expectedDice 6 plus
+                    | key,IsDPlus (3,plus) -> key, expectedDice 3 plus
                     | key,op -> key,op)
     testList "Attacker Tests" [
         expectedStd 
