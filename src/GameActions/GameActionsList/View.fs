@@ -7,16 +7,16 @@ open GameActions.Primitives.View
 open Types
 
 let d6icon = 
-    svg [ SVGAttr.Width 24
-          SVGAttr.Height 24
+    svg [ SVGAttr.Width 18
+          SVGAttr.Height 18
           ViewBox "0 0 24 24"]
         [
               path [SVGAttr.Fill "#000000" 
                     D "M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M7,5A2,2 0 0,0 5,7A2,2 0 0,0 7,9A2,2 0 0,0 9,7A2,2 0 0,0 7,5M17,15A2,2 0 0,0 15,17A2,2 0 0,0 17,19A2,2 0 0,0 19,17A2,2 0 0,0 17,15M17,10A2,2 0 0,0 15,12A2,2 0 0,0 17,14A2,2 0 0,0 19,12A2,2 0 0,0 17,10M17,5A2,2 0 0,0 15,7A2,2 0 0,0 17,9A2,2 0 0,0 19,7A2,2 0 0,0 17,5M7,10A2,2 0 0,0 5,12A2,2 0 0,0 7,14A2,2 0 0,0 9,12A2,2 0 0,0 7,10M7,15A2,2 0 0,0 5,17A2,2 0 0,0 7,19A2,2 0 0,0 9,17A2,2 0 0,0 7,15Z"] []
         ]
 let d3icon = 
-    svg [ SVGAttr.Width 24
-          SVGAttr.Height 24
+    svg [ SVGAttr.Width 18
+          SVGAttr.Height 18
           ViewBox "0 0 24 24"]
         [
               path [SVGAttr.Fill "#000000" 
@@ -92,7 +92,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 |> List.collect(function 
                                 | Empty -> [] 
                                 | Zipper(l,a,r) -> unparseEq a (fun op' -> l @ op'::r |> ParamArray |> dispatch)) 
-        and unparseApp f a dispatch = 
+        and unparseApp f a dispatch : Fable.Import.React.ReactElement = 
             let (joinStr) = 
                 match f  with 
                 | Call Product      -> str " * "
@@ -160,9 +160,22 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                             | [] -> Option.toList newValuePlaceholder
                                             | _ -> joinStr :: acc
                                         unparseEq a (fun op' -> (f,l @ op'::r |> ParamArray |> Value) |> dispatch) @ tail ) ops' [] 
-                call  @  paren (param)
-            | Value(NoValue) -> unparseEq f (fun op -> (op,a) |> dispatch)
-            | _ -> unparseEq f (fun op -> (op,a) |> dispatch) @ unparseEq a (fun op -> (f,op) |> dispatch)  
+                div [ClassName "tags has-addons"]
+                    [ span [ ClassName "tag is-primary" ] call  
+                      span [ ClassName "tag is-success" ] (paren param) ] 
+            | Value(NoValue) -> 
+                div [ClassName "tags has-addons"]
+                    [ span [ ClassName "tag is-primary" ]
+                           (unparseEq f (fun op -> (op,a) |> dispatch)) 
+                      //a [ClassName "tag is-delete"] []
+                    ]
+                
+            | _ -> 
+                div [ClassName "tags has-addons"]
+                    [ span [ClassName "tag is-primary" ]
+                           (unparseEq f (fun op -> (op,a) |> dispatch))
+                      span [ClassName "tag is-white" ]
+                           (unparseEq a (fun op -> (f,op) |> dispatch))      ]
         and unparseChoice dispatch (choices:(string*Operation) list) =
             choices 
             |> Zipper.permute  
@@ -187,7 +200,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 [ str <| name + "one of: "
                   br []
                   ul [] (unparseChoice (fun ch -> Choice(name, ch) |> dispatch) choices ) ]
-            | App(f,a) -> unparseApp f a (App >> dispatch)
+            | App(f,a) -> [unparseApp f a (App >> dispatch)]
             | Let(x, v, inner) ->  
                 [ str ("let " + x + " = ") :: unparseEq v (fun op -> Let(x, op, inner) |> dispatch)
                   [br []]
@@ -218,7 +231,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
             td [] [(if hideAddButton then str "" 
                     else  a [ ClassName "button fa fa-pencil-square-o"; OnClick (fun _ -> EditRow(name) |> dispatch) ] [str "Edit"] )]
             td [] [iconDisplay]
-            td [Style [Position "relative"]] [unparseEquation None gameAction ignore |> div [Class "columns" ]] //dispatch)
+            td [Style [Position "relative"]] (unparseEquation None gameAction ignore) //dispatch)
         ], newIcons
     | ReadWrite(name,icon,op) -> 
         let newIcons,_ = iconDisplay name icon
@@ -245,11 +258,11 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                 AutoFocus true 
                                 OnChange (fun ev -> !!ev.target?value |> ChangeNewRowName |> dispatch ) ]
                     ]      
-                [div [ClassName "field"] 
+                div [ClassName "field"] 
                     [
                         label [ClassName "label"] [str "Equation / Steps"]
                         (unparseEquation dragging op (fun op -> Dragged(name,op) |> dispatch)) |> ofList
-                    ]] |> div [Class "columns" ]
+                    ]
             ] ], newIcons
 let root model dispatch =
     let (tableRows,_) = List.mapFold (mkRows model.Dragging model.Editing dispatch) Map.empty<_,_> model.Functions
