@@ -35,32 +35,33 @@ let inline  fromString<'a> (s:string) =
     |[|case|] -> Some(FSharpValue.MakeUnion(case,[||]) :?> 'a)
     |_ -> None
 let callList call = 
-    div [Class "field"] 
-        [
-            // p [ Class "control has-icons-left"]
-            //     [ span [Class "select" ] [
-                    select [ DefaultValue (toString call)] 
-                        [ option [ HTMLAttr.Value (toString Product)     ; Title "Product (...params...)"                ] [str (toString Product)    ] 
-                          option [ HTMLAttr.Value (toString Division)    ; Title "Division (...params...)"               ] [str (toString Division)   ] 
-                          option [ HTMLAttr.Value (toString Total)       ; Title "Total (...params...)"                  ] [str (toString Total)      ] 
-                          option [ HTMLAttr.Value (toString Count)       ; Title "Count (Passes,Fails) in (...params...)"] [str (toString Count)      ] 
-                          option [ HTMLAttr.Value (toString Repeat)      ; Title "Repeat (x,y)"                          ] [str (toString Repeat)     ] 
-                          option [ HTMLAttr.Value (toString Dice)        ; Title "Die of "                               ] [str (toString Dice)       ] 
-                          option [ HTMLAttr.Value (toString GreaterThan) ; Title "GreaterThan (x,y)"                     ] [str (toString GreaterThan)] 
-                          option [ HTMLAttr.Value (toString Equals)      ; Title "Equals (x,y)"                          ] [str (toString Equals)     ] 
-                          option [ HTMLAttr.Value (toString NotEquals)   ; Title "NotEquals (x,y)"                       ] [str (toString NotEquals)  ] 
-                          option [ HTMLAttr.Value (toString LessThan)    ; Title "LessThan (x,y)"                        ] [str (toString LessThan)   ] 
-                          option [ HTMLAttr.Value (toString And)         ; Title "And (x,y)"                             ] [str (toString And)        ] 
-                          option [ HTMLAttr.Value (toString Or)          ; Title "Or (x,y)"                              ] [str (toString Or)         ] 
-                          option [ HTMLAttr.Value (toString Max)         ; Title "Max (...params...)"                    ] [str (toString Max)        ] 
-                          option [ HTMLAttr.Value (toString Min)         ; Title "Min (...params...)"                    ] [str (toString Min)        ] 
-                          option [ HTMLAttr.Value (toString Sub)         ; Title "Sub (...params...)"                    ] [str (toString Sub)        ] 
-                          option [ HTMLAttr.Value (toString Median)      ; Title "Median (...params...)"                 ] [str (toString Median)     ] 
-                          option [ HTMLAttr.Value (toString Mean)        ; Title "Mean (...params...)"                   ] [str (toString Mean)       ] 
-                          option [ HTMLAttr.Value (toString Mode)        ; Title "Mode (...params...)"                   ] [str (toString Mode)       ] 
-                          option [ HTMLAttr.Value (toString Least)       ; Title "Least  (n, ...params...)"              ] [str (toString Least)      ] 
-                          option [ HTMLAttr.Value (toString Largest)     ; Title "Largest  (n, ...params...)"            ] [str (toString Largest)    ] 
-                        ] ]      
+    toString call + " " |> str
+    // div [Class "field"] 
+    //     [
+    //         // p [ Class "control has-icons-left"]
+    //         //     [ span [Class "select" ] [
+    //                 select [ DefaultValue (toString call)] 
+    //                     [ option [ HTMLAttr.Value (toString Product)     ; Title "Product (...params...)"                ] [str (toString Product)    ] 
+    //                       option [ HTMLAttr.Value (toString Division)    ; Title "Division (...params...)"               ] [str (toString Division)   ] 
+    //                       option [ HTMLAttr.Value (toString Total)       ; Title "Total (...params...)"                  ] [str (toString Total)      ] 
+    //                       option [ HTMLAttr.Value (toString Count)       ; Title "Count (Passes,Fails) in (...params...)"] [str (toString Count)      ] 
+    //                       option [ HTMLAttr.Value (toString Repeat)      ; Title "Repeat (x,y)"                          ] [str (toString Repeat)     ] 
+    //                       option [ HTMLAttr.Value (toString Dice)        ; Title "Die of "                               ] [str (toString Dice)       ] 
+    //                       option [ HTMLAttr.Value (toString GreaterThan) ; Title "GreaterThan (x,y)"                     ] [str (toString GreaterThan)] 
+    //                       option [ HTMLAttr.Value (toString Equals)      ; Title "Equals (x,y)"                          ] [str (toString Equals)     ] 
+    //                       option [ HTMLAttr.Value (toString NotEquals)   ; Title "NotEquals (x,y)"                       ] [str (toString NotEquals)  ] 
+    //                       option [ HTMLAttr.Value (toString LessThan)    ; Title "LessThan (x,y)"                        ] [str (toString LessThan)   ] 
+    //                       option [ HTMLAttr.Value (toString And)         ; Title "And (x,y)"                             ] [str (toString And)        ] 
+    //                       option [ HTMLAttr.Value (toString Or)          ; Title "Or (x,y)"                              ] [str (toString Or)         ] 
+    //                       option [ HTMLAttr.Value (toString Max)         ; Title "Max (...params...)"                    ] [str (toString Max)        ] 
+    //                       option [ HTMLAttr.Value (toString Min)         ; Title "Min (...params...)"                    ] [str (toString Min)        ] 
+    //                       option [ HTMLAttr.Value (toString Sub)         ; Title "Sub (...params...)"                    ] [str (toString Sub)        ] 
+    //                       option [ HTMLAttr.Value (toString Median)      ; Title "Median (...params...)"                 ] [str (toString Median)     ] 
+    //                       option [ HTMLAttr.Value (toString Mean)        ; Title "Mean (...params...)"                   ] [str (toString Mean)       ] 
+    //                       option [ HTMLAttr.Value (toString Mode)        ; Title "Mode (...params...)"                   ] [str (toString Mode)       ] 
+    //                       option [ HTMLAttr.Value (toString Least)       ; Title "Least  (n, ...params...)"              ] [str (toString Least)      ] 
+    //                       option [ HTMLAttr.Value (toString Largest)     ; Title "Largest  (n, ...params...)"            ] [str (toString Largest)    ] 
+    //                     ] ]      
                 //   span [Class "icon is-small is-left"] [ i [Class "fa fa-terminal"] [] ]
                 // ]
         // ]                  
@@ -71,17 +72,6 @@ let (|HasIcon|_|)  = function
    | Icon s       -> div [ClassName ("fa " + s)] [] |> Some
    | Text(Some s) -> strong [] [str s] |> Some
    | _            -> None      
-
-let mkRowDrag dispatch  = function
-    | ReadOnly (name, icon, _) | ReadWrite(name, icon, _) -> 
-        (|HasIcon|_|) icon 
-        |> Option.map (List.singleton >> 
-                       div [ Style [Cursor "move"]
-                             Draggable true 
-                             OnDragEnd (fun _ -> dispatch DragLeft)
-                             OnDragStart (fun _ -> Dragging(name) |> dispatch)])
-        |> ofOption
-    
 let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row = 
     let unparseEquation dragging operation dispatch = 
         let rec unparseV (dispatch:GamePrimitive->unit) v  = 
@@ -210,17 +200,24 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 let elsePart = Option.map(fun elseExpr -> br [] :: unparseEq elseExpr (fun op -> IfThenElse(ifExpr, thenExpr, Some op) |> dispatch )) elseExpr |> Option.toList |> List.collect id
                 ifPart @ thenPart @ elsePart   
         unparseEq operation dispatch
+    let draggable name item = 
+        item 
+        |> List.singleton 
+        |> div [ Style [Cursor "move"]
+                 Draggable true 
+                 OnDragEnd (fun _ -> dispatch DragLeft)
+                 OnDragStart (fun _ -> Dragging(name) |> dispatch)]
     let iconDisplay name icon = 
         match icon with 
-        | HasIcon icon -> Map.add name icon icons, [icon]
-        | _ -> icons, [str name]
+        | HasIcon icon -> Map.add name icon icons, draggable name icon 
+        | _ -> icons, draggable name (str name)
     match row with 
     | ReadOnly (name, icon, gameAction) -> 
         let newIcons,iconDisplay = iconDisplay name icon
         tr [] [
             td [] [(if hideAddButton then str "" 
                     else  a [ ClassName "button fa fa-pencil-square-o"; OnClick (fun _ -> EditRow(name) |> dispatch) ] [str "Edit"] )]
-            td [] iconDisplay
+            td [] [iconDisplay]
             td [Style [Position "relative"]] [unparseEquation None gameAction ignore |> div [Class "columns" ]] //dispatch)
         ], newIcons
     | ReadWrite(name,icon,op) -> 
@@ -248,29 +245,24 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                 AutoFocus true 
                                 OnChange (fun ev -> !!ev.target?value |> ChangeNewRowName |> dispatch ) ]
                     ]      
-                div [ClassName "field"] 
+                [div [ClassName "field"] 
                     [
                         label [ClassName "label"] [str "Equation / Steps"]
                         (unparseEquation dragging op (fun op -> Dragged(name,op) |> dispatch)) |> ofList
-                    ]
+                    ]] |> div [Class "columns" ]
             ] ], newIcons
 let root model dispatch =
-    let draggables = (p [] [str "Common"; br [] ; str "Functions"] )::(List.map (mkRowDrag dispatch) model.Functions)
     let (tableRows,_) = List.mapFold (mkRows model.Dragging model.Editing dispatch) Map.empty<_,_> model.Functions
-    [
-        div [ClassName "column is-11"] [
-            table [ClassName "table is-fullwidth  is-striped"] 
-                [   thead [] [
-                        tr [] [
-                            th [] [
-                                (if model.Editing then str "" 
-                                else a [ ClassName "button fa fa-plus-circle"; OnClick (fun _ -> AddRow |> dispatch) ] [str "Add"] )
-                            ]        
-                            th [] [ str "Name" ]
-                            th [] [ str "Equation / Steps"] ] ] 
-                    tbody [] tableRows ] ]
-        div [ClassName "column is-1 has-text-centered"] draggables ]
-    |> ofList                    
+    table [ClassName "table is-fullwidth  is-striped"] 
+        [   thead [] [
+                tr [] [
+                    th [] [
+                        (if model.Editing then str "" 
+                        else a [ ClassName "button fa fa-plus-circle"; OnClick (fun _ -> AddRow |> dispatch) ] [str "Add"] )
+                    ]        
+                    th [] [ str "Name" ]
+                    th [] [ str "Equation / Steps"] ] ] 
+            tbody [] tableRows ]
 
     
 
