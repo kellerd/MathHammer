@@ -64,7 +64,7 @@ let root model dispatch =
                 let isActive = if model.Mode = mode then [ClassName "is-active" :> IHTMLProp] else []
                 li isActive [a [OnClick (fun _ -> dispatch (ChangeMode mode))]   [str (mode.ToString())     ]]
                
-            let resultsDiv = selected.ProbabilityRules |> getListOfOps |> List.collect (showFunction dispatch)  |> columnsOf
+            let resultsDiv = selected.ProbabilityRules |> getListOfOps |> List.map (showFunction dispatch)  |> columnsOf
               
             let inline chunkBySize size = Seq.ofList >> Seq.chunkBySize size >> Seq.map (Array.toList) >> Seq.toList
 

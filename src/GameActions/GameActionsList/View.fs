@@ -72,26 +72,39 @@ let (|HasIcon|_|)  = function
    | Icon s       -> div [ClassName ("fa " + s)] [] |> Some
    | Text(Some s) -> strong [] [str s] |> Some
    | _            -> None      
+
+let withAddon tagClass tagClass2 first second =
+    div [ClassName "tags has-addons"]
+                    [ span [ ClassName ("tag " + tagClass) ] [first]  
+                      span [ ClassName ("tag " + tagClass2)] [second] ] 
+let withTag tagClass first = 
+    div [ClassName "tags has-addons"]
+        [ span [ ClassName ("tag " + tagClass) ]
+               [first]     
+          //a [ClassName "tag is-delete"] []
+        ]                      
 let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row = 
     let unparseEquation dragging operation dispatch = 
-        let rec unparseV (dispatch:GamePrimitive->unit) v  = 
-            match v with    
-            | Int(i) -> [string i |> str]
-            | Float(f) -> [sprintf "%.1f" f |> str]
-            | Dist(d) -> [unparseDist (unparseV dispatch) d]
-            | NoValue -> [str "--" ] 
-            | Str s -> [b  [] [str s]]
-            | Tuple(v,v2) -> paren (unparseV (fun gp -> Tuple(gp,v2) |> dispatch) v ) @(str ",")::unparseV (fun gp -> Tuple(v,gp) |> dispatch) v2 
-            | Check c -> [unparseCheck (unparseV dispatch) c]
-            | ParamArray ([]) ->  []
-            | ParamArray ([Value (Str _); Value(NoValue)]) ->  []
-            | ParamArray ([Value (Str _); Var _]) ->   []
-            | ParamArray(ops) -> 
-                ops 
-                |> Zipper.permute 
-                |> List.collect(function 
-                                | Empty -> [] 
-                                | Zipper(l,a,r) -> unparseEq a (fun op' -> l @ op'::r |> ParamArray |> dispatch)) 
+        let rec unparseV (dispatch:GamePrimitive->unit)  = function
+                | Int(i) -> string i |> str
+                | Float(f) -> sprintf "%.1f" f |> str
+                | Dist(d) -> unparseDist (unparseV dispatch) d
+                | NoValue -> str "--"
+                | Str s -> b  [] [str s]
+                | Tuple(v,v2) -> [ unparseV (fun gp -> Tuple(gp,v2) |> dispatch) v 
+                                   str ","
+                                   unparseV (fun gp -> Tuple(v,gp) |> dispatch) v2 ] |> ofList |> paren
+                | Check c -> unparseCheck (unparseV dispatch) c
+                | ParamArray [] ->  ofOption None
+                | ParamArray [Value (Str _); Value(NoValue)] ->  ofOption None
+                | ParamArray [Value (Str _); Var _] ->   ofOption None
+                | ParamArray ops -> 
+                    ops 
+                    |> Zipper.permute 
+                    |> List.collect(function 
+                                    | Empty -> [] 
+                                    | Zipper(l,a,r) -> [unparseEq a (fun op' -> l @ op'::r |> ParamArray |> dispatch)])
+                    |> ofList                                
         and unparseApp f a dispatch : Fable.Import.React.ReactElement = 
             let (joinStr) = 
                 match f  with 
@@ -159,59 +172,56 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                             match acc with 
                                             | [] -> Option.toList newValuePlaceholder
                                             | _ -> joinStr :: acc
-                                        unparseEq a (fun op' -> (f,l @ op'::r |> ParamArray |> Value) |> dispatch) @ tail ) ops' [] 
-                div [ClassName "tags has-addons"]
-                    [ span [ ClassName "tag is-primary" ] call  
-                      span [ ClassName "tag is-success" ] (paren param) ] 
+                                        unparseEq a (fun op' -> (f,l @ op'::r |> ParamArray |> Value) |> dispatch)::tail ) ops' [] 
+                    |> ofList                                                    
+                withAddon "is-primary" "is-success" call (paren param)                
             | Value(NoValue) -> 
-                div [ClassName "tags has-addons"]
-                    [ span [ ClassName "tag is-primary" ]
-                           (unparseEq f (fun op -> (op,a) |> dispatch)) 
-                      //a [ClassName "tag is-delete"] []
-                    ]
-                
+                unparseEq f (fun op -> (op,a) |> dispatch)
+                |> withTag "is-primary"                 
             | _ -> 
-                div [ClassName "tags has-addons"]
-                    [ span [ClassName "tag is-primary" ]
-                           (unparseEq f (fun op -> (op,a) |> dispatch))
-                      span [ClassName "tag is-white" ]
-                           (unparseEq a (fun op -> (f,op) |> dispatch))      ]
+                let x = (||>) 
+                (unparseEq f (fun op -> (op,a) |> dispatch), unparseEq a (fun op -> (f,op) |> dispatch))
+                ||> withAddon "is-primary" "is-white" 
         and unparseChoice dispatch (choices:(string*Operation) list) =
             choices 
             |> Zipper.permute  
             |> List.collect(function 
                             | Empty -> [] 
                             | Zipper(l,a,r) -> 
-                                     str (fst a + ":= ") :: 
-                                     br [] ::
-                                     unparseEq (snd a) (fun op' -> l @ (fst a,op')::r |> dispatch))  
+                                     [str (fst a + ":= ");
+                                     br [];
+                                     unparseEq (snd a) (fun op' -> l @ (fst a,op')::r |> dispatch)])  
+            |> ofList
         and unparseC dispatch func = 
             callList func
-        and unparseEq op (dispatch:Operation->unit) : Fable.Import.React.ReactElement list = 
+        and unparseEq op (dispatch:Operation->unit) : Fable.Import.React.ReactElement = 
             match op with 
-            | Call f -> [unparseC (Call >> dispatch) f]
+            | Call f -> unparseC (Call >> dispatch) f
             | Value(v)-> unparseV (Value >> dispatch) v
             | Var (v) -> 
                 match icons |> Map.tryFind v with 
-                | Some icon -> [b [] [icon]]
-                | None -> [str v]
-            | Lam(x,body) -> str (x + " => ") :: (unparseEq body (fun op -> Lam(x, op) |> dispatch))
+                | Some icon -> b [] [icon]
+                | None -> str v
+            | Lam(x,body) -> 
+                str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
             | Choice(name, choices) ->  
                 [ str <| name + "one of: "
                   br []
-                  ul [] (unparseChoice (fun ch -> Choice(name, ch) |> dispatch) choices ) ]
-            | App(f,a) -> [unparseApp f a (App >> dispatch)]
+                  ul [] [unparseChoice (fun ch -> Choice(name, ch) |> dispatch) choices]  ]
+                |> ofList
+            | App(f,a) -> unparseApp f a (App >> dispatch)
             | Let(x, v, inner) ->  
-                [ str ("let " + x + " = ") :: unparseEq v (fun op -> Let(x, op, inner) |> dispatch)
-                  [br []]
+                [ str ("let " + x + " = ") 
+                  unparseEq v (fun op -> Let(x, op, inner) |> dispatch)
+                  br [] 
                   unparseEq inner (fun op -> Let(x, v, op) |> dispatch) ]
-                |> List.collect id
-            | PropertyGet(s,op) -> unparseEq op (fun op -> PropertyGet(s,op) |> dispatch ) @ [str <| sprintf ".%s" s]
+                |> ofList
+            | PropertyGet(s,op) -> [unparseEq op (fun op -> PropertyGet(s,op) |> dispatch ); str <| sprintf ".%s" s] |> ofList
             | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
-                let ifPart = str "if " :: unparseEq ifExpr (fun op -> IfThenElse(op, thenExpr, elseExpr) |> dispatch )
-                let thenPart = str " then " :: br [] :: unparseEq thenExpr (fun op -> IfThenElse(ifExpr, op, elseExpr) |> dispatch )
-                let elsePart = Option.map(fun elseExpr -> br [] :: unparseEq elseExpr (fun op -> IfThenElse(ifExpr, thenExpr, Some op) |> dispatch )) elseExpr |> Option.toList |> List.collect id
-                ifPart @ thenPart @ elsePart   
+                let ifPart = [str "if "; unparseEq ifExpr (fun op -> IfThenElse(op, thenExpr, elseExpr) |> dispatch )] |> ofList
+                let thenPart = [str " then "; br []; unparseEq thenExpr (fun op -> IfThenElse(ifExpr, op, elseExpr) |> dispatch )] |> ofList
+                let elsePart = Option.map(fun elseExpr -> [br []; unparseEq elseExpr (fun op -> IfThenElse(ifExpr, thenExpr, Some op) |> dispatch )]) elseExpr |> Option.toList |> List.collect id
+                ifPart :: thenPart :: elsePart |> ofList 
         unparseEq operation dispatch
     let draggable name item = 
         item 
@@ -231,7 +241,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
             td [] [(if hideAddButton then str "" 
                     else  a [ ClassName "button fa fa-pencil-square-o"; OnClick (fun _ -> EditRow(name) |> dispatch) ] [str "Edit"] )]
             td [] [iconDisplay]
-            td [Style [Position "relative"]] (unparseEquation None gameAction ignore) //dispatch)
+            td [Style [Position "relative"]] [unparseEquation None gameAction ignore] //dispatch)
         ], newIcons
     | ReadWrite(name,icon,op) -> 
         let newIcons,_ = iconDisplay name icon
@@ -261,7 +271,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 div [ClassName "field"] 
                     [
                         label [ClassName "label"] [str "Equation / Steps"]
-                        (unparseEquation dragging op (fun op -> Dragged(name,op) |> dispatch)) |> ofList
+                        unparseEquation dragging op (fun op -> Dragged(name,op) |> dispatch)
                     ]
             ] ], newIcons
 let root model dispatch =
