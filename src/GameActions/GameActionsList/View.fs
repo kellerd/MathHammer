@@ -98,13 +98,18 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 | ParamArray [] ->  ofOption None
                 | ParamArray [Value (Str _); Value(NoValue)] ->  ofOption None
                 | ParamArray [Value (Str _); Var _] ->   ofOption None
+                | ParamArray [Value (Str s); Value(v)] ->   
+                    [ unparseV (fun s -> ParamArray [Value s;       Value(v)] |> dispatch ) (Str s)
+                      unparseV (fun v -> ParamArray [Value (Str s); Value(v)] |> dispatch ) v ]
+                    |> List.map (List.singleton >> div [ClassName "control"])
+                    |> div [ClassName "field is-grouped is-grouped-multiline"]
                 | ParamArray ops -> 
                     ops 
                     |> Zipper.permute 
                     |> List.collect(function 
                                     | Empty -> [] 
                                     | Zipper(l,a,r) -> [unparseEq a (fun op' -> l @ op'::r |> ParamArray |> dispatch)])
-                    |> ofList                                
+                    |> ofList                               
         and unparseApp f a dispatch : Fable.Import.React.ReactElement = 
             let (joinStr) = 
                 match f  with 
@@ -202,20 +207,41 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 match icons |> Map.tryFind v with 
                 | Some icon -> b [] [icon]
                 | None -> str v
+            | Lam("unusedVariable",body) -> unparseEq body (fun op -> Lam("unusedVariable", op) |> dispatch)
             | Lam(x,body) -> 
                 str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
+                |> withTag "is-warning"
             | Choice(name, choices) ->  
                 [ str <| name + "one of: "
                   br []
                   ul [] [unparseChoice (fun ch -> Choice(name, ch) |> dispatch) choices]  ]
                 |> ofList
             | App(f,a) -> unparseApp f a (App >> dispatch)
-            | Let(x, v, inner) ->  
-                [ str ("let " + x + " = ") 
-                  unparseEq v (fun op -> Let(x, op, inner) |> dispatch)
-                  br [] 
-                  unparseEq inner (fun op -> Let(x, v, op) |> dispatch) ]
-                |> ofList
+            | Let(name, v, inner) ->  
+                [ div [ Class "card" ]
+                    [ header [ Class "card-header" ]
+                             [ p [ Class "card-header-title" ] [ str name ]
+                               a [ Href "#"
+                                   Class "card-header-icon" ]
+                                 [ span [ Class "icon" ] 
+                                        [ i [ Class "fa fa-angle-down" ] [] ] ] ]
+                      div [ Class "card-content" ] 
+                          [ div [ Class "content" ] 
+                                [ unparseEq v (fun op -> Let(name, op, inner) |> dispatch) ] ]
+                    //   footer  [ Class "card-footer" ] 
+                    //           [ a [ Href "#"; Class "card-footer-item" ] [str "Save"]
+                    //             a [ Href "#"; Class "card-footer-item" ] [str "Edit"] ]
+                    ] 
+                  unparseEq inner (fun op -> Let(name, v, op) |> dispatch)
+                ] |> ofList
+
+
+
+                // [ str ("let " + name + " = ") 
+                //   unparseEq v (fun op -> Let(name, op, inner) |> dispatch)
+                //   br [] 
+                //   unparseEq inner (fun op -> Let(name, v, op) |> dispatch) ]
+                // |> ofList
             | PropertyGet(s,op) -> [unparseEq op (fun op -> PropertyGet(s,op) |> dispatch ); str <| sprintf ".%s" s] |> ofList
             | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
                 let ifPart = [str "if "; unparseEq ifExpr (fun op -> IfThenElse(op, thenExpr, elseExpr) |> dispatch )] |> ofList
