@@ -227,10 +227,14 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 | Lam(x,WithLams (apps, lams,o)) ->Some(apps, x::lams,o)
                 | Lam(x,o) -> Some([], [x], o)
                 | _ -> None
+
+                            
             let rec lams ls o = 
                 match ls with 
                 | [] -> o
                 | l::ls -> Lam(l,lams ls o)
+            let t1 = Lam("X", Lam ("Y", Value(NoValue)))
+            let app1 = App(Lam("X", Lam ("Y", Value(NoValue))),Value(Int(2)))
             match op with 
             | Call f -> unparseC (Call >> dispatch) f
             | Value(v)-> unparseV (Value >> dispatch) v
@@ -239,12 +243,12 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 | Some icon -> b [] [icon]
                 | None -> str v
             | Lam("unusedVariable",body) -> unparseEq body (fun op -> Lam("unusedVariable", op) |> dispatch)
-            | WithLams (apps, lams, op) ->
-                let eop = unparseEq op (fun op -> lams xs op |> dispatch)
-                card None eop  (Some ("has-background-warning", xs))
-            // | Lam(x,body) -> 
-            //     str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
-            //     |> withTag "is-warning"
+            // | WithLams (apps, lams, op) ->
+            //     let eop = unparseEq op (fun op -> lams xs op |> dispatch)
+            //     card None eop  (Some ("has-background-warning", xs))
+            | Lam(x,body) -> 
+                str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
+                |> withTag "is-success"
             | Choice(name, choices) ->  
                 [ str <| name + "one of: "
                   br []
