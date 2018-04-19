@@ -83,6 +83,28 @@ let withTag tagClass first =
                [first]     
           //a [ClassName "tag is-delete"] []
         ]                      
+let card name v foot =
+    div [ Class "card" ]
+        [ name 
+          |> Option.map (fun name -> 
+                header [ Class "card-header" ]
+                       [ p [ Class "card-header-title" ] [ str name ]
+                         a [ Href "#"
+                             Class "card-header-icon" ]
+                           [ span [ Class "icon" ] 
+                                  [ i [ Class "fa fa-angle-down" ] [] ] ] ])
+           |> ofOption
+          div [ Class "card-content" ] 
+              [ div [ Class "content" ] [ v ] ]
+          foot
+          |> Option.map (fun (colour,foot) -> 
+                foot 
+                |> List.map (fun s -> a [ Href "#"; Class ("card-footer-item " + colour)  ] [s] )
+                |> footer  [ Class "card-footer" ] 
+            )          
+          |> ofOption
+
+        ]      
 let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row = 
     let unparseEquation dragging operation dispatch = 
         let rec unparseV (dispatch:GamePrimitive->unit)  = function
@@ -200,6 +222,15 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
         and unparseC dispatch func = 
             callList func
         and unparseEq op (dispatch:Operation->unit) : Fable.Import.React.ReactElement = 
+            let rec (|WithLams|_|) = function
+                | App(WithLams(apps, [], o), v) -> Some (v::apps,[],o)
+                | Lam(x,WithLams (apps, lams,o)) ->Some(apps, x::lams,o)
+                | Lam(x,o) -> Some([], [x], o)
+                | _ -> None
+            let rec lams ls o = 
+                match ls with 
+                | [] -> o
+                | l::ls -> Lam(l,lams ls o)
             match op with 
             | Call f -> unparseC (Call >> dispatch) f
             | Value(v)-> unparseV (Value >> dispatch) v
@@ -208,9 +239,12 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 | Some icon -> b [] [icon]
                 | None -> str v
             | Lam("unusedVariable",body) -> unparseEq body (fun op -> Lam("unusedVariable", op) |> dispatch)
-            | Lam(x,body) -> 
-                str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
-                |> withTag "is-warning"
+            | WithLams (apps, lams, op) ->
+                let eop = unparseEq op (fun op -> lams xs op |> dispatch)
+                card None eop  (Some ("has-background-warning", xs))
+            // | Lam(x,body) -> 
+            //     str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
+            //     |> withTag "is-warning"
             | Choice(name, choices) ->  
                 [ str <| name + "one of: "
                   br []
@@ -218,23 +252,11 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 |> ofList
             | App(f,a) -> unparseApp f a (App >> dispatch)
             | Let(name, v, inner) ->  
-                [ div [ Class "card" ]
-                    [ header [ Class "card-header" ]
-                             [ p [ Class "card-header-title" ] [ str name ]
-                               a [ Href "#"
-                                   Class "card-header-icon" ]
-                                 [ span [ Class "icon" ] 
-                                        [ i [ Class "fa fa-angle-down" ] [] ] ] ]
-                      div [ Class "card-content" ] 
-                          [ div [ Class "content" ] 
-                                [ unparseEq v (fun op -> Let(name, op, inner) |> dispatch) ] ]
-                    //   footer  [ Class "card-footer" ] 
-                    //           [ a [ Href "#"; Class "card-footer-item" ] [str "Save"]
-                    //             a [ Href "#"; Class "card-footer-item" ] [str "Edit"] ]
-                    ] 
-                  unparseEq inner (fun op -> Let(name, v, op) |> dispatch)
-                ] |> ofList
-
+                let ev = unparseEq inner (fun op -> Let(name, op, inner) |> dispatch)
+                let einner = unparseEq inner (fun op -> Let(name, v, op) |> dispatch)
+                [ card (Some name) ev None
+                  einner ]
+                |> ofList
 
 
                 // [ str ("let " + name + " = ") 
