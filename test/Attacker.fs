@@ -1,66 +1,65 @@
 module AttackerTests
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open Expecto
 open App.State
 open GameActions.GameActionsList.State
+open Expecto
 let (==?) x y = Expect.equal x y ""
 let (==~) x y = 
     match y with 
     | Value(Dist({Probabilities = y})) -> Expect.contains (y |> List.map (fst >> Value)) x ""
     | _ -> Expect.equal x y ""
 
-let phaseActions = 
-    choose "Phase" 
-        [
-            "Assault", 
-                nestOps 
-                    [ get "Charge Range"     >>= "Charge Range"
-                      get "Assault Range"      <*> get "M" 
-                                            >>= "Assault Range"
-                      get "To Hit"           <*> get "WS" 
-                                            <*> get "A" 
-                                            >>= "Hit Results"
+// let phaseActions = 
+//     choose "Phase" 
+//         [
+//             "Assault", 
+//                 nestOps 
+//                     [ get "Assault Range"   <*> get "M" 
+//                                             >>= "Assault Range"
+//                       get "To Hit"           <*> get "WS" 
+//                                             <*> get "A" 
+//                                             >>= "Hit Results"
                                         
-                      get "To Wound"         <*> get "Defender" 
-                                            <*> get "S" 
-                                            >>= "Wound Results"
-                      get "Armour Save"      <*> get "Defender"  
-                                            >>= "Unsaved Wounds" ] 
-                                                          <| opList [ labelVar "Charge Range"
-                                                                      labelVar "Assault Range"
-                                                                      labelVar "Hit Results"
-                                                                      labelVar "Wound Results"
-                                                                      labelVar "Unsaved Wounds" ] 
-            "Shooting", (get "Shooting Range" >>= "Shooting Range") (labelVar "Shooting Range")
-            "Psychic", (get "Psychic Test" >>= "Psychichtest") (labelVar "Psychic Test")
-        ] >>= "Actions"    
+//                       get "To Wound"         <*> get "Defender" 
+//                                             <*> get "S" 
+//                                             >>= "Wound Results"
+//                       get "Armour Save"      <*> get "Defender"  
+//                                             >>= "Unsaved Wounds" ] 
+//                                                           <| opList [ labelVar "Charge Range"
+//                                                                       labelVar "Assault Range"
+//                                                                       labelVar "Hit Results"
+//                                                                       labelVar "Wound Results"
+//                                                                       labelVar "Unsaved Wounds" ] 
+//             "Shooting", labelVar "Shooting Range"
+//             "Psychic", labelVar "Psychic Test"
+//         ] >>= "Actions"    
 
-let allProps = 
-    opList 
-        [ labelVar "M"
-          labelVar "WS"
-          labelVar "BS"
-          labelVar "S"
-          labelVar "T"
-          labelVar "W"
-          labelVar "A"
-          labelVar "Ld"
-          labelVar "Sv"
-          labelVar "InvSv"
-          labelVar "D6Test"
-          labelVar "D3Test"
-          labelProp "Actions" "Charge Range"
-          labelProp "Actions" "Assault Range"
-          labelProp "Actions" "Hit Results"
-          labelProp "Actions" "Wound Results"
-          labelProp "Actions" "Unsaved Wounds"
-          labelProp "Actions" "Psychic Test"
-          labelProp "Actions" "Shooting Range"
-          labelProp "Actions" "Deny Test" 
-          ]
-let body = nestOps [phaseActions] allProps
-let defbody = nestOps [dPhaseActions] allProps
+// let allProps = 
+//     opList 
+//         [ labelVar "M"
+//           labelVar "WS"
+//           labelVar "BS"
+//           labelVar "S"
+//           labelVar "T"
+//           labelVar "W"
+//           labelVar "A"
+//           labelVar "Ld"
+//           labelVar "Sv"
+//           labelVar "InvSv"
+//           labelVar "D6Test"
+//           labelVar "D3Test"
+//           labelProp "Actions" "Charge Range"
+//           labelProp "Actions" "Assault Range"
+//           labelProp "Actions" "Hit Results"
+//           labelProp "Actions" "Wound Results"
+//           labelProp "Actions" "Unsaved Wounds"
+//           labelProp "Actions" "Psychic Test"
+//           labelProp "Actions" "Shooting Range"
+//           labelProp "Actions" "Deny Test" 
+//           ]
+let body = nestOps [phaseActions] allPropsa
+let defbody = nestOps [dPhaseActions] allPropsd
 let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
 let attacker = createArgs stats body
 let defender =  createArgs stats defbody
@@ -77,18 +76,8 @@ let sv = threePlus
 let invSave = noValue
 let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;] 
 let globalOperations = 
-    [ "Id", opId
-      "D6",  d6
-      "D3", d3
-      "Charge Range",  chargeRange
-      "Assault Range",  meleeRange
-      "Shooting Range",  shootingRange
-      "Psychic Test",  psychicTest
-      "Deny Test",  denyTest
-      "To Hit",  hitResults
-      "To Wound",  woundResults
-      "Armour Save",  unsavedWounds ]
-    |> List.mapi(fun i (k,o) -> (k,(i,o)))
+    globalOperations
+    |> List.mapi(fun i (k,_,o) -> (k,(i,o)))
 let choices = Map.empty<_,_>
 let env = Map.empty<_,_>
 let (newChoices,newEnv) = 
@@ -137,7 +126,7 @@ let eval x op = getp x op |> evalOp initialMap
 // getp "Hit Results" attApplied  |> (evalOp <| Map.add "Phase" (Value (Str  "Assault")) initialMap )
 // getp "Wound Results" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Assault")) initialMap )
 
-// attApplied  |> (evalOp  <| Map.add "Phase" (Value(Str "Psychic")) initialMap )
+// getp "Psychic Test" attApplied  |> (evalOp  <| Map.add "Phase" (Value(Str "Psychic")) initialMap )
 // let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  
 // let a' = vInt 2
 // a' |> count |> evalOp Map.empty<_,_> 
@@ -161,6 +150,7 @@ let eval x op = getp x op |> evalOp initialMap
 
 [<Tests>]
 let tests = 
+    
     let pairs = List.zip stats seargent 
     let expectedStd = 
         let expectedDice n plus = 
@@ -178,7 +168,56 @@ let tests =
                     | key,IsDPlus (6,plus) -> key, expectedDice 6 plus
                     | key,IsDPlus (3,plus) -> key, expectedDice 3 plus
                     | key,op -> key,op)
+
     testList "Attacker Tests" [
+        test "Check Charge Range" {
+            let result = 
+                getp "Charge Range" attApplied  
+                |> evalOp  (Map.add "Phase" (Value (Str  "Assault"))  initialMap)
+            let expected = Distribution.takeN (Distribution.uniformDistribution [1..6]) 2 |> Distribution.map (List.sum >> Int)
+            result ==? (Value(Dist(expected)))
+        }
+        test "Check Assault Range" {
+            let result = 
+                getp "Assault Range" attApplied  
+                |> evalOp  (Map.add "Phase" (Value (Str  "Assault"))  initialMap)
+            let expected = Distribution.takeN (Distribution.uniformDistribution [1..6]) 2 |> Distribution.map (List.sum >> ((+) 6) >> Int)
+            result ==? (Value(Dist(expected)))
+        }      
+        test "Check Hit Results" {
+            let result = 
+                getp "Hit Results" attApplied  
+                |> evalOp  (Map.add "Phase" (Value (Str  "Assault"))  initialMap)
+            let expected = 
+                  Value
+                    (Dist
+                       {Probabilities =
+                         [(Check (Check.Pass (Int 2)), 0.4444444444);
+                          (Tuple (Check (Check.Pass (Int 1)),Check (Check.Fail (Int 1))), 0.4444444444);
+                          (Check (Check.Fail (Int 2)), 0.1111111111)];})
+            result ==? expected
+        }   
+        test "Check Wound Results" {
+            let result = 
+                getp "Wound Results" attApplied  
+                |> evalOp  (Map.add "Phase" (Value (Str  "Assault"))  initialMap)
+            let expected = 
+                Value
+                    (Dist
+                       {Probabilities =
+                         [(Check (Check.Pass (Int 2)), 0.1111111111);
+                          (Tuple (Check (Check.Pass (Int 1)),Check (Check.Fail (Int 1))), 0.4444444444);
+                          (Check (Check.Fail (Int 2)), 0.4444444444)];})
+            result ==? expected
+        }    
+        test "Check Psychic Test" {
+            let result = 
+                getp "Psychic Test" attApplied  
+                |> evalOp  (Map.add "Phase" (Value (Str  "Assault"))  initialMap)
+            let expected = Distribution.takeN (Distribution.uniformDistribution [1..6]) 2 |> Distribution.map (List.sum >> Int)
+            result ==? (Value(Dist(expected)))
+        }           
+        
         expectedStd 
         |> List.map(fun (key,expected) -> test (sprintf "Check %s" key) { eval key attApplied ==? expected })  
         |> testList "Std eval Tests";

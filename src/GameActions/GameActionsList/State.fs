@@ -37,23 +37,25 @@ let twoLetTest =
     |> bindOp "Some Var" chargeRange   
 let nestTest =
     bindOp "Some varNest" letTest twoLetTest    
+let globalOperations = 
+    [ "Id", Text None, opId
+      "D6", Special "D6", d6
+      "D3", Special "D3", d3
+      "Let Test", Text None, letTest
+      "Let Test 2", Text None, twoLetTest
+      "Nest Test", Text None, nestTest
+      "Charge Range", Text None, chargeRange
+      "Assault Range", Text None, meleeRange
+      "Shooting Range", Text None, shootingRange
+      "Psychic Test", Text None, psychicTest
+      "Deny Test", Text None, denyTest
+      "To Hit", Text None, hitResults
+      "To Wound", Text None, woundResults
+      "Armour Save", Text None, unsavedWounds
+    ]    
 let init () : Model * Cmd<Types.Msg> =
     let rows = 
-        [ "Id", Text None, opId
-          "D6", Special "D6", d6
-          "D3", Special "D3", d3
-          "Let Test", Text None, letTest
-          "Let Test 2", Text None, twoLetTest
-          "Nest Test", Text None, nestTest
-          "Charge Range", Text None, chargeRange
-          "Assault Range", Text None, meleeRange
-          "Shooting Range", Text None, shootingRange
-          "Psychic Test", Text None, psychicTest
-          "Deny Test", Text None, denyTest
-          "To Hit", Text None, hitResults
-          //"To Wound", Text None, woundResults
-          //"Armour Save", Text None, unsavedWounds
-          ]
+        globalOperations
         |> List.map ReadOnly
     { Editing = false 
       Functions = rows 

@@ -637,6 +637,7 @@ and evalOp env (operation:Operation) : Operation =
             match evalOp env f, evalOp env value with 
             | Call f, v -> evalCall f v env 
             | Lam(x, op), v -> App(Lam(x, op),v) |> evalOp env
+            | Var x, _ -> failwith ("Could not find function " + x)
             | f',x' -> failwith <| sprintf "Cannot apply to something not a function App(%A,%A) = %A,%A" f value f' x'
     //printfn "%A" r
     r

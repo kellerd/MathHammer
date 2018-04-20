@@ -56,51 +56,52 @@ let dPhaseActions =
             "Assault", (choose "Weapon" ["Bolter", range 24; "Melta", range 12] >>= "Weapon Range") (labelVar "Shooting Range")
             "Psychic", (labelVar "Deny Test")
         ] >>= "Actions"  
-
+let allPropsa = 
+    opList 
+        [ labelVar "M"
+          labelVar "WS"
+          labelVar "BS"
+          labelVar "S"
+          labelVar "T"
+          labelVar "W"
+          labelVar "A"
+          labelVar "Ld"
+          labelVar "Sv"
+          labelVar "InvSv"
+          labelVar "D6Test"
+          labelVar "D3Test"
+          labelProp "Actions" "Charge Range"
+          labelProp "Actions" "Assault Range"
+          labelProp "Actions" "Hit Results"
+          labelProp "Actions" "Wound Results"
+          labelProp "Actions" "Unsaved Wounds"
+          labelProp "Actions" "Psychic Test"
+          labelProp "Actions" "Shooting Range"  ]
+let allPropsd = 
+    opList 
+        [ labelVar "M"
+          labelVar "WS"
+          labelVar "BS"
+          labelVar "S"
+          labelVar "T"
+          labelVar "W"
+          labelVar "A"
+          labelVar "Ld"
+          labelVar "Sv"
+          labelVar "InvSv"
+          labelVar "D6Test"
+          labelVar "D3Test"
+          labelProp "Actions" "Shooting Range" 
+          labelProp "Actions" "Deny Test" ]
 let init result =
     let (mathHammer, mathHammerCmd) = MathHammer.State.init()
     let (gameActions, gameActionsCmd) = GameActions.State.init()
 
     // attackerStats
     let body = 
-        nestOps [phaseActions]     
-           <| opList 
-                [ labelVar "M"
-                  labelVar "WS"
-                  labelVar "BS"
-                  labelVar "S"
-                  labelVar "T"
-                  labelVar "W"
-                  labelVar "A"
-                  labelVar "Ld"
-                  labelVar "Sv"
-                  labelVar "InvSv"
-                  labelVar "D6Test"
-                  labelVar "D3Test"
-                  labelProp "Actions" "Charge Range"
-                  labelProp "Actions" "Assault Range"
-                  labelProp "Actions" "Hit Results"
-                  labelProp "Actions" "Wound Results"
-                  labelProp "Actions" "Unsaved Wounds"
-                  labelProp "Actions" "Psychic Test"
-                  labelProp "Actions" "Shooting Range"  ]
+        nestOps [phaseActions] allPropsa
     let defbody = 
-        nestOps [dPhaseActions] 
-            <| opList 
-                [ labelVar "M"
-                  labelVar "WS"
-                  labelVar "BS"
-                  labelVar "S"
-                  labelVar "T"
-                  labelVar "W"
-                  labelVar "A"
-                  labelVar "Ld"
-                  labelVar "Sv"
-                  labelVar "InvSv"
-                  labelVar "D6Test"
-                  labelVar "D3Test"
-                  labelProp "Actions" "Shooting Range" 
-                  labelProp "Actions" "Deny Test" ]
+        nestOps [dPhaseActions] allPropsd
     let stats = ["M";"WS";"BS";"S";"T";"W";"A";"Ld";"Sv";"InvSv"]  
     let attacker = createArgs stats body
     let defender =  createArgs stats defbody
