@@ -50,8 +50,8 @@ let globalOperations =
       "Psychic Test", Text None, psychicTest
       "Deny Test", Text None, denyTest
       "To Hit", Text None, hitResults
-      "To Wound", Text None, woundResults
-      "Armour Save", Text None, unsavedWounds
+    //   "To Wound", Text None, woundResults
+    //   "Armour Save", Text None, unsavedWounds
     ]    
 let init () : Model * Cmd<Types.Msg> =
     let rows = 

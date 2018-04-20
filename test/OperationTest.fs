@@ -2,13 +2,41 @@ module OperationTests
 open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open FsCheckGen
 open GameActions.GameActionsList.State
+open FsCheckGen
 let (==?) x y = Expect.equal x y ""
 [<Tests>]
 let tests = 
     testList "Operation Tests" [
         let eval = normalize >> snd >> evalOp Map.empty<_,_> 
+        yield test "WithLams gives some values" {
+            let t1 = Lam("X", Lam ("Y", Lam ("Z", Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))))
+            let t2 = Lam("X", Lam ("Y", Lam ("Z", Value(ParamArray[Lam("A", Lam ("B", Lam ("C", Value NoValue))); Var "Y"; Var "Z"]))))
+            let app1 = App(t1,Value(Int(2)))
+            let app2 = App(app1,Value(Int(3)))
+            let app3 = App(app2,Value(Int(4)))
+            let app4 = App(t2,Value(Int(2)))
+            let app5 = App(app4,Value(Int(3)))
+            let app6 = App(app5,Value(Int(4)))
+            (|WithLams|_|) t1   ==? Some ([],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
+            (|WithLams|_|) app1 ==? Some ([Value(Int(2))],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
+            (|WithLams|_|) app2 ==? Some ([Value(Int(2)); Value(Int(3))],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
+            (|WithLams|_|) app3 ==? Some ([Value(Int(2)); Value(Int(3)); Value(Int(4))],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
+            (|WithLams|_|) app4 ==? Some ([Value(Int(2))],["X"; "Y"; "Z"],Value(ParamArray[Lam("A", Lam ("B", Lam ("C", Value NoValue))); Var "Y"; Var "Z"]))
+            (|WithLams|_|) app5 ==? Some ([Value(Int(2)); Value(Int(3))],["X"; "Y"; "Z"],Value(ParamArray[Lam("A", Lam ("B", Lam ("C", Value NoValue))); Var "Y"; Var "Z"]))
+            (|WithLams|_|) app6 ==? Some ([Value(Int(2)); Value(Int(3)); Value(Int(4))],["X"; "Y"; "Z"],Value(ParamArray[Lam("A", Lam ("B", Lam ("C", Value NoValue))); Var "Y"; Var "Z"]))
+            (|WithLams|_|) t1   |> Option.map(fun (apps,ls,o) -> applyMany o apps ls) ==? Some t1
+            (|WithLams|_|) app1 |> Option.map(fun (apps,ls,o) -> applyMany o apps ls) ==? Some app1
+            (|WithLams|_|) app2 |> Option.map(fun (apps,ls,o) -> applyMany o apps ls) ==? Some app2
+            (|WithLams|_|) app3 |> Option.map(fun (apps,ls,o) -> applyMany o apps ls) ==? Some app3
+            (|WithLams|_|) app4 |> Option.map(fun (apps,ls,o) -> applyMany o apps ls) ==? Some app4
+            (|WithLams|_|) app5  |> Option.map(fun (apps,ls,o) -> applyMany o apps ls) ==? Some app5
+            (|WithLams|_|) app6 |> Option.map(fun (apps,ls,o) -> applyMany o apps ls) ==? Some app6
+        }
+        yield testPropertyWithConfig config "WithLams is opposite of applyMany" <| fun op -> 
+            match op with 
+            | WithLams (apps,ls,o)  -> applyMany o apps ls ==? op
+            | op' -> op' ==? op
         yield test "Evalled D6 equal std distribution of integers, reversed" {
             let result = eval d6
             let expected = [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value

@@ -24,6 +24,7 @@ let d3icon =
         ]
 
 open Microsoft.FSharp.Reflection
+open GameActions.Primitives
 
 let inline toString (x:'a) = 
     let a = typeof<'a>
@@ -104,7 +105,7 @@ let card name v foot =
             )          
           |> ofOption
 
-        ]      
+        ]       
 let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row = 
     let unparseEquation dragging operation dispatch = 
         let rec unparseV (dispatch:GamePrimitive->unit)  = function
@@ -221,20 +222,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
             |> ofList
         and unparseC dispatch func = 
             callList func
-        and unparseEq op (dispatch:Operation->unit) : Fable.Import.React.ReactElement = 
-            let rec (|WithLams|_|) = function
-                | App(WithLams(apps, [], o), v) -> Some (v::apps,[],o)
-                | Lam(x,WithLams (apps, lams,o)) ->Some(apps, x::lams,o)
-                | Lam(x,o) -> Some([], [x], o)
-                | _ -> None
-
-                            
-            let rec lams ls o = 
-                match ls with 
-                | [] -> o
-                | l::ls -> Lam(l,lams ls o)
-            let t1 = Lam("X", Lam ("Y", Value(NoValue)))
-            let app1 = App(Lam("X", Lam ("Y", Value(NoValue))),Value(Int(2)))
+        and unparseEq op (dispatch:Operation->unit) : Fable.Import.React.ReactElement =                      
             match op with 
             | Call f -> unparseC (Call >> dispatch) f
             | Value(v)-> unparseV (Value >> dispatch) v
