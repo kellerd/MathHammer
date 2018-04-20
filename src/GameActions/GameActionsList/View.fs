@@ -236,7 +236,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
             //     card None eop  (Some ("has-background-warning", xs))
             | Lam(x,body) -> 
                 str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
-                |> withTag "is-success"
+                |> withTag "is-warning"
             | Choice(name, choices) ->  
                 [ str <| name + "one of: "
                   br []

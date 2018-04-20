@@ -60,10 +60,12 @@ let root model dispatch =
                     [ pageHtml model.currentPage ] ] ] ] ]
 
 open Elmish.React
+open Elmish.HMR
 //open Elmish.Debug
 // App
 Program.mkProgram init update root
 |> Program.toNavigable (parseHash pageParser) urlUpdate
+|> Program.withHMR
 |> Program.withReact "elmish-app"
 //-:cnd
 #if DEBUG
