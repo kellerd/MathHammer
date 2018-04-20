@@ -27,13 +27,7 @@ let getp s op = PropertyGet(s, op)
 let labelVar v = pair (vStr v) (get v)
 let labelProp c v = pair (vStr v) (getp v (get c))
 let apply f x = App(f,x)
-let applyMany o apps = 
-    let rec halp apps ls =             
-        match (apps,ls) with 
-        | [],[] -> o
-        | a::apps,_ -> App(halp apps ls,a )
-        | [], l::ls -> Lam(l,halp [] ls)
-    halp (List.rev apps)  
+
 
 let (|WithLams|_|) = 
     let rec (|WithLams'|_|) = function
@@ -69,7 +63,8 @@ let applyArgs body argValues =
     body::argValues
     |> List.reduce apply
 //Equations
-
+let applyMany argList operationBody argValues = 
+    applyArgs (createArgs argList operationBody) argValues
 let choose name choiceList = Choice(name,choiceList)
 let defenderMap = "Defender"
 let attackerMap = "Attacker"
