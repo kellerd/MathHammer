@@ -13,3 +13,4 @@ nuget FsCheck 3.0.0-alpha3
 nuget Argu 3.7
 
 clitool dotnet-fable
+nuget NETStandard.Library.NETFramework 2.0.0-preview2-25405-01 preview

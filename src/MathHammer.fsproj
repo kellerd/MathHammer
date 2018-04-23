@@ -3,7 +3,6 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Global.fs" />
     <Compile Include="Collections/Map.fs" />
     <Compile Include="Collections/List.fs" />
     <Compile Include="Collections/Zipper.fs" />
@@ -29,6 +28,7 @@
     <Compile Include="MathHammer/State.fs" />
     <Compile Include="MathHammer/View.fs" />
     <Compile Include="Navbar/View.fs" />
+    <Compile Include="Global.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="State.fs" />
     <Compile Include="App.fs" />

@@ -1,4 +1,5 @@
 ﻿#if INTERACTIVE
+#r @"../../../../.nuget/packages/netstandard.library.netframework/2.0.0-preview2-25405-01/build/net461/lib/netstandard.dll"
 #load @"LoadModules.fsx"
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
