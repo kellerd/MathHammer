@@ -24,7 +24,6 @@ let d3icon =
         ]
 
 open Microsoft.FSharp.Reflection
-open GameActions.Primitives
 
 let inline toString (x:'a) = 
     let a = typeof<'a>
@@ -98,11 +97,7 @@ let card name v foot =
           div [ Class "card-content" ] 
               [ div [ Class "content" ] [ v ] ]
           foot
-          |> Option.map (fun (colour,foot) -> 
-                foot 
-                |> List.map (fun s -> a [ Href "#"; Class ("card-footer-item " + colour)  ] [s] )
-                |> footer  [ Class "card-footer" ] 
-            )          
+          |> Option.map (footer  [ Class "card-footer" ])          
           |> ofOption
 
         ]       
@@ -131,7 +126,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                     |> Zipper.permute 
                     |> List.collect(function 
                                     | Empty -> [] 
-                                    | Zipper(l,a,r) -> [unparseEq a (fun op' -> l @ op'::r |> ParamArray |> dispatch)])
+                                    | Zipper(l,a,r) -> [unparseEq a (fun op' -> Zipper(l,op',r) |> Zipper.toList |> ParamArray |> dispatch)])
                     |> ofList                               
         and unparseApp f a dispatch : Fable.Import.React.ReactElement = 
             let (joinStr) = 
@@ -200,7 +195,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                             match acc with 
                                             | [] -> Option.toList newValuePlaceholder
                                             | _ -> joinStr :: acc
-                                        unparseEq a (fun op' -> (f,l @ op'::r |> ParamArray |> Value) |> dispatch)::tail ) ops' [] 
+                                        unparseEq a (fun op' -> (f,Zipper(l,op',r) |> Zipper.toList |> ParamArray |> Value) |> dispatch)::tail ) ops' [] 
                     |> ofList                                                    
                 withAddon "is-primary" "is-success" call (paren param)                
             | Value(NoValue) -> 
@@ -218,7 +213,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                             | Zipper(l,a,r) -> 
                                      [str (fst a + ":= ");
                                      br [];
-                                     unparseEq (snd a) (fun op' -> l @ (fst a,op')::r |> dispatch)])  
+                                     unparseEq (snd a) (fun op' -> Zipper(l,(fst a,op'),r) |> Zipper.toList |> dispatch)])  
             |> ofList
         and unparseC dispatch func = 
             callList func
@@ -231,9 +226,22 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 | Some icon -> b [] [icon]
                 | None -> str v
             | Lam("unusedVariable",body) -> unparseEq body (fun op -> Lam("unusedVariable", op) |> dispatch)
-            // | WithLams (apps, lams, op) ->
-            //     let eop = unparseEq op (fun op -> lams xs op |> dispatch)
-            //     card None eop  (Some ("has-background-warning", xs))
+            | WithLams (apps, lams, op) ->
+                //let (Some (apps,lams,op)) = (|WithLams|_|) app6
+                let ev = unparseEq op (fun op -> GameActions.Primitives.State.applyMany lams op apps |> dispatch)
+                let headerItems = None
+                let footerItems = 
+                    apps 
+                    |> Zipper.permute
+                    |> List.collect(function
+                                    | Empty -> List.map (str >> List.singleton >> div [ Class "card-footer-item has-background-warning" ]) lams
+                                    | Zipper(l,a,r) -> 
+                                        [ 
+                                            div [ Class "card-footer-item has-background-warning" ] 
+                                                [ unparseEq a (fun op' -> GameActions.Primitives.State.applyMany lams op (Zipper(l,op',r) |> Zipper.toList) |> dispatch) ]
+                                        ])  
+                    |> Some                            
+                card headerItems ev footerItems
             | Lam(x,body) -> 
                 str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
                 |> withTag "is-warning"

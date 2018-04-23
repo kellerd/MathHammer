@@ -27,15 +27,6 @@ let getp s op = PropertyGet(s, op)
 let labelVar v = pair (vStr v) (get v)
 let labelProp c v = pair (vStr v) (getp v (get c))
 let apply f x = App(f,x)
-
-
-let (|WithLams|_|) = 
-    let rec (|WithLams'|_|) = function
-    | App(WithLams'(apps, lams, o), v) when List.length apps < List.length lams -> Some (v::apps,lams,o)
-    | Lam(x,WithLams' (apps, lams,o)) -> Some(apps, x::lams,o)
-    | Lam(x,o) -> Some([], [x], o)
-    | _ -> None
-    (|WithLams'|_|) >> Option.map (fun (apps,lams,o) -> (List.rev apps, lams, o))   
 let (<*>) = apply  
 let (>>=) o s = bindOp s o
 let dPlus sides plusValue =

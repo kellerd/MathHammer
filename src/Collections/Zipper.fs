@@ -41,4 +41,10 @@ let permute l =
 let toList z = 
     match z with 
     | Empty -> []
-    | Zipper(l,z,r) -> List.append l (z::r)
+    | Zipper(l,z,r) -> (List.rev l) @ (z::r)
+let map f z = 
+    match z with 
+    | Empty -> Empty
+    | Zipper(l,z,r) -> Zipper (List.map f l, f z, List.map f r)
+
+//[0..5] |> ofList |> right |> right |> left |> right |> right   |> toList

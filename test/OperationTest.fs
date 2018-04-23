@@ -18,6 +18,9 @@ let tests =
             let app4 = App(t2,Value(Int(2)))
             let app5 = App(app4,Value(Int(3)))
             let app6 = App(app5,Value(Int(4)))
+            let app7 =  App(Lam("x", App(Lam("y", Value NoValue), Value NoValue)), Value NoValue)
+            let app8 =  App(Lam("x", App(Value NoValue, Value NoValue)), Value NoValue)
+            
             (|WithLams|_|) t1   ==? Some ([],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
             (|WithLams|_|) app1 ==? Some ([Value(Int(2))],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
             (|WithLams|_|) app2 ==? Some ([Value(Int(2)); Value(Int(3))],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
@@ -32,6 +35,9 @@ let tests =
             (|WithLams|_|) app4 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app4
             (|WithLams|_|) app5  |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app5
             (|WithLams|_|) app6 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app6
+            (|WithLams|_|) app7 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app7
+            (|WithLams|_|) app8 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app8
+
         }
         yield testPropertyWithConfig config "WithLams is opposite of applyMany" <| fun op -> 
             match op with 

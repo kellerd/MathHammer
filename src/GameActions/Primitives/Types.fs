@@ -432,6 +432,18 @@ type mm with
                           
 type Msg = Unit  
 
+let (|WithLams|_|) = 
+    let rec (|WithLams'|_|) = function
+    | Lam(x,WithLams' (apps, lams,o)) -> Some(apps, x::lams,o)
+    | Lam(x,o) -> Some([], [x], o)
+    | _ -> None
+    let rec (|WithApps'|_|) = function 
+    | App(WithApps'(apps, lams, o), v) -> Some (v::apps,lams,o)
+    | WithLams'(apps,lams,o) -> Some(apps,lams,o)
+    | _ -> None
+
+    (|WithApps'|_|) >> Option.map (fun (apps,lams,o) -> (List.rev apps, lams, o))   
+    
 module TypeChecker = 
     type GamePrimitiveType = 
     | Pair of GamePrimitiveType * GamePrimitiveType
@@ -508,3 +520,5 @@ module TypeChecker =
         | Mixed         -> IsOther    
         | Unknown       -> IsOther    
         | Scalar gp     -> IsScalar  (gp)
+
+    
