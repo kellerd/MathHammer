@@ -75,13 +75,11 @@ let ld = vInt 8
 let sv = threePlus
 let invSave = noValue
 let seargent = [move;ws;bs;s;t;w;a;ld;sv;invSave;] 
-let globalOperations = 
-    globalOperations
-    |> List.mapi(fun i (k,_,o) -> (k,(i,o)))
 let choices = Map.empty<_,_>
 let env = Map.empty<_,_>
 let (newChoices,newEnv) = 
     globalOperations
+    |> List.mapi(fun i (k,_,o) -> (k,(i,o)))
     |> List.sortBy (snd >> fst)
     |> List.fold(fun (choices,env) (key,(_,op))-> 
             let (newChoices,normal) = op |> normalize 
@@ -192,9 +190,9 @@ let tests =
                   Value
                     (Dist
                        {Probabilities =
-                         [(Check (Check.Pass (Int 2)), 0.4444444444);
-                          (Tuple (Check (Check.Pass (Int 1)),Check (Check.Fail (Int 1))), 0.4444444444);
-                          (Check (Check.Fail (Int 2)), 0.1111111111)];})
+                         [(Check (Check.Pass (Int 2)), (4./9.));
+                          (Tuple (Check (Check.Pass (Int 1)),Check (Check.Fail (Int 1))), (4./9.));
+                          (Check (Check.Fail (Int 2)), (1./9.))];})
             result ==? expected
         }   
         test "Check Wound Results" {
@@ -205,15 +203,15 @@ let tests =
                 Value
                     (Dist
                        {Probabilities =
-                         [(Check (Check.Pass (Int 2)), 0.1111111111);
-                          (Tuple (Check (Check.Pass (Int 1)),Check (Check.Fail (Int 1))), 0.4444444444);
-                          (Check (Check.Fail (Int 2)), 0.4444444444)];})
+                         [(Check (Check.Pass (Int 2)), (1./9.));
+                          (Tuple (Check (Check.Pass (Int 1)),Check (Check.Fail (Int 1))), (4./9.));
+                          (Check (Check.Fail (Int 2)), (4./9.))];})
             result ==? expected
         }    
         test "Check Psychic Test" {
             let result = 
                 getp "Psychic Test" attApplied  
-                |> evalOp  (Map.add "Phase" (Value (Str  "Assault"))  initialMap)
+                |> evalOp  (Map.add "Phase" (Value (Str  "Psychic"))  initialMap)
             let expected = Distribution.takeN (Distribution.uniformDistribution [1..6]) 2 |> Distribution.map (List.sum >> Int)
             result ==? (Value(Dist(expected)))
         }           
