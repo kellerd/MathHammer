@@ -37,8 +37,14 @@ let tests =
             (|WithLams|_|) app6 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app6
             (|WithLams|_|) app7 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app7
             (|WithLams|_|) app8 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app8
-
         }
+        yield testPropertyWithConfig config "WithLams only gives as many Apps as Lams, any more is an error" <| fun op -> 
+            let doLamTest op = 
+                match op with 
+                | WithLams (apps,ls,_)  -> Expect.isGreaterThanOrEqual (List.length ls) (List.length apps) ""
+                | _ -> () 
+            doLamTest (App(op, Value NoValue)) 
+            doLamTest (Lam("x", op)) 
         yield testPropertyWithConfig config "WithLams is opposite of applyMany" <| fun op -> 
             match op with 
             | WithLams (apps,ls,o)  -> applyMany ls o apps ==? op

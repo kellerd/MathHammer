@@ -37,6 +37,9 @@ let twoLetTest =
     |> bindOp "Some Var" chargeRange   
 let nestTest =
     bindOp "Some varNest" letTest twoLetTest    
+let lam1Test = Lam("x", Value(Int 6))    
+let lam2Test = Lam("x", Var "x")
+let appTest = App(App(Lam("x", Lam("x", Value (ParamArray [Var "x"; Var "y"; Value(Int 4)]))), Value(Int 2)), Value(Int 3))
 let globalOperations = 
     [ "Id", Text None, opId
       "D6", Special "D6", d6
@@ -44,14 +47,17 @@ let globalOperations =
       "Let Test", Text None, letTest
       "Let Test 2", Text None, twoLetTest
       "Nest Test", Text None, nestTest
+      "Lam Test", Text None, lam1Test
+      "Lam 2 Test", Text None, lam2Test
+      "App Test", Text None, appTest
       "Charge Range", Text None, chargeRange
       "Assault Range", Text None, meleeRange
       "Shooting Range", Text None, shootingRange
       "Psychic Test", Text None, psychicTest
       "Deny Test", Text None, denyTest
-      "To Hit", Text None, hitResults
-      "To Wound", Text None, woundResults
-      "Armour Save", Text None, unsavedWounds
+    //   "To Hit", Text None, hitResults
+    //   "To Wound", Text None, woundResults
+    //   "Armour Save", Text None, unsavedWounds
     ]    
 let init () : Model * Cmd<Types.Msg> =
     let rows = 

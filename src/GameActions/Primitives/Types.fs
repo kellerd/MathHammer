@@ -438,7 +438,7 @@ let (|WithLams|_|) =
     | Lam(x,o) -> Some([], [x], o)
     | _ -> None
     let rec (|WithApps'|_|) = function 
-    | App(WithApps'(apps, lams, o), v) -> Some (v::apps,lams,o)
+    | App(WithApps'(apps, lams, o), v) when List.length apps < List.length lams -> Some (v::apps,lams,o)
     | WithLams'(apps,lams,o) -> Some(apps,lams,o)
     | _ -> None
 

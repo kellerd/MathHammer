@@ -227,14 +227,14 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 | None -> str v
             | Lam("unusedVariable",body) -> unparseEq body (fun op -> Lam("unusedVariable", op) |> dispatch)
             | WithLams (apps, lams, op) ->
-                //let (Some (apps,lams,op)) = (|WithLams|_|) app6
+                //let (Some (apps,lams,op)) = (|WithLams|_|) lam2Test
                 let ev = unparseEq op (fun op -> GameActions.Primitives.State.applyMany lams op apps |> dispatch)
                 let headerItems = None
                 let footerItems = 
                     apps 
                     |> Zipper.permute
-                    |> List.collect(function
-                                    | Empty -> List.map (str >> List.singleton >> div [ Class "card-footer-item has-background-warning" ]) lams
+                    |> List.collect(function 
+                                    | Empty -> []
                                     | Zipper(l,a,r) -> 
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
