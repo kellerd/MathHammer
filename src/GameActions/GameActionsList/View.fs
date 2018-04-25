@@ -226,19 +226,25 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 | Some icon -> b [] [icon]
                 | None -> str v
             | Lam("unusedVariable",body) -> unparseEq body (fun op -> Lam("unusedVariable", op) |> dispatch)
-            | WithLams (apps, lams, op) ->
-                //let (Some (apps,lams,op)) = (|WithLams|_|) lam2Test
+            | WithLams ((apps,lams), op) ->
                 let ev = unparseEq op (fun op -> GameActions.Primitives.State.applyMany lams op apps |> dispatch)
                 let headerItems = None
                 let footerItems = 
-                    apps 
+                    List.zip lams apps 
                     |> Zipper.permute
-                    |> List.collect(function 
+                    |> List.collect(function //Empty -> lams)
                                     | Empty -> []
-                                    | Zipper(l,a,r) -> 
+                                    | Zipper(l,(a,   None), r) -> 
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
-                                                [ unparseEq a (fun op' -> GameActions.Primitives.State.applyMany lams op (Zipper(l,op',r) |> Zipper.toList) |> dispatch) ]
+                                                [ em [] [str a] ]
+                                                //GameActions.Primitives.State.applyMany (Zipper(l |> List.map fst, a, r |> List.map fst) |> Zipper.toList) op apps |> Zipper.toList) |> dispatch
+                                        ]
+                                    | Zipper(l,(a, Some op), r) -> 
+                                        [ 
+                                            div [ Class "card-footer-item has-background-warning" ] 
+                                                [ em [] [str (a + ": ")]
+                                                  unparseEq op (fun op' -> GameActions.Primitives.State.applyMany lams op (Zipper(l |> List.map snd, Some op', r |> List.map snd) |> Zipper.toList) |> dispatch) ]
                                         ])  
                     |> Some                            
                 card headerItems ev footerItems

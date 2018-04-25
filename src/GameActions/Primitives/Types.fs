@@ -433,6 +433,8 @@ type mm with
 type Msg = Unit  
 
 let (|WithLams|_|) = 
+    let defaultApps apps lams =
+        List.append (apps |> List.rev |> List.map Some)  (List.init (List.length lams - List.length apps) (fun _ -> None)), lams
     let rec (|WithLams'|_|) = function
     | Lam(x,WithLams' (apps, lams,o)) -> Some(apps, x::lams,o)
     | Lam(x,o) -> Some([], [x], o)
@@ -441,9 +443,7 @@ let (|WithLams|_|) =
     | App(WithApps'(apps, lams, o), v) when List.length apps < List.length lams -> Some (v::apps,lams,o)
     | WithLams'(apps,lams,o) -> Some(apps,lams,o)
     | _ -> None
-
-    (|WithApps'|_|) >> Option.map (fun (apps,lams,o) -> (List.rev apps, lams, o))   
-    
+    (|WithApps'|_|) >> Option.map (fun (apps,lams,o) -> (defaultApps apps lams, o))   
 module TypeChecker = 
     type GamePrimitiveType = 
     | Pair of GamePrimitiveType * GamePrimitiveType

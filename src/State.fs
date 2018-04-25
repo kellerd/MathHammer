@@ -38,12 +38,14 @@ let phaseActions =
                       get "To Wound"        <*> get "Defender" 
                                             <*> get "S" 
                                             >>= "Wound Results"
+                      get "App 2 Test"      >>= "App2"                                       
                       get "Armour Save"     <*> get "Defender"  
                                             >>= "Unsaved Wounds" ] 
                                                           <| opList [ labelVar "Charge Range"
                                                                       labelVar "Assault Range"
                                                                       labelVar "Hit Results"
                                                                       labelVar "Wound Results"
+                                                                      labelVar "App2"
                                                                       labelVar "Unsaved Wounds" ] 
             "Shooting", (labelVar "Shooting Range")
             "Psychic", (labelVar "Psychic Test")
@@ -74,6 +76,7 @@ let allPropsa =
           labelProp "Actions" "Assault Range"
           labelProp "Actions" "Hit Results"
           labelProp "Actions" "Wound Results"
+          labelProp "Actions" "App2"
           labelProp "Actions" "Unsaved Wounds"
           labelProp "Actions" "Psychic Test"
           labelProp "Actions" "Shooting Range"  ]

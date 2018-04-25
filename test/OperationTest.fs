@@ -21,33 +21,33 @@ let tests =
             let app7 =  App(Lam("x", App(Lam("y", Value NoValue), Value NoValue)), Value NoValue)
             let app8 =  App(Lam("x", App(Value NoValue, Value NoValue)), Value NoValue)
             
-            (|WithLams|_|) t1   ==? Some ([],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
-            (|WithLams|_|) app1 ==? Some ([Value(Int(2))],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
-            (|WithLams|_|) app2 ==? Some ([Value(Int(2)); Value(Int(3))],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
-            (|WithLams|_|) app3 ==? Some ([Value(Int(2)); Value(Int(3)); Value(Int(4))],["X"; "Y"; "Z"],Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
-            (|WithLams|_|) app4 ==? Some ([Value(Int(2))],["X"; "Y"; "Z"],Value(ParamArray[Lam("A", Lam ("B", Lam ("C", Value NoValue))); Var "Y"; Var "Z"]))
-            (|WithLams|_|) app5 ==? Some ([Value(Int(2)); Value(Int(3))],["X"; "Y"; "Z"],Value(ParamArray[Lam("A", Lam ("B", Lam ("C", Value NoValue))); Var "Y"; Var "Z"]))
-            (|WithLams|_|) app6 ==? Some ([Value(Int(2)); Value(Int(3)); Value(Int(4))],["X"; "Y"; "Z"],Value(ParamArray[Lam("A", Lam ("B", Lam ("C", Value NoValue))); Var "Y"; Var "Z"]))
-            (|WithLams|_|) t1   |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some t1
-            (|WithLams|_|) app1 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app1
-            (|WithLams|_|) app2 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app2
-            (|WithLams|_|) app3 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app3
-            (|WithLams|_|) app4 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app4
-            (|WithLams|_|) app5  |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app5
-            (|WithLams|_|) app6 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app6
-            (|WithLams|_|) app7 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app7
-            (|WithLams|_|) app8 |> Option.map(fun (apps,ls,o) -> applyMany ls o apps) ==? Some app8
+            (|WithLams|_|) t1   ==? Some (([None;                 None;                 None                ], ["X"; "Y"; "Z"]), Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
+            (|WithLams|_|) app1 ==? Some (([Some (Value(Int(2))); None;                 None                ], ["X"; "Y"; "Z"]), Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
+            (|WithLams|_|) app2 ==? Some (([Some (Value(Int(2))); Some (Value(Int(3))); None                ], ["X"; "Y"; "Z"]), Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
+            (|WithLams|_|) app3 ==? Some (([Some (Value(Int(2))); Some (Value(Int(3))); Some (Value(Int(4)))], ["X"; "Y"; "Z"]), Value(ParamArray[Var "X"; Var "Y"; Var "Z"]))
+            (|WithLams|_|) app4 ==? Some (([Some (Value(Int(2))); None;                 None                ], ["X"; "Y"; "Z"]), Value(ParamArray[Lam("A", Lam ("B", Lam ("C", Value NoValue))); Var "Y"; Var "Z"]))
+            (|WithLams|_|) app5 ==? Some (([Some (Value(Int(2))); Some (Value(Int(3))); None                ], ["X"; "Y"; "Z"]), Value(ParamArray[Lam("A", Lam ("B", Lam ("C", Value NoValue))); Var "Y"; Var "Z"]))
+            (|WithLams|_|) app6 ==? Some (([Some (Value(Int(2))); Some (Value(Int(3))); Some (Value(Int(4)))], ["X"; "Y"; "Z"]), Value(ParamArray[Lam("A", Lam ("B", Lam ("C", Value NoValue))); Var "Y"; Var "Z"]))
+            (|WithLams|_|) t1   |> Option.map(fun ((apps,ls),o) -> applyMany ls o apps) ==? Some t1
+            (|WithLams|_|) app1 |> Option.map(fun ((apps,ls),o) -> applyMany ls o apps) ==? Some app1
+            (|WithLams|_|) app2 |> Option.map(fun ((apps,ls),o) -> applyMany ls o apps) ==? Some app2
+            (|WithLams|_|) app3 |> Option.map(fun ((apps,ls),o) -> applyMany ls o apps) ==? Some app3
+            (|WithLams|_|) app4 |> Option.map(fun ((apps,ls),o) -> applyMany ls o apps) ==? Some app4
+            (|WithLams|_|) app5 |> Option.map(fun ((apps,ls),o) -> applyMany ls o apps) ==? Some app5
+            (|WithLams|_|) app6 |> Option.map(fun ((apps,ls),o) -> applyMany ls o apps) ==? Some app6
+            (|WithLams|_|) app7 |> Option.map(fun ((apps,ls),o) -> applyMany ls o apps) ==? Some app7
+            (|WithLams|_|) app8 |> Option.map(fun ((apps,ls),o) -> applyMany ls o apps) ==? Some app8
         }
         yield testPropertyWithConfig config "WithLams only gives as many Apps as Lams, any more is an error" <| fun op -> 
             let doLamTest op = 
                 match op with 
-                | WithLams (apps,ls,_)  -> Expect.isGreaterThanOrEqual (List.length ls) (List.length apps) ""
+                | WithLams ((apps,ls),_)  -> Expect.equal (List.length ls) (List.length apps) ""
                 | _ -> () 
             doLamTest (App(op, Value NoValue)) 
             doLamTest (Lam("x", op)) 
         yield testPropertyWithConfig config "WithLams is opposite of applyMany" <| fun op -> 
             match op with 
-            | WithLams (apps,ls,o)  -> applyMany ls o apps ==? op
+            | WithLams ((apps,ls),o)  -> applyMany ls o apps ==? op
             | op' -> op' ==? op
         yield test "Evalled D6 equal std distribution of integers, reversed" {
             let result = eval d6

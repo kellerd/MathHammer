@@ -14,8 +14,8 @@ let tests =
             Expect.equal result expected "Adding up dice is same as adding integers" 
         }
     ]
-// let d3() = uniformDistribution [1..3]
-// let d6() = uniformDistribution [1..6]
+// let d3() = Distribution.uniformDistribution [1..3]
+// let d6() = Distribution.uniformDistribution [1..6]
 // let avg d = 
 //     let result = List.sumBy(fun (a:int,b:float) -> float a * b) d  
 //     result
@@ -24,26 +24,31 @@ let tests =
 //     printfn "Improvement: %A" result;
 //     result
 // <@    
-// let zoanthropeUnit isNeuroNear points = dist {
+
+// let zoanBonus points = 
+//     if points = 240 then Distribution.always 3
+//     elif points > 120 then d3()
+//     else Distribution.always 0
+// let smite reroll bonus count = Distribution.dist {
 
 //     let! roll = d6()
 //     let! roll2 = d6()
 //     let reroll r = 
-//         if r = 1 && isNeuroNear then d6()
-//         else always r
+//         if r = 1 && reroll then d6()
+//         else Distribution.always r
 //     let! reroll1 = reroll roll
 //     let! reroll2 = reroll roll2
 //     let total = reroll1 + reroll2
     
-//     let! bonus = if points = 240 then always 3
-//                  elif points > 120 then d3()
-//                  else always 0
+//     let! bonus = bonus
+//     let warpcharge = 5 //+ count
+
 //     let! wounds = 
-//         if total > 10 then d6() |> map ((+) bonus) 
-//         elif total >= 5 then d3() |> map ((+) bonus) 
-//         else always 0
+//         if total > 10 && total >= warpcharge then d6() |> Distribution.map ((+) bonus) 
+//         elif total >= 5 && total >= warpcharge then d3() |> Distribution.map ((+) bonus) 
+//         else Distribution.always 0
 //     return wounds                
-// }
+// }     
 // 6
 // @>
 // let points units unitSize neuroThrope =
@@ -111,3 +116,34 @@ let tests =
 // (avg (zoanthropeUnit true 160) + avg (zoanthropeUnit true 160))  |> (/) 320.
 // (avg (zoanthropeUnit true 200) + avg (zoanthropeUnit true 200))  |> (/) 400.
 // (avg (zoanthropeUnit true 240))  |> (/) 240.
+
+
+
+//smite experiment
+// let d3() = Distribution.uniformDistribution [1..3]
+// let d6() = Distribution.uniformDistribution [1..6]
+// let avg d = 
+//     let result = List.sumBy(fun (a:int,b:float) -> float a * b) d  
+//     result
+// let smite reroll bonus count = Distribution.dist {
+
+//     let! roll = d6()
+//     let! roll2 = d6()
+//     let reroll r = 
+//         if r = 1 && reroll then d6()
+//         else Distribution.always r
+//     let! reroll1 = reroll roll
+//     let! reroll2 = reroll roll2
+//     let total = reroll1 + reroll2
+    
+//     let! bonus = bonus
+//     let warpcharge = min (5 + count) 11
+
+//     let! wounds = 
+//         if total > 10 && total >= warpcharge then d6() |> Distribution.map ((+) bonus) 
+//         elif total >= 5 && total >= warpcharge then d3() |> Distribution.map ((+) bonus) 
+//         else Distribution.always 0
+//     return wounds                
+// }    
+// List.init 7 (fun _ -> smite false (Distribution.always 0) 0 |> Distribution.expectation float ) |> List.sum
+// List.init 7 (smite false (Distribution.always 0) >> Distribution.expectation float ) |> List.sum

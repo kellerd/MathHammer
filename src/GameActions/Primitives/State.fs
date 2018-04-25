@@ -55,7 +55,8 @@ let applyArgs body argValues =
     |> List.reduce apply
 //Equations
 let applyMany argList operationBody argValues = 
-    applyArgs (createArgs argList operationBody) argValues
+    let argValues' = List.choose id argValues
+    applyArgs (createArgs argList operationBody) argValues'
 let choose name choiceList = Choice(name,choiceList)
 let defenderMap = "Defender"
 let attackerMap = "Attacker"
