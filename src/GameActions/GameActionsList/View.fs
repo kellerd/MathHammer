@@ -240,11 +240,11 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                                 [ em [] [str a] ]
                                                 //GameActions.Primitives.State.applyMany (Zipper(l |> List.map fst, a, r |> List.map fst) |> Zipper.toList) op apps |> Zipper.toList) |> dispatch
                                         ]
-                                    | Zipper(l,(a, Some op), r) -> 
+                                    | Zipper(l,(a, Some app), r) -> 
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
                                                 [ em [] [str (a + ": ")]
-                                                  unparseEq op (fun op' -> GameActions.Primitives.State.applyMany lams op (Zipper(l |> List.map snd, Some op', r |> List.map snd) |> Zipper.toList) |> dispatch) ]
+                                                  unparseEq app (fun app' -> GameActions.Primitives.State.applyMany lams op (Zipper(l |> List.map snd, Some app', r |> List.map snd) |> Zipper.toList) |> dispatch) ]
                                         ])  
                     |> Some                            
                 card headerItems ev footerItems

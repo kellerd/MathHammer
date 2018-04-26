@@ -45,13 +45,13 @@ let globalOperations =
     [ "Id", Text None, opId
       "D6", Special "D6", d6
       "D3", Special "D3", d3
+      "App 2 Test", Text None, app2Test
+      "App Test", Text None, appTest
+      "Lam Test", Text None, lam1Test
+      "Nest Test", Text None, nestTest
       "Let Test", Text None, letTest
       "Let Test 2", Text None, twoLetTest
-      "Nest Test", Text None, nestTest
-      "Lam Test", Text None, lam1Test
       "Lam 2 Test", Text None, lam2Test
-      "App Test", Text None, appTest
-      "App 2 Test", Text None, app2Test
       "Charge Range", Text None, chargeRange
       "Assault Range", Text None, meleeRange
       "Shooting Range", Text None, shootingRange
