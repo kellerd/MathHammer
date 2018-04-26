@@ -244,9 +244,10 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                     |> List.collect(function //Empty -> lams)
                                     | Empty -> []
                                     | Zipper(l,(a,   None), r) -> 
+                                        let nameLabel = b [] [str (a + ": ")]
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
-                                                [ em [] [str a] ]
+                                                [ (match row with |ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable a) ]
                                                 //GameActions.Primitives.State.applyMany (Zipper(l |> List.map fst, a, r |> List.map fst) |> Zipper.toList) op apps |> Zipper.toList) |> dispatch
                                         ]
                                     | Zipper(l,(a, Some app), r) -> 
