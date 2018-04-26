@@ -24,6 +24,7 @@ let d3icon =
         ]
 
 open Microsoft.FSharp.Reflection
+open Distribution.Example
 
 let inline toString (x:'a) = 
     let a = typeof<'a>
@@ -100,8 +101,16 @@ let card name v foot =
           |> Option.map (footer  [ Class "card-footer" ])          
           |> ofOption
 
-        ]       
+        ]    
+       
 let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row = 
+    let draggable name item = 
+        item 
+        |> List.singleton 
+        |> div [ Style [Cursor "move"]
+                 Draggable true 
+                 OnDragEnd (fun _ -> dispatch DragLeft)
+                 OnDragStart (fun _ -> Dragging(name) |> dispatch)]    
     let unparseEquation dragging operation dispatch = 
         let rec unparseV (dispatch:GamePrimitive->unit)  = function
                 | Int(i) -> string i |> str
@@ -241,9 +250,11 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                                 //GameActions.Primitives.State.applyMany (Zipper(l |> List.map fst, a, r |> List.map fst) |> Zipper.toList) op apps |> Zipper.toList) |> dispatch
                                         ]
                                     | Zipper(l,(a, Some app), r) -> 
+                                        let nameLabel = b [] [str (a + ": ")]
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
-                                                [ em [] [str (a + ": ")]
+                                                [ 
+                                                  (match row with |ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable a)
                                                   unparseEq app (fun app' -> GameActions.Primitives.State.applyMany lams op (Zipper(l |> List.map snd, Some app', r |> List.map snd) |> Zipper.toList) |> dispatch) ]
                                         ])  
                     |> Some                            
@@ -277,13 +288,6 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 let elsePart = Option.map(fun elseExpr -> [br []; unparseEq elseExpr (fun op -> IfThenElse(ifExpr, thenExpr, Some op) |> dispatch )]) elseExpr |> Option.toList |> List.collect id
                 ifPart :: thenPart :: elsePart |> ofList 
         unparseEq operation dispatch
-    let draggable name item = 
-        item 
-        |> List.singleton 
-        |> div [ Style [Cursor "move"]
-                 Draggable true 
-                 OnDragEnd (fun _ -> dispatch DragLeft)
-                 OnDragStart (fun _ -> Dragging(name) |> dispatch)]
     let iconDisplay name icon = 
         match icon with 
         | HasIcon icon -> Map.add name icon icons, draggable name icon 
