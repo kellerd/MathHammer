@@ -7,6 +7,7 @@ open State
 open Probability.View
 
 let paren react = [str "("; react ; str ")"] |> ofList
+let squareParen react = [str "["; react ; str "]"] |> ofList
 let rec unparseCheck unparseV = function 
     | Check.Pass(v) -> span [Style [Color (colour 255.) ]] [ str "Pass: "; unparseV v]
     | Check.Fail(v) -> span [Style [Color (colour 0.) ]]   [ str "Fail: "; unparseV v]

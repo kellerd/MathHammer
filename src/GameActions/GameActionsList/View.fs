@@ -75,11 +75,11 @@ let (|HasIcon|_|)  = function
    | _            -> None      
 
 let withAddon tagClass tagClass2 first second =
-    div [ClassName "tags has-addons"]
-                    [ span [ ClassName ("tag " + tagClass) ] [first]  
-                      span [ ClassName ("tag " + tagClass2)] [second] ] 
+    div [ClassName "tags is-marginless has-addons "]
+                    [ span [ ClassName ("tag is-marginless " + tagClass) ] [first]  
+                      span [ ClassName ("tag is-marginless " + tagClass2)] [second] ] 
 let withTag tagClass first = 
-    div [ClassName "tags has-addons"]
+    div [ClassName "tags is-marginless has-addons"]
         [ span [ ClassName ("tag " + tagClass) ]
                [first]     
           //a [ClassName "tag is-delete"] []
@@ -102,7 +102,21 @@ let card name v foot =
           |> ofOption
 
         ]    
-       
+// type GamePrimitive =
+//     | Check of Check.Check<GamePrimitive>
+//     | NoValue 
+//     | ParamArray of Operation list
+//     | Tuple of GamePrimitive * GamePrimitive
+//     | Dist of Distribution.Distribution<GamePrimitive>
+// and Operation = 
+//     | PropertyGet of string * Operation
+//     | Value of GamePrimitive
+//     | Var of string
+//     | App of f:Operation * value:Operation
+//     | Lam of param:string * body:Operation
+//     | Let of string * value:Operation * body:Operation
+//     | IfThenElse of ifExpr:Operation * thenExpr:Operation * elseExpr:Operation option
+//     | Choice of name : string * choices:(string * Operation) list       
 let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row = 
     let draggable name item = 
         item 
@@ -136,7 +150,8 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                     |> List.collect(function 
                                     | Empty -> [] 
                                     | Zipper(l,a,r) -> [unparseEq a (fun op' -> Zipper(l,op',r) |> Zipper.toList |> ParamArray |> dispatch)])
-                    |> ofList                               
+                    |> List.reduce(fun a b -> [a; str "; "; b] |> ofList)
+                    |> squareParen
         and unparseApp f a dispatch : Fable.Import.React.ReactElement = 
             let (joinStr) = 
                 match f  with 
@@ -160,7 +175,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                 | Call (Least   _)  -> str ", "
                 | Call (Largest _)  -> str ", "            
                 | Call Total        -> str " + " 
-                | _                 -> ofOption None
+                | _                 -> str "; "
             match a with 
             | Value(ParamArray ops) -> 
                 let call = unparseEq f (fun op -> (op,a) |> dispatch)
@@ -206,7 +221,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                             | _ -> joinStr :: acc
                                         unparseEq a (fun op' -> (f,Zipper(l,op',r) |> Zipper.toList |> ParamArray |> Value) |> dispatch)::tail ) ops' [] 
                     |> ofList                                                    
-                withAddon "is-primary" "is-success" call (paren param)                
+                withAddon "is-primary" "is-success" call (squareParen param)                
             | Value(NoValue) -> 
                 unparseEq f (fun op -> (op,a) |> dispatch)
                 |> withTag "is-primary"                 
@@ -244,7 +259,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                     |> List.collect(function //Empty -> lams)
                                     | Empty -> []
                                     | Zipper(l,(a,   None), r) -> 
-                                        let nameLabel = b [] [str (a + ": ")]
+                                        let nameLabel = b [] [str a]
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
                                                 [ (match row with |ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable a) ]
