@@ -52,6 +52,15 @@ let armourSave =
     |> total 
     |> lam "Wound Results"
     |> lam "Defender"
+
+let allinOne = 
+    bindOp "Hit Results" (repeatOp (get "WS") (get "A") |> total )
+        (bindOp "Wound Results" (repeatOp ([ [get "S";getd "T"] |> opList |> call GreaterThan, dPlus 6 3 
+                                             [get "S";getd "T"] |> opList |> call LessThan, dPlus 6 5
+                                             [get "S";getd "T"] |> opList |> call Equals, dPlus 6 4 ]
+                                             |> table) (get "Hit Results") |> total ) (get "Wound Results"))
+        
+    |> lam "Defender"        
 let letTest = 
     bindOp "Some Var" chargeRange (get "D6")   
 let twoLetTest =  
@@ -83,6 +92,7 @@ let globalOperations =
       "To Hit", Text None, toHit
       "To Wound", Text None, toWound
       "Armour Save", Text None, armourSave
+      "All in one", Text None, allinOne
     ]    
 let init () : Model * Cmd<Types.Msg> =
     let rows = 

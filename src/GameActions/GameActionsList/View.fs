@@ -78,7 +78,8 @@ let tags tags =
 let tag tagClass item = 
     span [ ClassName ("tag is-marginless is-medium " + tagClass) ] [item]           
 let tagGroup tags = 
-    tags |> List.singleton |> div [Class "field is-grouped is-grouped-multiline"]  
+    div [] [tags]
+    //tags |> List.singleton |> div [Class "field is-grouped is-grouped-multiline"]  
 let draggable dispatch name item  = 
     item 
     |> List.singleton 
@@ -291,7 +292,8 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                 |> ofList
             | GameActions.Primitives.State.IsDPlus(n,plus) ->  
                 match n with 
-                | 6 -> string (plus) + "+" |> str
+                | 6 -> [d6icon; str (string (plus) + "+")] |> ofList
+                | 3 -> [d3icon; str (string (plus) + "+")] |> ofList
                 | n -> string (plus) + "+ on D" + (string n) |> str    
                 |> tag "is-warning"          
             | App(f,a) -> unparseApp  f a envIcons (App >> dispatch)
@@ -310,15 +312,15 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                     | Zipper([],(Some ifExpr, thenExpr),_ ) as z -> //If
                         let ifPart = unparseIf envIcons (fun op -> Zipper.update (Some op, thenExpr) z |> Zipper.toList |> applyManyIfs |> dispatch ) ifExpr
                         let thenPart = unparseThen envIcons (fun op -> Zipper.update (Some ifExpr, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
-                        [ifPart; thenPart] |> tags |> tagGroup
+                        [ifPart; thenPart] |> tags
                     | Zipper(_ ,(Some ifExpr, thenExpr),_ ) as z -> //ElseIf
                         let ifPart = unparseElseIf envIcons (fun op -> Zipper.update (Some op, thenExpr) z |> Zipper.toList |> applyManyIfs |> dispatch ) ifExpr
                         let thenPart = unparseThen envIcons (fun op -> Zipper.update (Some ifExpr, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
-                        [ifPart; thenPart] |> tags
+                        [ifPart; thenPart] |> tags 
                     | Zipper(_, (None, thenExpr), _) as z -> //Last/else
                         let elsePart = unparseElse envIcons (fun op -> Zipper.update (None, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
                         [elsePart] |> tags
-                ) |> ofList
+                ) |> ofList  |> tagGroup
             | IfThenElse(ifExpr, thenExpr, Some elseExpr) ->
                 [ unparseIf   envIcons (fun op -> IfThenElse(op,     thenExpr, Some elseExpr) |> dispatch ) ifExpr 
                   unparseThen envIcons (fun op -> IfThenElse(ifExpr, op,       Some elseExpr) |> dispatch ) thenExpr 
