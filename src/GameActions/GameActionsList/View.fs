@@ -24,7 +24,6 @@ let d3icon =
         ]
 
 open Microsoft.FSharp.Reflection
-open Distribution.Example
 
 let inline toString (x:'a) = 
     let a = typeof<'a>
@@ -125,23 +124,23 @@ let applyManyIfs ifThens =
     | None -> Value(NoValue)
  
 let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row = 
-    let unparseEquation dragging operation dispatch = 
-        let rec unparseV (dispatch:GamePrimitive->unit)  = function
+    let unparseEquation dragging operation envIcons dispatch = 
+        let rec unparseV envIcons  (dispatch:GamePrimitive->unit)  = function
                 | Int(i) -> string i |> str
                 | Float(f) -> sprintf "%.1f" f |> str
-                | Dist(d) -> unparseDist (unparseV dispatch) d
+                | Dist(d) -> unparseDist (unparseV envIcons  dispatch) d
                 | NoValue -> str "--"
                 | Str s -> b  [] [str s]
-                | Tuple(v,v2) -> [ unparseV (fun gp -> Tuple(gp,v2) |> dispatch) v 
+                | Tuple(v,v2) -> [ unparseV envIcons (fun gp -> Tuple(gp,v2) |> dispatch) v 
                                    str ","
-                                   unparseV (fun gp -> Tuple(v,gp) |> dispatch) v2 ] |> ofList |> paren
-                | Check c -> unparseCheck (unparseV dispatch) c
+                                   unparseV envIcons (fun gp -> Tuple(v,gp) |> dispatch) v2 ] |> ofList |> paren
+                | Check c -> unparseCheck (unparseV envIcons  dispatch) c
                 | ParamArray [] ->  ofOption None
                 | ParamArray [Value (Str _); Value(NoValue)] ->  ofOption None
                 | ParamArray [Value (Str _); Var _] ->   ofOption None
                 | ParamArray [Value (Str s); Value(v)] ->   
-                    [ unparseV (fun s -> ParamArray [Value s;       Value(v)] |> dispatch ) (Str s)
-                      unparseV (fun v -> ParamArray [Value (Str s); Value(v)] |> dispatch ) v ]
+                    [ unparseV envIcons (fun s -> ParamArray [Value s;       Value(v)] |> dispatch ) (Str s)
+                      unparseV envIcons (fun v -> ParamArray [Value (Str s); Value(v)] |> dispatch ) v ]
                     |> List.map (List.singleton >> div [ClassName "control"])
                     |> div [ClassName "field is-grouped is-grouped-multiline"]
                 | ParamArray ops -> 
@@ -149,10 +148,10 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                     |> Zipper.permute 
                     |> List.collect(function 
                                     | Empty -> [] 
-                                    | Zipper(l,a,r) -> [unparseEq a (fun op' -> Zipper(l,op',r) |> Zipper.toList |> ParamArray |> dispatch)])
+                                    | Zipper(l,a,r) -> [unparseEq a envIcons (fun op' -> Zipper(l,op',r) |> Zipper.toList |> ParamArray |> dispatch)])
                     |> List.reduce(fun a b -> [a; str "; "; b] |> ofList)
                     |> squareParen
-        and unparseApp f a dispatch : Fable.Import.React.ReactElement = 
+        and unparseApp f a envIcons dispatch : Fable.Import.React.ReactElement = 
             let (specialCall, joinStr) = 
                 match f  with 
                 | Call Product      -> None, str " * "
@@ -178,7 +177,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                 | c                 -> Some c, str "; "
             match a with 
             | Value(ParamArray ops) -> 
-                let call = specialCall |> Option.map (fun f -> unparseEq f (fun op -> (op,a) |> dispatch))
+                let call = specialCall |> Option.map (fun f -> unparseEq f envIcons (fun op -> (op,a) |> dispatch))
                 let ops' = 
                     ops 
                     |> Zipper.permute 
@@ -219,19 +218,19 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                                             match acc with 
                                             | [] -> Option.toList newValuePlaceholder
                                             | _ -> joinStr :: acc
-                                        unparseEq a (fun op' -> (f,Zipper(l,op',r) |> Zipper.toList |> ParamArray |> Value) |> dispatch)::tail ) ops' [] 
+                                        unparseEq a envIcons (fun op' -> (f,Zipper(l,op',r) |> Zipper.toList |> ParamArray |> Value) |> dispatch)::tail ) ops' [] 
                     |> ofList                                                    
                 tags [ call |> Option.map (tag "is-primary" ) |> ofOption
                        tag "is-success" (squareParen param) ]               
             | Value(NoValue) -> 
-                unparseEq f (fun op -> (op,a) |> dispatch)
+                unparseEq f envIcons (fun op -> (op,a) |> dispatch)
                 |> tag "is-primary"                 
             | _ -> 
-                let unparsedF = unparseEq f (fun op -> (op,a) |> dispatch)
-                let unparsedA = unparseEq a (fun op -> (f,op) |> dispatch)
+                let unparsedF = unparseEq  f envIcons (fun op -> (op,a) |> dispatch)
+                let unparsedA = unparseEq  a envIcons (fun op -> (f,op) |> dispatch)
                 tags [ tag "is-primary" unparsedF
                        tag "is-white"   unparsedA]
-        and unparseChoice dispatch (choices:(string*Operation) list) =
+        and unparseChoice envIcons dispatch (choices:(string*Operation) list) =
             choices 
             |> Zipper.permute  
             |> List.collect(function 
@@ -239,21 +238,22 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                             | Zipper(l,a,r) -> 
                                      [str (fst a + ":= ");
                                      br [];
-                                     unparseEq (snd a) (fun op' -> Zipper(l,(fst a,op'),r) |> Zipper.toList |> dispatch)])  
+                                     unparseEq (snd a) envIcons  (fun op' -> Zipper(l,(fst a,op'),r) |> Zipper.toList |> dispatch)])  
             |> ofList
-        and unparseC dispatch func = 
+        and unparseC func envIcons dispatch  = 
             callList func
-        and unparseEq op (dispatch:Operation->unit) : Fable.Import.React.ReactElement =                      
+        and unparseEq op envIcons (dispatch:Operation->unit) : Fable.Import.React.ReactElement =                      
             match op with 
-            | Call f -> unparseC (Call >> dispatch) f
-            | Value(v)-> unparseV (Value >> dispatch) v
+            | Call f -> unparseC f envIcons (Call >> dispatch)
+            | Value(v)-> unparseV envIcons (Value >> dispatch) v
             | Var (v) -> 
-                match icons |> Map.tryFind v with 
+                match envIcons |> Map.tryFind v with 
                 | Some icon -> b [] [icon]
                 | None -> str v
-            | Lam("unusedVariable",body) -> unparseEq body (fun op -> Lam("unusedVariable", op) |> dispatch)
+            | Lam("unusedVariable",body) -> unparseEq body (Map.remove "unusedVariable" envIcons) (fun op -> Lam("unusedVariable", op) |> dispatch)
             | WithLams ((apps,lams), op) ->
-                let ev = unparseEq op (fun op -> GameActions.Primitives.State.applyMany lams op apps |> dispatch)
+                let envIcons = lams |> List.fold (fun state i -> Map.remove i state) envIcons
+                let ev = unparseEq op envIcons (fun op -> GameActions.Primitives.State.applyMany lams op apps |> dispatch)
                 let headerItems = None
                 let footerItems = 
                     List.zip lams apps 
@@ -273,70 +273,66 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                                             div [ Class "card-footer-item has-background-warning" ] 
                                                 [ 
                                                   (match row with | ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable coreDispatch a)
-                                                  unparseEq app (fun app' -> GameActions.Primitives.State.applyMany lams op (Zipper(l |> List.map snd, Some app', r |> List.map snd) |> Zipper.toList) |> dispatch) ]
+                                                  unparseEq app envIcons (fun app' -> GameActions.Primitives.State.applyMany lams op (Zipper(l |> List.map snd, Some app', r |> List.map snd) |> Zipper.toList) |> dispatch) ]
                                         ])  
                 let paramsCaption = 
                     div [ Class "card-footer-item has-background-white" ] [str "Params: "]
                 card coreDispatch headerItems ev (Some( paramsCaption :: footerItems))
             | Lam(x,body) -> 
-                str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
+                let envIcons = Map.remove "x" envIcons
+                str (x + " => ") :: [unparseEq body envIcons (fun op -> Lam(x, op) |> dispatch)] |> ofList
                 |> tag "is-warning"
                 |> List.singleton 
                 |> tags
             | Choice(name, choices) ->  
                 [ str <| name + "one of: "
                   br []
-                  ul [] [unparseChoice (fun ch -> Choice(name, ch) |> dispatch) choices]  ]
+                  ul [] [unparseChoice envIcons (fun ch -> Choice(name, ch) |> dispatch) choices]  ]
                 |> ofList
             | GameActions.Primitives.State.IsDPlus(n,plus) ->  
                 match n with 
                 | 6 -> string (plus) + "+" |> str
                 | n -> string (plus) + "+ on D" + (string n) |> str    
                 |> tag "is-warning"          
-            | App(f,a) -> unparseApp f a (App >> dispatch)
+            | App(f,a) -> unparseApp  f a envIcons (App >> dispatch)
             | Let(name, v, inner) ->  
-                let ev = unparseEq v (fun op -> Let(name, op, inner) |> dispatch)
-                let einner = unparseEq inner (fun op -> Let(name, v, op) |> dispatch)
+                let ev = unparseEq v envIcons (fun op -> Let(name, op, inner) |> dispatch)
+                let einner = unparseEq inner envIcons (fun op -> Let(name, v, op) |> dispatch)
                 [ card coreDispatch (Some name) ev None
                   einner ]
                 |> ofList
-                // [ str ("let " + name + " = ") 
-                //   unparseEq v (fun op -> Let(name, op, inner) |> dispatch)
-                //   br [] 
-                //   unparseEq inner (fun op -> Let(name, v, op) |> dispatch) ]
-                // |> ofList
-            | PropertyGet(s,op) -> [unparseEq op (fun op -> PropertyGet(s,op) |> dispatch ); str <| sprintf ".%s" s] |> ofList
+            | PropertyGet(s,op) -> [unparseEq op envIcons (fun op -> PropertyGet(s,op) |> dispatch ); str <| sprintf ".%s" s] |> ofList
             | AsElseIfs(ifThens) ->    
                 ifThens
                 |> Zipper.permute
                 |> List.map (function 
                     | Empty -> ofOption None
                     | Zipper([],(Some ifExpr, thenExpr),_ ) as z -> //If
-                        let ifPart = unparseIf (fun op -> Zipper.update (Some op, thenExpr) z |> Zipper.toList |> applyManyIfs |> dispatch ) ifExpr
-                        let thenPart = unparseThen (fun op -> Zipper.update (Some ifExpr, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
+                        let ifPart = unparseIf envIcons (fun op -> Zipper.update (Some op, thenExpr) z |> Zipper.toList |> applyManyIfs |> dispatch ) ifExpr
+                        let thenPart = unparseThen envIcons (fun op -> Zipper.update (Some ifExpr, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
                         [ifPart; thenPart] |> tags |> tagGroup
                     | Zipper(_ ,(Some ifExpr, thenExpr),_ ) as z -> //ElseIf
-                        let ifPart = unparseElseIf (fun op -> Zipper.update (Some op, thenExpr) z |> Zipper.toList |> applyManyIfs |> dispatch ) ifExpr
-                        let thenPart = unparseThen (fun op -> Zipper.update (Some ifExpr, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
+                        let ifPart = unparseElseIf envIcons (fun op -> Zipper.update (Some op, thenExpr) z |> Zipper.toList |> applyManyIfs |> dispatch ) ifExpr
+                        let thenPart = unparseThen envIcons (fun op -> Zipper.update (Some ifExpr, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
                         [ifPart; thenPart] |> tags
                     | Zipper(_, (None, thenExpr), _) as z -> //Last/else
-                        let elsePart = unparseElse (fun op -> Zipper.update (None, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
+                        let elsePart = unparseElse envIcons (fun op -> Zipper.update (None, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
                         [elsePart] |> tags
                 ) |> ofList
             | IfThenElse(ifExpr, thenExpr, Some elseExpr) ->
-                [ unparseIf   (fun op -> IfThenElse(op,     thenExpr, Some elseExpr) |> dispatch ) ifExpr 
-                  unparseThen (fun op -> IfThenElse(ifExpr, op,       Some elseExpr) |> dispatch ) thenExpr 
-                  unparseElse (fun op -> IfThenElse(ifExpr, thenExpr, Some op)       |> dispatch ) elseExpr ] 
+                [ unparseIf   envIcons (fun op -> IfThenElse(op,     thenExpr, Some elseExpr) |> dispatch ) ifExpr 
+                  unparseThen envIcons (fun op -> IfThenElse(ifExpr, op,       Some elseExpr) |> dispatch ) thenExpr 
+                  unparseElse envIcons (fun op -> IfThenElse(ifExpr, thenExpr, Some op)       |> dispatch ) elseExpr ] 
                 |> tags
             | IfThenElse(ifExpr, thenExpr, None) ->
-                [ unparseIf   (fun op -> IfThenElse(op,     thenExpr, None) |> dispatch ) ifExpr 
-                  unparseThen (fun op -> IfThenElse(ifExpr, op,       None) |> dispatch ) thenExpr ] 
+                [ unparseIf   envIcons (fun op -> IfThenElse(op,     thenExpr, None) |> dispatch ) ifExpr 
+                  unparseThen envIcons (fun op -> IfThenElse(ifExpr, op,       None) |> dispatch ) thenExpr ] 
                 |> tags
-        and unparseIf     dispatch ifExpr    = [tag "is-info" (str "if");     (unparseEq ifExpr dispatch)  ] |> ofList
-        and unparseThen   dispatch thenExpr  = [tag "is-info" (str "then");   (unparseEq thenExpr dispatch)] |> ofList
-        and unparseElse   dispatch elseExpr  = [tag "is-info" (str "else");   (unparseEq elseExpr dispatch)] |> ofList
-        and unparseElseIf dispatch elseExpr  = [tag "is-info" (str "elseif"); (unparseEq elseExpr dispatch)] |> ofList
-        unparseEq operation dispatch
+        and unparseIf     envIcons dispatch ifExpr    = [tag "is-info" (str "if");     (unparseEq ifExpr envIcons dispatch)  ] |> ofList
+        and unparseThen   envIcons dispatch thenExpr  = [tag "is-info" (str "then");   (unparseEq thenExpr envIcons dispatch)] |> ofList
+        and unparseElse   envIcons dispatch elseExpr  = [tag "is-info" (str "else");   (unparseEq elseExpr envIcons dispatch)] |> ofList
+        and unparseElseIf envIcons dispatch elseExpr  = [tag "is-info" (str "elseif"); (unparseEq elseExpr envIcons dispatch)] |> ofList
+        unparseEq operation envIcons dispatch
     let iconDisplay name icon = 
         match icon with 
         | HasIcon icon -> Map.add name icon icons, draggable coreDispatch name icon 
@@ -348,7 +344,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
             td [] [(if hideAddButton then str "" 
                     else  a [ ClassName "button fa fa-pencil-square-o"; OnClick (fun _ -> EditRow(name) |> coreDispatch) ] [str "Edit"] )]
             td [] [iconDisplay]
-            td [Style [Position "relative"]] [unparseEquation None gameAction ignore] //dispatch)
+            td [Style [Position "relative"]] [unparseEquation None gameAction icons ignore] //dispatch)
         ], newIcons
     | ReadWrite(name,icon,op) -> 
         let newIcons,_ = iconDisplay name icon
@@ -378,7 +374,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                 div [ClassName "field"] 
                     [
                         label [ClassName "label"] [str "Equation / Steps"]
-                        unparseEquation dragging op (fun op -> Dragged(name,op) |> coreDispatch)
+                        unparseEquation dragging op  icons (fun op -> Dragged(name,op) |> coreDispatch)
                     ]
             ] ], newIcons
 let root model dispatch =

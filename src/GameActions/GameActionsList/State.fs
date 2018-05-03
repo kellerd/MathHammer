@@ -39,8 +39,8 @@ let sVsT =
       [get "S";getd "T"] |> opList |> call LessThan, dPlus 6 5
       [get "S";getd "T"] |> opList |> call Equals, dPlus 6 4 ]
     |> table   
-    |> lam "Defender"
     |> lam "S"
+    |> lam "Defender"
 
 let toWound = 
     repeatOp (get "Strength vs Toughness Table") (get "Hit Results") 
