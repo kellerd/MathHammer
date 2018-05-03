@@ -12,23 +12,45 @@ let d6 = App(Call(Dice), Value(Int 6))
 let d3 = App(Call(Dice), Value(Int 3))
 let opId = Lam ("v",get "v")
 let chargeRange = [get "D6";get "D6"] |> opList |> total 
-let meleeRange = opList [ get "M"; get "Charge Range" ] |> total |> lam "M"
+let meleeRange = 
+    opList [ get "M"; get "Charge Range" ] 
+    |> total 
+    |> lam "Charge Range"
+    |> lam "M"
 let shootingRange = get "Weapon Range"
 let psychicTest = [get "D6";get "D6"] |> opList |> total 
 let denyTest = [get "D6";get "D6"] |> opList |> total
-let hitResults = 
+let toHit = 
     repeatOp (get "WS") (get "A") 
     |> total 
     |> lam "A" 
     |> lam "WS"
-let woundResults = 
-    repeatOp (svtOps sVsT) (get "Hit Results") 
-    |> total 
-    |> lam "S" 
+let table ifThen = 
+    let rec acc x = 
+        match x with 
+        | [] -> None
+        | (cmp,thenPortion)::xs -> IfThenElse(cmp,thenPortion,acc xs) |> Some
+    match acc ifThen with 
+    | None -> noValue
+    | Some o -> o
+
+let sVsT = 
+    [ [get "S";getd "T"] |> opList |> call GreaterThan, dPlus 6 3 
+      [get "S";getd "T"] |> opList |> call LessThan, dPlus 6 5
+      [get "S";getd "T"] |> opList |> call Equals, dPlus 6 4 ]
+    |> table   
     |> lam "Defender"
-let unsavedWounds = 
+    |> lam "S"
+
+let toWound = 
+    repeatOp (get "Strength vs Toughness Table") (get "Hit Results") 
+    |> total 
+    |> lam "Strength vs Toughness Table"
+    |> lam "Hit Results"
+let armourSave = 
     repeatOp (getd "Sv") (get "Wound Results") 
     |> total 
+    |> lam "Wound Results"
     |> lam "Defender"
 let letTest = 
     bindOp "Some Var" chargeRange (get "D6")   
@@ -52,14 +74,15 @@ let globalOperations =
       "Let Test", Text None, letTest
       "Let Test 2", Text None, twoLetTest
       "Lam 2 Test", Text None, lam2Test
+      "Strength vs Toughness Table", Text None, sVsT
       "Charge Range", Text None, chargeRange
       "Assault Range", Text None, meleeRange
       "Shooting Range", Text None, shootingRange
       "Psychic Test", Text None, psychicTest
       "Deny Test", Text None, denyTest
-      "To Hit", Text None, hitResults
-      "To Wound", Text None, woundResults
-      "Armour Save", Text None, unsavedWounds
+      "To Hit", Text None, toHit
+      "To Wound", Text None, toWound
+      "Armour Save", Text None, armourSave
     ]    
 let init () : Model * Cmd<Types.Msg> =
     let rows = 

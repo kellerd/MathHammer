@@ -89,7 +89,8 @@ let defApplied = applyArgs defender seargent |> normalize |> snd |> evalOp newEn
 let initialMap = Map.add "Defender" defApplied newEnv
 let (chc,attApplied) = applyArgs attacker seargent |> normalize 
 let eval x op = getp x op |> evalOp initialMap 
-
+// initialMap |> Map.find "Strength vs Toughness Table"
+// get "Strength vs Toughness Table" <*> get "S" <*> get "Defender" |> evalOp initialMap |> Map.find "Strength vs Toughness Table")
     // App
     //    (App
     //       (  Lam

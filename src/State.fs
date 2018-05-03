@@ -30,16 +30,18 @@ let phaseActions =
             "Assault", 
                 nestOps 
                     [ get "Assault Range"   <*> get "M" 
+                                            <*> get "Charge Range"
                                             >>= "Assault Range"
                       get "To Hit"          <*> get "WS" 
                                             <*> get "A" 
                                             >>= "Hit Results"
-                                        
-                      get "To Wound"        <*> get "Defender" 
-                                            <*> get "S" 
+                     // (get "Strength vs Toughness Table" <*> get "S" <*> get "Defender") >>= "Wound Results"                  
+                      get "To Wound"        <*> get "Hit Results"
+                                            <*> (get "Strength vs Toughness Table"  <*> get "S" <*> get "Defender")
                                             >>= "Wound Results"
                       get "App 2 Test"      >>= "App2"                                       
-                      get "Armour Save"     <*> get "Defender"  
+                      get "Armour Save"     <*> get "Defender" 
+                                            <*> get "Wound Results"
                                             >>= "Unsaved Wounds" ] 
                                                           <| opList [ labelVar "Charge Range"
                                                                       labelVar "Assault Range"

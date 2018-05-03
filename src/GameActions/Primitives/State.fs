@@ -62,21 +62,7 @@ let defenderMap = "Defender"
 let attackerMap = "Attacker"
 let getd p = getp p (get "Defender")
 let geta p = getp p (get "Attacker")
-let svtOps = [get "S";getd "T"] |> opList >>= "SvsT"
-let table ifThen = 
-    let rec acc x = 
-        match x with 
-        | [] -> None
-        | (cmp,thenPortion)::xs -> IfThenElse(cmp,thenPortion,acc xs) |> Some
-    match acc ifThen with 
-    | None -> noValue
-    | Some o -> o
 
-let sVsT = 
-    [ get "SvsT" |> call GreaterThan, dPlus 6 3 
-      get "SvsT" |> call LessThan, dPlus 6 5
-      get "SvsT" |> call Equals, dPlus 6 4 ]
-    |> table   
 
 let rec isInUse s = function
       | Var (v) -> v = s
@@ -410,16 +396,16 @@ let rec evalDie n : Distribution.Distribution<_> =
     //               else return roll                        
     //         }
 let closure env op = 
-    let rec fixGp  = function 
+    let rec fixGp env  = function 
         | NoValue 
         | Str _ 
         | Float _
         | Int _ as gp -> gp
-        | Check(Check.Fail gp) -> Check.Fail (fixGp gp) |> Check
-        | Check(Check.Pass gp) -> Check.Pass (fixGp gp) |> Check
+        | Check(Check.Fail gp) -> Check.Fail (fixGp env gp) |> Check
+        | Check(Check.Pass gp) -> Check.Pass (fixGp env gp) |> Check
         | ParamArray ops -> List.map (fixOp env) ops |> ParamArray
-        | Tuple(gp, gp2) -> Tuple(fixGp gp, fixGp gp2)
-        | Dist(gps) -> Distribution.map fixGp gps |> Dist
+        | Tuple(gp, gp2) -> Tuple(fixGp env gp, fixGp env gp2)
+        | Dist(gps) -> Distribution.map (fixGp env ) gps |> Dist
     and fixOp env = function 
         | Call _ as c -> c
         | Var s -> Map.tryFind s env 
@@ -433,8 +419,9 @@ let closure env op =
             Let(v, v' , fixOp (Map.add v v' env) body)
         | Choice(name,choices) -> Choice(name, List.map (fun (key,op) -> key,fixOp env op) choices)
         | IfThenElse(ifExpr, thenExpr, elseExpr) -> IfThenElse(fixOp env ifExpr, fixOp env thenExpr, Option.map (fixOp env) elseExpr)
-        | Value v -> Value(fixGp v)
+        | Value v -> Value(fixGp env  v)
     fixOp env op   
+
 let nestCheck check op = 
     let rec fixGp check = function 
         | NoValue 
@@ -642,6 +629,6 @@ and evalOp env (operation:Operation) : Operation =
             | Call f, v -> evalCall f v env 
             | Lam(x, op), v -> App(Lam(x, op),v) |> evalOp env
             | Var x, _ -> failwith ("Could not find function " + x)
-            | f',x' -> failwith <| sprintf "Cannot apply to something not a function App(%A,%A) = %A,%A" f value f' x'
+            | f',x' -> failwith <| sprintf "Cannot apply to something not a function App(%A,%A) \n\n = First: %A\n\nSecond%A" f value f' x'
     //printfn "%A" r
     r
