@@ -4,6 +4,8 @@ open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open GameActions.GameActionsList.State
 open FsCheckGen
+open GameActions.GameActionsList.View
+
 let (==?) x y = Expect.equal x y ""
 [<Tests>]
 let tests = 
@@ -49,6 +51,26 @@ let tests =
             match op with 
             | WithLams ((apps,ls),o)  -> applyMany ls o apps ==? op
             | op' -> op' ==? op
+        yield testPropertyWithConfig config "AsElseIfs, if none is opposite of applyManyIfs" <| fun op -> 
+            match op with 
+            | AsElseIfs ifThens  -> applyManyIfs ifThens ==? op
+            | op' -> op' ==? op        
+
+            
+
+// let x1 = IfThenElse(Value(Int(6)), Value(Int(7)), None) 
+// let x2 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), Some(Value(Int(10)))))) 
+// let x3 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), None))) 
+// let x4 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), Some(IfThenElse(Value(Int(10)), Value(Int(11)), Some(IfThenElse(Value(Int(12)), Value(Int(13)), Some(Value(Int(14))))))))))
+// let x5 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), Some(IfThenElse(Value(Int(10)), Value(Int(11)), Some(IfThenElse(Value(Int(12)), Value(Int(13)), None))))))) 
+
+// x1 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x1
+// x2 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x2
+// x3 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x3
+// x4 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x4
+// x5 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x5
+// NoValue |> Value  |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = None
+
         yield test "Evalled D6 equal std distribution of integers, reversed" {
             let result = eval d6
             let expected = [1..6] |> List.map (Int) |> List.rev |> Distribution.uniformDistribution |> Dist |> Value

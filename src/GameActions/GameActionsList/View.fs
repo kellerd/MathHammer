@@ -123,34 +123,7 @@ let applyManyIfs ifThens =
     match halp ifThens with 
     | Some v -> v
     | None -> Value(NoValue)
-
-
-// let x1 = IfThenElse(Value(Int(6)), Value(Int(7)), None) 
-// let x2 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), Some(Value(Int(10)))))) 
-// let x3 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), None))) 
-// let x4 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), Some(IfThenElse(Value(Int(10)), Value(Int(11)), Some(IfThenElse(Value(Int(12)), Value(Int(13)), Some(Value(Int(14))))))))))
-// let x5 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), Some(IfThenElse(Value(Int(10)), Value(Int(11)), Some(IfThenElse(Value(Int(12)), Value(Int(13)), None))))))) 
-
-// x1 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x1
-// x2 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x2
-// x3 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x3
-// x4 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x4
-// x5 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x5
-// NoValue |> Value  |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = None
-
-// type GamePrimitive =
-//     | Check of Check.Check<GamePrimitive>
-//     | ParamArray of Operation list
-//     | Tuple of GamePrimitive * GamePrimitive
-//     | Dist of Distribution.Distribution<GamePrimitive>
-// and Operation = 
-//     | PropertyGet of string * Operation
-//     | Value of GamePrimitive
-//     | App of f:Operation * value:Operation
-//     | Lam of param:string * body:Operation
-//     | Let of string * value:Operation * body:Operation
-//     | IfThenElse of ifExpr:Operation * thenExpr:Operation * elseExpr:Operation option
-//     | Choice of name : string * choices:(string * Operation) list       
+ 
 let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row = 
     let unparseEquation dragging operation dispatch = 
         let rec unparseV (dispatch:GamePrimitive->unit)  = function
@@ -302,8 +275,9 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                                                   (match row with | ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable coreDispatch a)
                                                   unparseEq app (fun app' -> GameActions.Primitives.State.applyMany lams op (Zipper(l |> List.map snd, Some app', r |> List.map snd) |> Zipper.toList) |> dispatch) ]
                                         ])  
-                    |> Some                            
-                card coreDispatch headerItems ev footerItems
+                let paramsCaption = 
+                    div [ Class "card-footer-item has-background-white" ] [str "Params: "]
+                card coreDispatch headerItems ev (Some( paramsCaption :: footerItems))
             | Lam(x,body) -> 
                 str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
                 |> tag "is-warning"
