@@ -56,8 +56,10 @@ and unparse unparseValue operation =
     | Value(v)-> unparseValue v
     | Var (v) -> str v
     | Lam(_) -> ofOption None
-    | IsDPlus(6,plus) ->  string (plus) + "+" |> str
-    | IsDPlus(n,plus) ->  string (plus) + "+ on D" + (string n) |> str
+    | IsDPlus(n,plus) ->  
+        match n with 
+        | 6 -> string (plus) + "+" |> str
+        | n -> string (plus) + "+ on D" + (string n) |> str
     | Choice(name, _) -> section [ClassName "columns"] [div [ClassName "column" ] [b [] [str ("Choose a " + name)]]]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D6))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D3))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]

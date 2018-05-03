@@ -74,57 +74,84 @@ let (|HasIcon|_|)  = function
    | Text(Some s) -> strong [] [str s] |> Some
    | _            -> None      
 
-let withAddon tagClass tagClass2 first second =
-    div [ClassName "tags is-marginless has-addons "]
-                    [ span [ ClassName ("tag is-marginless " + tagClass) ] [first]  
-                      span [ ClassName ("tag is-marginless " + tagClass2)] [second] ] 
-let withTag tagClass first = 
-    div [ClassName "tags is-marginless has-addons"]
-        [ span [ ClassName ("tag " + tagClass) ]
-               [first]     
-          //a [ClassName "tag is-delete"] []
-        ]                      
-let card name v foot =
-    div [ Class "card" ]
-        [ name 
-          |> Option.map (fun name -> 
-                header [ Class "card-header" ]
-                       [ p [ Class "card-header-title" ] [ str name ]
-                         a [ Href "#"
-                             Class "card-header-icon" ]
-                           [ span [ Class "icon" ] 
-                                  [ i [ Class "fa fa-angle-down" ] [] ] ] ])
-           |> ofOption
-          div [ Class "card-content" ] 
-              [ div [ Class "content" ] [ v ] ]
-          foot
-          |> Option.map (footer  [ Class "card-footer" ])          
-          |> ofOption
+let tags tags =
+    div [ClassName "tags is-marginless is-medium has-addons "] tags
+let tag tagClass item = 
+    span [ ClassName ("tag is-marginless is-medium " + tagClass) ] [item]           
+let tagGroup tags = 
+    tags |> List.singleton |> div [Class "field is-grouped is-grouped-multiline"]  
+let draggable dispatch name item  = 
+    item 
+    |> List.singleton 
+    |> div [ Style [Cursor "move"]
+             Draggable true 
+             OnDragEnd (fun _ -> dispatch DragLeft)
+             OnDragStart (fun _ -> Dragging(name) |> dispatch)]             
+let card dispatch name v foot =
+    [   div [ Class "card" ]
+            [ name 
+              |> Option.map (fun name -> 
+                    header [ Class "card-header" ]
+                           [ p [ Class "card-header-title" ] [ str name |> draggable dispatch name ]
+                             a [ Href "#"
+                                 Class "card-header-icon" ]
+                               [ span [ Class "icon" ] 
+                                      [ i [ Class "fa fa-angle-down" ] [] ] ] ])
+               |> ofOption
+              div [ Class "card-content" ] 
+                  [ div [ Class "content" ] [ v ] ]
+              foot
+              |> Option.map (footer  [ Class "card-footer" ])          
+              |> ofOption
 
-        ]    
+            ]   
+        br [] ]
+    |> ofList
+
+let rec (|AsElseIfs|_|)  = function 
+    | IfThenElse(ifExpr,thenExpr, Some(AsElseIfs(ifThens))) ->  Some ((Some ifExpr, thenExpr) :: ifThens) 
+    | IfThenElse(ifExpr,thenExpr, Some(elseEnd)) -> Some ([Some ifExpr, thenExpr; None, elseEnd] )
+    | IfThenElse(ifExpr,thenExpr, None) -> Some [Some ifExpr, thenExpr]
+    | _ -> None
+let applyManyIfs ifThens = 
+    let rec halp ifThens = 
+        match ifThens with 
+        | [] -> None 
+        | [None,elseExpr] -> Some elseExpr 
+        | (Some ifExpr,thenExpr)::xs -> IfThenElse(ifExpr,thenExpr, halp xs) |> Some 
+        | _ -> None
+    match halp ifThens with 
+    | Some v -> v
+    | None -> Value(NoValue)
+
+
+// let x1 = IfThenElse(Value(Int(6)), Value(Int(7)), None) 
+// let x2 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), Some(Value(Int(10)))))) 
+// let x3 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), None))) 
+// let x4 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), Some(IfThenElse(Value(Int(10)), Value(Int(11)), Some(IfThenElse(Value(Int(12)), Value(Int(13)), Some(Value(Int(14))))))))))
+// let x5 = IfThenElse(Value(Int(6)), Value(Int(7)), Some(IfThenElse(Value(Int(8)), Value(Int(9)), Some(IfThenElse(Value(Int(10)), Value(Int(11)), Some(IfThenElse(Value(Int(12)), Value(Int(13)), None))))))) 
+
+// x1 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x1
+// x2 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x2
+// x3 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x3
+// x4 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x4
+// x5 |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = Some x5
+// NoValue |> Value  |> (|AsElseIfs|_|) |> Option.bind applyManyIfs = None
+
 // type GamePrimitive =
 //     | Check of Check.Check<GamePrimitive>
-//     | NoValue 
 //     | ParamArray of Operation list
 //     | Tuple of GamePrimitive * GamePrimitive
 //     | Dist of Distribution.Distribution<GamePrimitive>
 // and Operation = 
 //     | PropertyGet of string * Operation
 //     | Value of GamePrimitive
-//     | Var of string
 //     | App of f:Operation * value:Operation
 //     | Lam of param:string * body:Operation
 //     | Let of string * value:Operation * body:Operation
 //     | IfThenElse of ifExpr:Operation * thenExpr:Operation * elseExpr:Operation option
 //     | Choice of name : string * choices:(string * Operation) list       
-let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row = 
-    let draggable name item = 
-        item 
-        |> List.singleton 
-        |> div [ Style [Cursor "move"]
-                 Draggable true 
-                 OnDragEnd (fun _ -> dispatch DragLeft)
-                 OnDragStart (fun _ -> Dragging(name) |> dispatch)]    
+let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row = 
     let unparseEquation dragging operation dispatch = 
         let rec unparseV (dispatch:GamePrimitive->unit)  = function
                 | Int(i) -> string i |> str
@@ -153,32 +180,32 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                     |> List.reduce(fun a b -> [a; str "; "; b] |> ofList)
                     |> squareParen
         and unparseApp f a dispatch : Fable.Import.React.ReactElement = 
-            let (joinStr) = 
+            let (specialCall, joinStr) = 
                 match f  with 
-                | Call Product      -> str " * "
-                | Call Division     -> str " / "
-                | Call Count        -> str ", "
-                | Call Repeat       -> str " × "
-                | Call (Dice _)     -> ofOption None
-                | Call GreaterThan  -> str ">"
-                | Call Equals       -> str "=="
-                | Call NotEquals    -> str "!="
-                | Call LessThan     -> str "<"
-                | Call And          -> str " && "
-                | Call Or           -> str " || "
-                | Call Max          -> str ", "
-                | Call Min          -> str ", "
-                | Call Sub          -> str " - "
-                | Call Median       -> str ", "
-                | Call Mean         -> str ", "
-                | Call Mode         -> str ", "
-                | Call (Least   _)  -> str ", "
-                | Call (Largest _)  -> str ", "            
-                | Call Total        -> str " + " 
-                | _                 -> str "; "
+                | Call Product      -> None, str " * "
+                | Call Division     -> None, str " / "
+                | Call Sub          -> None, str " - "
+                | Call Total        -> None, str " + " 
+                | Call GreaterThan  -> None, str ">"
+                | Call Equals       -> None, str "=="
+                | Call NotEquals    -> None, str "!="
+                | Call LessThan     -> None, str "<"
+                | Call And          -> None, str " && "
+                | Call Or           -> None, str " || "
+                | Call Count        -> Some (Call Repeat), str ", "
+                | Call Repeat       -> Some (Call Repeat), str " × "
+                | Call Dice         -> Some (Call Repeat), ofOption None
+                | Call Max          -> Some(Call Max        ), str ", "
+                | Call Min          -> Some(Call Min        ), str ", "
+                | Call Median       -> Some(Call Median     ), str ", "
+                | Call Mean         -> Some(Call Mean       ), str ", "
+                | Call Mode         -> Some(Call Mode       ), str ", "
+                | Call Least        -> Some(Call (Least    )), str ", "
+                | Call Largest      -> Some(Call (Largest  )), str ", "            
+                | c                 -> Some c, str "; "
             match a with 
             | Value(ParamArray ops) -> 
-                let call = unparseEq f (fun op -> (op,a) |> dispatch)
+                let call = specialCall |> Option.map (fun f -> unparseEq f (fun op -> (op,a) |> dispatch))
                 let ops' = 
                     ops 
                     |> Zipper.permute 
@@ -221,14 +248,16 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                             | _ -> joinStr :: acc
                                         unparseEq a (fun op' -> (f,Zipper(l,op',r) |> Zipper.toList |> ParamArray |> Value) |> dispatch)::tail ) ops' [] 
                     |> ofList                                                    
-                withAddon "is-primary" "is-success" call (squareParen param)                
+                tags [ call |> Option.map (tag "is-primary" ) |> ofOption
+                       tag "is-success" (squareParen param) ]               
             | Value(NoValue) -> 
                 unparseEq f (fun op -> (op,a) |> dispatch)
-                |> withTag "is-primary"                 
+                |> tag "is-primary"                 
             | _ -> 
-                let x = (||>) 
-                (unparseEq f (fun op -> (op,a) |> dispatch), unparseEq a (fun op -> (f,op) |> dispatch))
-                ||> withAddon "is-primary" "is-white" 
+                let unparsedF = unparseEq f (fun op -> (op,a) |> dispatch)
+                let unparsedA = unparseEq a (fun op -> (f,op) |> dispatch)
+                tags [ tag "is-primary" unparsedF
+                       tag "is-white"   unparsedA]
         and unparseChoice dispatch (choices:(string*Operation) list) =
             choices 
             |> Zipper.permute  
@@ -262,7 +291,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                         let nameLabel = b [] [str a]
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
-                                                [ (match row with |ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable a) ]
+                                                [ (match row with |ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable coreDispatch a) ]
                                                 //GameActions.Primitives.State.applyMany (Zipper(l |> List.map fst, a, r |> List.map fst) |> Zipper.toList) op apps |> Zipper.toList) |> dispatch
                                         ]
                                     | Zipper(l,(a, Some app), r) -> 
@@ -270,50 +299,80 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
                                                 [ 
-                                                  (match row with |ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable a)
+                                                  (match row with | ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable coreDispatch a)
                                                   unparseEq app (fun app' -> GameActions.Primitives.State.applyMany lams op (Zipper(l |> List.map snd, Some app', r |> List.map snd) |> Zipper.toList) |> dispatch) ]
                                         ])  
                     |> Some                            
-                card headerItems ev footerItems
+                card coreDispatch headerItems ev footerItems
             | Lam(x,body) -> 
                 str (x + " => ") :: [unparseEq body (fun op -> Lam(x, op) |> dispatch)] |> ofList
-                |> withTag "is-warning"
+                |> tag "is-warning"
+                |> List.singleton 
+                |> tags
             | Choice(name, choices) ->  
                 [ str <| name + "one of: "
                   br []
                   ul [] [unparseChoice (fun ch -> Choice(name, ch) |> dispatch) choices]  ]
                 |> ofList
+            | GameActions.Primitives.State.IsDPlus(n,plus) ->  
+                match n with 
+                | 6 -> string (plus) + "+" |> str
+                | n -> string (plus) + "+ on D" + (string n) |> str    
+                |> tag "is-warning"          
             | App(f,a) -> unparseApp f a (App >> dispatch)
             | Let(name, v, inner) ->  
-                let ev = unparseEq inner (fun op -> Let(name, op, inner) |> dispatch)
+                let ev = unparseEq v (fun op -> Let(name, op, inner) |> dispatch)
                 let einner = unparseEq inner (fun op -> Let(name, v, op) |> dispatch)
-                [ card (Some name) ev None
+                [ card coreDispatch (Some name) ev None
                   einner ]
                 |> ofList
-
-
                 // [ str ("let " + name + " = ") 
                 //   unparseEq v (fun op -> Let(name, op, inner) |> dispatch)
                 //   br [] 
                 //   unparseEq inner (fun op -> Let(name, v, op) |> dispatch) ]
                 // |> ofList
             | PropertyGet(s,op) -> [unparseEq op (fun op -> PropertyGet(s,op) |> dispatch ); str <| sprintf ".%s" s] |> ofList
-            | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
-                let ifPart = [str "if "; unparseEq ifExpr (fun op -> IfThenElse(op, thenExpr, elseExpr) |> dispatch )] |> ofList
-                let thenPart = [str " then "; br []; unparseEq thenExpr (fun op -> IfThenElse(ifExpr, op, elseExpr) |> dispatch )] |> ofList
-                let elsePart = Option.map(fun elseExpr -> [br []; unparseEq elseExpr (fun op -> IfThenElse(ifExpr, thenExpr, Some op) |> dispatch )]) elseExpr |> Option.toList |> List.collect id
-                ifPart :: thenPart :: elsePart |> ofList 
+            | AsElseIfs(ifThens) ->    
+                ifThens
+                |> Zipper.permute
+                |> List.map (function 
+                    | Empty -> ofOption None
+                    | Zipper([],(Some ifExpr, thenExpr),_ ) as z -> //If
+                        let ifPart = unparseIf (fun op -> Zipper.update (Some op, thenExpr) z |> Zipper.toList |> applyManyIfs |> dispatch ) ifExpr
+                        let thenPart = unparseThen (fun op -> Zipper.update (Some ifExpr, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
+                        [ifPart; thenPart] |> tags |> tagGroup
+                    | Zipper(_ ,(Some ifExpr, thenExpr),_ ) as z -> //ElseIf
+                        let ifPart = unparseElseIf (fun op -> Zipper.update (Some op, thenExpr) z |> Zipper.toList |> applyManyIfs |> dispatch ) ifExpr
+                        let thenPart = unparseThen (fun op -> Zipper.update (Some ifExpr, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
+                        [ifPart; thenPart] |> tags
+                    | Zipper(_, (None, thenExpr), _) as z -> //Last/else
+                        let elsePart = unparseElse (fun op -> Zipper.update (None, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr
+                        [elsePart] |> tags
+                ) |> ofList
+            | IfThenElse(ifExpr, thenExpr, Some elseExpr) ->
+                [ unparseIf   (fun op -> IfThenElse(op,     thenExpr, Some elseExpr) |> dispatch ) ifExpr 
+                  unparseThen (fun op -> IfThenElse(ifExpr, op,       Some elseExpr) |> dispatch ) thenExpr 
+                  unparseElse (fun op -> IfThenElse(ifExpr, thenExpr, Some op)       |> dispatch ) elseExpr ] 
+                |> tags
+            | IfThenElse(ifExpr, thenExpr, None) ->
+                [ unparseIf   (fun op -> IfThenElse(op,     thenExpr, None) |> dispatch ) ifExpr 
+                  unparseThen (fun op -> IfThenElse(ifExpr, op,       None) |> dispatch ) thenExpr ] 
+                |> tags
+        and unparseIf     dispatch ifExpr    = [tag "is-info" (str "if");     (unparseEq ifExpr dispatch)  ] |> ofList
+        and unparseThen   dispatch thenExpr  = [tag "is-info" (str "then");   (unparseEq thenExpr dispatch)] |> ofList
+        and unparseElse   dispatch elseExpr  = [tag "is-info" (str "else");   (unparseEq elseExpr dispatch)] |> ofList
+        and unparseElseIf dispatch elseExpr  = [tag "is-info" (str "elseif"); (unparseEq elseExpr dispatch)] |> ofList
         unparseEq operation dispatch
     let iconDisplay name icon = 
         match icon with 
-        | HasIcon icon -> Map.add name icon icons, draggable name icon 
-        | _ -> icons, draggable name (str name)
+        | HasIcon icon -> Map.add name icon icons, draggable coreDispatch name icon 
+        | _ -> icons, draggable coreDispatch name (str name)
     match row with 
     | ReadOnly (name, icon, gameAction) -> 
         let newIcons,iconDisplay = iconDisplay name icon
         tr [] [
             td [] [(if hideAddButton then str "" 
-                    else  a [ ClassName "button fa fa-pencil-square-o"; OnClick (fun _ -> EditRow(name) |> dispatch) ] [str "Edit"] )]
+                    else  a [ ClassName "button fa fa-pencil-square-o"; OnClick (fun _ -> EditRow(name) |> coreDispatch) ] [str "Edit"] )]
             td [] [iconDisplay]
             td [Style [Position "relative"]] [unparseEquation None gameAction ignore] //dispatch)
         ], newIcons
@@ -321,7 +380,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
         let newIcons,_ = iconDisplay name icon
         tr [] [
             td [] [ a [ ClassName "button fa fa-floppy-o"
-                        OnClick (fun _ -> SaveOp(name) |> dispatch)  ] [str "Close"] ]
+                        OnClick (fun _ -> SaveOp(name) |> coreDispatch)  ] [str "Close"] ]
             td [ColSpan 3.] [ 
                 div [ClassName "field"] 
                     [
@@ -330,7 +389,7 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                 Type "text"
                                 Placeholder "FA Icon/Special/Text"
                                 DefaultValue (icon |> function Special s  | Text(Some s) -> s | Icon s -> s.Remove(0,3) | Text None -> "")
-                                OnChange (fun ev -> !!ev.target?value |> ChangeIcon |> dispatch ) ]    
+                                OnChange (fun ev -> !!ev.target?value |> ChangeIcon |> coreDispatch ) ]    
                     ]
                 div [ClassName "field"] 
                     [
@@ -340,12 +399,12 @@ let mkRows dragging hideAddButton (dispatch:Msg->unit) icons row =
                                 Placeholder "Type the action name"
                                 DefaultValue name
                                 AutoFocus true 
-                                OnChange (fun ev -> !!ev.target?value |> ChangeNewRowName |> dispatch ) ]
+                                OnChange (fun ev -> !!ev.target?value |> ChangeNewRowName |> coreDispatch ) ]
                     ]      
                 div [ClassName "field"] 
                     [
                         label [ClassName "label"] [str "Equation / Steps"]
-                        unparseEquation dragging op (fun op -> Dragged(name,op) |> dispatch)
+                        unparseEquation dragging op (fun op -> Dragged(name,op) |> coreDispatch)
                     ]
             ] ], newIcons
 let root model dispatch =
