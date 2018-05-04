@@ -148,7 +148,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                     ops 
                     |> Zipper.permute 
                     |> List.collect(function 
-                                    | Empty -> [] 
+                                    | Zipper.Empty -> [] 
                                     | Zipper(l,a,r) -> [unparseEq a envIcons (fun op' -> Zipper(l,op',r) |> Zipper.toList |> ParamArray |> dispatch)])
                     |> List.reduce(fun a b -> [a; str "; "; b] |> ofList)
                     |> squareParen
@@ -184,7 +184,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                     |> Zipper.permute 
                 let param = 
                     List.foldBack (function 
-                                    | Empty -> id
+                                    | Zipper.Empty -> id
                                     | Zipper(l,a,r) -> fun acc -> 
                                         let reset ( e : Fable.Import.React.DragEvent) = 
                                             e.target?className <- "has-text-centered"
@@ -235,7 +235,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
             choices 
             |> Zipper.permute  
             |> List.collect(function 
-                            | Empty -> [] 
+                            | Zipper.Empty -> [] 
                             | Zipper(l,a,r) -> 
                                      [str (fst a + ":= ");
                                      br [];
@@ -260,8 +260,8 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                     List.zip lams apps 
                     |> Zipper.permute
                     |> List.collect(function //Empty -> lams)
-                                    | Empty -> []
-                                    | Zipper(l,(a,   None), r) -> 
+                                    | Zipper.Empty -> []
+                                    | Zipper(_,(a,   None), _) -> 
                                         let nameLabel = b [] [str a]
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
@@ -308,7 +308,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                 ifThens
                 |> Zipper.permute
                 |> List.map (function 
-                    | Empty -> ofOption None
+                    | Zipper.Empty -> ofOption None
                     | Zipper([],(Some ifExpr, thenExpr),_ ) as z -> //If
                         let ifPart = unparseIf envIcons (fun op -> Zipper.update (Some op, thenExpr) z |> Zipper.toList |> applyManyIfs |> dispatch ) ifExpr
                         let thenPart = unparseThen envIcons (fun op -> Zipper.update (Some ifExpr, op) z  |> Zipper.toList |> applyManyIfs |> dispatch) thenExpr

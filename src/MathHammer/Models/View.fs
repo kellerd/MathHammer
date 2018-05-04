@@ -60,9 +60,9 @@ let rangeStops (dist:Distribution.Distribution<_>)  =
         |> List.skip 1
         |> List.sortByDescending snd
         |> List.map(fun ((offset:string,stopcolor:string),opacity:float) -> 
-                        stop [ Offset offset
-                               StopColor stopcolor
-                               StopOpacity opacity ] [])
+                        stop [ SVGAttr.Offset offset
+                               SVGAttr.StopColor stopcolor
+                               SVGAttr.StopOpacity opacity ] [])
         
     (minRange,maxRange, stopsPercentGreenAndOpacity)
 
@@ -96,11 +96,11 @@ let root model dispatch =
       let modelDisplay = 
             [ circle   [ R (model.Size / 2 |> float) 
                          OnClick (fun _ -> Select |> dispatch) ] []
-              text     [ TextAnchor "middle"
-                         Y 50.
+              text     [ SVGAttr.TextAnchor "middle"
+                         SVGAttr.Y 50.
                          SVGAttr.StrokeWidth (".5")
                          SVGAttr.Fill "#000000"
-                         Stroke "#000000"
+                         SVGAttr.Stroke "#000000"
                          SVGAttr.FontSize "25"] 
                          [ str model.Name ] ]
       groupFor model modelDisplay
