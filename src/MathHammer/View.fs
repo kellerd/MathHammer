@@ -6,8 +6,35 @@ open Types
 open GameActions.Primitives.Types
 open Models.View  
 open GameActions.Primitives.State
+
+
+let line colour (x1, y1) (x2,y2) tension =  
+    let (hx1,hy1,hx2,hy2) = 
+        let delta = if tension < 0.0 then (y2-y1) * tension 
+                    else (x2-x1) * tension
+        if tension < 0.0 then x1, y1-delta, x2, y2+delta
+        else x1 + delta, y1, x2 - delta, y2
+
+    let pathString = sprintf "M %f %f C %f %f %f %f %f %f" x1 y1 hx1 hy1 hx2 hy2 x2 y2
+    path [SVGAttr.D      pathString
+          SVGAttr.Fill   "none"
+          SVGAttr.Stroke colour] []
+// let arrow (x1, y1) (x2,y2) colour tension =
+//     ()
+// let arrowLine  
+
 let root model dispatch =
     let (boardX,boardY) = model.Board |> fun (x,y) -> ft.ToMM(x),ft.ToMM(y)
+
+    let selectedA = model.SelectedAttacker |> Option.bind(fun name -> Map.tryFind name model.Attacker.Models)
+    let selectedD = model.SelectedDefender |> Option.bind(fun name -> Map.tryFind name model.Defender.Models)
+    let selectedBoth offSet1 offSet2 = 
+        match selectedA, selectedD with 
+        | Some a, Some d -> 
+           Some ((a.PosX, a.PosY + float offSet1 + float (a.Size - 3<mm>)), 
+                 (d.PosX, d.PosY + float offSet2 + float (d.Size / 2)))
+        | _ -> None
+        
     let drawing =   
         svg 
             [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
@@ -18,7 +45,9 @@ let root model dispatch =
               model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("Assault Range")) |> ofOption
               model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("Assault Range")) |> ofOption
               UnitList.View.root model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
-              UnitList.View.root model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch) ] 
+              UnitList.View.root model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
+              selectedBoth model.Attacker.OffsetY model.Defender.OffsetY
+                 |> Option.map (fun (a,d) -> line "red" a d -0.5) |> ofOption ] 
     let swap =  
         i [ClassName "fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
         |> List.singleton
