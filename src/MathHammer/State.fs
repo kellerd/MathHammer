@@ -20,7 +20,7 @@ let init () : Model * Cmd<Types.Msg> =
             Defender = { defender with BoxFill="#CCCCFF"; ElementFill="#0B79CE"; ElementStroke="#023963" }
             SelectedAttacker = None
             SelectedDefender = None
-            Board = 6<ft>,4<ft>
+            Board = {Top = 0<ft>;Left=0<ft>; Width=6<ft>;Height=4<ft>}
             GlobalOperations = []
             Mode = Probability
             Choices = Map.empty<_,_>

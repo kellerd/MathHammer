@@ -24,7 +24,8 @@ let line colour (x1, y1) (x2,y2) tension =
 // let arrowLine  
 
 let root model dispatch =
-    let (boardX,boardY) = model.Board |> fun (x,y) -> ft.ToMM(x),ft.ToMM(y)
+    let (boardT, boardL, boardW,boardH) = 
+        ft.ToMM(model.Board.Top), ft.ToMM(model.Board.Left), ft.ToMM(model.Board.Width), ft.ToMM(model.Board.Height)
 
     let selectedA = model.SelectedAttacker |> Option.bind(fun name -> Map.tryFind name model.Attacker.Models)
     let selectedD = model.SelectedDefender |> Option.bind(fun name -> Map.tryFind name model.Defender.Models)
@@ -37,7 +38,7 @@ let root model dispatch =
         
     let drawing =   
         svg 
-            [ ViewBox (sprintf "0 0 %d %d" boardX boardY); unbox ("width", "100%")]
+            [ ViewBox (sprintf "%d %d %d %d" boardL boardT boardW boardH); unbox ("width", "100%")]
             [ UnitList.View.rootBoard model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
               UnitList.View.rootBoard model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
               model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("Shooting Range")) |> ofOption
