@@ -27,7 +27,7 @@ let initSgt name coreRules =
                        "Sv",    ( 9, dPlus 6 3)
                        "InvSv", (10, noValue)] 
     let rules = applyArgs coreRules (attributes |> List.map (fun (_,(_,c)) -> c))
-    { (init name) with Rules = rules; Attributes = Map.ofList attributes }, Cmd.none
+    (name, { (init name) with Rules = rules; Attributes = Map.ofList attributes }), Cmd.none
 let initMeq name coreRules =
     let attributes = [ "M",     ( 1, vInt 6)
                        "WS",    ( 2, dPlus 6 3)
@@ -40,7 +40,7 @@ let initMeq name coreRules =
                        "Sv",    ( 9, dPlus 6 3)
                        "InvSv", (10, noValue   )] 
     let rules = applyArgs coreRules (attributes |> List.map (fun (_,(_,c)) -> c))
-    { (init name) with Rules = rules; Attributes =  Map.ofList attributes }, Cmd.none
+    (name, { (init name) with Rules = rules; Attributes =  Map.ofList attributes }), Cmd.none
 let initGeq name coreRules =
     let attributes = [ "Weapon Range",( 1, vInt 30)
                        "M",          ( 2, vInt 6)
@@ -54,11 +54,11 @@ let initGeq name coreRules =
                        "Sv",         (10, dPlus 6 3)
                        "InvSv",      (11,  noValue  )]  
     let rules = applyArgs (coreRules |> lam "Weapon Range") (attributes |> List.map (fun (_,(_,c)) -> c))
-    { (init name) with Rules = rules; Attributes = Map.ofList attributes }, Cmd.none
+    (name, { (init name) with Rules = rules; Attributes = Map.ofList attributes }), Cmd.none
 
 let update msg model =
       match msg with
-      | ChangePosition (x,y,scale) -> {model with PosX = x; PosY = y; Scale=scale}, Cmd.none
+      | ChangePosition (x,y) -> {model with PosX = x; PosY = y}, Cmd.none
       | Select _ -> model, Cmd.none
       | MakeChoice _ -> model, Cmd.none
       | Rebind (initial) -> 

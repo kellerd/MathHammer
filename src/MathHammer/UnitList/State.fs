@@ -5,17 +5,18 @@ open Types
 
 let init name () : Model * Cmd<Msg> =
     {
-        Name = name
+        Location = { Label = name
+                     Fill = "#000000"
+                     Dimensions = {
+                                    Top    = 0<mm>
+                                    Left   = 0<mm>
+                                    Width  = ft.ToMM 6<ft>
+                                    Height = ft.ToMM 2<ft> } }
         Models=Map.empty<_,_>
-        OffsetY=0<mm>
-        BoxFill="#000000"
         ElementFill="#FFFFFF"
         ElementStroke="#000000"
         DeploymentFill="#CCFFCC"
-        Width=ft.ToMM 6<ft>
-        Height=ft.ToMM 2<ft>
         Deployment=inch.ToMM 12<inch>
-        Scale = "scale(1,1)"
     }, Cmd.ofMsg Distribute
 
 
@@ -42,8 +43,8 @@ let update msg model : Model * Cmd<Msg> =
             let (newModels, modelsCmds) =
                 model.Models
                 |> Map.toList
-                |> distribute model.Width model.Deployment
-                |> List.map(fun((_,m),x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y,model.Scale)) m)
+                |> distribute model.Location.Dimensions.Width model.Deployment
+                |> List.map(fun((_,m),x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y)) m)
                 |> List.fold(fun (map,cmds) (m,cmd) -> (Map.add m.Name m map), (Cmd.map (fun msg -> ModelMsg(msg,m.Name)) cmd)::cmds) (model.Models,[])
             {model with Models = newModels}, Cmd.batch (modelsCmds)
     | ModelMsg(msg,key) -> 

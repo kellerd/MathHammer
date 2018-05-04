@@ -1,18 +1,13 @@
 module MathHammer.UnitList.Types
 open GameActions.Primitives.Types
-type Area  = {Top:int<ft>;Left:int<ft>;Width:int<ft>;Height:int<ft>}
-
+type Area  = {Top:int<mm>;Left:int<mm>;Width:int<mm>;Height:int<mm>}
+type Location = {Label:string; Fill:string; Dimensions: Area}
 type Model = {
-    OffsetY:int<mm>
+    Location: Location
     Models:Map<string,MathHammer.Models.Types.Model>
-    BoxFill:string
     DeploymentFill:string
     ElementFill:string
     ElementStroke:string
-    Scale : string
-    Name : string
-    Width : int<mm>
-    Height : int<mm>
     Deployment : int<mm>
 }
 

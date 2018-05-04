@@ -16,11 +16,15 @@ let init () : Model * Cmd<Types.Msg> =
     let model : Model = 
         { 
             Environment = Map.empty<_,_> |> Map.add "Phase" (Str "Assault" |> Value)
-            Attacker = { attacker with BoxFill="#FFCCCC"; ElementFill="#79CE0B"; ElementStroke="#396302"; OffsetY = ft.ToMM 2<ft>; Scale="scale(1,-1)" }
-            Defender = { defender with BoxFill="#CCCCFF"; ElementFill="#0B79CE"; ElementStroke="#023963" }
+            Attacker = { attacker with Location = { attacker.Location with 
+                                                        Fill="#FFCCCC"
+                                                        Dimensions = { attacker.Location.Dimensions with Top = ft.ToMM 2<ft> } }
+                                       ElementFill="#79CE0B"
+                                       ElementStroke="#396302" }
+            Defender = { defender with Location = {defender.Location with Fill="#CCCCFF"}; ElementFill="#0B79CE"; ElementStroke="#023963" }
             SelectedAttacker = None
             SelectedDefender = None
-            Board = {Top = 0<ft>;Left=0<ft>; Width=6<ft>;Height=4<ft>}
+            Board = {Top = 0<mm>;Left=0<mm>; Width=ft.ToMM 6<ft>;Height=ft.ToMM 4<ft>}
             GlobalOperations = []
             Mode = Probability
             Choices = Map.empty<_,_>

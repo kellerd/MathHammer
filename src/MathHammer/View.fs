@@ -24,21 +24,22 @@ let line colour (x1, y1) (x2,y2) tension =
 // let arrowLine  
 
 let root model dispatch =
-    let (boardT, boardL, boardW,boardH) = 
-        ft.ToMM(model.Board.Top), ft.ToMM(model.Board.Left), ft.ToMM(model.Board.Width), ft.ToMM(model.Board.Height)
-
-    let selectedA = model.SelectedAttacker |> Option.bind(fun name -> Map.tryFind name model.Attacker.Models)
-    let selectedD = model.SelectedDefender |> Option.bind(fun name -> Map.tryFind name model.Defender.Models)
+    let viewbox = ViewBox (sprintf "%d %d %d %d" model.Board.Top model.Board.Left model.Board.Width model.Board.Height)
+    let selectedAttacker = model.SelectedAttacker |> Option.bind(fun name -> Map.tryFind name model.Attacker.Models)
+    let selectedDefender = model.SelectedDefender |> Option.bind(fun name -> Map.tryFind name model.Defender.Models)
     let selectedBoth offSet1 offSet2 = 
-        match selectedA, selectedD with 
+        match selectedAttacker, selectedDefender with 
         | Some a, Some d -> 
            Some ((a.PosX, a.PosY + float offSet1 + float (a.Size - 3<mm>)), 
                  (d.PosX, d.PosY + float offSet2 + float (d.Size / 2)))
         | _ -> None
+    let selectedLine =  
+        selectedBoth model.Attacker.Location.Dimensions.Top model.Defender.Location.Dimensions.Top
+        |> Option.map (fun (a,d) -> line "red" a d -0.5) |> ofOption      
         
     let drawing =   
         svg 
-            [ ViewBox (sprintf "%d %d %d %d" boardL boardT boardW boardH); unbox ("width", "100%")]
+            [ viewbox; unbox ("width", "100%")]
             [ UnitList.View.rootBoard model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
               UnitList.View.rootBoard model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
               model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("Shooting Range")) |> ofOption
@@ -47,8 +48,7 @@ let root model dispatch =
               model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("Assault Range")) |> ofOption
               UnitList.View.root model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
               UnitList.View.root model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
-              selectedBoth model.Attacker.OffsetY model.Defender.OffsetY
-                 |> Option.map (fun (a,d) -> line "red" a d -0.5) |> ofOption ] 
+              selectedLine ] 
     let swap =  
         i [ClassName "fa fa-arrows-v"; OnClick (fun _ -> Swap |> dispatch) ] []
         |> List.singleton
@@ -74,9 +74,8 @@ let root model dispatch =
                  |> List.partition (fun (i,_) -> i % 2 = 0)
                  |> toColumns                
         
-        match model.SelectedAttacker |> Option.bind (fun name -> Map.tryFind name model.Attacker.Models) with 
-        | None ->  
-            titleBar "<< Select model to edit turn sequence >>"
+        match selectedAttacker with 
+        | None -> titleBar "<< Select model to edit turn sequence >>"
         | Some selected -> 
             let attrDiv = 
                 selected.Attributes

@@ -111,7 +111,7 @@ let init result =
     let attacker = createArgs stats body
     let defender =  createArgs stats defbody
 
-    let mapScale scale = 
+    let mapByName scale = 
       List.mapi 
           (fun _ (x : MathHammer.Models.Types.Model,_) -> 
             x.Name, {x with Scale = scale} )
@@ -119,8 +119,11 @@ let init result =
 
 
     let attackers = [initMeq "Marine" attacker; initSgt "Captain" attacker ] 
-                    |> mapScale mathHammer.Attacker.Scale
-    let defenders = ['a'..'z'] |> List.map (fun c -> initGeq (string c) defender)  |> mapScale mathHammer.Defender.Scale 
+                    |> List.map (fst)
+                    |> Map.ofList
+    let defenders = ['a'..'z'] 
+                    |> List.map (fun c -> initGeq (string c) defender |> fst)
+                    |> Map.ofList
 
     let (model, cmd) =
       urlUpdate result

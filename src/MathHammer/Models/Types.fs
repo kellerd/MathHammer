@@ -14,7 +14,7 @@ type Model = { PosX:float
 
 
 type Msg = 
-    | ChangePosition of float * float * string
+    | ChangePosition of float * float
     | MakeChoice of string * Set<string>
     | Rebind of Environment
     | Select
