@@ -27,21 +27,22 @@ let root model dispatch =
     let viewbox = ViewBox (sprintf "%d %d %d %d" model.Board.Top model.Board.Left model.Board.Width model.Board.Height)
     let selectedAttacker = model.SelectedAttacker |> Option.bind(fun name -> Map.tryFind name model.Attacker.Models)
     let selectedDefender = model.SelectedDefender |> Option.bind(fun name -> Map.tryFind name model.Defender.Models)
-    let selectedBoth offSet1 offSet2 = 
+    let selectedBoth = 
         match selectedAttacker, selectedDefender with 
         | Some a, Some d -> 
-           Some ((a.PosX, a.PosY + float offSet1 + float (a.Size - 3<mm>)), 
-                 (d.PosX, d.PosY + float offSet2 + float (d.Size / 2)))
+           Some ((a.PosX, a.PosY), (d.PosX, d.PosY))
         | _ -> None
     let selectedLine =  
-        selectedBoth model.Attacker.Location.Dimensions.Top model.Defender.Location.Dimensions.Top
+        selectedBoth
         |> Option.map (fun (a,d) -> line "red" a d -0.5) |> ofOption      
         
     let drawing =   
         svg 
             [ viewbox; unbox ("width", "100%")]
-            [ UnitList.View.rootBoard model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
-              UnitList.View.rootBoard model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
+            [ UnitList.View.rootLocation model.Defender.Location
+              UnitList.View.rootLocation model.Attacker.Location
+              UnitList.View.rootLocation model.Defender.Deployment
+              UnitList.View.rootLocation model.Attacker.Deployment
               model.SelectedAttacker |> Option.bind(UnitList.View.rootRanges model.Attacker ("Shooting Range")) |> ofOption
               model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("Shooting Range")) |> ofOption
               model.SelectedDefender |> Option.bind(UnitList.View.rootRanges model.Defender ("Assault Range")) |> ofOption

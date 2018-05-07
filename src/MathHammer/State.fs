@@ -10,18 +10,21 @@ let bindModelToEnvironment initial key =
         let evaluatedRule = normalizedRule |> evalOp initial
         choices, Map.add key evaluatedRule initial)
 let init () : Model * Cmd<Types.Msg> =
-    let (attacker,attackerCmd) = UnitList.State.init attackerMap () 
-    let (defender,defenderCmd) = UnitList.State.init defenderMap () 
+    let (attacker,attackerCmd) = UnitList.State.init None () 
+    let (defender,defenderCmd) = UnitList.State.init None () 
     
     let model : Model = 
         { 
             Environment = Map.empty<_,_> |> Map.add "Phase" (Str "Assault" |> Value)
-            Attacker = { attacker with Location = { attacker.Location with 
-                                                        Fill="#FFCCCC"
-                                                        Dimensions = { attacker.Location.Dimensions with Top = ft.ToMM 2<ft> } }
+            Attacker = { attacker with 
+                            Location = { attacker.Location with 
+                                            Fill="#FFCCCC"
+                                            Dimensions = { attacker.Location.Dimensions with Top = ft.ToMM 2<ft> } }
                                        ElementFill="#79CE0B"
                                        ElementStroke="#396302"
-                                       Deployment = {attacker.Deployment with Top = attacker.Deployment.Top + ft.ToMM 1<ft>} }
+                                       Deployment = {attacker.Deployment with 
+                                                        Dimensions = { attacker.Deployment.Dimensions with 
+                                                                            Top = attacker.Deployment.Dimensions.Top + ft.ToMM 2<ft> + ft.ToMM 1<ft>} } }
             Defender = { defender with Location = {defender.Location with Fill="#CCCCFF"}; ElementFill="#0B79CE"; ElementStroke="#023963" }
             SelectedAttacker = None
             SelectedDefender = None
@@ -33,6 +36,8 @@ let init () : Model * Cmd<Types.Msg> =
         }
     model, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap)) attackerCmd
                        Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap)) defenderCmd
+                       Cmd.ofMsg (UnitListMsg(UnitList.Types.Distribute(UnitList.Types.Area model.Attacker.Deployment.Dimensions), Some defenderMap))
+                       Cmd.ofMsg (UnitListMsg(UnitList.Types.Distribute(UnitList.Types.Area model.Defender.Deployment.Dimensions), Some attackerMap))
                        Cmd.ofMsg RebindEnvironment ]
 
 let update msg model : Model * Cmd<Types.Msg> =
@@ -68,7 +73,9 @@ let update msg model : Model * Cmd<Types.Msg> =
                            Defender = { model.Defender with Models = model.Attacker.Models} 
                            SelectedAttacker = None
                            SelectedDefender = None }, 
-                           Cmd.batch [ Cmd.ofMsg ((fun msg -> UnitListMsg(msg, None)) UnitList.Types.Distribute)
+                           Cmd.batch [ 
+                                       Cmd.ofMsg (UnitListMsg(UnitList.Types.Distribute(UnitList.Types.Area model.Attacker.Deployment.Dimensions), Some defenderMap))
+                                       Cmd.ofMsg (UnitListMsg(UnitList.Types.Distribute(UnitList.Types.Area model.Defender.Deployment.Dimensions), Some attackerMap))
                                        Cmd.ofMsg RebindEnvironment ]
     | RebindEnvironment -> 
         let choices = 
