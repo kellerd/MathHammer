@@ -72,7 +72,7 @@ let safe (id:string) =
     | id -> id.Replace(" ", "")
 let groupFor model display = 
     g [ SVGAttr.Transform (sprintf "translate(%f,%f)" model.PosX model.PosY)]
-            [ g   [SVGAttr.Transform model.Scale ] display ]
+            [ g  [] display ]
 let rangeRoot name model =
     let dist = model.ProbabilityRules |> getp name |> evalOp Map.empty<_,_>
     let ranges id (_:int<mm>,max:int<mm>,stops) = 

@@ -4,27 +4,27 @@ open Fable.Helpers.React
 open Props
 open Types
 
-
 let rootBoard model _ = 
     g   [SVGAttr.Transform <| sprintf "translate(%d,%d)" model.Location.Dimensions.Left model.Location.Dimensions.Top ]
         [g  [ ] 
             [rect 
-                [ unbox ("width", model.Location.Dimensions.Width)
-                  unbox ("height", model.Location.Dimensions.Height)
+                [ SVGAttr.Width model.Location.Dimensions.Width
+                  SVGAttr.Height model.Location.Dimensions.Height
                   SVGAttr.Fill model.Location.Fill] []
-             rect 
-                [ 
-                  SVGAttr.Transform <| sprintf "translate(%d,%d)" model.Deployment.Left model.Deployment.Top
-                  unbox ("width", model.Deployment.Width)
-                  unbox ("height", model.Deployment.Height)
-                  SVGAttr.Fill model.DeploymentFill] []
-             text [ SVGAttr.TextAnchor "middle"
-                    SVGAttr.StrokeWidth ".5"
-                    SVGAttr.Fill "#999999"
-                    SVGAttr.Stroke "#999999"
-                    SVGAttr.FontSize "25" 
-                    X "50%"
-                    Y "25%" ] [str "Deployment Area"]              
+             g [SVGAttr.Transform <| sprintf "translate(%d,%d)" model.Deployment.Left model.Deployment.Top] 
+               [ svg 
+                    [ SVGAttr.Width model.Deployment.Width
+                      SVGAttr.Height model.Deployment.Height ]
+                    [ rect [ SVGAttr.Width model.Deployment.Width
+                             SVGAttr.Height model.Deployment.Height
+                             SVGAttr.Fill model.DeploymentFill] []
+                      text [ SVGAttr.TextAnchor "middle"
+                             SVGAttr.StrokeWidth ".5"
+                             SVGAttr.Fill "#999999"
+                             SVGAttr.Stroke "#999999"
+                             SVGAttr.FontSize "25" 
+                             X "50%"
+                             Y "50%" ] [str "Deployment Area"] ] ]          
             ]
         ]
 let rootRanges model key name = 

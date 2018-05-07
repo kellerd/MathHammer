@@ -111,13 +111,6 @@ let init result =
     let attacker = createArgs stats body
     let defender =  createArgs stats defbody
 
-    let mapByName scale = 
-      List.mapi 
-          (fun _ (x : MathHammer.Models.Types.Model,_) -> 
-            x.Name, {x with Scale = scale} )
-      >> Map.ofList
-
-
     let attackers = [initMeq "Marine" attacker; initSgt "Captain" attacker ] 
                     |> List.map (fst)
                     |> Map.ofList

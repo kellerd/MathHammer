@@ -10,7 +10,6 @@ let init name =
       Name=name
       Size = 28<mm>
       Attributes = Map.empty<_,_>
-      Scale = "scale(1,1)"
       Rules = noValue
       NormalizedRules = noValue
       ProbabilityRules = noValue }

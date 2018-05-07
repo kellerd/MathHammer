@@ -23,18 +23,18 @@ let init name () : Model * Cmd<Msg> =
     }, Cmd.ofMsg Distribute
 
 
-let distribute width deployment (models:(string*MathHammer.Models.Types.Model) list) =
+let distribute deployment (models:(string*MathHammer.Models.Types.Model) list) =
     let spacing = models |> List.maxBy (fun m -> (snd m).Size) |> fun m -> (snd m).Size + inch.ToMM(2<inch>)
-    let rowSize = (width / spacing)
+    let rowSize = (deployment.Width / spacing)
     let rowWidth = spacing
     [for i in 0 .. rowSize .. List.length models - 1 do
             let maxPage = min (i + rowSize - 1) (List.length models - 1)
             let columns = maxPage - i + 1
-            let columnWidth = float width / (float columns + 1.)
+            let columnWidth = float (deployment.Width) / (float columns + 1.)
             yield! 
                 [for j in i .. maxPage do
                         let offsetX' = float (j - i + 1) * columnWidth
-                        let offsetY' = float( deployment - (snd models.[j]).Size / 2) - (float (i / rowSize)) * float rowWidth 
+                        let offsetY' = float( deployment.Height - (snd models.[j]).Size / 2) - (float (i / rowSize)) * float rowWidth 
                         yield models.[j],offsetX',offsetY']
     ]
 
@@ -46,7 +46,7 @@ let update msg model : Model * Cmd<Msg> =
             let (newModels, modelsCmds) =
                 model.Models
                 |> Map.toList
-                |> distribute model.Location.Dimensions.Width model.Deployment.Width
+                |> distribute model.Deployment
                 |> List.map(fun((_,m),x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y)) m)
                 |> List.fold(fun (map,cmds) (m,cmd) -> (Map.add m.Name m map), (Cmd.map (fun msg -> ModelMsg(msg,m.Name)) cmd)::cmds) (model.Models,[])
             {model with Models = newModels}, Cmd.batch (modelsCmds)
