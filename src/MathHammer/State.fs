@@ -20,7 +20,8 @@ let init () : Model * Cmd<Types.Msg> =
                                                         Fill="#FFCCCC"
                                                         Dimensions = { attacker.Location.Dimensions with Top = ft.ToMM 2<ft> } }
                                        ElementFill="#79CE0B"
-                                       ElementStroke="#396302" }
+                                       ElementStroke="#396302"
+                                       Deployment = {attacker.Deployment with Top = attacker.Deployment.Top + ft.ToMM 1<ft>} }
             Defender = { defender with Location = {defender.Location with Fill="#CCCCFF"}; ElementFill="#0B79CE"; ElementStroke="#023963" }
             SelectedAttacker = None
             SelectedDefender = None

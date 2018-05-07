@@ -8,7 +8,7 @@ type Model = {
     DeploymentFill:string
     ElementFill:string
     ElementStroke:string
-    Deployment : int<mm>
+    Deployment : Area
 }
 
 type Msg = 

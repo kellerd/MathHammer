@@ -16,7 +16,10 @@ let init name () : Model * Cmd<Msg> =
         ElementFill="#FFFFFF"
         ElementStroke="#000000"
         DeploymentFill="#CCFFCC"
-        Deployment=inch.ToMM 12<inch>
+        Deployment= { Top    = 0<mm>
+                      Left   = 0<mm>
+                      Width  = ft.ToMM 6<ft>
+                      Height = ft.ToMM 1<ft> }
     }, Cmd.ofMsg Distribute
 
 
@@ -43,7 +46,7 @@ let update msg model : Model * Cmd<Msg> =
             let (newModels, modelsCmds) =
                 model.Models
                 |> Map.toList
-                |> distribute model.Location.Dimensions.Width model.Deployment
+                |> distribute model.Location.Dimensions.Width model.Deployment.Width
                 |> List.map(fun((_,m),x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y)) m)
                 |> List.fold(fun (map,cmds) (m,cmd) -> (Map.add m.Name m map), (Cmd.map (fun msg -> ModelMsg(msg,m.Name)) cmd)::cmds) (model.Models,[])
             {model with Models = newModels}, Cmd.batch (modelsCmds)

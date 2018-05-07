@@ -9,29 +9,29 @@ let rootBoard model _ =
     g   [SVGAttr.Transform <| sprintf "translate(%d,%d)" model.Location.Dimensions.Left model.Location.Dimensions.Top ]
         [g  [ ] 
             [rect 
-                [ unbox ("width", (model.Location.Dimensions.Width |> string))
-                  unbox ("height", (model.Location.Dimensions.Height |> string))
+                [ unbox ("width", model.Location.Dimensions.Width)
+                  unbox ("height", model.Location.Dimensions.Height)
                   SVGAttr.Fill model.Location.Fill] []
              rect 
                 [ 
-                  unbox ("width", (model.Location.Dimensions.Width |> string))
-                  unbox ("height", (model.Deployment |> string))
+                  SVGAttr.Transform <| sprintf "translate(%d,%d)" model.Deployment.Left model.Deployment.Top
+                  unbox ("width", model.Deployment.Width)
+                  unbox ("height", model.Deployment.Height)
                   SVGAttr.Fill model.DeploymentFill] []
-             g  [SVGAttr.Transform <| sprintf "translate(%d,%d)" model.Location.Dimensions.Left (model.Location.Dimensions.Top + model.Deployment) ]
-                [   text [ SVGAttr.TextAnchor "middle"
-                           SVGAttr.StrokeWidth ".5"
-                           SVGAttr.Fill "#999999"
-                           SVGAttr.Stroke "#999999"
-                           SVGAttr.FontSize "25"    ] 
-                         [str "Deployment Area"]  
-                ]
+             text [ SVGAttr.TextAnchor "middle"
+                    SVGAttr.StrokeWidth ".5"
+                    SVGAttr.Fill "#999999"
+                    SVGAttr.Stroke "#999999"
+                    SVGAttr.FontSize "25" 
+                    X "50%"
+                    Y "25%" ] [str "Deployment Area"]              
             ]
         ]
 let rootRanges model key name = 
     Map.tryFind name model.Models
     |> Option.bind (MathHammer.Models.View.rangeRoot key)
     |> Option.map (fun distance -> 
-        g   [SVGAttr.Transform <| sprintf "translate(%d,%d)"  model.Location.Dimensions.Left (model.Location.Dimensions.Top + model.Deployment) ]
+        g   [SVGAttr.Transform <| sprintf "translate(%d,%d)"  model.Location.Dimensions.Left (model.Location.Dimensions.Top + model.Deployment.Top) ]
             [ g  [ SVGAttr.Stroke model.ElementStroke; SVGAttr.StrokeWidth "1" ] [ distance ] ])
 
 let root model dispatch =
@@ -40,6 +40,6 @@ let root model dispatch =
         |> Map.toList
         |> List.map (fun (_,m) -> MathHammer.Models.View.root m (fun msg -> ModelMsg(msg,m.Name) |> dispatch))
         |> g [ SVGAttr.Fill model.ElementFill ; SVGAttr.Stroke model.ElementStroke; SVGAttr.StrokeWidth "1" ]
-    g   [ SVGAttr.Transform <| sprintf "translate(%d,%d)"  model.Location.Dimensions.Left (model.Location.Dimensions.Top + model.Deployment) ]
+    g   [ SVGAttr.Transform <| sprintf "translate(%d,%d)"  model.Location.Dimensions.Left (model.Location.Dimensions.Top + model.Deployment.Top) ]
         [ models ]
       
