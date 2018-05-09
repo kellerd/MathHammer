@@ -34,38 +34,6 @@ let inline  fromString<'a> (s:string) =
     match FSharpType.GetUnionCases typeof<'a> |> Array.filter (fun case -> case.Name = s) with
     |[|case|] -> Some(FSharpValue.MakeUnion(case,[||]) :?> 'a)
     |_ -> None
-let callList call = 
-    toString call + " " |> str
-    // div [Class "field"] 
-    //     [
-    //         // p [ Class "control has-icons-left"]
-    //         //     [ span [Class "select" ] [
-    //                 select [ DefaultValue (toString call)] 
-    //                     [ option [ HTMLAttr.Value (toString Product)     ; Title "Product (...params...)"                ] [str (toString Product)    ] 
-    //                       option [ HTMLAttr.Value (toString Division)    ; Title "Division (...params...)"               ] [str (toString Division)   ] 
-    //                       option [ HTMLAttr.Value (toString Total)       ; Title "Total (...params...)"                  ] [str (toString Total)      ] 
-    //                       option [ HTMLAttr.Value (toString Count)       ; Title "Count (Passes,Fails) in (...params...)"] [str (toString Count)      ] 
-    //                       option [ HTMLAttr.Value (toString Repeat)      ; Title "Repeat (x,y)"                          ] [str (toString Repeat)     ] 
-    //                       option [ HTMLAttr.Value (toString Dice)        ; Title "Die of "                               ] [str (toString Dice)       ] 
-    //                       option [ HTMLAttr.Value (toString GreaterThan) ; Title "GreaterThan (x,y)"                     ] [str (toString GreaterThan)] 
-    //                       option [ HTMLAttr.Value (toString Equals)      ; Title "Equals (x,y)"                          ] [str (toString Equals)     ] 
-    //                       option [ HTMLAttr.Value (toString NotEquals)   ; Title "NotEquals (x,y)"                       ] [str (toString NotEquals)  ] 
-    //                       option [ HTMLAttr.Value (toString LessThan)    ; Title "LessThan (x,y)"                        ] [str (toString LessThan)   ] 
-    //                       option [ HTMLAttr.Value (toString And)         ; Title "And (x,y)"                             ] [str (toString And)        ] 
-    //                       option [ HTMLAttr.Value (toString Or)          ; Title "Or (x,y)"                              ] [str (toString Or)         ] 
-    //                       option [ HTMLAttr.Value (toString Max)         ; Title "Max (...params...)"                    ] [str (toString Max)        ] 
-    //                       option [ HTMLAttr.Value (toString Min)         ; Title "Min (...params...)"                    ] [str (toString Min)        ] 
-    //                       option [ HTMLAttr.Value (toString Sub)         ; Title "Sub (...params...)"                    ] [str (toString Sub)        ] 
-    //                       option [ HTMLAttr.Value (toString Median)      ; Title "Median (...params...)"                 ] [str (toString Median)     ] 
-    //                       option [ HTMLAttr.Value (toString Mean)        ; Title "Mean (...params...)"                   ] [str (toString Mean)       ] 
-    //                       option [ HTMLAttr.Value (toString Mode)        ; Title "Mode (...params...)"                   ] [str (toString Mode)       ] 
-    //                       option [ HTMLAttr.Value (toString Least)       ; Title "Least  (n, ...params...)"              ] [str (toString Least)      ] 
-    //                       option [ HTMLAttr.Value (toString Largest)     ; Title "Largest  (n, ...params...)"            ] [str (toString Largest)    ] 
-    //                     ] ]      
-                //   span [Class "icon is-small is-left"] [ i [Class "fa fa-terminal"] [] ]
-                // ]
-        // ]                  
-
 let (|HasIcon|_|)  = function 
    | Special "D6" -> d6icon |> Some
    | Special "D3" -> d3icon |> Some
@@ -242,7 +210,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                                      unparseEq (snd a) envIcons  (fun op' -> Zipper(l,(fst a,op'),r) |> Zipper.toList |> dispatch)])  
             |> ofList
         and unparseC func envIcons dispatch  = 
-            callList func
+            toString func + " " |> string |> str 
         and unparseEq op envIcons (dispatch:Operation->unit) : Fable.Import.React.ReactElement =                      
             match op with 
             | Call f -> unparseC f envIcons (Call >> dispatch)

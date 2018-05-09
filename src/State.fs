@@ -114,7 +114,7 @@ let init result =
     let attackers = [initMeq "Marine" attacker; initSgt "Captain" attacker ] 
                     |> List.map (fst)
                     |> Map.ofList
-    let defenders = ['a'..'z'] 
+    let defenders = ['A'..'z'] 
                     |> List.map (fun c -> initGeq (string c) defender |> fst)
                     |> Map.ofList
 
