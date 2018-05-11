@@ -5,6 +5,7 @@ open Elmish
 open Types
 open Fable.AST.Fable
 open Distribution.Example
+open Distribution.Example
 
 let init name () : Model * Cmd<Msg> =
     {
@@ -81,7 +82,7 @@ let points (size:float) r midpoint : seq<float*float> =
                 let y' = sqrt (abs (r * r - x' * x'))  
                 yield x+x', y+y'
                 yield x+x', y-y' }      
-let distributeClosestToEnemy deploymentArea enemy models =
+let distributeClosestToEnemyHex spacing deploymentArea enemy models =
     let enemyMiddle = 
         match enemy with 
         | Area area -> midpointArea area
@@ -118,27 +119,21 @@ let distributeClosestToEnemy deploymentArea enemy models =
                 //Deployment inside itself
                 armyMiddle ]
 
-    let origin = 
-        intersectionPoints
-        |> List.minBy (distance enemyMiddle)
     
-    let canDeploy (x, y) (size:int<mm>) = 
+    let canDeploy (size:int<mm>) (x, y) = 
         x - (float size / 2.0) > float deploymentArea.Left &&
         y - (float size / 2.0) > float deploymentArea.Top  &&
         x + (float size / 2.0) < float deploymentArea.Left + float deploymentArea.Width &&
         y + (float size / 2.0) < float deploymentArea.Top  + float deploymentArea.Height
 
-    let ``Distance between two circle centers`` (x1:float,y1) (x2,y2) = pown (x2 - x1) 2 + pown (y2 - y1) 2 |> sqrt
-    let ``Circles intersect`` (size:int<mm>) (size2:int<mm>) (distance:float) = float size + float size2 > distance && distance > abs (float size - float size2)
-    let ``Distance between of two circles`` (size:int<mm>) (size2:int<mm>)  (x1,y1) (x2,y2) = ``Distance between two circle centers`` (x1,y1) (x2,y2) - float size - float size2
-
-    let notTouchingOthers m = 
-        List.forall (fun pick -> 
-            ``Distance between two circle centers`` (pick.PosX,pick.PosY) (m.PosX,m.PosY)
-            |> ``Circles intersect`` pick.Size m.Size
-            |> not ) 
-
-    let radius = 1<mm>    
+    let origin size = 
+        intersectionPoints
+        |> List.collect (fun (x,y) -> [x + float size / 2.0,y 
+                                       x - float size/ 2.0,y
+                                       x, y + float size/ 2.0
+                                       x, y - float size/ 2.0])
+        |> List.filter (canDeploy size)
+        |> List.minBy (distance enemyMiddle)
 
     let models = [
             "A", MathHammer.Models.State.init "A"
@@ -147,40 +142,29 @@ let distributeClosestToEnemy deploymentArea enemy models =
             "D", MathHammer.Models.State.init "D"
             "E", MathHammer.Models.State.init "E"
     ]    
-
-
-    let findAvailablePoints radius models  = 
-        Seq.unfold (fun (radius:int<mm>, models, picked) ->     
-            if radius * 2 > deploymentArea.Width then
-                None 
-            else 
-                let r = float radius 
-                let availablePoints =                           
-                    match models with 
-                    | [] -> Seq.empty<_> 
-                    | (_,h)::_ -> points (float h.Size) r origin 
-                    |> Seq.toList
-                None
-        ) (radius,models,[])
-    let findAvailablePoints models points  = 
-        Seq.unfold (fun (models, points, picked) -> 
-            match models,Seq.tryHead points with 
-            | [], _ | _, None -> None
-            | (_,h)::tail, Some (px,py) ->
-                let newModel = { h with PosX = px; PosY = py }
-                let withinSpace = canDeploy (px,py) newModel.Size
-                let notTouching = notTouchingOthers newModel picked 
-                if withinSpace && notTouching then 
-                    Some (Some (h,px,py), (tail,Seq.tail points,newModel::picked))
+    match models with 
+    | [ ] -> Seq.empty
+    | (_,h)::tail -> 
+        let size = h.Size
+        let (x,y) = origin size 
+        Seq.initInfinite (fun i -> 
+            seq {
+                if i = 0 then yield (x,y) 
                 else 
-                    Some (None, (models,Seq.tail points,picked))
-        ) (models,points,[])
-        |> Seq.choose id
+                    let r = float (i + 1) * (size + spacing)
+                    let A = (x+0.5*r, (sqrt(3) / 2.0) * r + y)
+                    let C = (x+r,y)
+                    let F = (x-r,y)
 
-    let results = findAvailablePoints models minPointDistances |> Seq.toList 
-    if results.Length <> models.Length then failwith "Had a hard time deploying all of the models"
+            }
+        )
 
-    results
+    
+    ()
+    // let results = findAvailablePoints models minPointDistances |> Seq.toList 
+    // if results.Length <> models.Length then failwith "Had a hard time deploying all of the models"
+
+    // results
 // let models = 
 //     ['A'..'z']
 //     |> List.map (string >> fun n -> n, MathHammer.Models.State.init n)
@@ -194,7 +178,7 @@ let update msg model : Model * Cmd<Msg> =
             let (newModels, modelsCmds) =
                 model.Models
                 |> Map.toList 
-                |> distributeClosestToEnemy model.Deployment.Dimensions t
+                |> distributeClosestToEnemyHex model.Deployment.Dimensions t
                 |> Seq.map (fun(m,x,y) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x,y)) m)
                 |> Seq.fold(fun (map,cmds) (m,cmd) -> (Map.add m.Name m map), (Cmd.map (fun msg -> ModelMsg(msg,m.Name)) cmd)::cmds) (model.Models,[])
             {model with Models = newModels}, Cmd.batch (modelsCmds)
