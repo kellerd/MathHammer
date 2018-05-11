@@ -111,7 +111,29 @@ let init result =
     let attacker = createArgs stats body
     let defender =  createArgs stats defbody
 
-    let attackers = [initMeq "Marine" attacker; initSgt "Captain" attacker ] 
+    let attackers = [initMeq "M" attacker
+                     initMeq "M2" attacker
+                     initMeq "M3" attacker
+                     initMeq "M4" attacker
+                     initMeq "M5" attacker
+                     initMeq "M6" attacker
+                     initMeq "M8" attacker
+                     initMeq "M12" attacker
+                     initMeq "M13" attacker
+                     initMeq "M14" attacker
+                     initMeq "M15" attacker
+                     initMeq "M16" attacker
+                     initMeq "M22" attacker
+                     initMeq "M23" attacker
+                     initMeq "M24" attacker
+                     initMeq "M25" attacker
+                     initMeq "M26" attacker
+                     initMeq "M32" attacker
+                     initMeq "M33" attacker
+                    //  initMeq "Marine34" attacker
+                    //  initMeq "Marine35" attacker
+                    //  initMeq "Marine36" attacker
+                     initSgt "Captain" attacker ] 
                     |> List.map (fst)
                     |> Map.ofList
     let defenders = ['A'..'z'] 
