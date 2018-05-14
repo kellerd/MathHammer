@@ -30,11 +30,6 @@ let distance (xa,ya) (xb,yb : float) = sqrt (pown (xb - xa) 2 + pown (yb - ya) 2
 let midpoint (x1,y1) (x2,y2) = List.average [x1;x2], List.average [y1;y2]
 let midpointArea area =  midpoint (float area.Left,float area.Top) (float area.Left + float area.Width,float area.Top + float area.Height)
 
-// let area = { Top = 0<mm>; Left = 0<mm>; Width = 500<mm>; Height = 1000<mm> }
-// let enemy = Area (area)
-// let deploymentArea = { Left = 0<mm>; Top = 600<mm>; Width = 500<mm>; Height = 1000<mm> }
-// let  { Left = l; Top = t; Width = w; Height = h } = { Top = 0<mm>; Left = 0<mm>; Width = 500<mm>; Height = 1000<mm> }
-
 let slope (x1:float,y1) (x2,y2) = 
     let run = x2 - x1
     let rise = y2 - y1
@@ -81,21 +76,19 @@ let distributeClosestToEnemyHex (spacing:int<mm>) deploymentArea enemy models =
 
     
     let canDeploy (size:int<mm>) (x, y) = 
-        x - (float size / 2.00000000001) > float deploymentArea.Left &&
-        y - (float size / 2.00000000001) > float deploymentArea.Top  &&
-        x + (float size / 2.00000000001) < float deploymentArea.Left + float deploymentArea.Width &&
-        y + (float size / 2.00000000001) < float deploymentArea.Top  + float deploymentArea.Height
+        x - (float size / 2.000000000001) > float deploymentArea.Left &&
+        y - (float size / 2.000000000001) > float deploymentArea.Top  &&
+        x + (float size / 2.000000000001) < float deploymentArea.Left + float deploymentArea.Width &&
+        y + (float size / 2.000000000001) < float deploymentArea.Top  + float deploymentArea.Height
 
     let origin size = 
         intersectionPoints
-        |> List.collect (fun (x,y) -> printfn "%A" (x,y)
-                                      [x + float size / 2.0,y 
+        |> List.collect (fun (x,y) -> [x + float size / 2.0,y 
                                        x - float size/ 2.0,y
                                        x, y + float size/ 2.0
                                        x, y - float size/ 2.0])
         |> List.filter (canDeploy size)
-        |> List.minBy (fun x -> printfn "Pt %A - Distance %A" x (distance enemyMiddle x); 
-                                distance enemyMiddle x)
+        |> List.minBy (distance enemyMiddle)
     let results = 
         match models with 
         | [ ] -> Seq.empty
@@ -104,15 +97,16 @@ let distributeClosestToEnemyHex (spacing:int<mm>) deploymentArea enemy models =
             let originPoint = origin size 
             let (x,y) = originPoint
             let diameter = (size + (spacing * 2) |> float)
-            Seq.initInfinite (fun i -> 
+            let canDeploy = canDeploy size
+            Seq.initInfinite (fun i -> i, diameter * float i)
+            |> Seq.takeWhile (fun (_, r) -> x - 0.5 * r > float deploymentArea.Left)
+            |> Seq.map (fun (i, r) -> 
                 seq {
-                    if i = 0 then () //yield (x,y) 
+                    if i = 0 then yield (x,y) 
                     else 
-                       // let i = 2
-                        // let (x,y) = (915.0,929.0)
-                        let r = diameter * float i
                         let h = (sqrt(3.0) / 2.0) * r
                         let hstep = h / float i
+                        let dstep = diameter / 2.0
                         let a = (x - 0.5 * r, y + h)
                         let b = (x + 0.5 * r, y + h)
                         let c = (x + r      , y)
@@ -120,49 +114,32 @@ let distributeClosestToEnemyHex (spacing:int<mm>) deploymentArea enemy models =
                         let e = (x - 0.5 * r, y - h)
                         let f = (x - r      , y)
 
-                        for x' in [fst a ..  diameter .. fst b - diameter] do
-                               yield x', snd a  
-                        yield b
-                        yield c
-                        // for x' in [fst b ..  dstep .. fst c - dstep] do
-                        //        for y' in [snd b .. -hstep .. snd c + hstep ] do 
-                        //            yield x', y'                            
-                        // for x' in [fst c ..  - dstep .. fst d + dstep] do
-                        //        for y' in [snd c .. -hstep .. snd d + hstep ] do 
-                        //            yield x', y'  
-
-                        for x' in [fst d ..  -diameter .. fst e + diameter] do
-                               yield x', snd d  
-                        
-                        yield e
-                        yield f       
-                        // for x' in [fst e ..  - dstep .. fst f + dstep ] do
-                        //        for y' in [snd e .. hstep .. snd f - hstep ] do 
-                        //            yield x', y' 
-
-                        // for x' in [fst f ..  dstep .. fst a - dstep] do
-                        //         for y' in [snd f .. hstep .. snd a - hstep ] do 
-                        //             yield x', y' 
-                        
+                        yield! List.map (fun x' -> x', snd a)  
+                                        [fst a    ..  diameter  .. fst b - 0.00005] 
+                        yield! List.zip [fst b    ..  dstep     .. fst c - 0.00005] 
+                                        [snd b    .. -hstep     .. snd c + 0.00005]
+                        yield! List.zip [fst c    .. -dstep     .. fst d + 0.00005] 
+                                        [snd c    .. -hstep     .. snd d + 0.00005] 
+                        yield! List.map (fun x' -> x', snd d)
+                                        [fst d    .. -diameter  .. fst e + 0.00005] 
+                        yield! List.zip [fst e    .. -dstep     .. fst f + 0.00005]
+                                        [snd e    ..  hstep     .. snd f - 0.00005]
+                        yield! List.zip [fst f    ..  dstep     .. fst a - 0.00005]
+                                        [snd f    ..  hstep     .. snd a - 0.00005]
 
                 }
-            ) |> Seq.collect (Seq.sortBy (distance originPoint)) //Radiates from center
+            ) |> Seq.collect (Seq.filter canDeploy)
+              |> Seq.truncate (max models.Length 60)  //Say max 30 models in squad 
+              |> Seq.sortBy (distance originPoint) //Radiates from center
     Seq.zip models results   
-
 let update msg model : Model * Cmd<Msg> =
     //Don't do this every time please
     
     match msg with
     | Distribute enemyArea -> 
             let (newModels, modelsCmds) =
-
-                // let area = { Top = 0<mm>; Left = 0<mm>; Width = 500<mm>; Height = 1000<mm> }
-                // let enemyArea = Area (area)
-                // let deploymentArea = { Left = 0<mm>; Top = 600<mm>; Width = 500<mm>; Height = 1000<mm> }
-                // let  { Left = l; Top = t; Width = w; Height = h } = { Top = 0<mm>; Left = 0<mm>; Width = 500<mm>; Height = 1000<mm> }
-
                 let deploymentArea = model.Deployment.Dimensions
-                let spacing = 3<mm>
+                let spacing = 1<inch> |> inch.ToMM
                 model.Models
                 |> Map.toList 
                 |> distributeClosestToEnemyHex spacing deploymentArea enemyArea
