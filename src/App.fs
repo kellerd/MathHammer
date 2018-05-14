@@ -4,6 +4,7 @@ open Elmish
 open Elmish.Browser.Navigation 
 open Browser.UrlParser
 open Fable.Core.JsInterop
+open Elmish.Debug
 open Types
 open App.State
 open Global
@@ -70,7 +71,7 @@ Program.mkProgram init update root
 //-:cnd
 #if DEBUG
 |> Program.withConsoleTrace
-//|> Program.withDebuggerAt (Debugger.Remote("localhost",8097))
+|> Program.withDebugger
 #endif
 //+:cnd
 |> Program.run
