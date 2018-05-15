@@ -113,7 +113,7 @@ let distributeClosestToEnemyHex (spacing:int<mm>) deploymentArea enemy models =
                         let d = (x + 0.5 * r, y - h)
                         let e = (x - 0.5 * r, y - h)
                         let f = (x - r      , y)
-
+                        //Draw a hexagon
                         yield! List.map (fun x' -> x', snd a)  
                                         [fst a    ..  diameter  .. fst b - 0.00005] 
                         yield! List.zip [fst b    ..  dstep     .. fst c - 0.00005] 
@@ -126,11 +126,10 @@ let distributeClosestToEnemyHex (spacing:int<mm>) deploymentArea enemy models =
                                         [snd e    ..  hstep     .. snd f - 0.00005]
                         yield! List.zip [fst f    ..  dstep     .. fst a - 0.00005]
                                         [snd f    ..  hstep     .. snd a - 0.00005]
-
                 }
-            ) |> Seq.collect (Seq.filter canDeploy)
+            ) |> Seq.collect (Seq.filter canDeploy) //Filter out points outside the zone
               |> Seq.truncate (max models.Length 60)  //Say max 30 models in squad 
-              |> Seq.sortBy (distance originPoint) //Radiates from center
+              |> Seq.sortBy (distance enemyMiddle) //Radiates from center
     Seq.zip models results   
 let update msg model : Model * Cmd<Msg> =
     //Don't do this every time please
