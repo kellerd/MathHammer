@@ -74,7 +74,7 @@ let groupFor model display =
     g [ SVGAttr.Transform (sprintf "translate(%f,%f)" model.PosX model.PosY)]
             [ g  [] display ]
 let rangeRoot name model =
-    let dist = model.ProbabilityRules |> getp name |> evalOp Map.empty<_,_>
+    let dist = model.ProbabilityRules |> Option.map (getp name >> evalOp Map.empty<_,_>)
     let ranges id (_:int<mm>,max:int<mm>,stops) = 
         g [] 
           [   defs  [] 
@@ -82,11 +82,11 @@ let rangeRoot name model =
                                        stops ]
               circle [SVGAttr.Fill (sprintf "url(#%s)" (safe id))
                       R (float max)] [] ]
-
-    match dist with 
-    | IsDistribution d -> Some d
-    | Value(Int(i)) -> Some (Check.Pass (Int(i)) |> Check |> Distribution.always)
-    | _ -> None
+    dist 
+    |> Option.bind (function 
+                    | IsDistribution d -> Some d
+                    | Value(Int(i)) -> Some (Check.Pass (Int(i)) |> Check |> Distribution.always)
+                    | _ -> None )
     |> Option.map 
         (rangeStops 
         >> ranges name

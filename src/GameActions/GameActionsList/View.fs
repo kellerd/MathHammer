@@ -233,7 +233,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                                         let nameLabel = b [] [str a]
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
-                                                [ (match row with |ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable coreDispatch a) ]
+                                                [ (match row with | _, ReadOnly _ -> nameLabel | _, ReadWrite _ -> nameLabel |> draggable coreDispatch a) ]
                                                 //GameActions.Primitives.State.applyMany (Zipper(l |> List.map fst, a, r |> List.map fst) |> Zipper.toList) op apps |> Zipper.toList) |> dispatch
                                         ]
                                     | Zipper(l,(a, Some app), r) -> 
@@ -241,7 +241,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
                                         [ 
                                             div [ Class "card-footer-item has-background-warning" ] 
                                                 [ 
-                                                  (match row with | ReadOnly _ -> nameLabel | ReadWrite _ -> nameLabel |> draggable coreDispatch a)
+                                                  (match row with | _, ReadOnly _ -> nameLabel | _, ReadWrite _ -> nameLabel |> draggable coreDispatch a)
                                                   unparseEq app envIcons (fun app' -> GameActions.Primitives.State.applyMany lams op (Zipper(l |> List.map snd, Some app', r |> List.map snd) |> Zipper.toList) |> dispatch) ]
                                         ])  
                 let paramsCaption = 
@@ -308,7 +308,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
         | HasIcon icon -> Map.add name icon icons, draggable coreDispatch name icon 
         | _ -> icons, draggable coreDispatch name (str name)
     match row with 
-    | ReadOnly (name, icon, gameAction) -> 
+    | _, ReadOnly (name, icon, gameAction, _) -> 
         let newIcons,iconDisplay = iconDisplay name icon
         tr [] [
             td [] [(if hideAddButton then str "" 
@@ -316,7 +316,7 @@ let mkRows dragging hideAddButton (coreDispatch:Msg->unit) icons row =
             td [] [iconDisplay]
             td [Style [Position "relative"]] [unparseEquation None gameAction icons ignore] //dispatch)
         ], newIcons
-    | ReadWrite(name,icon,op) -> 
+    | _, ReadWrite(name,icon,op) -> 
         let newIcons,_ = iconDisplay name icon
         tr [] [
             td [] [ a [ ClassName "button fa fa-floppy-o"

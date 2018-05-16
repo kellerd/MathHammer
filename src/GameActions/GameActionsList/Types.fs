@@ -5,12 +5,12 @@ type Display =
     | Special of string 
     | Text of string option
 type Row = 
-    | ReadOnly of string * Display * Operation
+    | ReadOnly of string * Display * Operation * Operation
     | ReadWrite of string * Display * Operation
 
 type Model = 
     { Dragging : string option
-      Functions : Row list 
+      Functions : (Map<string, Set<string>> * Row) list 
       Editing : bool }
 
 type Msg = 

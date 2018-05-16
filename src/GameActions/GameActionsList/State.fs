@@ -97,7 +97,9 @@ let globalOperations =
 let init () : Model * Cmd<Types.Msg> =
     let rows = 
         globalOperations
-        |> List.map ReadOnly
+        |> List.map (fun (a,b,operation) -> 
+            let (choices,normalized) = normalize operation
+            choices, ReadOnly(a, b, operation, normalized ))
     { Editing = false 
       Functions = rows 
       Dragging = None }, Cmd.none
@@ -107,27 +109,31 @@ let update msg model : Model * Cmd<Types.Msg> =
     match msg with
     | AddRow when not model.Editing -> 
         let (newRow,newRowCmd) = initRow()
-        { model with Editing = true; Functions = newRow :: model.Functions }, newRowCmd
+        { model with Editing = true; Functions = (Map.empty<_,_>,newRow) :: model.Functions }, newRowCmd
     | ChangeNewRowName(str) when model.Editing ->
-        let newRows = List.map(function ReadWrite(_,icon, op) -> ReadWrite(str,icon, op) | r -> r) model.Functions
+        let newRows = List.map(function choices,ReadWrite(_,icon, op) -> choices,ReadWrite(str,icon, op) | r -> r) model.Functions
         { model with Functions = newRows } , Cmd.none    
     | ChangeIcon("") when model.Editing ->
-        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Text None, op) | r -> r) model.Functions
+        let newRows = List.map(function choices,ReadWrite(str,_, op) -> choices,ReadWrite(str,Text None, op) | r -> r) model.Functions
         { model with Functions = newRows }, Cmd.none 
     | ChangeIcon("D6" | "D3" as s) when model.Editing ->
-        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Special s, op) | r -> r) model.Functions
+        let newRows = List.map(function choices,ReadWrite(str,_, op) -> choices,ReadWrite(str,Special s, op) | r -> r) model.Functions
         { model with Functions = newRows }, Cmd.none 
     | ChangeIcon(s) when model.Editing && s.StartsWith("fa-") -> 
-        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Icon ("fa " + s), op) | r -> r) model.Functions
+        let newRows = List.map(function choices,ReadWrite(str,_, op) -> choices,ReadWrite(str,Icon ("fa " + s), op) | r -> r) model.Functions
         { model with Functions = newRows }, Cmd.none       
     | ChangeIcon(s) when model.Editing ->
-        let newRows = List.map(function ReadWrite(str,_, op) -> ReadWrite(str,Text(Some s), op) | r -> r) model.Functions
+        let newRows = List.map(function choices,ReadWrite(str,_, op) -> choices,ReadWrite(str,Text(Some s), op) | r -> r) model.Functions
         { model with Functions = newRows }, Cmd.none        
     | SaveOp (name) when model.Editing -> 
-        let newRows = List.map(function ReadWrite(name',icon, op) when name=name' -> ReadOnly(name',icon, op) | r -> r ) model.Functions
-        { model with Editing = false; Functions = newRows; Dragging = None }, Cmd.none
+        let newRows = 
+            List.map(function 
+            | _, ReadWrite(name',icon, op) when name=name' -> 
+                let (choices, normalized) = normalize op 
+                choices, ReadOnly(name',icon, op, normalized ) | r -> r ) model.Functions
+        { model with Editing = false; Functions = newRows; Dragging = None; }, Cmd.none
     | EditRow (name) when not model.Editing -> 
-        let newRows = List.map(function ReadOnly(name',icon, op) when name=name' -> ReadWrite(name',icon, op) | r -> r ) model.Functions
+        let newRows = List.map(function choices,ReadOnly(name',icon, op, _) when name=name' -> choices,ReadWrite(name',icon, op) | r -> r ) model.Functions
         { model with Editing = true; Functions = newRows; Dragging = None }, Cmd.none 
     | Dragging s when model.Editing ->
         { model with Dragging = Some s }, Cmd.none
@@ -137,7 +143,7 @@ let update msg model : Model * Cmd<Types.Msg> =
         match model.Dragging with 
         | None -> model, Cmd.none 
         | Some _ -> 
-            let newRows = List.map(function ReadWrite(name', icon, _) when name = name' -> ReadWrite(name, icon, op) | r -> r) model.Functions
+            let newRows = List.map(function choices, ReadWrite(name', icon, _) when name = name' -> choices, ReadWrite(name, icon, op) | r -> r) model.Functions
             { model with Dragging = None; Functions = newRows }, Cmd.none
     | AddRow _ | SaveOp _ | ChangeNewRowName _ | EditRow _ | ChangeIcon _ | Dragged _ | Dragging _ | ReplaceOp _  ->
         model, Cmd.none

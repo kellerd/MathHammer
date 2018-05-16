@@ -138,8 +138,15 @@ let mathHammerUpdate msg model =
 let update msg model =
     match msg with
     | MathHammerMsg (MathHammer.Types.RebindEnvironment as msg) ->
-        let operations = model.gameActions.Actions.Functions |> List.mapi (fun i -> function ReadWrite(str,_,op) -> str,(i,op) | ReadOnly (str,_,op) -> str,(i,op)) 
-        mathHammerUpdate msg {model with mathHammer = {model.mathHammer with GlobalOperations = operations }}
+        let (choices,operations) = 
+            model.gameActions.Actions.Functions 
+            |> List.mapi (fun i -> function 
+                                   | choices, ReadWrite(str,_,op) -> 
+                                     let choice, normalized = normalize op 
+                                     Map.mergeSets choice choices, (str,(i,normalized)) 
+                                   | choices, ReadOnly (str,_,_,normalized) -> choices, (str,(i,normalized)))
+            |> List.unzip                                    
+        mathHammerUpdate msg {model with mathHammer = {model.mathHammer with GlobalOperations = operations; Choices = List.reduceSafe Map.empty<_,_> Map.mergeSets choices }}
     | MathHammerMsg msg ->
         mathHammerUpdate msg model
     | GameActionsMsg(msg) ->

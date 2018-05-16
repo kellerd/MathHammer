@@ -8,8 +8,8 @@ type Model = { PosX:float
                Size:int<mm>
                Attributes: Map<string,(Order*Operation)>
                Rules: Operation
-               NormalizedRules:Operation
-               ProbabilityRules:Operation }
+               NormalizedRules:Operation option
+               ProbabilityRules:Operation option}
 
 
 type Msg = 

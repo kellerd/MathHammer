@@ -11,8 +11,8 @@ let init name =
       Size = 28<mm>
       Attributes = Map.empty<_,_>
       Rules = noValue
-      NormalizedRules = noValue
-      ProbabilityRules = noValue }
+      NormalizedRules = None
+      ProbabilityRules = None }
 
 let initSgt name coreRules =
     let attributes = [ "M",     ( 1, vInt 6)
@@ -61,8 +61,13 @@ let update msg model =
       | Select _ -> model, Cmd.none
       | MakeChoice _ -> model, Cmd.none
       | Rebind (initial) -> 
-            let (choices,normalized) = model.Rules |> normalize
-            let probability = normalized |> evalOp initial
-            let cmds = choices |> Map.toList |> List.map (MakeChoice >> Cmd.ofMsg)
-            { model with NormalizedRules = normalized
-                         ProbabilityRules = probability }, Cmd.batch cmds
+            match model.NormalizedRules with 
+            | None -> 
+                let (choices,normalized) = model.Rules |> normalize
+                let probability = normalized |> evalOp initial
+                let cmds = choices |> Map.toList |> List.map (MakeChoice >> Cmd.ofMsg)
+                { model with NormalizedRules = Some normalized
+                             ProbabilityRules = Some probability }, Cmd.batch cmds
+            | Some normalized -> 
+                let probability = normalized |> evalOp initial
+                { model with ProbabilityRules = Some probability }, Cmd.none
