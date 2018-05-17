@@ -16,13 +16,32 @@ let line colour (x1, y1) (x2,y2) tension =
         else x1 + delta, y1, x2 - delta, y2
 
     let pathString = sprintf "M %f %f C %f %f %f %f %f %f" x1 y1 hx1 hy1 hx2 hy2 x2 y2
-    path [SVGAttr.D      pathString
-          SVGAttr.Fill   "none"
-          SVGAttr.Stroke colour] []
-// let arrow (x1, y1) (x2,y2) colour tension =
-//     ()
+    
+    path [SVGAttr.D         pathString
+          SVGAttr.Fill      "none"
+          SVGAttr.Stroke    colour
+          SVGAttr.MarkerEnd   "url(#arrow)"
+          SVGAttr.MarkerStart "url(#arrowBack)"] []
 // let arrowLine  
-
+let arrowDef =
+    let marker b c = svgEl "marker" b c
+    [ marker [SVGAttr.Custom("markerWidth", "50")
+              SVGAttr.Custom("markerHeight", "50")
+              SVGAttr.Custom("refX", "25")
+              SVGAttr.Custom("refY", "10")
+              SVGAttr.Custom("orient", "auto")
+              SVGAttr.Custom("markerUnits", "strokeWidth")
+              Id "arrow"]
+              [ path [ D "M0,0 L0,20 L25,10 z"; SVGAttr.Fill "#ff0000" ] [] ] 
+      marker [SVGAttr.Custom("markerWidth", "50")
+              SVGAttr.Custom("markerHeight", "50")
+              SVGAttr.Custom("refX", "25")
+              SVGAttr.Custom("refY", "10")
+              SVGAttr.Custom("orient", "auto")
+              SVGAttr.Custom("markerUnits", "strokeWidth")
+              Id "arrowBack"]
+              [ path [ SVGAttr.Transform "rotate(180 25,10)" ; D "M25,10 L0,20 L0,0 z"; SVGAttr.Fill "#ff0000" ] [] ] ]
+    |> defs []
 let root model dispatch =
     let viewbox = ViewBox (sprintf "%d %d %d %d" model.Board.Top model.Board.Left model.Board.Width model.Board.Height)
     let selectedAttacker = model.SelectedAttacker |> Option.bind(fun name -> Map.tryFind name model.Attacker.Models)
@@ -39,7 +58,8 @@ let root model dispatch =
     let drawing =   
         svg 
             [ viewbox; unbox ("width", "100%")]
-            [ UnitList.View.rootLocation model.Defender.Location
+            [ arrowDef
+              UnitList.View.rootLocation model.Defender.Location
               UnitList.View.rootLocation model.Attacker.Location
               UnitList.View.rootLocation model.Defender.Deployment
               UnitList.View.rootLocation model.Attacker.Deployment
