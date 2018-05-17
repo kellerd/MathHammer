@@ -1,10 +1,10 @@
 module Global
 
 type Page =
-  | MathHammer
-  | GameActions
+    | MathHammer
+    | GameActions
 
 let toHash page =
-  match page with
-  | MathHammer -> "#mathhammer"
-  | GameActions -> "#gameactions"
+    match page with
+    | MathHammer -> "#mathhammer"
+    | GameActions -> "#gameactions"

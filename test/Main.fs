@@ -1,6 +1,8 @@
-﻿#if INTERACTIVE
-#r @"../../../../.nuget/packages/netstandard.library.netframework/2.0.0-preview2-25405-01/build/net461/lib/netstandard.dll"
-#load @"LoadModules.fsx"
+
+#if INTERACTIVE
+#r "../../../../.nuget/packages/netstandard.library.netframework/2.0.0-preview2-25405-01/build/net461/lib/netstandard.dll"
+#load "LoadModules.fsx"
+
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open GameActions.GameActionsList.Types
@@ -23,24 +25,42 @@ open MathHammer.State
 open Global
 open App.Types
 open App.State
+
 #load "FsCheck.fs"
 #load "FsCheckGen.fs"
+
 open Expecto
+
 #load "TypeChecker.fs"
+
 Tests.runTests defaultConfig TypeChecker.tests
+
 #load "DistTest.fs"
+
 Tests.runTests defaultConfig DistTests.tests
+
 #load "Normalization.fs"
+
 Tests.runTests defaultConfig NormalizationTests.tests
+
 #load "OperationTest.fs"
+
 Tests.runTests defaultConfig OperationTests.tests
+
 #load "ReduceTest.fs"
+
 Tests.runTests defaultConfig ReduceTests.tests
+
 #load "RepeatTest.fs"
+
 Tests.runTests defaultConfig RepeatTests.tests
+
 #load "EvalTest.fs"
+
 Tests.runTests defaultConfig EvalTests.tests
+
 #load "Attacker.fs"
+
 Tests.runTests defaultConfig AttackerTests.tests
 #else
 module ExpectoTests
@@ -49,9 +69,7 @@ open Expecto
 let main argv =
     runTestsInAssembly defaultConfig argv
 #endif
-
 // (Check (Check.Fail (ParamArray [Value (Int 0)])) + Check (Check.Pass (ParamArray [])))
-
 // (Check
 //      (Check.Fail
 //         (ParamArray

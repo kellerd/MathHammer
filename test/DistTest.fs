@@ -1,19 +1,37 @@
 module DistTests
-open Expecto                                       
+
+open Expecto
 open GameActions.Primitives.Types
 
 [<Tests>]
-let tests = 
-    testList "Distribution Tests" [
-        test "Check add only adds passes" {
-            let setup = [1;2;3;4;5;6] 
-                        |> List.map (fun i -> if i > 2 then i |> Int |> Check.Pass
-                                              else i |> Int |> Check.Fail ) |> Distribution.uniformDistribution            
-            let result = setup.Probabilities |> List.map fst |> List.reduce (Check.combineFavourPass (+))
-            let expected = ([3..6] |> List.sum |> Int |> Check.Pass)
-            Expect.equal result expected "Adding up dice is same as adding integers" 
-        }
-    ]
+let tests =
+    testList "Distribution Tests" [ test "Check add only adds passes" { 
+                                        let setup =
+                                            [ 1; 2; 3; 4; 5; 6 ]
+                                            |> List.map (fun i -> 
+                                                   if i > 2 then 
+                                                       i
+                                                       |> Int
+                                                       |> Check.Pass
+                                                   else 
+                                                       i
+                                                       |> Int
+                                                       |> Check.Fail)
+                                            |> Distribution.uniformDistribution
+                                        
+                                        let result =
+                                            setup.Probabilities
+                                            |> List.map fst
+                                            |> List.reduce (Check.combineFavourPass (+))
+                                        
+                                        let expected =
+                                             [ 3..6 ]
+                                             |> List.sum
+                                             |> Int
+                                             |> Check.Pass
+                                        
+                                        Expect.equal result expected "Adding up dice is same as adding integers"
+                                    } ]
 // let d3() = Distribution.uniformDistribution [1..3]
 // let d6() = Distribution.uniformDistribution [1..6]
 // let avg d = 
@@ -24,13 +42,11 @@ let tests =
 //     printfn "Improvement: %A" result;
 //     result
 // <@    
-
 // let zoanBonus points = 
 //     if points = 240 then Distribution.always 3
 //     elif points > 120 then d3()
 //     else Distribution.always 0
 // let smite reroll bonus count = Distribution.dist {
-
 //     let! roll = d6()
 //     let! roll2 = d6()
 //     let reroll r = 
@@ -39,10 +55,8 @@ let tests =
 //     let! reroll1 = reroll roll
 //     let! reroll2 = reroll roll2
 //     let total = reroll1 + reroll2
-    
 //     let! bonus = bonus
 //     let warpcharge = 5 //+ count
-
 //     let! wounds = 
 //         if total > 10 && total >= warpcharge then d6() |> Distribution.map ((+) bonus) 
 //         elif total >= 5 && total >= warpcharge then d3() |> Distribution.map ((+) bonus) 
@@ -56,7 +70,6 @@ let tests =
 //     let total = units * unitSize * 40
 //     (float n + float total)
 // let check units unitSize neuroThrope =
-    
 //     let neuro = 
 //         if neuroThrope then [zoanthropeUnit true 70]
 //         else [] 
@@ -64,7 +77,6 @@ let tests =
 //         List.init units (fun _ -> zoanthropeUnit neuroThrope (unitSize * 40)) @ neuro
 //         |> List.sumBy avg
 //     points units unitSize neuroThrope / result
-
 // [
 //     0,0,true
 //     1,3,false
@@ -105,20 +117,14 @@ let tests =
 // improvement (zoanthropeUnit true 120)  (zoanthropeUnit false 120) 
 // improvement (zoanthropeUnit true 160) (zoanthropeUnit false 160)
 // improvement (zoanthropeUnit true 240) (zoanthropeUnit false 240)
-
 // improvement (zoanthropeUnit true 240) (zoanthropeUnit true 120)
 // improvement (zoanthropeUnit false 240) (zoanthropeUnit false 120)
-
 // (avg (zoanthropeUnit false 120) + avg (zoanthropeUnit false 120))  |> (/) 240.
 // (avg (zoanthropeUnit false 240) )  |> (/) 240.
-
 // (avg (zoanthropeUnit true 120) + avg (zoanthropeUnit true 120))  |> (/) 320.
 // (avg (zoanthropeUnit true 160) + avg (zoanthropeUnit true 160))  |> (/) 320.
 // (avg (zoanthropeUnit true 200) + avg (zoanthropeUnit true 200))  |> (/) 400.
 // (avg (zoanthropeUnit true 240))  |> (/) 240.
-
-
-
 //smite experiment
 // let d3() = Distribution.uniformDistribution [1..3]
 // let d6() = Distribution.uniformDistribution [1..6]
@@ -126,7 +132,6 @@ let tests =
 //     let result = List.sumBy(fun (a:int,b:float) -> float a * b) d  
 //     result
 // let smite reroll bonus count = Distribution.dist {
-
 //     let! roll = d6()
 //     let! roll2 = d6()
 //     let reroll r = 
@@ -135,10 +140,8 @@ let tests =
 //     let! reroll1 = reroll roll
 //     let! reroll2 = reroll roll2
 //     let total = reroll1 + reroll2
-    
 //     let! bonus = bonus
 //     let warpcharge = min (5 + count) 11
-
 //     let! wounds = 
 //         if total > 10 && total >= warpcharge then d6() |> Distribution.map ((+) bonus) 
 //         elif total >= 5 && total >= warpcharge then d3() |> Distribution.map ((+) bonus) 
