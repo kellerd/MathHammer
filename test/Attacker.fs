@@ -2,7 +2,7 @@ module AttackerTests
 
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open App.State
+open MathHammer.State
 open GameActions.GameActionsList.State
 open Expecto
 

@@ -32,6 +32,7 @@ and Call =
     | Equals
     | NotEquals
     | LessThan
+    | ToDist
     | And
     | Or
     | Max

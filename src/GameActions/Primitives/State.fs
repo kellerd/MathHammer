@@ -605,6 +605,11 @@ let rec evalCall func v env : Operation =
                    | Value(a), Value(b) -> folder a b |> Value
                    | _ -> (NoValue |> Value)) state
     
+    let toDist ops = 
+        let gps = ops |> List.map(function Value v -> v | op -> ParamArray[op])
+        Distribution.uniformDistribution gps
+        |> Dist
+
     let evalFuncAsGp =
         (fun v -> 
         evalCall func (Value v) env |> function 
@@ -668,6 +673,7 @@ let rec evalCall func v env : Operation =
     | And, Value(ParamArray([ Value(gp); Value(gp2) ])) -> andGp gp gp2 |> Value
     | Or, Value(ParamArray([ Value(gp); Value(gp2) ])) -> orGp gp gp2 |> Value
     | Repeat, Value(ParamArray([ lam; op2 ])) -> repeat lam op2
+    | ToDist, Value(ParamArray opList ) -> toDist opList |> Value
     | (Total | Division | Product | Count | Max | Min | Sub | Mean | Median | Mode | Least _ | Largest _), Value(Check v) -> 
         let chk = Check.map evalFuncAsGp v
         chk

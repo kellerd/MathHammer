@@ -4,7 +4,70 @@ open Elmish
 open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-
+open MathHammer.Models.State
+let range = vInt
+let phaseActions =
+    choose "Phase" [ "Assault", 
+                     nestOps [ get "Assault Range" <*> get "M" <*> get "Charge Range" >>= "Assault Range"
+                               get "To Hit" <*> get "WS" <*> get "A" >>= "Hit Results"
+                               
+                               // (get "Strength vs Toughness Table" <*> get "S" <*> get "Defender") >>= "Wound Results"                  
+                               get "To Wound" <*> get "Hit Results" <*> (get "Strength vs Toughness Table" <*> get "Defender" <*> get "S") 
+                               >>= "Wound Results"
+                               get "App 2 Test" >>= "App2"
+                               get "Armour Save" <*> get "Defender" <*> get "Wound Results" >>= "Unsaved Wounds" ]
+                     <| opList [ labelVar "Charge Range"
+                                 labelVar "Assault Range"
+                                 labelVar "Hit Results"
+                                 labelVar "Wound Results"
+                                 labelVar "App2"
+                                 labelVar "Unsaved Wounds" ]
+                     "Shooting", labelVar "Shooting Range"
+                     "Psychic",  labelVar "Psychic Test" ]
+    >>= "Actions"
+let dPhaseActions =
+    choose "Phase" [ "Assault", 
+                     (choose "Weapon" [ "Bolter", range 24
+                                        "Melta", range 12 ]
+                      >>= "Weapon Range") (labelVar "Shooting Range")
+                     "Psychic", labelVar "Deny Test" ]
+    >>= "Actions"
+let allPropsa =
+    opList [ labelVar "M"
+             labelVar "WS"
+             labelVar "BS"
+             labelVar "S"
+             labelVar "T"
+             labelVar "W"
+             labelVar "A"
+             labelVar "Ld"
+             labelVar "Sv"
+             labelVar "InvSv"
+             labelVar "D6Test"
+             labelVar "D3Test"
+             labelProp "Actions" "Charge Range"
+             labelProp "Actions" "Assault Range"
+             labelProp "Actions" "Hit Results"
+             labelProp "Actions" "Wound Results"
+             labelProp "Actions" "App2"
+             labelProp "Actions" "Unsaved Wounds"
+             labelProp "Actions" "Psychic Test"
+             labelProp "Actions" "Shooting Range" ]
+let allPropsd =
+    opList [ labelVar "M"
+             labelVar "WS"
+             labelVar "BS"
+             labelVar "S"
+             labelVar "T"
+             labelVar "W"
+             labelVar "A"
+             labelVar "Ld"
+             labelVar "Sv"
+             labelVar "InvSv"
+             labelVar "D6Test"
+             labelVar "D3Test"
+             labelProp "Actions" "Shooting Range"
+             labelProp "Actions" "Deny Test" ]
 let bindModelToEnvironment initial key =
     Option.map (fun (m : Models.Types.Model) -> 
         let (choices, normalizedRule) = m.Rules |> normalize
@@ -15,6 +78,23 @@ let init() : Model * Cmd<Types.Msg> =
     let (attacker, attackerCmd) = UnitList.State.init None ()
     let (defender, defenderCmd) = UnitList.State.init None ()
     
+    let body = nestOps [ phaseActions ] allPropsa
+    let defbody = nestOps [ dPhaseActions ] allPropsd
+    let stats = [ "M"; "WS"; "BS"; "S"; "T"; "W"; "A"; "Ld"; "Sv"; "InvSv" ]
+    let attackerDefinition = createArgs stats body
+    let defenderDefinition = createArgs stats defbody
+    
+    let attackerModels =
+        [ initMeq "Marine" attackerDefinition
+          initSgt "Captain" attackerDefinition ]
+        |> List.map (fst)
+        |> Map.ofList
+    
+    let defenderModels =
+        [ 'a'..'z' ]
+        |> List.map (fun c -> initGeq (string c) defenderDefinition |> fst)
+        |> Map.ofList
+
     let model : Model =
         { Environment = Map.empty<_, _> |> Map.add "Phase" (Str "Assault" |> Value)
           Attacker =
@@ -23,6 +103,7 @@ let init() : Model * Cmd<Types.Msg> =
                                                            Dimensions = { attacker.Location.Dimensions with Top = ft.ToMM 2<ft> } }
                               ElementFill = "#79CE0B"
                               ElementStroke = "#396302"
+                              Models = attackerModels 
                               Deployment =
                                   { attacker.Deployment with Dimensions =
                                                                  { attacker.Deployment.Dimensions with Top =
@@ -31,6 +112,7 @@ let init() : Model * Cmd<Types.Msg> =
           Defender =
               { defender with Location = { defender.Location with Fill = "#CCCCFF" }
                               ElementFill = "#0B79CE"
+                              Models = defenderModels
                               ElementStroke = "#023963" }
           SelectedAttacker = None
           SelectedDefender = None

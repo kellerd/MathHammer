@@ -6,7 +6,6 @@ open Elmish.Browser.UrlParser
 open Fable.Import.Browser
 open Global
 open Types
-open MathHammer.Models.State
 open GameActions.Primitives.State
 
 let pageParser : Parser<Page -> Page, Page> =
@@ -19,101 +18,13 @@ let urlUpdate (result : Option<Page>) model =
         console.error ("Error parsing url")
         model, Navigation.modifyUrl (toHash model.currentPage)
     | Some page -> { model with currentPage = page }, []
-
-let range = vInt
-
-let phaseActions =
-    choose "Phase" [ "Assault", 
-                     nestOps [ get "Assault Range" <*> get "M" <*> get "Charge Range" >>= "Assault Range"
-                               get "To Hit" <*> get "WS" <*> get "A" >>= "Hit Results"
-                               
-                               // (get "Strength vs Toughness Table" <*> get "S" <*> get "Defender") >>= "Wound Results"                  
-                               get "To Wound" <*> get "Hit Results" <*> (get "Strength vs Toughness Table" <*> get "Defender" <*> get "S") 
-                               >>= "Wound Results"
-                               get "App 2 Test" >>= "App2"
-                               get "Armour Save" <*> get "Defender" <*> get "Wound Results" >>= "Unsaved Wounds" ]
-                     <| opList [ labelVar "Charge Range"
-                                 labelVar "Assault Range"
-                                 labelVar "Hit Results"
-                                 labelVar "Wound Results"
-                                 labelVar "App2"
-                                 labelVar "Unsaved Wounds" ]
-                     "Shooting", (labelVar "Shooting Range")
-                     "Psychic", (labelVar "Psychic Test") ]
-    >>= "Actions"
-
-let dPhaseActions =
-    choose "Phase" [ "Assault", 
-                     (choose "Weapon" [ "Bolter", range 24
-                                        "Melta", range 12 ]
-                      >>= "Weapon Range") (labelVar "Shooting Range")
-                     "Psychic", (labelVar "Deny Test") ]
-    >>= "Actions"
-
-let allPropsa =
-    opList [ labelVar "M"
-             labelVar "WS"
-             labelVar "BS"
-             labelVar "S"
-             labelVar "T"
-             labelVar "W"
-             labelVar "A"
-             labelVar "Ld"
-             labelVar "Sv"
-             labelVar "InvSv"
-             labelVar "D6Test"
-             labelVar "D3Test"
-             labelProp "Actions" "Charge Range"
-             labelProp "Actions" "Assault Range"
-             labelProp "Actions" "Hit Results"
-             labelProp "Actions" "Wound Results"
-             labelProp "Actions" "App2"
-             labelProp "Actions" "Unsaved Wounds"
-             labelProp "Actions" "Psychic Test"
-             labelProp "Actions" "Shooting Range" ]
-
-let allPropsd =
-    opList [ labelVar "M"
-             labelVar "WS"
-             labelVar "BS"
-             labelVar "S"
-             labelVar "T"
-             labelVar "W"
-             labelVar "A"
-             labelVar "Ld"
-             labelVar "Sv"
-             labelVar "InvSv"
-             labelVar "D6Test"
-             labelVar "D3Test"
-             labelProp "Actions" "Shooting Range"
-             labelProp "Actions" "Deny Test" ]
-
 let init result =
     let (mathHammer, mathHammerCmd) = MathHammer.State.init()
     let (gameActions, gameActionsCmd) = GameActions.State.init()
-    // attackerStats
-    let body = nestOps [ phaseActions ] allPropsa
-    let defbody = nestOps [ dPhaseActions ] allPropsd
-    let stats = [ "M"; "WS"; "BS"; "S"; "T"; "W"; "A"; "Ld"; "Sv"; "InvSv" ]
-    let attacker = createArgs stats body
-    let defender = createArgs stats defbody
-    
-    let attackers =
-        [ initMeq "Marine" attacker
-          initSgt "Captain" attacker ]
-        |> List.map (fst)
-        |> Map.ofList
-    
-    let defenders =
-        [ 'a'..'z' ]
-        |> List.map (fun c -> initGeq (string c) defender |> fst)
-        |> Map.ofList
     
     let (model, cmd) =
         urlUpdate result { currentPage = MathHammer
-                           mathHammer =
-                               { mathHammer with Attacker = { mathHammer.Attacker with Models = attackers }
-                                                 Defender = { mathHammer.Defender with Models = defenders } }
+                           mathHammer = mathHammer
                            gameActions = gameActions }
     
     model, 
