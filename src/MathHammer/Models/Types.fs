@@ -13,7 +13,6 @@ type Model =
       Size : int<mm>
       Attributes : Map<string, Order * Operation>
       Rules : Operation
-      NormalizedRules : Operation option
       ProbabilityRules : Operation option }
 
 type Msg =

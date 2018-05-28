@@ -14,6 +14,8 @@ type Mode =
         | Average -> "Averages"
         | Sample -> "Sample"
 
+type Matchup = {Attacker:string; Defender:string}
+
 type Model =
     { Attacker : UnitList.Types.Model
       Defender : UnitList.Types.Model
@@ -24,6 +26,7 @@ type Model =
       GlobalOperations : (string * (Order * Operation)) list
       Choices : Map<string, Set<string>>
       SelectedChoices : Map<string, string>
+      Matchups : Map<Matchup,Operation>
       Mode : Mode }
 
 type Msg =
@@ -32,5 +35,5 @@ type Msg =
     | Swap
     | ChangeMode of Mode
     | RebindEnvironment
-    | BindDefender
+    | BindDefender 
     | BindAttacker

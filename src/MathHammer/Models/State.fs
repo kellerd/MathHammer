@@ -12,7 +12,6 @@ let init name =
       Size = 28<mm>
       Attributes = Map.empty<_, _>
       Rules = noValue
-      NormalizedRules = None
       ProbabilityRules = None }
 
 let initSgt name coreRules =
@@ -28,10 +27,11 @@ let initSgt name coreRules =
           "Sv", (9, dPlus 6 3)
           "InvSv", (10, noValue) ]
     
-    let rules = applyArgs coreRules (attributes |> List.map (fun (_, (_, c)) -> c))
+    let (choices, rules)  = applyArgs coreRules (attributes |> List.map (fun (_, (_, c)) -> c)) |> normalize
+    let cmds = choices |> Map.toList |> List.map (MakeChoice >> Cmd.ofMsg) |> Cmd.batch
     (name, 
      { (init name) with Rules = rules
-                        Attributes = Map.ofList attributes }), Cmd.none
+                        Attributes = Map.ofList attributes }), cmds
 
 let initMeq name coreRules =
     let attributes =
@@ -46,10 +46,11 @@ let initMeq name coreRules =
           "Sv", (9, dPlus 6 3)
           "InvSv", (10, noValue) ]
     
-    let rules = applyArgs coreRules (attributes |> List.map (fun (_, (_, c)) -> c))
+    let (choices, rules)  = applyArgs coreRules (attributes |> List.map (fun (_, (_, c)) -> c)) |> normalize
+    let cmds = choices |> Map.toList |> List.map (MakeChoice >> Cmd.ofMsg) |> Cmd.batch
     (name, 
      { (init name) with Rules = rules
-                        Attributes = Map.ofList attributes }), Cmd.none
+                        Attributes = Map.ofList attributes }), cmds
 
 let initGeq name coreRules =
     let attributes =
@@ -65,10 +66,11 @@ let initGeq name coreRules =
           "Sv", (10, dPlus 6 3)
           "InvSv", (11, noValue) ]
     
-    let rules = applyArgs (coreRules |> lam "Weapon Range") (attributes |> List.map (fun (_, (_, c)) -> c))
+    let (choices, rules) = applyArgs (coreRules |> lam "Weapon Range") (attributes |> List.map (fun (_, (_, c)) -> c)) |> normalize
+    let cmds = choices |> Map.toList |> List.map (MakeChoice >> Cmd.ofMsg) |> Cmd.batch
     (name, 
      { (init name) with Rules = rules
-                        Attributes = Map.ofList attributes }), Cmd.none
+                        Attributes = Map.ofList attributes }), cmds
 
 let update msg model =
     match msg with
@@ -78,17 +80,5 @@ let update msg model =
     | Select _ -> model, Cmd.none
     | MakeChoice _ -> model, Cmd.none
     | Rebind(initial) -> 
-        match model.NormalizedRules with
-        | None -> 
-            let (choices, normalized) = model.Rules |> normalize
-            let probability = normalized |> evalOp initial
-            
-            let cmds =
-                choices
-                |> Map.toList
-                |> List.map (MakeChoice >> Cmd.ofMsg)
-            { model with NormalizedRules = Some normalized
-                         ProbabilityRules = Some probability }, Cmd.batch cmds
-        | Some normalized -> 
-            let probability = normalized |> evalOp initial
-            { model with ProbabilityRules = Some probability }, Cmd.none
+        let probability = model.Rules |> evalOp initial
+        { model with ProbabilityRules = Some probability }, Cmd.none

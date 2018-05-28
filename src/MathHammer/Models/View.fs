@@ -101,7 +101,7 @@ let rangeRoot name model =
 let root model dispatch =
     let modelDisplay =
         [ circle [ R(model.Size / 2 |> float)
-                   OnClick(fun _ -> Select |> dispatch) ] []
+                   OnMouseOver(fun _ -> Select |> dispatch) ] []
           text [ SVGAttr.TextAnchor "middle"
                  SVGAttr.Y 50.
                  SVGAttr.StrokeWidth(".5")

@@ -84,16 +84,23 @@ let init() : Model * Cmd<Types.Msg> =
     let attackerDefinition = createArgs stats body
     let defenderDefinition = createArgs stats defbody
     
-    let attackerModels =
+    let (attackerModels,attackerCmds) =
         [ initMeq "Marine" attackerDefinition
           initSgt "Captain" attackerDefinition ]
-        |> List.map (fst)
-        |> Map.ofList
+        |> List.map (fun ((name,model),cmd) -> (name, model), Cmd.map (fun msg -> UnitList.Types.ModelMsg(msg, name)) cmd )
+        |> List.unzip
     
-    let defenderModels =
+
+    let ((_,geq), modelCmd) =  initGeq "Geq" defenderDefinition
+    let defenderCmds = Cmd.map(fun msg -> UnitList.Types.ModelMsg(msg, "Geq")) modelCmd
+
+
+    let defenderModels = 
         [ 'a'..'z' ]
-        |> List.map (fun c -> initGeq (string c) defenderDefinition |> fst)
-        |> Map.ofList
+        |> List.map (fun c -> string c, {geq with Name = string c} )
+
+
+
 
     let model : Model =
         { Environment = Map.empty<_, _> |> Map.add "Phase" (Str "Assault" |> Value)
@@ -103,7 +110,7 @@ let init() : Model * Cmd<Types.Msg> =
                                                            Dimensions = { attacker.Location.Dimensions with Top = ft.ToMM 2<ft> } }
                               ElementFill = "#79CE0B"
                               ElementStroke = "#396302"
-                              Models = attackerModels 
+                              Models = Map.ofList attackerModels 
                               Deployment =
                                   { attacker.Deployment with Dimensions =
                                                                  { attacker.Deployment.Dimensions with Top =
@@ -112,10 +119,11 @@ let init() : Model * Cmd<Types.Msg> =
           Defender =
               { defender with Location = { defender.Location with Fill = "#CCCCFF" }
                               ElementFill = "#0B79CE"
-                              Models = defenderModels
+                              Models = Map.ofList defenderModels
                               ElementStroke = "#023963" }
           SelectedAttacker = None
           SelectedDefender = None
+          Matchups = Map.empty<_, _>
           Board =
               { Top = 0<mm>
                 Left = 0<mm>
@@ -126,8 +134,8 @@ let init() : Model * Cmd<Types.Msg> =
           Choices = Map.empty<_, _>
           SelectedChoices = Map.empty<_, _> }
     model, 
-    Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap)) attackerCmd
-                Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap)) defenderCmd
+    Cmd.batch [ List.map (Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap))) (attackerCmd :: attackerCmds) |> Cmd.batch
+                List.map (Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap))) [defenderCmd;  defenderCmds ] |> Cmd.batch
                 Cmd.ofMsg (UnitListMsg(UnitList.Types.Distribute(UnitList.Types.Area model.Attacker.Deployment.Dimensions), Some defenderMap))
                 Cmd.ofMsg (UnitListMsg(UnitList.Types.Distribute(UnitList.Types.Area model.Defender.Deployment.Dimensions), Some attackerMap))
                 Cmd.ofMsg RebindEnvironment ]
@@ -186,11 +194,21 @@ let update msg model : Model * Cmd<Types.Msg> =
                    let result = normal |> evalOp env
                    Map.mergeSets choices newChoices, Map.add key result env) (choices, initial)
         
+        // let newDefenders = 
+        //             Map.map (fun _ (m:MathHammer.Models.Types.Model) -> 
+        //                 { m with ProbabilityRules = 
+        //                             m.Rules <*> noValue
+        //                             |> evalOp model.Environment
+        //                             |> Some }
+        //             ) model.Defender.Models
+
         let cmds =
             Cmd.batch [ Cmd.ofMsg BindDefender
                         Cmd.ofMsg BindAttacker ]
         
         { model with Environment = environment
+                     Matchups = Map.empty<_,_>
+                    //  Defender = { model.Defender with Models = newDefenders }
                      Choices = choices }, cmds
     | BindDefender -> 
         match model.SelectedDefender with
