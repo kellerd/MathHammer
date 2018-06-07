@@ -26,9 +26,13 @@ let init name () : Model * Cmd<Msg> =
                   Height = ft.ToMM 1<ft> } } }, Cmd.none
 
 //Switch to hausdorff distance? http://cgm.cs.mcgill.ca/~godfried/teaching/cg-projects/98/normand/main.html
-let distance (xa, ya) (xb, yb : float) = sqrt (pown (xb - xa) 2 + pown (yb - ya) 2)
-let midpoint (x1, y1) (x2, y2) = List.average [ x1; x2 ], List.average [ y1; y2 ]
-let midpointArea area = midpoint (float area.Left, float area.Top) (float area.Left + float area.Width, float area.Top + float area.Height)
+let distance (xa, ya) (xb, yb : float) =
+    sqrt (pown (xb - xa) 2 + pown (yb - ya) 2)
+let midpoint (x1, y1) (x2, y2) =
+    List.average [ x1; x2 ], List.average [ y1; y2 ]
+let midpointArea area =
+    midpoint (float area.Left, float area.Top) 
+        (float area.Left + float area.Width, float area.Top + float area.Height)
 
 let slope (x1 : float, y1) (x2, y2) =
     let run = x2 - x1
@@ -56,28 +60,39 @@ let distributeClosestToEnemyHex (spacing : int<mm>) deploymentArea enemy models 
         let b = offsetY armyMiddle m
         if m = 0.0 then 
             [ float deploymentArea.Left, (fst armyMiddle)
-              float deploymentArea.Left + float deploymentArea.Width, (fst armyMiddle)
+              
+              float deploymentArea.Left + float deploymentArea.Width, 
+              (fst armyMiddle)
               armyMiddle ]
         elif m = nan then //same deployment area
             [ armyMiddle ]
         elif m = infinity || m = -infinity then 
             [ (fst armyMiddle), float deploymentArea.Top
-              (fst armyMiddle), float deploymentArea.Top + float deploymentArea.Height
+              
+              (fst armyMiddle), 
+              float deploymentArea.Top + float deploymentArea.Height
               armyMiddle ]
         else 
             [ (//X Intercepts
                float deploymentArea.Top - b) / m, float deploymentArea.Top
-              (float deploymentArea.Top + float deploymentArea.Height - b) / m, float deploymentArea.Top + float deploymentArea.Height
+              
+              (float deploymentArea.Top + float deploymentArea.Height - b) / m, 
+              float deploymentArea.Top + float deploymentArea.Height
               //Y Intercepts
               float deploymentArea.Left, m * float deploymentArea.Left + b
-              float deploymentArea.Left + float deploymentArea.Width, m * (float deploymentArea.Left + float deploymentArea.Width) + b
+              
+              float deploymentArea.Left + float deploymentArea.Width, 
+              m * (float deploymentArea.Left + float deploymentArea.Width) + b
               //Deployment inside itself
               armyMiddle ]
     
     let canDeploy (size : int<mm>) (x, y) =
-        x - (float size / 2.000000000001) > float deploymentArea.Left && y - (float size / 2.000000000001) > float deploymentArea.Top 
-        && x + (float size / 2.000000000001) < float deploymentArea.Left + float deploymentArea.Width 
-        && y + (float size / 2.000000000001) < float deploymentArea.Top + float deploymentArea.Height
+        x - (float size / 2.000000000001) > float deploymentArea.Left 
+        && y - (float size / 2.000000000001) > float deploymentArea.Top 
+        && x + (float size / 2.000000000001) < float deploymentArea.Left 
+                                               + float deploymentArea.Width 
+        && y + (float size / 2.000000000001) < float deploymentArea.Top 
+                                               + float deploymentArea.Height
     
     let origin size =
         intersectionPoints
@@ -99,7 +114,8 @@ let distributeClosestToEnemyHex (spacing : int<mm>) deploymentArea enemy models 
             let diameter = (size + (spacing * 2) |> float)
             let canDeploy = canDeploy size
             Seq.initInfinite (fun i -> i, diameter * float i)
-            |> Seq.takeWhile (fun (_, r) -> x - 0.5 * r > float deploymentArea.Left)
+            |> Seq.takeWhile 
+                   (fun (_, r) -> x - 0.5 * r > float deploymentArea.Left)
             |> Seq.map (fun (i, r) -> 
                    seq { 
                        if i = 0 then yield (x, y)
@@ -114,12 +130,18 @@ let distributeClosestToEnemyHex (spacing : int<mm>) deploymentArea enemy models 
                            let e = (x - 0.5 * r, y - h)
                            let f = (x - r, y)
                            //Draw a hexagon
-                           yield! List.map (fun x' -> x', snd a) [ fst a..diameter..fst b - 0.00005 ]
-                           yield! List.zip [ fst b..dstep..fst c - 0.00005 ] [ snd b.. -hstep..snd c + 0.00005 ]
-                           yield! List.zip [ fst c.. -dstep..fst d + 0.00005 ] [ snd c.. -hstep..snd d + 0.00005 ]
-                           yield! List.map (fun x' -> x', snd d) [ fst d.. -diameter..fst e + 0.00005 ]
-                           yield! List.zip [ fst e.. -dstep..fst f + 0.00005 ] [ snd e..hstep..snd f - 0.00005 ]
-                           yield! List.zip [ fst f..dstep..fst a - 0.00005 ] [ snd f..hstep..snd a - 0.00005 ]
+                           yield! List.map (fun x' -> x', snd a) 
+                                      [ fst a..diameter..fst b - 0.00005 ]
+                           yield! List.zip [ fst b..dstep..fst c - 0.00005 ] 
+                                      [ snd b.. -hstep..snd c + 0.00005 ]
+                           yield! List.zip [ fst c.. -dstep..fst d + 0.00005 ] 
+                                      [ snd c.. -hstep..snd d + 0.00005 ]
+                           yield! List.map (fun x' -> x', snd d) 
+                                      [ fst d.. -diameter..fst e + 0.00005 ]
+                           yield! List.zip [ fst e.. -dstep..fst f + 0.00005 ] 
+                                      [ snd e..hstep..snd f - 0.00005 ]
+                           yield! List.zip [ fst f..dstep..fst a - 0.00005 ] 
+                                      [ snd f..hstep..snd a - 0.00005 ]
                    })
             |> Seq.collect (Seq.filter canDeploy) //Filter out points outside the zone
             |> Seq.truncate (max models.Length 60) //Say max 30 models in squad 
@@ -137,10 +159,18 @@ let update msg model : Model * Cmd<Msg> =
             model.Models
             |> Map.toList
             |> distributeClosestToEnemyHex spacing deploymentArea enemyArea
-            |> Seq.map (fun ((_, m), (x, y)) -> MathHammer.Models.State.update (MathHammer.Models.Types.Msg.ChangePosition(x, y)) m)
-            |> Seq.fold (fun (map, cmds) (m, cmd) -> (Map.add m.Name m map), (Cmd.map (fun msg -> ModelMsg(msg, m.Name)) cmd) :: cmds) 
+            |> Seq.map 
+                   (fun ((_, m), (x, y)) -> 
+                   MathHammer.Models.State.update 
+                       (MathHammer.Models.Types.Msg.ChangePosition(x, y)) m)
+            |> Seq.fold 
+                   (fun (map, cmds) (m, cmd) -> 
+                   (Map.add m.Name m map), 
+                   (Cmd.map (fun msg -> ModelMsg(msg, m.Name)) cmd) :: cmds) 
                    (model.Models, [])
         { model with Models = newModels }, Cmd.batch (modelsCmds)
     | ModelMsg(msg, key) -> 
-        let (newModel, modelCmds) = model.Models.Item(key) |> MathHammer.Models.State.update msg
-        { model with Models = Map.add key newModel model.Models }, Cmd.map (fun msg -> ModelMsg(msg, key)) modelCmds
+        let (newModel, modelCmds) =
+            model.Models.Item(key) |> MathHammer.Models.State.update msg
+        { model with Models = Map.add key newModel model.Models }, 
+        Cmd.map (fun msg -> ModelMsg(msg, key)) modelCmds

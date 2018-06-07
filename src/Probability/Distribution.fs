@@ -25,17 +25,25 @@ type Distribution<'a when 'a : equality and 'a : comparison> =
     override x.Equals(obj) =
         match obj with
         | :? Distribution<'a> as y -> 
-            let convert = List.sortBy fst >> List.map (fun (a, b) -> a, System.BitConverter.DoubleToInt64Bits(b))
+            let convert =
+                List.sortBy fst 
+                >> List.map 
+                       (fun (a, b) -> 
+                       a, System.BitConverter.DoubleToInt64Bits(b))
             let x' = (x.Normalize).Probabilities |> convert
             let y' = (y.Normalize).Probabilities |> convert
-            if x'.Length = y'.Length then List.zip x' y' |> List.forall (fun ((a, p), (b, p2)) -> a = b && abs (p - p2) < 5L)
+            if x'.Length = y'.Length then 
+                List.zip x' y' 
+                |> List.forall 
+                       (fun ((a, p), (b, p2)) -> a = b && abs (p - p2) < 5L)
             else false
         | _ -> false
     
     interface System.IComparable with
         member x.CompareTo yobj =
             match yobj with
-            | :? Distribution<'a> as y -> compare x.Probabilities y.Probabilities
+            | :? Distribution<'a> as y -> 
+                compare x.Probabilities y.Probabilities
             | _ -> invalidArg "yobj" "cannot compare values of different types"
 
 type Event<'a> = 'a -> bool
@@ -51,7 +59,8 @@ let printDistribution (v : Distribution<_>) =
 let always (a : 'a) : Distribution<_> = create [ a, 1.0 ]
 let never (a : 'a) : Distribution<_> = create [ a, 0.0 ]
 let expectation (predicate : 'a -> float) (v : Distribution<_>) : float =
-    List.foldBack (fun (a, prob) acc -> acc + predicate a * prob) v.Probabilities 0.0
+    List.foldBack (fun (a, prob) acc -> acc + predicate a * prob) 
+        v.Probabilities 0.0
 let rnd = System.Random()
 
 let sample (v : Distribution<_>) =
@@ -75,9 +84,11 @@ let calcProbabilityOfEvent (e : Event<'a>) (vs : Distribution<_>) : Probability 
 let (>?) a b = calcProbabilityOfEvent b a
 
 let coinFlip (pFirst : float) (d1 : Distribution<'T>) (d2 : Distribution<'T>) =
-    if pFirst < 0.0 || pFirst > 1.0 then failwith "invalid probability in coinFlip"
+    if pFirst < 0.0 || pFirst > 1.0 then 
+        failwith "invalid probability in coinFlip"
     let d1' = d1.Probabilities |> List.map (fun (a, prob) -> a, prob * pFirst)
-    let d2' = d2.Probabilities |> List.map (fun (b, prob) -> b, prob * (1.0 - pFirst))
+    let d2' =
+        d2.Probabilities |> List.map (fun (b, prob) -> b, prob * (1.0 - pFirst))
     let combined = List.append d1' d2'
     combined |> create
 
@@ -93,7 +104,8 @@ let weightedCases (inp : ('T * float) list) =
         match l with
         | [] -> failwith "no coinFlips"
         | [ (d, _) ] -> always d
-        | (d, p) :: rest -> coinFlip (p / (1.0 - w)) (always d) (coinFlips (w + p) rest)
+        | (d, p) :: rest -> 
+            coinFlip (p / (1.0 - w)) (always d) (coinFlips (w + p) rest)
     coinFlips 0.0 inp
 
 let countedCases inp =
@@ -125,14 +137,18 @@ type DistrBuilder() =
 
 let dist = DistrBuilder()
 let map f = bind (f >> returnM)
-let mapProbility f (x : Distribution<_>) : Distribution<_> = List.map (fun (a, p) -> a, f p) x.Probabilities |> create
+let mapProbility f (x : Distribution<_>) : Distribution<_> =
+    List.map (fun (a, p) -> a, f p) x.Probabilities |> create
 let multiplyProbability p = mapProbility ((*) p)
 
 let groupBy projection mapping (x : Distribution<'a>) : Distribution<'a> =
     List.groupBy (fst >> projection) x.Probabilities
-    |> List.choose (function 
+    |> List.choose 
+           (function 
            | (_, []) -> None
-           | (_, h :: tail) -> Some <| List.fold (fun (c, p) (n, p2) -> mapping c n, (p + p2)) h tail)
+           | (_, h :: tail) -> 
+               Some 
+               <| List.fold (fun (c, p) (n, p2) -> mapping c n, (p + p2)) h tail)
     |> create
 
 let traverseResultM f list =
@@ -140,13 +156,15 @@ let traverseResultM f list =
     let cons head tail = head :: tail
     // right fold over the list
     let initState = returnM []
-    let folder head tail = f head >>= (fun h -> tail >>= (fun t -> returnM (cons h t)))
+    let folder head tail =
+        f head >>= (fun h -> tail >>= (fun t -> returnM (cons h t)))
     List.foldBack folder list initState
 
 let get d = d.Probabilities
 let values d = d.Probabilities |> List.map fst
 let choose f (xs : Distribution<_>) : Distribution<_> =
-    List.choose (fun (a, p) -> f a |> Option.map (fun a' -> a', p)) xs.Probabilities |> create
+    List.choose (fun (a, p) -> f a |> Option.map (fun a' -> a', p)) 
+        xs.Probabilities |> create
 let sequenceResultM x = traverseResultM id x
 
 let rec takeN (v : Distribution<_>) (n : int) : Distribution<'a list> =
@@ -163,7 +181,9 @@ let pair d1 d2 = dist { let! d1' = d1
 
 let cartesian (xs : Distribution<'a>) (ys : Distribution<'b>) : Distribution<'a * 'b> =
     xs.Probabilities
-    |> List.collect (fun (x, px) -> ys.Probabilities |> List.map (fun (y, py) -> (x, y), (px * py)))
+    |> List.collect 
+           (fun (x, px) -> 
+           ys.Probabilities |> List.map (fun (y, py) -> (x, y), (px * py)))
     |> create
 
 module Example =

@@ -8,14 +8,18 @@ open GameActions.Primitives.State
 open Probability.View
 
 let onClick x : IProp = OnClick(x) :> _
-let showActions dispatch operation = GameActions.Primitives.View.probabilities operation dispatch
-let showAverages dispatch operation = GameActions.Primitives.View.averages operation dispatch
-let showSamples dispatch operation = GameActions.Primitives.View.sample operation dispatch
+let showActions dispatch operation =
+    GameActions.Primitives.View.probabilities operation dispatch
+let showAverages dispatch operation =
+    GameActions.Primitives.View.averages operation dispatch
+let showSamples dispatch operation =
+    GameActions.Primitives.View.sample operation dispatch
 
 let showAttributes ((key : string), operation) dispatch =
-    div [ ClassName "has-text-centered column" ] [ b [] [ str key ]
-                                                   br []
-                                                   GameActions.Primitives.View.probabilities operation dispatch ]
+    div [ ClassName "has-text-centered column" ] 
+        [ b [] [ str key ]
+          br []
+          GameActions.Primitives.View.probabilities operation dispatch ]
 
 let rangeStops (dist : Distribution.Distribution<_>) =
     let length = List.length dist.Probabilities
@@ -28,20 +32,27 @@ let rangeStops (dist : Distribution.Distribution<_>) =
         |> Distribution.get
         |> List.fold 
                (fun (currMinRange, currMaxRange, currMin, currMax) (range, prob) -> 
-               min currMinRange range, max currMaxRange range, min currMin prob, max currMax prob) 
+               min currMinRange range, max currMaxRange range, min currMin prob, 
+               max currMax prob) 
                (Check.Pass(28<ft> * 12<inch/ft>), Check.Pass 0<inch>, 1., 0.)
         |> function 
-        | (Check.Pass minRange, Check.Pass maxRange, minProbability, maxProbability) -> 
-            inch.ToMM(int minRange * 1<inch>), inch.ToMM(int maxRange * 1<inch>), minProbability, maxProbability
+        | (Check.Pass minRange, Check.Pass maxRange, minProbability, 
+           maxProbability) -> 
+            inch.ToMM(int minRange * 1<inch>), inch.ToMM(int maxRange * 1<inch>), 
+            minProbability, maxProbability
         | (Check.Fail _, Check.Pass maxRange, minProbability, maxProbability) -> 
-            0<mm>, inch.ToMM(int maxRange * 1<inch>), minProbability, maxProbability
+            0<mm>, inch.ToMM(int maxRange * 1<inch>), minProbability, 
+            maxProbability
         | (_, _, _, _) -> 0<mm>, 0<mm>, 0., 0.
     
     let stopPercent i length = float (i + 1) / float length |> sprintf "%.2f"
     
     let percentGreen (range : int<mm>) =
         if maxRange - minRange = 0<mm> then "#00FF00"
-        else colour <| (1. - (float (range - minRange) / float (maxRange - minRange))) * 255.
+        else 
+            colour 
+            <| (1. - (float (range - minRange) / float (maxRange - minRange))) 
+               * 255.
     
     let stopsPercentGreenAndOpacity =
         let stops =
@@ -50,17 +61,35 @@ let rangeStops (dist : Distribution.Distribution<_>) =
             |> List.toArray
             |> Array.mapi (fun i (range, prob) -> 
                    match range, prob with
-                   | Check(Check.Fail _), _ | _, 0.0 -> (stopPercent i length, colour 255.), 0.0
-                   | Check(Check.Pass(Int(range))), _ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
+                   | Check(Check.Fail _), _ | _, 0.0 -> 
+                       (stopPercent i length, colour 255.), 0.0
+                   | Check(Check.Pass(Int(range))), _ -> 
+                       (stopPercent i length, 
+                        percentGreen (inch.ToMM(range * 1<inch>))), prob
                    | Check(Check.Pass(Float(range))), _ -> 
-                       (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
-                   | Int(range), _ -> (stopPercent i length, percentGreen (inch.ToMM(range * 1<inch>))), prob
+                       (stopPercent i length, 
+                        percentGreen 
+                            (int 
+                                 (System.Math.Round
+                                      (float <| inch.ToMMf(range * 1.<inch>))) 
+                             * 1<mm>)), prob
+                   | Int(range), _ -> 
+                       (stopPercent i length, 
+                        percentGreen (inch.ToMM(range * 1<inch>))), prob
                    | Float(range), _ -> 
-                       (stopPercent i length, percentGreen (int (System.Math.Round(float <| inch.ToMMf(range * 1.<inch>))) * 1<mm>)), prob
+                       (stopPercent i length, 
+                        percentGreen 
+                            (int 
+                                 (System.Math.Round
+                                      (float <| inch.ToMMf(range * 1.<inch>))) 
+                             * 1<mm>)), prob
                    | _ -> failwith "invalid range calculation")
             |> Array.rev
         stops
-        |> Array.scan (fun ((_, _), lastProb) ((stopPercent, green), prob) -> ((stopPercent, green), prob + lastProb)) (("0.00", "#000000"), 0.0)
+        |> Array.scan 
+               (fun ((_, _), lastProb) ((stopPercent, green), prob) -> 
+               ((stopPercent, green), prob + lastProb)) 
+               (("0.00", "#000000"), 0.0)
         |> List.ofArray
         |> List.skip 1
         |> List.sortByDescending snd
@@ -76,10 +105,14 @@ let safe (id : string) =
     | null -> ""
     | id -> id.Replace(" ", "")
 
-let groupFor model display = g [ SVGAttr.Transform(sprintf "translate(%f,%f)" model.PosX model.PosY) ] [ g [] display ]
+let groupFor model display =
+    g [ SVGAttr.Transform(sprintf "translate(%f,%f)" model.PosX model.PosY) ] 
+        [ g [] display ]
 
 let rangeRoot name model =
-    let dist = model.ProbabilityRules |> Option.map (getp name >> evalOp Map.empty<_, _>)
+    let dist =
+        model.ProbabilityRules 
+        |> Option.map (getp name >> evalOp Map.empty<_, _>)
     
     let ranges id (_ : int<mm>, max : int<mm>, stops) =
         g [] [ defs [] [ radialGradient [ Id(safe id) ] stops ]

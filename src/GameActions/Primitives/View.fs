@@ -79,9 +79,10 @@ let unparseDist unparseValue (dist : Distribution.Distribution<GamePrimitive>) =
 
 let rec displayParamArray unparseValue ops =
     ops
-    |> List.choose (unparse unparseValue
-                    >> Option.ofObj
-                    >> Option.map (List.singleton >> div [ ClassName "column" ]))
+    |> List.choose 
+           (unparse unparseValue
+            >> Option.ofObj
+            >> Option.map (List.singleton >> div [ ClassName "column" ]))
     |> section [ ClassName "columns" ]
 
 and unparse unparseValue operation =
@@ -94,7 +95,9 @@ and unparse unparseValue operation =
         match n with
         | 6 -> string (plus) + "+" |> str
         | n -> string (plus) + "+ on D" + (string n) |> str
-    | Choice(name, _) -> section [ ClassName "columns" ] [ div [ ClassName "column" ] [ b [] [ str ("Choose a " + name) ] ] ]
+    | Choice(name, _) -> 
+        section [ ClassName "columns" ] 
+            [ div [ ClassName "column" ] [ b [] [ str ("Choose a " + name) ] ] ]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D6))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,D3))),_); Value(Int(i))]))) ->  [sprintf "%d+ rerolling (%s)"  (i+1) (String.concat "," (List.map string is)) |> str]
     // | App(Call(GreaterThan),  Value(ParamArray([App(Call(Dice(Reroll(is,Reroll(is2,d)))),_); Value(Int(i))]))) ->  
@@ -157,7 +160,8 @@ let unparseValue =
         | ParamArray [] -> ofOption None
         | ParamArray [ Value(Str _); Value(NoValue) ] -> ofOption None
         | ParamArray [ Value(Str _); Var _ ] -> ofOption None
-        | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> ofOption None
+        | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> 
+            ofOption None
         | ParamArray [ Value(Str _); PropertyGet(_, Var _) ] -> ofOption None
         | ParamArray(m) -> displayParamArray unparseV m
     unparseV
@@ -183,7 +187,8 @@ let unparseAverage =
         | ParamArray [] -> ofOption None
         | ParamArray [ Value(Str _); Value(NoValue) ] -> ofOption None
         | ParamArray [ Value(Str _); Var _ ] -> ofOption None
-        | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> ofOption None
+        | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> 
+            ofOption None
         | ParamArray [ Value(Str _); PropertyGet(_, Var _) ] -> ofOption None
         | ParamArray(m) -> displayParamArray unparseV m
     unparseV
@@ -206,7 +211,8 @@ let unparseSample =
         | ParamArray [] -> ofOption None
         | ParamArray [ Value(Str _); Value(NoValue) ] -> ofOption None
         | ParamArray [ Value(Str _); Var _ ] -> ofOption None
-        | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> ofOption None
+        | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> 
+            ofOption None
         | ParamArray [ Value(Str _); PropertyGet(_, Var _) ] -> ofOption None
         | ParamArray(m) -> displayParamArray unparseV m
     unparseV
@@ -214,8 +220,10 @@ let unparseSample =
 let alternateRoot model _ =
     let rec displayOperation operation =
         match operation with
-        | Value(ParamArray ops) when List.distinct ops = [ State.``D#`` 3 ] -> str ""
-        | Value(ParamArray ops) when List.distinct ops = [ State.``D#`` 6 ] -> str ""
+        | Value(ParamArray ops) when List.distinct ops = [ State.``D#`` 3 ] -> 
+            str ""
+        | Value(ParamArray ops) when List.distinct ops = [ State.``D#`` 6 ] -> 
+            str ""
         | Value(Int(_)) -> str ""
         | Value(NoValue) -> 
             span [ Style [ BorderStyle "dotted"

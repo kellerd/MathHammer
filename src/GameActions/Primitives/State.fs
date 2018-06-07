@@ -10,7 +10,8 @@ let pair x y = opList [ x; y ]
 let call f op = App(Call f, op)
 let tuple ab = Tuple(ab)
 let count = call Count
-let repeat ``(fun op -> 't)`` op2 = opList [ ``(fun op -> 't)``; op2 ] |> call Repeat
+let repeat ``(fun op -> 't)`` op2 =
+    opList [ ``(fun op -> 't)``; op2 ] |> call Repeat
 
 let repeatOp op =
     ("unusedVariable", op)
@@ -62,12 +63,17 @@ let (|IsDPlus|_|) =
     function 
     | App(Call Count, 
           Let(roll, App(Call Dice, Value(Int die)), 
-              Let(gt, App(Call GreaterThan, Value(ParamArray [ Var roll'; Value(Int d) ])), 
-                  Let(eq, App(Call Equals, Value(ParamArray [ Var roll''; Value(Int d') ])), App(Call Or, Value(ParamArray [ Var eq'; Var gt' ])))))) when roll = roll' 
-                                                                                                                                                           && roll' = roll'' 
-                                                                                                                                                           && gt = gt' 
-                                                                                                                                                           && eq = eq' 
-                                                                                                                                                           && d = d' -> 
+              Let(gt, 
+                  App(Call GreaterThan, 
+                      Value(ParamArray [ Var roll'; Value(Int d) ])), 
+                  Let(eq, 
+                      App(Call Equals, 
+                          Value(ParamArray [ Var roll''; Value(Int d') ])), 
+                      App(Call Or, Value(ParamArray [ Var eq'; Var gt' ])))))) when roll = roll' 
+                                                                                    && roll' = roll'' 
+                                                                                    && gt = gt' 
+                                                                                    && eq = eq' 
+                                                                                    && d = d' -> 
         Some(die, d)
     | _ -> None
 
@@ -105,8 +111,10 @@ let rec isInUse s =
     | Let(n, v, op) -> isInUse s v || (n <> s && isInUse s op)
     | Call _ -> false
     | PropertyGet(_, op) -> isInUse s op
-    | IfThenElse(ifExpr, thenExpr, None) -> isInUse s ifExpr || isInUse s thenExpr
-    | IfThenElse(ifExpr, thenExpr, Some elseExpr) -> isInUse s ifExpr || isInUse s thenExpr || isInUse s elseExpr
+    | IfThenElse(ifExpr, thenExpr, None) -> 
+        isInUse s ifExpr || isInUse s thenExpr
+    | IfThenElse(ifExpr, thenExpr, Some elseExpr) -> 
+        isInUse s ifExpr || isInUse s thenExpr || isInUse s elseExpr
     | Choice(_, choices) -> List.exists (snd >> isInUse s) choices
 
 let rec subst arg s =
@@ -124,8 +132,11 @@ let rec subst arg s =
     | Call x -> Call x
     | PropertyGet(a, op) -> PropertyGet(a, subst arg s op)
     | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
-        IfThenElse(subst arg s ifExpr, subst arg s thenExpr, elseExpr |> Option.map (fun op -> subst arg s op))
-    | Choice(name, choices) -> Choice(name, List.map (fun (k, op) -> k, subst arg s op) choices)
+        IfThenElse
+            (subst arg s ifExpr, subst arg s thenExpr, 
+             elseExpr |> Option.map (fun op -> subst arg s op))
+    | Choice(name, choices) -> 
+        Choice(name, List.map (fun (k, op) -> k, subst arg s op) choices)
 
 let rec allIds =
     function 
@@ -146,7 +157,8 @@ let rec allIds =
           elseExpr |> Option.map allIds ]
         |> List.choose id
         |> List.reduce Set.union
-    | Choice(_, choices) -> List.map (snd >> allIds) choices |> List.reduce Set.union
+    | Choice(_, choices) -> 
+        List.map (snd >> allIds) choices |> List.reduce Set.union
 
 let freeIds x =
     let rec halp bound =
@@ -166,7 +178,8 @@ let freeIds x =
               elseExpr |> Option.map (halp bound) ]
             |> List.choose id
             |> List.reduce Set.union
-        | Choice(_, choices) -> List.map (snd >> halp bound) choices |> List.reduce Set.union
+        | Choice(_, choices) -> 
+            List.map (snd >> halp bound) choices |> List.reduce Set.union
     halp Set.empty x
 
 type ChoiceSet = Map<string, Set<string>>
@@ -223,7 +236,8 @@ let rename all (t, s, x) =
                 | Fine c2 -> Fine(Map.mergeSets c c2)
         | Lam(p, b) -> 
             let c = halp b |> choicesOf
-            if ((p) = s) || (not (Set.contains s (freeIds b))) || (not (Set.contains (p) free)) then Fine c
+            if ((p) = s) || (not (Set.contains s (freeIds b))) 
+               || (not (Set.contains (p) free)) then Fine c
             else 
                 let newP = uniqueId all p
                 Renamed(c, Lam(newP, subst (Var newP) p b))
@@ -241,14 +255,24 @@ let rename all (t, s, x) =
             |> List.map (fun (key, op) -> op, key, halp op)
             |> List.fold (fun state (op, key, rop) -> 
                    match state, rop with
-                   | Renamed(c, Choice(name, choices)), (Fine c2 | Renamed(c2, _)) -> 
-                       Renamed(Map.mergeSets c c2, Choice(name, (key, op) :: choices))
-                   | Renamed(c, r), (Fine c2 | Renamed(c2, _)) -> Renamed(Map.mergeSets c c2, r)
-                   | Fine c, Renamed(c2, rop) -> Renamed(Map.mergeSets c c2, Choice(name, [ key, rop ]))
-                   | Fine c, Fine c2 -> Fine(Map.mergeSets c c2)) (Fine Map.empty<_, _>)
+                   | Renamed(c, Choice(name, choices)), 
+                     (Fine c2 | Renamed(c2, _)) -> 
+                       Renamed
+                           (Map.mergeSets c c2, 
+                            Choice(name, (key, op) :: choices))
+                   | Renamed(c, r), (Fine c2 | Renamed(c2, _)) -> 
+                       Renamed(Map.mergeSets c c2, r)
+                   | Fine c, Renamed(c2, rop) -> 
+                       Renamed(Map.mergeSets c c2, Choice(name, [ key, rop ]))
+                   | Fine c, Fine c2 -> Fine(Map.mergeSets c c2)) 
+                   (Fine Map.empty<_, _>)
             |> function 
-            | Renamed(c, Choice(name, choices)) -> Renamed(Map.mergeSets (getChoices (name, choices)) c, Choice(name, List.rev choices))
-            | Renamed(c, op) -> Renamed(Map.mergeSets (getChoices (name, choices)) c, op)
+            | Renamed(c, Choice(name, choices)) -> 
+                Renamed
+                    (Map.mergeSets (getChoices (name, choices)) c, 
+                     Choice(name, List.rev choices))
+            | Renamed(c, op) -> 
+                Renamed(Map.mergeSets (getChoices (name, choices)) c, op)
             | Fine c -> Fine(Map.mergeSets (getChoices (name, choices)) c)
         | Call _ -> Fine Map.empty<_, _>
         | Value v -> 
@@ -261,19 +285,23 @@ let rename all (t, s, x) =
                 | Check(Check.Pass gp) -> 
                     match halpGp gp with
                     | Fine c -> Fine c
-                    | Renamed(c, Value(rgp)) -> Renamed(c, Value(Check(Check.Pass rgp)))
+                    | Renamed(c, Value(rgp)) -> 
+                        Renamed(c, Value(Check(Check.Pass rgp)))
                     | gp -> failwith <| sprintf "Could not rename %A" gp
                 | Check(Check.Fail gp) -> 
                     match halpGp gp with
                     | Fine c -> Fine c
-                    | Renamed(c, Value(rgp)) -> Renamed(c, Value(Check(Check.Fail rgp)))
+                    | Renamed(c, Value(rgp)) -> 
+                        Renamed(c, Value(Check(Check.Fail rgp)))
                     | gp -> failwith <| sprintf "Could not rename %A" gp
                 | Tuple(gp, gp2) -> 
                     match halpGp gp with
-                    | Renamed(c, Value(rgp)) -> Renamed(c, Value(Tuple(rgp, gp2)))
+                    | Renamed(c, Value(rgp)) -> 
+                        Renamed(c, Value(Tuple(rgp, gp2)))
                     | Fine c -> 
                         match halpGp gp2 with
-                        | Renamed(c2, Value(rgp2)) -> Renamed(Map.mergeSets c c2, Value(Tuple(gp, rgp2)))
+                        | Renamed(c2, Value(rgp2)) -> 
+                            Renamed(Map.mergeSets c c2, Value(Tuple(gp, rgp2)))
                         | Fine c2 -> Fine(Map.mergeSets c c2)
                         | gp2 -> failwith <| sprintf "Could not rename %A" gp2
                     | gp -> failwith <| sprintf "Could not rename %A" gp
@@ -282,13 +310,28 @@ let rename all (t, s, x) =
                     |> List.map (fun (gp, p) -> (gp, p), halpGp gp)
                     |> List.fold (fun state ((gp, p), rop) -> 
                            match state, rop with
-                           | Renamed(c, Value(Dist({ Probabilities = rgps }))), (Fine c2 | Renamed(c2, _)) -> 
-                               Renamed(Map.mergeSets c c2, Value(Dist({ Probabilities = (gp, p) :: rgps })))
-                           | Renamed(c, r), (Fine c2 | Renamed(c2, _)) -> Renamed(Map.mergeSets c c2, r)
-                           | Fine c, Renamed(c2, rop) -> Renamed(Map.mergeSets c c2, Value(Dist({ Probabilities = [ ParamArray([ rop ]), p ] })))
-                           | Fine c, Fine c2 -> Fine(Map.mergeSets c c2)) (Fine Map.empty<_, _>)
+                           | Renamed(c, Value(Dist({ Probabilities = rgps }))), 
+                             (Fine c2 | Renamed(c2, _)) -> 
+                               Renamed
+                                   (Map.mergeSets c c2, 
+                                    Value
+                                        (Dist
+                                             ({ Probabilities = (gp, p) :: rgps })))
+                           | Renamed(c, r), (Fine c2 | Renamed(c2, _)) -> 
+                               Renamed(Map.mergeSets c c2, r)
+                           | Fine c, Renamed(c2, rop) -> 
+                               Renamed
+                                   (Map.mergeSets c c2, 
+                                    Value
+                                        (Dist
+                                             ({ Probabilities =
+                                                    [ ParamArray([ rop ]), p ] })))
+                           | Fine c, Fine c2 -> Fine(Map.mergeSets c c2)) 
+                           (Fine Map.empty<_, _>)
                     |> function 
-                    | Renamed(c, Value(Dist({ Probabilities = gps }))) -> Renamed(c, Value(Dist({ Probabilities = List.rev gps })))
+                    | Renamed(c, Value(Dist({ Probabilities = gps }))) -> 
+                        Renamed
+                            (c, Value(Dist({ Probabilities = List.rev gps })))
                     | Renamed(_) as r -> r
                     | Fine c -> Fine c
                 | ParamArray ops -> 
@@ -296,13 +339,22 @@ let rename all (t, s, x) =
                     |> List.map (fun op -> op, halp op)
                     |> List.fold (fun state (op, rop) -> 
                            match state, rop with
-                           | Renamed(c, Value(ParamArray(rops))), (Fine c2 | Renamed(c2, _)) -> 
-                               Renamed(Map.mergeSets c c2, Value(ParamArray((op :: rops))))
-                           | Renamed(c, r), (Fine c2 | Renamed(c2, _)) -> Renamed(Map.mergeSets c c2, r)
-                           | Fine c, Renamed(c2, rop) -> Renamed(Map.mergeSets c c2, Value(ParamArray([ rop ])))
-                           | Fine c, Fine c2 -> Fine(Map.mergeSets c c2)) (Fine Map.empty<_, _>)
+                           | Renamed(c, Value(ParamArray(rops))), 
+                             (Fine c2 | Renamed(c2, _)) -> 
+                               Renamed
+                                   (Map.mergeSets c c2, 
+                                    Value(ParamArray((op :: rops))))
+                           | Renamed(c, r), (Fine c2 | Renamed(c2, _)) -> 
+                               Renamed(Map.mergeSets c c2, r)
+                           | Fine c, Renamed(c2, rop) -> 
+                               Renamed
+                                   (Map.mergeSets c c2, 
+                                    Value(ParamArray([ rop ])))
+                           | Fine c, Fine c2 -> Fine(Map.mergeSets c c2)) 
+                           (Fine Map.empty<_, _>)
                     |> function 
-                    | Renamed(c, Value(ParamArray(ops))) -> Renamed(c, Value(ParamArray(List.rev ops)))
+                    | Renamed(c, Value(ParamArray(ops))) -> 
+                        Renamed(c, Value(ParamArray(List.rev ops)))
                     | Renamed(_) as r -> r
                     | Fine c -> Fine c
             halpGp v
@@ -313,14 +365,23 @@ let rename all (t, s, x) =
                 match halp thenExpr, elseExpr |> Option.map (halp) with
                 | Renamed(c2, rt), (Some e) -> 
                     let choices =
-                        List.reduceSafe Map.empty<_, _> Map.mergeSets [ c
-                                                                        c2
-                                                                        choicesOf e ]
+                        List.reduceSafe Map.empty<_, _> Map.mergeSets 
+                            [ c
+                              c2
+                              choicesOf e ]
                     Renamed(choices, IfThenElse(ifExpr, rt, elseExpr))
-                | Renamed(c2, rt), None -> Renamed(Map.mergeSets c c2, IfThenElse(ifExpr, rt, elseExpr))
+                | Renamed(c2, rt), None -> 
+                    Renamed
+                        (Map.mergeSets c c2, IfThenElse(ifExpr, rt, elseExpr))
                 | Fine c2, Some(Renamed(c3, re)) -> 
-                    Renamed(List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ], IfThenElse(ifExpr, thenExpr, Some re))
-                | Fine c2, Some(Fine c3) -> Fine(List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ])
+                    Renamed
+                        (List.reduceSafe Map.empty<_, _> Map.mergeSets 
+                             [ c; c2; c3 ], 
+                         IfThenElse(ifExpr, thenExpr, Some re))
+                | Fine c2, Some(Fine c3) -> 
+                    Fine
+                        (List.reduceSafe Map.empty<_, _> Map.mergeSets 
+                             [ c; c2; c3 ])
                 | Fine c2, None -> Fine(Map.mergeSets c c2)
     match halp x, s with
     | Renamed(c, x), s -> Renamed(c, App(Lam(s, x), t))
@@ -376,7 +437,9 @@ let normalize op : ChoiceSet * Operation =
                 | Some op -> c, Next(op)
                 | None -> c, Normal
         | Choice(name, choices) -> 
-            let newChoices = Map.add name (Set.ofList (choices |> List.map fst)) Map.empty<_, _>
+            let newChoices =
+                Map.add name (Set.ofList (choices |> List.map fst)) 
+                    Map.empty<_, _>
             
             let (cs, rops, expr) =
                 choices
@@ -388,8 +451,12 @@ let normalize op : ChoiceSet * Operation =
             if List.exists (function 
                    | Next _ -> true
                    | Normal -> false) expr
-            then List.reduceSafe Map.empty<_, _> Map.mergeSets (newChoices :: cs), Next(Choice(name, rops))
-            else List.reduceSafe Map.empty<_, _> Map.mergeSets (newChoices :: cs), Normal
+            then 
+                List.reduceSafe Map.empty<_, _> Map.mergeSets (newChoices :: cs), 
+                Next(Choice(name, rops))
+            else 
+                List.reduceSafe Map.empty<_, _> Map.mergeSets (newChoices :: cs), 
+                Normal
         | Value v -> 
             let rec halpGp =
                 function 
@@ -397,12 +464,14 @@ let normalize op : ChoiceSet * Operation =
                 | Check(Check.Pass gp) -> 
                     match halpGp gp with
                     | c, Normal -> c, Normal
-                    | c, Next(Value(rgp)) -> c, Next(Value(Check(Check.Pass rgp)))
+                    | c, Next(Value(rgp)) -> 
+                        c, Next(Value(Check(Check.Pass rgp)))
                     | gp -> failwith <| sprintf "Could not normalize %A" gp
                 | Check(Check.Fail gp) -> 
                     match halpGp gp with
                     | c, Normal -> c, Normal
-                    | c, Next(Value(rgp)) -> c, Next(Value(Check(Check.Fail rgp)))
+                    | c, Next(Value(rgp)) -> 
+                        c, Next(Value(Check(Check.Fail rgp)))
                     | gp -> failwith <| sprintf "Could not normalize %A" gp
                 | ParamArray(ops) -> 
                     let (cs, rops, expr) =
@@ -415,31 +484,43 @@ let normalize op : ChoiceSet * Operation =
                     if List.exists (function 
                            | Next _ -> true
                            | Normal -> false) expr
-                    then List.reduceSafe Map.empty<_, _> Map.mergeSets cs, Next(Value(ParamArray(rops)))
-                    else List.reduceSafe Map.empty<_, _> Map.mergeSets cs, Normal
+                    then 
+                        List.reduceSafe Map.empty<_, _> Map.mergeSets cs, 
+                        Next(Value(ParamArray(rops)))
+                    else 
+                        List.reduceSafe Map.empty<_, _> Map.mergeSets cs, Normal
                 | Tuple(gp, gp2) -> 
                     match halpGp gp with
                     | c, Next(Value(rgp)) -> c, Next(Value(Tuple(rgp, gp2)))
                     | c, Normal -> 
                         match halpGp gp2 with
-                        | c2, Next(Value(rgp2)) -> (Map.mergeSets c c2), Next(Value(Tuple(gp, rgp2)))
+                        | c2, Next(Value(rgp2)) -> 
+                            (Map.mergeSets c c2), Next(Value(Tuple(gp, rgp2)))
                         | c2, Normal -> (Map.mergeSets c c2), Normal
-                        | gp2 -> failwith <| sprintf "Could not normalize %A" gp2
+                        | gp2 -> 
+                            failwith <| sprintf "Could not normalize %A" gp2
                     | gp -> failwith <| sprintf "Could not normalize %A" gp
                 | Dist({ Probabilities = gps }) -> 
                     let (cs, rgps, expr) =
                         gps
-                        |> List.map (fun (gp, p) -> 
+                        |> List.map 
+                               (fun (gp, p) -> 
                                match halpGp gp with
                                | c, Normal -> c, (gp, p), Normal
-                               | c, Next(Value rgp) -> c, (rgp, p), Next(Value(rgp))
-                               | _ -> failwith <| sprintf "Could not normalize %A" gp)
+                               | c, Next(Value rgp) -> 
+                                   c, (rgp, p), Next(Value(rgp))
+                               | _ -> 
+                                   failwith 
+                                   <| sprintf "Could not normalize %A" gp)
                         |> List.unzip3
                     if List.exists (function 
                            | Next _ -> true
                            | Normal -> false) expr
-                    then List.reduceSafe Map.empty<_, _> Map.mergeSets cs, Next(Value(Dist({ Probabilities = rgps })))
-                    else List.reduceSafe Map.empty<_, _> Map.mergeSets cs, Normal
+                    then 
+                        List.reduceSafe Map.empty<_, _> Map.mergeSets cs, 
+                        Next(Value(Dist({ Probabilities = rgps })))
+                    else 
+                        List.reduceSafe Map.empty<_, _> Map.mergeSets cs, Normal
             halpGp v
         | Let(s, v, op) -> 
             match reduce v with
@@ -454,12 +535,20 @@ let normalize op : ChoiceSet * Operation =
             | c, Normal -> 
                 match reduce thenExpr, elseExpr |> Option.map reduce with
                 | (c2, Next rt), Some(c3, _) -> 
-                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ], Next(IfThenElse(ifExpr, rt, elseExpr))
-                | (c2, Next rt), None -> List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2 ], Next(IfThenElse(ifExpr, rt, elseExpr))
+                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ], 
+                    Next(IfThenElse(ifExpr, rt, elseExpr))
+                | (c2, Next rt), None -> 
+                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2 ], 
+                    Next(IfThenElse(ifExpr, rt, elseExpr))
                 | (c2, Normal), Some(c3, Next(re)) -> 
-                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ], Next(IfThenElse(ifExpr, thenExpr, Some re))
-                | (c2, Normal), Some(c3, Normal) -> List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ], Normal
-                | (c2, Normal), None -> List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2 ], Normal
+                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ], 
+                    Next(IfThenElse(ifExpr, thenExpr, Some re))
+                | (c2, Normal), Some(c3, Normal) -> 
+                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ], 
+                    Normal
+                | (c2, Normal), None -> 
+                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2 ], 
+                    Normal
     Seq.unfold (function 
         | (Next rop) -> 
             let (c2, nextRop) = reduce rop
@@ -470,14 +559,21 @@ let normalize op : ChoiceSet * Operation =
 let rec evalDie n : Distribution.Distribution<_> =
     match n with
     | n when n > 0 -> Distribution.uniformDistribution [ n .. -1 .. 1 ]
+    //   | Reroll(rerolls, d) -> 
+   //         Distribution.dist {
+   //               let! roll = evalDie d
+   //               if List.contains roll rerolls then
+   //                     return! evalDie d
+   //               else return roll                        
+   //         }
+   //let times = evalOp env op2  
+    //failwith <| sprintf "Invalid call %A\n%A" x (Map.toList env |> List.map fst)
+    // printfn "%A" operation
+    //printfn "Couldn't find property %s in %A" str op;
+    //printfn "%A" r
+                                                            
     | _ -> Distribution.uniformDistribution []
-//   | Reroll(rerolls, d) -> 
-//         Distribution.dist {
-//               let! roll = evalDie d
-//               if List.contains roll rerolls then
-//                     return! evalDie d
-//               else return roll                        
-//         }
+
 let closure env op =
     let rec fixGp env =
         function 
@@ -501,8 +597,12 @@ let closure env op =
         | Let(v, value, body) -> 
             let v' = fixOp env value
             Let(v, v', fixOp (Map.add v v' env) body)
-        | Choice(name, choices) -> Choice(name, List.map (fun (key, op) -> key, fixOp env op) choices)
-        | IfThenElse(ifExpr, thenExpr, elseExpr) -> IfThenElse(fixOp env ifExpr, fixOp env thenExpr, Option.map (fixOp env) elseExpr)
+        | Choice(name, choices) -> 
+            Choice(name, List.map (fun (key, op) -> key, fixOp env op) choices)
+        | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
+            IfThenElse
+                (fixOp env ifExpr, fixOp env thenExpr, 
+                 Option.map (fixOp env) elseExpr)
         | Value v -> Value(fixGp env v)
     
     fixOp env op
@@ -524,8 +624,13 @@ let nestCheck check op =
         | App(f, value) -> App(fixOp check f, fixOp check value)
         | Lam(param, body) -> Lam(param, fixOp check body)
         | Let(v, value, body) -> Let(v, fixOp check value, fixOp check body)
-        | Choice(name, choices) -> Choice(name, List.map (fun (key, op) -> key, fixOp check op) choices)
-        | IfThenElse(ifExpr, thenExpr, elseExpr) -> IfThenElse(fixOp check ifExpr, fixOp check thenExpr, Option.map (fixOp check) elseExpr)
+        | Choice(name, choices) -> 
+            Choice
+                (name, List.map (fun (key, op) -> key, fixOp check op) choices)
+        | IfThenElse(ifExpr, thenExpr, elseExpr) -> 
+            IfThenElse
+                (fixOp check ifExpr, fixOp check thenExpr, 
+                 Option.map (fixOp check) elseExpr)
         | Value v -> Value(fixGp check v)
     
     fixOp check op
@@ -548,7 +653,8 @@ let rec evalCall func v env : Operation =
                     match repeatOp m with
                     | Value NoValue -> Value NoValue
                     | gp -> nestCheck (Check.Fail >> Check) gp
-                | Check(Check.Pass(n)) -> repeatOp n |> nestCheck (Check.Pass >> Check)
+                | Check(Check.Pass(n)) -> 
+                    repeatOp n |> nestCheck (Check.Pass >> Check)
                 | Int(n) -> create n
                 | Dist(times) -> 
                     times
@@ -570,13 +676,13 @@ let rec evalCall func v env : Operation =
                     |> Value
                 | Tuple(n, m) -> 
                     match repeatOp n, repeatOp m with
-                    | Value(ParamArray(n)), Value(ParamArray(m)) -> n @ m |> ParamArray
+                    | Value(ParamArray(n)), Value(ParamArray(m)) -> 
+                        n @ m |> ParamArray
                     | Value(n), Value(m) -> Tuple(n, m)
                     | op, op2 -> [ op; op2 ] |> ParamArray
                     |> Value
             repeatOp times
         
-        //let times = evalOp env op2  
         match op2 with
         | Value(gp) -> repeatOps gp
         | _ -> 
@@ -605,11 +711,13 @@ let rec evalCall func v env : Operation =
                    | Value(a), Value(b) -> folder a b |> Value
                    | _ -> (NoValue |> Value)) state
     
-    let toDist ops = 
-        let gps = ops |> List.map(function Value v -> v | op -> ParamArray[op])
-        Distribution.uniformDistribution gps
-        |> Dist
-
+    let toDist ops =
+        let gps =
+            ops |> List.map (function 
+                       | Value v -> v
+                       | op -> ParamArray [ op ])
+        Distribution.uniformDistribution gps |> Dist
+    
     let evalFuncAsGp =
         (fun v -> 
         evalCall func (Value v) env |> function 
@@ -622,9 +730,12 @@ let rec evalCall func v env : Operation =
         |> Distribution.map (Int)
         |> Dist
         |> Value
-    | (Total | Division | Product | Max | Min | Sub | Median | Mode), (Value(Int _ | Float _ | Str _ | NoValue) as v) -> v
-    | (Least _ | Largest _), (Value(Int _ | Float _ | Str _ | NoValue) as v) -> ParamArray [ v ] |> Value
-    | (Total | Division | Product | Max | Min | Sub | Median | Mode | Least _ | Largest _), Value(ParamArray []) -> GamePrimitive.Zero |> Value
+    | (Total | Division | Product | Max | Min | Sub | Median | Mode), 
+      (Value(Int _ | Float _ | Str _ | NoValue) as v) -> v
+    | (Least _ | Largest _), (Value(Int _ | Float _ | Str _ | NoValue) as v) -> 
+        ParamArray [ v ] |> Value
+    | (Total | Division | Product | Max | Min | Sub | Median | Mode | Least _ | Largest _), 
+      Value(ParamArray []) -> GamePrimitive.Zero |> Value
     | Total, Value(ParamArray(h :: t)) -> fold (+) t h
     | Max, Value(ParamArray(h :: t)) -> fold maxGp t h
     | Min, Value(ParamArray(h :: t)) -> fold minGp t h
@@ -666,27 +777,34 @@ let rec evalCall func v env : Operation =
         zero
         |> Value
         |> fold (fun r1 r2 -> r1 + toCount r2) ops
-    | GreaterThan, Value(ParamArray([ Value(gp); Value(gp2) ])) -> greaterThan gp gp2 |> Value
-    | Equals, Value(ParamArray([ Value(gp); Value(gp2) ])) -> equals gp gp2 |> Value
-    | LessThan, Value(ParamArray([ Value(gp); Value(gp2) ])) -> notEquals gp gp2 |> Value
-    | NotEquals, Value(ParamArray([ Value(gp); Value(gp2) ])) -> lessThan gp gp2 |> Value
+    | GreaterThan, Value(ParamArray([ Value(gp); Value(gp2) ])) -> 
+        greaterThan gp gp2 |> Value
+    | Equals, Value(ParamArray([ Value(gp); Value(gp2) ])) -> 
+        equals gp gp2 |> Value
+    | LessThan, Value(ParamArray([ Value(gp); Value(gp2) ])) -> 
+        notEquals gp gp2 |> Value
+    | NotEquals, Value(ParamArray([ Value(gp); Value(gp2) ])) -> 
+        lessThan gp gp2 |> Value
     | And, Value(ParamArray([ Value(gp); Value(gp2) ])) -> andGp gp gp2 |> Value
     | Or, Value(ParamArray([ Value(gp); Value(gp2) ])) -> orGp gp gp2 |> Value
     | Repeat, Value(ParamArray([ lam; op2 ])) -> repeat lam op2
-    | ToDist, Value(ParamArray opList ) -> toDist opList |> Value
-    | (Total | Division | Product | Count | Max | Min | Sub | Mean | Median | Mode | Least _ | Largest _), Value(Check v) -> 
+    | ToDist, Value(ParamArray opList) -> toDist opList |> Value
+    | (Total | Division | Product | Count | Max | Min | Sub | Mean | Median | Mode | Least _ | Largest _), 
+      Value(Check v) -> 
         let chk = Check.map evalFuncAsGp v
         chk
         |> Check
         |> Value
-    | (Total | Division | Product | Count | Max | Min | Sub | Mean | Median | Mode | Least _ | Largest _), Value(Tuple(t1, t2)) -> 
+    | (Total | Division | Product | Count | Max | Min | Sub | Mean | Median | Mode | Least _ | Largest _), 
+      Value(Tuple(t1, t2)) -> 
         let t1' = evalFuncAsGp t1
         let t2' = evalFuncAsGp t2
         Tuple(t1', t2') |> Value
     | Mean, Value(Dist d) -> 
         let v = d.Probabilities |> List.sumBy (fun (a, p) -> a * (Float p))
         evalCall func (Value v) env
-    | (Total | Division | Product | Count | Max | Min | Sub | Mean | Median | Mode | Least _ | Largest _), Value(Dist d) -> 
+    | (Total | Division | Product | Count | Max | Min | Sub | Mean | Median | Mode | Least _ | Largest _), 
+      Value(Dist d) -> 
         let results =
             Distribution.bind (fun v -> 
                 let value = evalCall func (Value v) env
@@ -704,10 +822,9 @@ let rec evalCall func v env : Operation =
         results
         |> Dist
         |> Value
-    | (f, x) -> App(Call f, x) //failwith <| sprintf "Invalid call %A\n%A" x (Map.toList env |> List.map fst)
+    | (f, x) -> App(Call f, x)
 
 and evalOp env (operation : Operation) : Operation =
-    // printfn "%A" operation
     let (|MadeChoice|_|) env op : Operation option =
         match op with
         | Choice(key, choices) -> 
@@ -743,7 +860,6 @@ and evalOp env (operation : Operation) : Operation =
             match tryFindLabel str result with
             | Some result -> result
             | None -> 
-                //printfn "Couldn't find property %s in %A" str op;
                 PropertyGet(str, op)
         | Lam _ as l -> closure env l
         | IfThenElse(gp, thenPart, elsePart) -> 
@@ -766,7 +882,10 @@ and evalOp env (operation : Operation) : Operation =
             | Call f, v -> evalCall f v env
             | Lam(x, op), v -> App(Lam(x, op), v) |> evalOp env
             | Var x, _ -> failwith ("Could not find function " + x)
-            | f', x' -> failwith <| sprintf "Cannot apply to something not a function App(%A,%A) \n\n = First: %A\n\nSecond%A" f value f' x'
+            | f', x' -> 
+                failwith 
+                <| sprintf 
+                       "Cannot apply to something not a function App(%A,%A) \n\n = First: %A\n\nSecond%A" 
+                       f value f' x'
     
-    //printfn "%A" r
     r

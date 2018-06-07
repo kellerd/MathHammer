@@ -5,7 +5,8 @@ open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 
-let initRow() : Row * Cmd<Types.Msg> = ReadWrite("", Text None, noValue), Cmd.none
+let initRow() : Row * Cmd<Types.Msg> =
+    ReadWrite("", Text None, noValue), Cmd.none
 let d6 = App(Call(Dice), Value(Int 6))
 let d3 = App(Call(Dice), Value(Int 3))
 let opId = Lam("v", get "v")
@@ -47,7 +48,8 @@ let table ifThen =
     let rec acc x =
         match x with
         | [] -> None
-        | (cmp, thenPortion) :: xs -> IfThenElse(cmp, thenPortion, acc xs) |> Some
+        | (cmp, thenPortion) :: xs -> 
+            IfThenElse(cmp, thenPortion, acc xs) |> Some
     match acc ifThen with
     | None -> noValue
     | Some o -> o
@@ -82,35 +84,40 @@ let armourSave =
     |> lam "Defender"
 
 let allinOne =
-    bindOp "Hit Results" (repeatOp (get "WS") (get "A") |> total) (bindOp "Wound Results" (repeatOp ([ [ get "S"
-                                                                                                         getd "T" ]
-                                                                                                       |> opList
-                                                                                                       |> call GreaterThan, dPlus 6 3
-                                                                                                       [ get "S"
-                                                                                                         getd "T" ]
-                                                                                                       |> opList
-                                                                                                       |> call LessThan, dPlus 6 5
-                                                                                                       [ get "S"
-                                                                                                         getd "T" ]
-                                                                                                       |> opList
-                                                                                                       |> call Equals, dPlus 6 4 ]
-                                                                                                     |> table) (get "Hit Results")
-                                                                                           |> total) (get "Wound Results"))
+    bindOp "Hit Results" (repeatOp (get "WS") (get "A") |> total) 
+        (bindOp "Wound Results" (repeatOp ([ [ get "S"
+                                               getd "T" ]
+                                             |> opList
+                                             |> call GreaterThan, dPlus 6 3
+                                             [ get "S"
+                                               getd "T" ]
+                                             |> opList
+                                             |> call LessThan, dPlus 6 5
+                                             [ get "S"
+                                               getd "T" ]
+                                             |> opList
+                                             |> call Equals, dPlus 6 4 ]
+                                           |> table) (get "Hit Results")
+                                 |> total) (get "Wound Results"))
     |> lam "Defender"
 
 let letTest = bindOp "Some Var" chargeRange (get "D6")
-let twoLetTest = bindOp "Some Var 2" chargeRange (get "Some Var") |> bindOp "Some Var" chargeRange
+let twoLetTest =
+    bindOp "Some Var 2" chargeRange (get "Some Var") 
+    |> bindOp "Some Var" chargeRange
 let nestTest = bindOp "Some varNest" letTest twoLetTest
 let lam1Test = Lam("x", Value(Int 6))
 let lam2Test = Lam("x", Var "x")
 
 let appTest =
-    App(App(Lam("x", 
-                Lam("y", 
-                    Lam("z", 
-                        Value(ParamArray [ Var "x"
-                                           Var "y"
-                                           Value(Int 4) ])))), Value(Int 2)), Value(Int 3))
+    App
+        (App(Lam("x", 
+                 Lam("y", 
+                     Lam("z", 
+                         Value(ParamArray [ Var "x"
+                                            Var "y"
+                                            Value(Int 4) ])))), Value(Int 2)), 
+         Value(Int 3))
 
 let app2Test =
     App(App(Lam("x", 
@@ -157,35 +164,41 @@ let update msg model : Model * Cmd<Types.Msg> =
     | AddRow when not model.Editing -> 
         let (newRow, newRowCmd) = initRow()
         { model with Editing = true
-                     Functions = (Map.empty<_, _>, newRow) :: model.Functions }, newRowCmd
+                     Functions = (Map.empty<_, _>, newRow) :: model.Functions }, 
+        newRowCmd
     | ChangeNewRowName(str) when model.Editing -> 
         let newRows =
             List.map (function 
-                | choices, ReadWrite(_, icon, op) -> choices, ReadWrite(str, icon, op)
+                | choices, ReadWrite(_, icon, op) -> 
+                    choices, ReadWrite(str, icon, op)
                 | r -> r) model.Functions
         { model with Functions = newRows }, Cmd.none
     | ChangeIcon("") when model.Editing -> 
         let newRows =
             List.map (function 
-                | choices, ReadWrite(str, _, op) -> choices, ReadWrite(str, Text None, op)
+                | choices, ReadWrite(str, _, op) -> 
+                    choices, ReadWrite(str, Text None, op)
                 | r -> r) model.Functions
         { model with Functions = newRows }, Cmd.none
     | ChangeIcon("D6" | "D3" as s) when model.Editing -> 
         let newRows =
             List.map (function 
-                | choices, ReadWrite(str, _, op) -> choices, ReadWrite(str, Special s, op)
+                | choices, ReadWrite(str, _, op) -> 
+                    choices, ReadWrite(str, Special s, op)
                 | r -> r) model.Functions
         { model with Functions = newRows }, Cmd.none
     | ChangeIcon(s) when model.Editing && s.StartsWith("fa-") -> 
         let newRows =
             List.map (function 
-                | choices, ReadWrite(str, _, op) -> choices, ReadWrite(str, Icon("fa " + s), op)
+                | choices, ReadWrite(str, _, op) -> 
+                    choices, ReadWrite(str, Icon("fa " + s), op)
                 | r -> r) model.Functions
         { model with Functions = newRows }, Cmd.none
     | ChangeIcon(s) when model.Editing -> 
         let newRows =
             List.map (function 
-                | choices, ReadWrite(str, _, op) -> choices, ReadWrite(str, Text(Some s), op)
+                | choices, ReadWrite(str, _, op) -> 
+                    choices, ReadWrite(str, Text(Some s), op)
                 | r -> r) model.Functions
         { model with Functions = newRows }, Cmd.none
     | SaveOp(name) when model.Editing -> 
@@ -201,12 +214,14 @@ let update msg model : Model * Cmd<Types.Msg> =
     | EditRow(name) when not model.Editing -> 
         let newRows =
             List.map (function 
-                | choices, ReadOnly(name', icon, op, _) when name = name' -> choices, ReadWrite(name', icon, op)
+                | choices, ReadOnly(name', icon, op, _) when name = name' -> 
+                    choices, ReadWrite(name', icon, op)
                 | r -> r) model.Functions
         { model with Editing = true
                      Functions = newRows
                      Dragging = None }, Cmd.none
-    | Dragging s when model.Editing -> { model with Dragging = Some s }, Cmd.none
+    | Dragging s when model.Editing -> 
+        { model with Dragging = Some s }, Cmd.none
     | DragLeft -> { model with Dragging = None }, Cmd.none
     | Dragged(name, op) when model.Editing -> 
         match model.Dragging with
@@ -214,8 +229,10 @@ let update msg model : Model * Cmd<Types.Msg> =
         | Some _ -> 
             let newRows =
                 List.map (function 
-                    | choices, ReadWrite(name', icon, _) when name = name' -> choices, ReadWrite(name, icon, op)
+                    | choices, ReadWrite(name', icon, _) when name = name' -> 
+                        choices, ReadWrite(name, icon, op)
                     | r -> r) model.Functions
             { model with Dragging = None
                          Functions = newRows }, Cmd.none
-    | AddRow _ | SaveOp _ | ChangeNewRowName _ | EditRow _ | ChangeIcon _ | Dragged _ | Dragging _ | ReplaceOp _ -> model, Cmd.none
+    | AddRow _ | SaveOp _ | ChangeNewRowName _ | EditRow _ | ChangeIcon _ | Dragged _ | Dragging _ | ReplaceOp _ -> 
+        model, Cmd.none

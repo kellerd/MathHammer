@@ -15,7 +15,8 @@ let line colour (x1, y1) (x2, y2) tension =
         if tension < 0.0 then x1, y1 - delta, x2, y2 + delta
         else x1 + delta, y1, x2 - delta, y2
     
-    let pathString = sprintf "M %f %f C %f %f %f %f %f %f" x1 y1 hx1 hy1 hx2 hy2 x2 y2
+    let pathString =
+        sprintf "M %f %f C %f %f %f %f %f %f" x1 y1 hx1 hy1 hx2 hy2 x2 y2
     path [ SVGAttr.D pathString
            SVGAttr.Fill "none"
            SVGAttr.Stroke colour
@@ -45,9 +46,16 @@ let arrowDef =
     |> defs []
 
 let root model dispatch =
-    let viewbox = ViewBox(sprintf "%d %d %d %d" model.Board.Top model.Board.Left model.Board.Width model.Board.Height)
-    let selectedAttacker = model.SelectedAttacker |> Option.bind (fun name -> Map.tryFind name model.Attacker.Models)
-    let selectedDefender = model.SelectedDefender |> Option.bind (fun name -> Map.tryFind name model.Defender.Models)
+    let viewbox =
+        ViewBox
+            (sprintf "%d %d %d %d" model.Board.Top model.Board.Left 
+                 model.Board.Width model.Board.Height)
+    let selectedAttacker =
+        model.SelectedAttacker 
+        |> Option.bind (fun name -> Map.tryFind name model.Attacker.Models)
+    let selectedDefender =
+        model.SelectedDefender 
+        |> Option.bind (fun name -> Map.tryFind name model.Defender.Models)
     
     let selectedBoth =
         match selectedAttacker, selectedDefender with
@@ -62,24 +70,52 @@ let root model dispatch =
     let drawing =
         svg [ viewbox
               unbox ("width", "100%") ] [ arrowDef
-                                          UnitList.View.rootLocation model.Defender.Location
-                                          UnitList.View.rootLocation model.Attacker.Location
-                                          UnitList.View.rootLocation model.Defender.Deployment
-                                          UnitList.View.rootLocation model.Attacker.Deployment
+                                          
+                                          UnitList.View.rootLocation 
+                                              model.Defender.Location
+                                          
+                                          UnitList.View.rootLocation 
+                                              model.Attacker.Location
+                                          
+                                          UnitList.View.rootLocation 
+                                              model.Defender.Deployment
+                                          
+                                          UnitList.View.rootLocation 
+                                              model.Attacker.Deployment
                                           model.SelectedAttacker
-                                          |> Option.bind (UnitList.View.rootRanges model.Attacker ("Shooting Range"))
+                                          |> Option.bind 
+                                                 (UnitList.View.rootRanges 
+                                                      model.Attacker 
+                                                      ("Shooting Range"))
                                           |> ofOption
                                           model.SelectedDefender
-                                          |> Option.bind (UnitList.View.rootRanges model.Defender ("Shooting Range"))
+                                          |> Option.bind 
+                                                 (UnitList.View.rootRanges 
+                                                      model.Defender 
+                                                      ("Shooting Range"))
                                           |> ofOption
                                           model.SelectedDefender
-                                          |> Option.bind (UnitList.View.rootRanges model.Defender ("Assault Range"))
+                                          |> Option.bind 
+                                                 (UnitList.View.rootRanges 
+                                                      model.Defender 
+                                                      ("Assault Range"))
                                           |> ofOption
                                           model.SelectedAttacker
-                                          |> Option.bind (UnitList.View.rootRanges model.Attacker ("Assault Range"))
+                                          |> Option.bind 
+                                                 (UnitList.View.rootRanges 
+                                                      model.Attacker 
+                                                      ("Assault Range"))
                                           |> ofOption
-                                          UnitList.View.root model.Attacker (fun msg -> UnitListMsg(msg, Some attackerMap) |> dispatch)
-                                          UnitList.View.root model.Defender (fun msg -> UnitListMsg(msg, Some defenderMap) |> dispatch)
+                                          
+                                          UnitList.View.root model.Attacker 
+                                              (fun msg -> 
+                                              UnitListMsg(msg, Some attackerMap) 
+                                              |> dispatch)
+                                          
+                                          UnitList.View.root model.Defender 
+                                              (fun msg -> 
+                                              UnitListMsg(msg, Some defenderMap) 
+                                              |> dispatch)
                                           selectedLine ]
     
     let swap =
@@ -91,9 +127,12 @@ let root model dispatch =
     let selected =
         let titleBar text =
             (section [ ClassName "hero is-primary  has-text-centered" ] 
-                 [ div [ ClassName "hero-body" ] [ h1 [ ClassName "title" ] [ str text ] ] ])
+                 [ div [ ClassName "hero-body" ] 
+                       [ h1 [ ClassName "title" ] [ str text ] ] ])
         let bar text =
-            (section [ ClassName "hero has-text-centered" ] [ div [ ClassName "hero-body" ] [ h1 [ ClassName "title" ] [ str text ] ] ])
+            (section [ ClassName "hero has-text-centered" ] 
+                 [ div [ ClassName "hero-body" ] 
+                       [ h1 [ ClassName "title" ] [ str text ] ] ])
         
         let columnsOf items =
             let toColumns (left, right) =
@@ -111,7 +150,8 @@ let root model dispatch =
                 selected.Attributes
                 |> Map.toList
                 |> List.sortBy (fun (_, (ord, _)) -> ord)
-                |> List.map (fun (key, (_, op)) -> showAttributes (key, op) dispatch)
+                |> List.map 
+                       (fun (key, (_, op)) -> showAttributes (key, op) dispatch)
                 |> div [ ClassName "columns" ]
             
             let getListOfOps =
@@ -127,9 +167,12 @@ let root model dispatch =
             
             let menuItem mode =
                 let isActive =
-                    if model.Mode = mode then [ ClassName "is-active" :> IHTMLProp ]
+                    if model.Mode = mode then 
+                        [ ClassName "is-active" :> IHTMLProp ]
                     else []
-                li isActive [ a [ OnClick(fun _ -> dispatch (ChangeMode mode)) ] [ str (mode.ToString()) ] ]
+                li isActive 
+                    [ a [ OnClick(fun _ -> dispatch (ChangeMode mode)) ] 
+                          [ str (mode.ToString()) ] ]
             
             let resultsDiv =
                 selected.ProbabilityRules
@@ -152,16 +195,35 @@ let root model dispatch =
                            choices
                            |> Set.toList
                            |> List.map (fun choice -> 
-                                  Fable.Helpers.React.label [] [ input [ Name name
-                                                                         Type "radio"
-                                                                         Props.HTMLAttr.Value choice
-                                                                         Checked(Map.tryFind name model.SelectedChoices
-                                                                                 |> Option.map ((=) choice)
-                                                                                 |> Option.defaultValue false)
-                                                                         OnClick(fun _ -> Choose(name, choice) |> dispatch) ]
+                                  Fable.Helpers.React.label [] [ input 
+                                                                     [ Name name
+                                                                       
+                                                                       Type 
+                                                                           "radio"
+                                                                       
+                                                                       Props.HTMLAttr.Value 
+                                                                           choice
+                                                                       
+                                                                       Checked
+                                                                           (Map.tryFind 
+                                                                                name 
+                                                                                model.SelectedChoices
+                                                                            |> Option.map 
+                                                                                   ((=) 
+                                                                                        choice)
+                                                                            |> Option.defaultValue 
+                                                                                   false)
+                                                                       
+                                                                       OnClick
+                                                                           (fun _ -> 
+                                                                           Choose
+                                                                               (name, 
+                                                                                choice) 
+                                                                           |> dispatch) ]
                                                                  str choice
                                                                  br [] ])
-                       article [ ClassName "tile is-child box" ] (p [ ClassName "title" ] [ str name ] :: radioButtons)
+                       article [ ClassName "tile is-child box" ] 
+                           (p [ ClassName "title" ] [ str name ] :: radioButtons)
                        |> List.singleton
                        |> div [ ClassName "tile is-parent" ])
                 |> chunkBySize 4
@@ -174,9 +236,13 @@ let root model dispatch =
                                         bar "Profile"
                                         attrDiv
                                         choices
-                                        div [ ClassName "tabs is-fullwidth is-toggle is-toggle-rounded" ] [ ul [] [ menuItem Average
-                                                                                                                    menuItem Probability
-                                                                                                                    menuItem Sample ] ]
+                                        
+                                        div 
+                                            [ ClassName 
+                                                  "tabs is-fullwidth is-toggle is-toggle-rounded" ] 
+                                            [ ul [] [ menuItem Average
+                                                      menuItem Probability
+                                                      menuItem Sample ] ]
                                         bar resultName
                                         resultsDiv ]
     

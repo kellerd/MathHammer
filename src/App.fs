@@ -19,21 +19,32 @@ let menuItem label page currentPage =
                 Href(toHash page) ] [ str label ] ]
 
 let menu currentPage =
-    aside [ ClassName "menu" ] [ p [ ClassName "menu-label" ] [ str "General" ]
-                                 ul [ ClassName "menu-list" ] [ menuItem "MathHammer" MathHammer currentPage
-                                                                menuItem "Game Actions" GameActions currentPage ] ]
+    aside [ ClassName "menu" ] 
+        [ p [ ClassName "menu-label" ] [ str "General" ]
+          
+          ul [ ClassName "menu-list" ] 
+              [ menuItem "MathHammer" MathHammer currentPage
+                menuItem "Game Actions" GameActions currentPage ] ]
 
 let root model dispatch =
     let pageHtml =
         function 
-        | MathHammer -> MathHammer.View.root model.mathHammer (MathHammerMsg >> dispatch)
-        | GameActions -> GameActions.View.root model.gameActions (GameActionsMsg >> dispatch)
+        | MathHammer -> 
+            MathHammer.View.root model.mathHammer (MathHammerMsg >> dispatch)
+        | GameActions -> 
+            GameActions.View.root model.gameActions (GameActionsMsg >> dispatch)
     div [] 
-        [ div [ ClassName "navbar-bg" ] [ div [ ClassName "container" ] [ Navbar.View.root ] ]
+        [ div [ ClassName "navbar-bg" ] 
+              [ div [ ClassName "container" ] [ Navbar.View.root ] ]
           
           div [ ClassName "section" ] 
-              [ div [ ClassName "container" ] [ div [ ClassName "columns" ] [ div [ ClassName "column is-3" ] [ menu model.currentPage ]
-                                                                              div [ ClassName "column" ] [ pageHtml model.currentPage ] ] ] ] ]
+              [ div [ ClassName "container" ] 
+                    [ div [ ClassName "columns" ] 
+                          [ div [ ClassName "column is-3" ] 
+                                [ menu model.currentPage ]
+                            
+                            div [ ClassName "column" ] 
+                                [ pageHtml model.currentPage ] ] ] ] ]
 
 open Elmish.React
 open Elmish.HMR
@@ -45,9 +56,11 @@ Program.mkProgram init update root
 |> Program.withHMR
 |> Program.withReact "elmish-app"
 //-:cnd
+
 #if DEBUG
 |> Program.withConsoleTrace
 |> Program.withDebugger
 #endif
+
 //+:cnd
 |> Program.run

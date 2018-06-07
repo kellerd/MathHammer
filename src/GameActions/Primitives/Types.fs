@@ -77,22 +77,32 @@ type GamePrimitive with
         | Str(a), Str(b) -> a.Replace(b, "") |> Str
         | Dist d, Dist d2 -> Distribution.combine [ d; d2 ] |> Dist
         | Dist d, gp | gp, Dist d -> Distribution.map ((-) gp) d |> Dist
-        | Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))), Check(Check.Pass(r1)) | Check(Check.Pass(r1)), 
-                                                                                     Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))) -> 
+        | Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))), 
+          Check(Check.Pass(r1)) | Check(Check.Pass(r1)), 
+                                  Tuple(Check(Check.Pass(l)), 
+                                        Check(Check.Fail(r))) -> 
             Tuple(Check(Check.Pass(l - r1)), Check(Check.Fail(r)))
-        | Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))), Check(Check.Fail(r2)) | Check(Check.Fail(r2)), 
-                                                                                     Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))) -> 
+        | Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))), 
+          Check(Check.Fail(r2)) | Check(Check.Fail(r2)), 
+                                  Tuple(Check(Check.Pass(l)), 
+                                        Check(Check.Fail(r))) -> 
             Tuple(Check(Check.Pass(l)), Check(Check.Fail(r2 - r)))
-        | Check(Check.Fail(r1)), Check(Check.Fail(r2)) -> Check(Check.Fail(r1 - r2))
-        | Check(Check.Pass(r1)), Check(Check.Pass(r2)) -> Check(Check.Pass(r1 - r2))
-        | Check(Check.Pass(r1)), Check(Check.Fail(_) as r2) | Check(Check.Fail(_) as r2), Check(Check.Pass(r1)) | r1, Check(Check.Fail(_) as r2) | Check(Check.Fail(_) as r2), 
-                                                                                                                                                   r1 -> 
+        | Check(Check.Fail(r1)), Check(Check.Fail(r2)) -> 
+            Check(Check.Fail(r1 - r2))
+        | Check(Check.Pass(r1)), Check(Check.Pass(r2)) -> 
+            Check(Check.Pass(r1 - r2))
+        | Check(Check.Pass(r1)), Check(Check.Fail(_) as r2) | Check(Check.Fail(_) as r2), 
+                                                              Check(Check.Pass(r1)) | r1, 
+                                                                                      Check(Check.Fail(_) as r2) | Check(Check.Fail(_) as r2), 
+                                                                                                                   r1 -> 
             Tuple(Check(Check.Pass(r1)), Check r2)
-        | a, Check(b) | Check(b), a -> Check.combineFavourPass (-) (Check.Pass a) b |> Check
+        | a, Check(b) | Check(b), a -> 
+            Check.combineFavourPass (-) (Check.Pass a) b |> Check
         | Tuple(a, b), Tuple(x, y) -> Tuple(a - x, b - y)
         | Tuple(a, b), x | x, Tuple(a, b) -> Tuple(a - x, b - x)
         | ParamArray a, ParamArray b -> List.append a b |> ParamArray
-        | x, y -> failwith <| sprintf "Cannot add these two primitives %A, %A" x y
+        | x, y -> 
+            failwith <| sprintf "Cannot add these two primitives %A, %A" x y
     
     static member (+) (x, y) =
         match (x, y) with
@@ -104,22 +114,32 @@ type GamePrimitive with
         | Str(a), Str(b) -> Str(a + b)
         | Dist d, Dist d2 -> Distribution.combine [ d; d2 ] |> Dist
         | Dist d, gp | gp, Dist d -> Distribution.map ((+) gp) d |> Dist
-        | Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))), Check(Check.Pass(r1)) | Check(Check.Pass(r1)), 
-                                                                                     Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))) -> 
+        | Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))), 
+          Check(Check.Pass(r1)) | Check(Check.Pass(r1)), 
+                                  Tuple(Check(Check.Pass(l)), 
+                                        Check(Check.Fail(r))) -> 
             Tuple(Check(Check.Pass(l + r1)), Check(Check.Fail(r)))
-        | Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))), Check(Check.Fail(r2)) | Check(Check.Fail(r2)), 
-                                                                                     Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))) -> 
+        | Tuple(Check(Check.Pass(l)), Check(Check.Fail(r))), 
+          Check(Check.Fail(r2)) | Check(Check.Fail(r2)), 
+                                  Tuple(Check(Check.Pass(l)), 
+                                        Check(Check.Fail(r))) -> 
             Tuple(Check(Check.Pass(l)), Check(Check.Fail(r2 + r)))
-        | Check(Check.Fail(r1)), Check(Check.Fail(r2)) -> Check(Check.Fail(r1 + r2))
-        | Check(Check.Pass(r1)), Check(Check.Pass(r2)) -> Check(Check.Pass(r1 + r2))
-        | Check(Check.Pass(r1)), Check(Check.Fail(_) as r2) | Check(Check.Fail(_) as r2), Check(Check.Pass(r1)) | r1, Check(Check.Fail(_) as r2) | Check(Check.Fail(_) as r2), 
-                                                                                                                                                   r1 -> 
+        | Check(Check.Fail(r1)), Check(Check.Fail(r2)) -> 
+            Check(Check.Fail(r1 + r2))
+        | Check(Check.Pass(r1)), Check(Check.Pass(r2)) -> 
+            Check(Check.Pass(r1 + r2))
+        | Check(Check.Pass(r1)), Check(Check.Fail(_) as r2) | Check(Check.Fail(_) as r2), 
+                                                              Check(Check.Pass(r1)) | r1, 
+                                                                                      Check(Check.Fail(_) as r2) | Check(Check.Fail(_) as r2), 
+                                                                                                                   r1 -> 
             Tuple(Check(Check.Pass(r1)), Check r2)
-        | a, Check(b) | Check(b), a -> Check.combineFavourPass (+) (Check.Pass a) b |> Check
+        | a, Check(b) | Check(b), a -> 
+            Check.combineFavourPass (+) (Check.Pass a) b |> Check
         | Tuple(a, b), Tuple(x, y) -> Tuple(a + x, b + y)
         | Tuple(a, b), x | x, Tuple(a, b) -> Tuple(a + x, b + x)
         | ParamArray a, ParamArray b -> List.append a b |> ParamArray
-        | x, y -> failwith <| sprintf "Cannot add these two primitives %A, %A" x y
+        | x, y -> 
+            failwith <| sprintf "Cannot add these two primitives %A, %A" x y
     
     static member (*) (x, y) =
         match (x, y) with
@@ -128,7 +148,8 @@ type GamePrimitive with
         | Float(a), Float(b) -> Float(a * b)
         | Int(b), Float(a) | Float(a), Int(b) -> Float(a * float b)
         | Tuple(a, b), Tuple(x, y) -> Tuple(a * x, b * y)
-        | ParamArray ops, ParamArray ops2 when List.length ops = List.length ops2 -> 
+        | ParamArray ops, ParamArray ops2 when List.length ops = List.length 
+                                                                     ops2 -> 
             List.zip ops ops2
             |> List.map (function 
                    | (Value a, Value b) -> a * b |> Value
@@ -143,7 +164,8 @@ type GamePrimitive with
                    | _ -> Value NoValue)
             |> ParamArray
         | Check r1, Check r2 -> Check.combineFavourFail (*) r1 r2 |> Check
-        | a, Check(b) | Check(b), a -> Check.combineFavourFail (*) (Check.Pass a) b |> Check
+        | a, Check(b) | Check(b), a -> 
+            Check.combineFavourFail (*) (Check.Pass a) b |> Check
         | Dist d, Dist d2 -> Distribution.combine [ d; d2 ] |> Dist
         | Dist d, gp | gp, Dist d -> Distribution.map ((*) gp) d |> Dist
         | Str _, _ | _, Str _ -> NoValue
@@ -159,7 +181,8 @@ type GamePrimitive with
         | Int(a), Float(b) -> Float(float a / b)
         | Float(a), Int(b) -> Float(a / float b)
         | Tuple(a, b), Tuple(x, y) -> Tuple(a / x, b / y)
-        | ParamArray ops, ParamArray ops2 when List.length ops = List.length ops2 -> 
+        | ParamArray ops, ParamArray ops2 when List.length ops = List.length 
+                                                                     ops2 -> 
             List.zip ops ops2
             |> List.map (function 
                    | (Value a, Value b) -> a / b |> Value
@@ -184,8 +207,11 @@ type GamePrimitive with
 module GamePrimitive =
     let map2 f x y =
         match x, y with
-        | Dist(r), Dist(r2) -> Distribution.bind (fun a -> Distribution.map (fun b -> f a b) r2) r |> Dist
-        | Check(r), Check(r2) -> Check.bind (fun a -> Check.map (fun b -> f a b) r2) r |> Check
+        | Dist(r), Dist(r2) -> 
+            Distribution.bind (fun a -> Distribution.map (fun b -> f a b) r2) r 
+            |> Dist
+        | Check(r), Check(r2) -> 
+            Check.bind (fun a -> Check.map (fun b -> f a b) r2) r |> Check
         | gp, Dist(r) -> Distribution.map (f gp) r |> Dist
         | Dist(r), gp -> Distribution.map (fun a -> f a gp) r |> Dist
         | gp, Check(r) -> Check.map (fun b -> f gp b) r |> Check
@@ -221,9 +247,14 @@ let greaterThan =
             (if t > t2 then t |> Check.Pass
              else t |> Check.Fail)
             |> Check
-        | Tuple _, _ | _, Tuple _ | _, NoValue _ | NoValue _, _ | Str _, _ | _, Str _ | Check _, _ | _, Check _ | Dist _, _ | _, Dist _ | ParamArray _, 
-                                                                                                                                          _ | _, 
-                                                                                                                                              ParamArray _ -> 
+        | Tuple _, _ | _, Tuple _ | _, NoValue _ | NoValue _, _ | Str _, _ | _, 
+                                                                             Str _ | Check _, 
+                                                                                     _ | _, 
+                                                                                         Check _ | Dist _, 
+                                                                                                   _ | _, 
+                                                                                                       Dist _ | ParamArray _, 
+                                                                                                                _ | _, 
+                                                                                                                    ParamArray _ -> 
             NoValue //printfn "Couldn't compare %A > %A" gp gp2;
                     )
 
@@ -256,9 +287,14 @@ let lessThan =
             (if t < t2 then t |> Check.Pass
              else t |> Check.Fail)
             |> Check
-        | Tuple _, _ | _, Tuple _ | _, NoValue _ | NoValue _, _ | Str _, _ | _, Str _ | Check _, _ | _, Check _ | Dist _, _ | _, Dist _ | ParamArray _, 
-                                                                                                                                          _ | _, 
-                                                                                                                                              ParamArray _ -> 
+        | Tuple _, _ | _, Tuple _ | _, NoValue _ | NoValue _, _ | Str _, _ | _, 
+                                                                             Str _ | Check _, 
+                                                                                     _ | _, 
+                                                                                         Check _ | Dist _, 
+                                                                                                   _ | _, 
+                                                                                                       Dist _ | ParamArray _, 
+                                                                                                                _ | _, 
+                                                                                                                    ParamArray _ -> 
             NoValue //printfn "Couldn't compare %A > %A" gp gp2;
                     )
 
@@ -295,9 +331,14 @@ let equals =
             (if t = t2 then t |> Check.Pass
              else t |> Check.Fail)
             |> Check
-        | Tuple _, _ | _, Tuple _ | _, NoValue _ | NoValue _, _ | Str _, _ | _, Str _ | Check _, _ | _, Check _ | Dist _, _ | _, Dist _ | ParamArray _, 
-                                                                                                                                          _ | _, 
-                                                                                                                                              ParamArray _ -> 
+        | Tuple _, _ | _, Tuple _ | _, NoValue _ | NoValue _, _ | Str _, _ | _, 
+                                                                             Str _ | Check _, 
+                                                                                     _ | _, 
+                                                                                         Check _ | Dist _, 
+                                                                                                   _ | _, 
+                                                                                                       Dist _ | ParamArray _, 
+                                                                                                                _ | _, 
+                                                                                                                    ParamArray _ -> 
             NoValue //printfn "Couldn't compare %A > %A" gp gp2;
                     )
 
@@ -334,9 +375,14 @@ let rec notEquals =
              else ParamArray ops |> Check.Fail)
             |> Check
         | gp, gp2 when gp = gp2 -> Check.Fail gp |> Check
-        | Tuple _, _ | _, Tuple _ | _, NoValue _ | NoValue _, _ | Str _, _ | _, Str _ | Check _, _ | _, Check _ | Dist _, _ | _, Dist _ | ParamArray _, 
-                                                                                                                                          _ | _, 
-                                                                                                                                              ParamArray _ -> 
+        | Tuple _, _ | _, Tuple _ | _, NoValue _ | NoValue _, _ | Str _, _ | _, 
+                                                                             Str _ | Check _, 
+                                                                                     _ | _, 
+                                                                                         Check _ | Dist _, 
+                                                                                                   _ | _, 
+                                                                                                       Dist _ | ParamArray _, 
+                                                                                                                _ | _, 
+                                                                                                                    ParamArray _ -> 
             NoValue //printfn "Couldn't compare %A > %A" gp gp2;
                     )
 
@@ -363,17 +409,25 @@ let rec maxGp gp gp2 =
                                                       | _ -> false) ops2 -> 
             let zipped = List.zip ops ops2
             List.unfold (function 
-                | (Value gp, Value _) :: tail, Some 1 -> Some(Value gp, (tail, Some 1))
-                | (Value _, Value gp2) :: tail, Some 2 -> Some(Value gp2, (tail, Some 2))
+                | (Value gp, Value _) :: tail, Some 1 -> 
+                    Some(Value gp, (tail, Some 1))
+                | (Value _, Value gp2) :: tail, Some 2 -> 
+                    Some(Value gp2, (tail, Some 2))
                 | (Value gp, Value gp2) :: tail, None -> 
                     if gp = gp2 then Some(Value gp, (tail, None))
-                    else if maxGp gp gp2 = gp then Some(Value gp, (tail, Some 1))
+                    else if maxGp gp gp2 = gp then 
+                        Some(Value gp, (tail, Some 1))
                     else Some(Value gp2, (tail, Some 2))
                 | _ -> None) (zipped, None)
             |> ParamArray
         | gp, gp2 when gp = gp2 -> gp
         | a, NoValue _ | NoValue _, a -> a
-        | Tuple _, _ | _, Tuple _ | Str _, _ | _, Str _ | Check _, _ | _, Check _ | Dist _, _ | _, Dist _ | ParamArray _, _ | _, ParamArray _ -> 
+        | Tuple _, _ | _, Tuple _ | Str _, _ | _, Str _ | Check _, _ | _, 
+                                                                       Check _ | Dist _, 
+                                                                                 _ | _, 
+                                                                                     Dist _ | ParamArray _, 
+                                                                                              _ | _, 
+                                                                                                  ParamArray _ -> 
             NoValue) gp gp2
 
 let rec minGp gp gp2 =
@@ -399,18 +453,26 @@ let rec minGp gp gp2 =
                                                       | _ -> false) ops2 -> 
             let zipped = List.zip ops ops2
             List.unfold (function 
-                | (Value gp, Value _) :: tail, Some 1 -> Some(Value gp, (tail, Some 1))
-                | (Value _, Value gp2) :: tail, Some 2 -> Some(Value gp2, (tail, Some 2))
+                | (Value gp, Value _) :: tail, Some 1 -> 
+                    Some(Value gp, (tail, Some 1))
+                | (Value _, Value gp2) :: tail, Some 2 -> 
+                    Some(Value gp2, (tail, Some 2))
                 | (Value gp, Value gp2) :: tail, None -> 
                     if gp = gp2 then Some(Value gp, (tail, None))
-                    else if minGp gp gp2 = gp then Some(Value gp, (tail, Some 1))
+                    else if minGp gp gp2 = gp then 
+                        Some(Value gp, (tail, Some 1))
                     else Some(Value gp2, (tail, Some 2))
                 | _ -> None) (zipped, None)
             |> ParamArray
         | gp, gp2 when gp = gp2 -> gp
-        | _, NoValue _ | NoValue _, _ | Tuple _, _ | _, Tuple _ | Str _, _ | _, Str _ | Check _, _ | _, Check _ | Dist _, _ | _, Dist _ | ParamArray _, 
-                                                                                                                                          _ | _, 
-                                                                                                                                              ParamArray _ -> 
+        | _, NoValue _ | NoValue _, _ | Tuple _, _ | _, Tuple _ | Str _, _ | _, 
+                                                                             Str _ | Check _, 
+                                                                                     _ | _, 
+                                                                                         Check _ | Dist _, 
+                                                                                                   _ | _, 
+                                                                                                       Dist _ | ParamArray _, 
+                                                                                                                _ | _, 
+                                                                                                                    ParamArray _ -> 
             NoValue) gp gp2
 
 let insert x lst =
@@ -420,7 +482,8 @@ let insert x lst =
         | h :: t as l -> 
             match greaterThan x h with
             | Check(Check.IsFail _) -> cont (x :: l)
-            | Check(Check.IsPass _) -> insertCont x (fun accLst -> cont (h :: accLst)) t
+            | Check(Check.IsPass _) -> 
+                insertCont x (fun accLst -> cont (h :: accLst)) t
             | _ -> failwith "Can't find correct order"
     insertCont x id lst
 
@@ -593,7 +656,9 @@ let (|WithLams|_|) =
     let defaultApps apps lams =
         List.append (apps
                      |> List.rev
-                     |> List.map Some) (List.init (List.length lams - List.length apps) (fun _ -> None)), lams
+                     |> List.map Some) 
+            (List.init (List.length lams - List.length apps) (fun _ -> None)), 
+        lams
     
     let rec (|WithLams'|_|) =
         function 
@@ -603,11 +668,14 @@ let (|WithLams|_|) =
     
     let rec (|WithApps'|_|) =
         function 
-        | App(WithApps'(apps, lams, o), v) when List.length apps < List.length lams -> Some(v :: apps, lams, o)
+        | App(WithApps'(apps, lams, o), v) when List.length apps < List.length 
+                                                                       lams -> 
+            Some(v :: apps, lams, o)
         | WithLams'(apps, lams, o) -> Some(apps, lams, o)
         | _ -> None
     
-    (|WithApps'|_|) >> Option.map (fun (apps, lams, o) -> (defaultApps apps lams, o))
+    (|WithApps'|_|) 
+    >> Option.map (fun (apps, lams, o) -> (defaultApps apps lams, o))
 
 module TypeChecker =
     type GamePrimitiveType =
@@ -624,7 +692,10 @@ module TypeChecker =
     let rec (|IsEmpty|_|) =
         function 
         | Empty -> Some Empty
-        | List(IsEmpty(e)) | Distr(IsEmpty(e)) | Pass(IsEmpty(e)) | Pair(IsEmpty(e), _) | Pair(_, IsEmpty(e)) | Fail(IsEmpty(e)) -> Some e
+        | List(IsEmpty(e)) | Distr(IsEmpty(e)) | Pass(IsEmpty(e)) | Pair(IsEmpty(e), 
+                                                                         _) | Pair(_, 
+                                                                                   IsEmpty(e)) | Fail(IsEmpty(e)) -> 
+            Some e
         | _ -> None
     
     let toTyped op =

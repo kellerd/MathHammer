@@ -37,7 +37,8 @@ let inline toString (x : 'a) =
     | case, _ -> case.Name
 
 let inline fromString<'a> (s : string) =
-    match FSharpType.GetUnionCases typeof<'a> |> Array.filter (fun case -> case.Name = s) with
+    match FSharpType.GetUnionCases typeof<'a> 
+          |> Array.filter (fun case -> case.Name = s) with
     | [| case |] -> Some(FSharpValue.MakeUnion(case, [||]) :?> 'a)
     | _ -> None
 
@@ -49,8 +50,10 @@ let (|HasIcon|_|) =
     | Text(Some s) -> strong [] [ str s ] |> Some
     | _ -> None
 
-let tags tags = div [ ClassName "tags is-marginless is-medium has-addons " ] tags
-let tag tagClass item = span [ ClassName("tag is-marginless is-medium " + tagClass) ] [ item ]
+let tags tags =
+    div [ ClassName "tags is-marginless is-medium has-addons " ] tags
+let tag tagClass item =
+    span [ ClassName("tag is-marginless is-medium " + tagClass) ] [ item ]
 let tagGroup tags = div [] [ tags ]
 
 //tags |> List.singleton |> div [Class "field is-grouped is-grouped-multiline"]  
@@ -67,11 +70,21 @@ let card dispatch name v foot =
                              |> Option.map 
                                     (fun name -> 
                                     header [ Class "card-header" ] 
-                                        [ p [ Class "card-header-title" ] [ str name |> draggable dispatch name ]
+                                        [ p [ Class "card-header-title" ] 
+                                              [ str name 
+                                                |> draggable dispatch name ]
+                                          
                                           a [ Href "#"
-                                              Class "card-header-icon" ] [ span [ Class "icon" ] [ i [ Class "fa fa-angle-down" ] [] ] ] ])
+                                              Class "card-header-icon" ] 
+                                              [ span [ Class "icon" ] 
+                                                    [ i 
+                                                          [ Class 
+                                                                "fa fa-angle-down" ] 
+                                                          [] ] ] ])
                              |> ofOption
-                             div [ Class "card-content" ] [ div [ Class "content" ] [ v ] ]
+                             
+                             div [ Class "card-content" ] 
+                                 [ div [ Class "content" ] [ v ] ]
                              foot
                              |> Option.map (footer [ Class "card-footer" ])
                              |> ofOption ]
@@ -80,7 +93,8 @@ let card dispatch name v foot =
 
 let rec (|AsElseIfs|_|) =
     function 
-    | IfThenElse(ifExpr, thenExpr, Some(AsElseIfs(ifThens))) -> Some((Some ifExpr, thenExpr) :: ifThens)
+    | IfThenElse(ifExpr, thenExpr, Some(AsElseIfs(ifThens))) -> 
+        Some((Some ifExpr, thenExpr) :: ifThens)
     | IfThenElse(ifExpr, thenExpr, Some(elseEnd)) -> 
         Some([ Some ifExpr, thenExpr
                None, elseEnd ])
@@ -92,7 +106,8 @@ let applyManyIfs ifThens =
         match ifThens with
         | [] -> None
         | [ None, elseExpr ] -> Some elseExpr
-        | (Some ifExpr, thenExpr) :: xs -> IfThenElse(ifExpr, thenExpr, halp xs) |> Some
+        | (Some ifExpr, thenExpr) :: xs -> 
+            IfThenElse(ifExpr, thenExpr, halp xs) |> Some
         | _ -> None
     match halp ifThens with
     | Some v -> v
@@ -172,7 +187,11 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
                 | c -> Some c, str "; "
             match a with
             | Value(ParamArray ops) -> 
-                let call = specialCall |> Option.map (fun f -> unparseEq f envIcons (fun op -> (op, a) |> dispatch))
+                let call =
+                    specialCall 
+                    |> Option.map 
+                           (fun f -> 
+                           unparseEq f envIcons (fun op -> (op, a) |> dispatch))
                 let ops' = ops |> Zipper.permute
                 
                 let param =
@@ -191,29 +210,36 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
                                     let newValuePlaceholder =
                                         Option.map (fun dragging -> 
                                             [ span [] [ joinStr ]
-                                              span [ OnDragOver(fun e -> 
-                                                         e.preventDefault()
-                                                         e.dataTransfer.dropEffect <- "move"
-                                                         e.target?className <- "has-text-centered"
-                                                         e.target?style?border <- "3px dotted green"
-                                                         e.target?style?``background-color`` <- "#0088CC"
-                                                         e.target?style?width <- "24px"
-                                                         e.target?style?height <- "24px")
-                                                     OnDragLeave reset
-                                                     OnDrop(fun e -> 
-                                                         reset e
-                                                         (f, 
-                                                          List.append ops [ Var dragging ]
-                                                          |> ParamArray
-                                                          |> Value)
-                                                         |> dispatch)
-                                                     Class("has-text-centered")
-                                                     Style [ StrokeWidth 1.
-                                                             Border "dotted"
-                                                             Margin "3px"
-                                                             Width "18px"
-                                                             Height "18px"
-                                                             Display "inline-block" ] ] [] ]
+                                              
+                                              span 
+                                                  [ OnDragOver
+                                                        (fun e -> 
+                                                        e.preventDefault()
+                                                        e.dataTransfer.dropEffect <- "move"
+                                                        e.target?className <- "has-text-centered"
+                                                        e.target?style?border <- "3px dotted green"
+                                                        e.target?style?``background-color`` <- "#0088CC"
+                                                        e.target?style?width <- "24px"
+                                                        e.target?style?height <- "24px")
+                                                    OnDragLeave reset
+                                                    OnDrop(fun e -> 
+                                                        reset e
+                                                        (f, 
+                                                         List.append ops 
+                                                             [ Var dragging ]
+                                                         |> ParamArray
+                                                         |> Value)
+                                                        |> dispatch)
+                                                    Class("has-text-centered")
+                                                    
+                                                    Style 
+                                                        [ StrokeWidth 1.
+                                                          Border "dotted"
+                                                          Margin "3px"
+                                                          Width "18px"
+                                                          Height "18px"
+                                                          Display "inline-block" ] ] 
+                                                  [] ]
                                             |> ofList) dragging
                                     match acc with
                                     | [] -> Option.toList newValuePlaceholder
@@ -232,14 +258,19 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
                        |> Option.map (tag "is-primary")
                        |> ofOption
                        tag "is-success" (squareParen param) ]
-            | Value(NoValue) -> unparseEq f envIcons (fun op -> (op, a) |> dispatch) |> tag "is-primary"
+            | Value(NoValue) -> 
+                unparseEq f envIcons (fun op -> (op, a) |> dispatch) 
+                |> tag "is-primary"
             | _ -> 
-                let unparsedF = unparseEq f envIcons (fun op -> (op, a) |> dispatch)
-                let unparsedA = unparseEq a envIcons (fun op -> (f, op) |> dispatch)
+                let unparsedF =
+                    unparseEq f envIcons (fun op -> (op, a) |> dispatch)
+                let unparsedA =
+                    unparseEq a envIcons (fun op -> (f, op) |> dispatch)
                 tags [ tag "is-primary" unparsedF
                        tag "is-white" unparsedA ]
         
-        and unparseChoice envIcons dispatch (choices : (string * Operation) list) =
+        and unparseChoice envIcons dispatch 
+            (choices : (string * Operation) list) =
             choices
             |> Zipper.permute
             |> List.collect (function 
@@ -267,10 +298,17 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
                 | Some icon -> b [] [ icon ]
                 | None -> str v
             | Lam("unusedVariable", body) -> 
-                unparseEq body (Map.remove "unusedVariable" envIcons) (fun op -> Lam("unusedVariable", op) |> dispatch)
+                unparseEq body (Map.remove "unusedVariable" envIcons) 
+                    (fun op -> Lam("unusedVariable", op) |> dispatch)
             | WithLams((apps, lams), op) -> 
-                let envIcons = lams |> List.fold (fun state i -> Map.remove i state) envIcons
-                let ev = unparseEq op envIcons (fun op -> GameActions.Primitives.State.applyMany lams op apps |> dispatch)
+                let envIcons =
+                    lams 
+                    |> List.fold (fun state i -> Map.remove i state) envIcons
+                let ev =
+                    unparseEq op envIcons 
+                        (fun op -> 
+                        GameActions.Primitives.State.applyMany lams op apps 
+                        |> dispatch)
                 let headerItems = None
                 
                 let footerItems =
@@ -281,28 +319,45 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
                            | Zipper.Empty -> []
                            | Zipper(_, (a, None), _) -> 
                                let nameLabel = b [] [ str a ]
-                               [ div [ Class "card-footer-item has-background-warning" ] 
+                               [ div 
+                                     [ Class 
+                                           "card-footer-item has-background-warning" ] 
                                      [ (match row with
                                         | _, ReadOnly _ -> nameLabel
-                                        | _, ReadWrite _ -> nameLabel |> draggable coreDispatch a) ] ]
+                                        | _, ReadWrite _ -> 
+                                            nameLabel 
+                                            |> draggable coreDispatch a) ] ]
                            //GameActions.Primitives.State.applyMany (Zipper(l |> List.map fst, a, r |> List.map fst) |> Zipper.toList) op apps |> Zipper.toList) |> dispatch
                            | Zipper(l, (a, Some app), r) -> 
                                let nameLabel = b [] [ str (a + ": ") ]
-                               [ div [ Class "card-footer-item has-background-warning" ] 
+                               [ div 
+                                     [ Class 
+                                           "card-footer-item has-background-warning" ] 
                                      [ (match row with
                                         | _, ReadOnly _ -> nameLabel
-                                        | _, ReadWrite _ -> nameLabel |> draggable coreDispatch a)
+                                        | _, ReadWrite _ -> 
+                                            nameLabel 
+                                            |> draggable coreDispatch a)
                                        
                                        unparseEq app envIcons 
                                            (fun app' -> 
-                                           GameActions.Primitives.State.applyMany lams op 
-                                               (Zipper(l |> List.map snd, Some app', r |> List.map snd) |> Zipper.toList) |> dispatch) ] ])
+                                           GameActions.Primitives.State.applyMany 
+                                               lams op 
+                                               (Zipper
+                                                    (l |> List.map snd, 
+                                                     Some app', 
+                                                     r |> List.map snd) 
+                                                |> Zipper.toList) |> dispatch) ] ])
                 
-                let paramsCaption = div [ Class "card-footer-item has-background-white" ] [ str "Params: " ]
-                card coreDispatch headerItems ev (Some(paramsCaption :: footerItems))
+                let paramsCaption =
+                    div [ Class "card-footer-item has-background-white" ] 
+                        [ str "Params: " ]
+                card coreDispatch headerItems ev 
+                    (Some(paramsCaption :: footerItems))
             | Lam(x, body) -> 
                 let envIcons = Map.remove "x" envIcons
-                str (x + " => ") :: [ unparseEq body envIcons (fun op -> Lam(x, op) |> dispatch) ]
+                str (x + " => ") 
+                :: [ unparseEq body envIcons (fun op -> Lam(x, op) |> dispatch) ]
                 |> ofList
                 |> tag "is-warning"
                 |> List.singleton
@@ -310,7 +365,10 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
             | Choice(name, choices) -> 
                 [ str <| name + "one of: "
                   br []
-                  ul [] [ unparseChoice envIcons (fun ch -> Choice(name, ch) |> dispatch) choices ] ]
+                  
+                  ul [] 
+                      [ unparseChoice envIcons 
+                            (fun ch -> Choice(name, ch) |> dispatch) choices ] ]
                 |> ofList
             | GameActions.Primitives.State.IsDPlus(n, plus) -> 
                 match n with
@@ -326,13 +384,18 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
                 |> tag "is-warning"
             | App(f, a) -> unparseApp f a envIcons (App >> dispatch)
             | Let(name, v, inner) -> 
-                let ev = unparseEq v envIcons (fun op -> Let(name, op, inner) |> dispatch)
-                let einner = unparseEq inner envIcons (fun op -> Let(name, v, op) |> dispatch)
+                let ev =
+                    unparseEq v envIcons 
+                        (fun op -> Let(name, op, inner) |> dispatch)
+                let einner =
+                    unparseEq inner envIcons 
+                        (fun op -> Let(name, v, op) |> dispatch)
                 [ card coreDispatch (Some name) ev None
                   einner ]
                 |> ofList
             | PropertyGet(s, op) -> 
-                [ unparseEq op envIcons (fun op -> PropertyGet(s, op) |> dispatch)
+                [ unparseEq op envIcons 
+                      (fun op -> PropertyGet(s, op) |> dispatch)
                   str <| sprintf ".%s" s ]
                 |> ofList
             | AsElseIfs(ifThens) -> 
@@ -383,13 +446,29 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
                 |> ofList
                 |> tagGroup
             | IfThenElse(ifExpr, thenExpr, Some elseExpr) -> 
-                [ unparseIf envIcons (fun op -> IfThenElse(op, thenExpr, Some elseExpr) |> dispatch) ifExpr
-                  unparseThen envIcons (fun op -> IfThenElse(ifExpr, op, Some elseExpr) |> dispatch) thenExpr
-                  unparseElse envIcons (fun op -> IfThenElse(ifExpr, thenExpr, Some op) |> dispatch) elseExpr ]
+                [ unparseIf envIcons 
+                      (fun op -> 
+                      IfThenElse(op, thenExpr, Some elseExpr) |> dispatch) 
+                      ifExpr
+                  
+                  unparseThen envIcons 
+                      (fun op -> 
+                      IfThenElse(ifExpr, op, Some elseExpr) |> dispatch) 
+                      thenExpr
+                  
+                  unparseElse envIcons 
+                      (fun op -> 
+                      IfThenElse(ifExpr, thenExpr, Some op) |> dispatch) 
+                      elseExpr ]
                 |> tags
             | IfThenElse(ifExpr, thenExpr, None) -> 
-                [ unparseIf envIcons (fun op -> IfThenElse(op, thenExpr, None) |> dispatch) ifExpr
-                  unparseThen envIcons (fun op -> IfThenElse(ifExpr, op, None) |> dispatch) thenExpr ]
+                [ unparseIf envIcons 
+                      (fun op -> IfThenElse(op, thenExpr, None) |> dispatch) 
+                      ifExpr
+                  
+                  unparseThen envIcons 
+                      (fun op -> IfThenElse(ifExpr, op, None) |> dispatch) 
+                      thenExpr ]
                 |> tags
         
         and unparseIf envIcons dispatch ifExpr =
@@ -416,57 +495,101 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
     
     let iconDisplay name icon =
         match icon with
-        | HasIcon icon -> Map.add name icon icons, draggable coreDispatch name icon
+        | HasIcon icon -> 
+            Map.add name icon icons, draggable coreDispatch name icon
         | _ -> icons, draggable coreDispatch name (str name)
     
     match row with
     | _, ReadOnly(name, icon, gameAction, _) -> 
         let newIcons, iconDisplay = iconDisplay name icon
-        tr [] [ td [] [ (if hideAddButton then str ""
-                         else 
-                             a [ ClassName "button fa fa-pencil-square-o"
-                                 OnClick(fun _ -> EditRow(name) |> coreDispatch) ] [ str "Edit" ]) ]
-                td [] [ iconDisplay ]
-                td [ Style [ Position "relative" ] ] [ unparseEquation None gameAction icons ignore ] //dispatch)
-                                                                                                      ], newIcons
+        tr [] 
+            [ td [] 
+                  [ (if hideAddButton then str ""
+                     else 
+                         a [ ClassName "button fa fa-pencil-square-o"
+                             OnClick(fun _ -> EditRow(name) |> coreDispatch) ] 
+                             [ str "Edit" ]) ]
+              td [] [ iconDisplay ]
+              
+              td [ Style [ Position "relative" ] ] 
+                  [ unparseEquation None gameAction icons ignore ] //dispatch)
+                                                                   ], newIcons
     | _, ReadWrite(name, icon, op) -> 
         let newIcons, _ = iconDisplay name icon
         tr [] 
-            [ td [] [ a [ ClassName "button fa fa-floppy-o"
-                          OnClick(fun _ -> SaveOp(name) |> coreDispatch) ] [ str "Close" ] ]
-              td [ ColSpan 3. ] [ div [ ClassName "field" ] [ label [ ClassName "label" ] [ str "Icon" ]
-                                                              input [ ClassName "input"
-                                                                      Type "text"
-                                                                      Placeholder "FA Icon/Special/Text"
-                                                                      DefaultValue(icon |> function 
-                                                                                   | Special s | Text(Some s) -> s
-                                                                                   | Icon s -> s.Remove(0, 3)
-                                                                                   | Text None -> "")
-                                                                      OnChange(fun ev -> 
-                                                                          !!ev.target?value
-                                                                          |> ChangeIcon
-                                                                          |> coreDispatch) ] ]
-                                  div [ ClassName "field" ] [ label [ Class "label" ] [ str "Name" ]
-                                                              input [ ClassName "input"
-                                                                      Type "text"
-                                                                      Placeholder "Type the action name"
-                                                                      DefaultValue name
-                                                                      AutoFocus true
-                                                                      OnChange(fun ev -> 
-                                                                          !!ev.target?value
-                                                                          |> ChangeNewRowName
-                                                                          |> coreDispatch) ] ]
-                                  div [ ClassName "field" ] [ label [ ClassName "label" ] [ str "Equation / Steps" ]
-                                                              unparseEquation dragging op icons (fun op -> Dragged(name, op) |> coreDispatch) ] ] ], 
+            [ td [] 
+                  [ a [ ClassName "button fa fa-floppy-o"
+                        OnClick(fun _ -> SaveOp(name) |> coreDispatch) ] 
+                        [ str "Close" ] ]
+              
+              td [ ColSpan 3. ] 
+                  [ div [ ClassName "field" ] [ label [ ClassName "label" ] 
+                                                    [ str "Icon" ]
+                                                input [ ClassName "input"
+                                                        Type "text"
+                                                        
+                                                        Placeholder 
+                                                            "FA Icon/Special/Text"
+                                                        
+                                                        DefaultValue
+                                                            (icon |> function 
+                                                             | Special s | Text(Some s) -> 
+                                                                 s
+                                                             | Icon s -> 
+                                                                 s.Remove(0, 3)
+                                                             | Text None -> "")
+                                                        OnChange(fun ev -> 
+                                                            !!ev.target?value
+                                                            |> ChangeIcon
+                                                            |> coreDispatch) ] ]
+                    div [ ClassName "field" ] [ label [ Class "label" ] 
+                                                    [ str "Name" ]
+                                                input [ ClassName "input"
+                                                        Type "text"
+                                                        
+                                                        Placeholder 
+                                                            "Type the action name"
+                                                        DefaultValue name
+                                                        AutoFocus true
+                                                        OnChange(fun ev -> 
+                                                            !!ev.target?value
+                                                            |> ChangeNewRowName
+                                                            |> coreDispatch) ] ]
+                    
+                    div [ ClassName "field" ] 
+                        [ label [ ClassName "label" ] [ str "Equation / Steps" ]
+                          
+                          unparseEquation dragging op icons 
+                              (fun op -> Dragged(name, op) |> coreDispatch) ] ] ], 
         newIcons
 
 let root model dispatch =
-    let (tableRows, _) = List.mapFold (mkRows model.Dragging model.Editing dispatch) Map.empty<_, _> model.Functions
-    table [ ClassName "table is-fullwidth  is-striped" ] [ thead [] [ tr [] [ th [] 
-                                                                                  [ (if model.Editing then str ""
-                                                                                     else 
-                                                                                         a [ ClassName "button fa fa-plus-circle"
-                                                                                             OnClick(fun _ -> AddRow |> dispatch) ] [ str "Add" ]) ]
-                                                                              th [] [ str "Name" ]
-                                                                              th [] [ str "Equation / Steps" ] ] ]
+    let (tableRows, _) =
+        List.mapFold (mkRows model.Dragging model.Editing dispatch) 
+            Map.empty<_, _> model.Functions
+    table [ ClassName "table is-fullwidth  is-striped" ] [ thead [] 
+                                                               [ tr [] 
+                                                                     [ th [] 
+                                                                           [ (if model.Editing then 
+                                                                                  str 
+                                                                                      ""
+                                                                              else 
+                                                                                  a 
+                                                                                      [ ClassName 
+                                                                                            "button fa fa-plus-circle"
+                                                                                        
+                                                                                        OnClick
+                                                                                            (fun _ -> 
+                                                                                            AddRow 
+                                                                                            |> dispatch) ] 
+                                                                                      [ str 
+                                                                                            "Add" ]) ]
+                                                                       
+                                                                       th [] 
+                                                                           [ str 
+                                                                                 "Name" ]
+                                                                       
+                                                                       th [] 
+                                                                           [ str 
+                                                                                 "Equation / Steps" ] ] ]
                                                            tbody [] tableRows ]

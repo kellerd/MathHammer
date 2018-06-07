@@ -5,17 +5,28 @@ open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
+open Distribution.Example
+
 let range = vInt
+
 let phaseActions =
     choose "Phase" [ "Assault", 
-                     nestOps [ get "Assault Range" <*> get "M" <*> get "Charge Range" >>= "Assault Range"
-                               get "To Hit" <*> get "WS" <*> get "A" >>= "Hit Results"
-                               
-                               // (get "Strength vs Toughness Table" <*> get "S" <*> get "Defender") >>= "Wound Results"                  
-                               get "To Wound" <*> get "Hit Results" <*> (get "Strength vs Toughness Table" <*> get "Defender" <*> get "S") 
-                               >>= "Wound Results"
-                               get "App 2 Test" >>= "App2"
-                               get "Armour Save" <*> get "Defender" <*> get "Wound Results" >>= "Unsaved Wounds" ]
+                     nestOps 
+                         [ get "Assault Range" <*> get "M" 
+                           <*> get "Charge Range" >>= "Assault Range"
+                           
+                           get "To Hit" <*> get "WS" <*> get "A" 
+                           >>= "Hit Results"
+                           
+                           // (get "Strength vs Toughness Table" <*> get "S" <*> get "Defender") >>= "Wound Results"                  
+                           get "To Wound" <*> get "Hit Results" 
+                           <*> (get "Strength vs Toughness Table" 
+                                <*> get "Defender" <*> get "S") 
+                           >>= "Wound Results"
+                           get "App 2 Test" >>= "App2"
+                           
+                           get "Armour Save" <*> get "Defender" 
+                           <*> get "Wound Results" >>= "Unsaved Wounds" ]
                      <| opList [ labelVar "Charge Range"
                                  labelVar "Assault Range"
                                  labelVar "Hit Results"
@@ -23,8 +34,9 @@ let phaseActions =
                                  labelVar "App2"
                                  labelVar "Unsaved Wounds" ]
                      "Shooting", labelVar "Shooting Range"
-                     "Psychic",  labelVar "Psychic Test" ]
+                     "Psychic", labelVar "Psychic Test" ]
     >>= "Actions"
+
 let dPhaseActions =
     choose "Phase" [ "Assault", 
                      (choose "Weapon" [ "Bolter", range 24
@@ -32,6 +44,7 @@ let dPhaseActions =
                       >>= "Weapon Range") (labelVar "Shooting Range")
                      "Psychic", labelVar "Deny Test" ]
     >>= "Actions"
+
 let allPropsa =
     opList [ labelVar "M"
              labelVar "WS"
@@ -53,6 +66,7 @@ let allPropsa =
              labelProp "Actions" "Unsaved Wounds"
              labelProp "Actions" "Psychic Test"
              labelProp "Actions" "Shooting Range" ]
+
 let allPropsd =
     opList [ labelVar "M"
              labelVar "WS"
@@ -68,56 +82,56 @@ let allPropsd =
              labelVar "D3Test"
              labelProp "Actions" "Shooting Range"
              labelProp "Actions" "Deny Test" ]
-let bindModelToEnvironment initial key =
-    Option.map (fun (m : Models.Types.Model) -> 
-        let (choices, normalizedRule) = m.Rules |> normalize
-        let evaluatedRule = normalizedRule |> evalOp initial
-        choices, Map.add key evaluatedRule initial)
 
 let init() : Model * Cmd<Types.Msg> =
     let (attacker, attackerCmd) = UnitList.State.init None ()
     let (defender, defenderCmd) = UnitList.State.init None ()
-    
     let body = nestOps [ phaseActions ] allPropsa
     let defbody = nestOps [ dPhaseActions ] allPropsd
     let stats = [ "M"; "WS"; "BS"; "S"; "T"; "W"; "A"; "Ld"; "Sv"; "InvSv" ]
     let attackerDefinition = createArgs stats body
     let defenderDefinition = createArgs stats defbody
     
-    let (attackerModels,attackerCmds) =
+    let (attackerModels, attackerCmds) =
         [ initMeq "Marine" attackerDefinition
           initSgt "Captain" attackerDefinition ]
-        |> List.map (fun ((name,model),cmd) -> (name, model), Cmd.map (fun msg -> UnitList.Types.ModelMsg(msg, name)) cmd )
+        |> List.map 
+               (fun ((name, model), cmd) -> 
+               (name, model), 
+               Cmd.map (fun msg -> UnitList.Types.ModelMsg(msg, name)) cmd)
         |> List.unzip
     
-
-    let ((_,geq), modelCmd) =  initGeq "Geq" defenderDefinition
-    let defenderCmds = Cmd.map(fun msg -> UnitList.Types.ModelMsg(msg, "Geq")) modelCmd
-
-
-    let defenderModels = 
-        [ 'a'..'z' ]
-        |> List.map (fun c -> string c, {geq with Name = string c} )
-
-
-
-
+    let ((_, geq), modelCmd) = initGeq "Geq" defenderDefinition
+    let defenderCmds =
+        Cmd.map (fun msg -> UnitList.Types.ModelMsg(msg, "Geq")) modelCmd
+    let defenderModels =
+        [ 'a'..'z' ] 
+        |> List.map (fun c -> string c, { geq with Name = string c })
+    
     let model : Model =
-        { Environment = Map.empty<_, _> |> Map.add "Phase" (Str "Assault" |> Value)
+        { Environment =
+              Map.empty<_, _> |> Map.add "Phase" (Str "Assault" |> Value)
           Attacker =
               { attacker with Location =
                                   { attacker.Location with Fill = "#FFCCCC"
-                                                           Dimensions = { attacker.Location.Dimensions with Top = ft.ToMM 2<ft> } }
+                                                           Dimensions =
+                                                               { attacker.Location.Dimensions with Top =
+                                                                                                       ft.ToMM 
+                                                                                                           2<ft> } }
                               ElementFill = "#79CE0B"
                               ElementStroke = "#396302"
-                              Models = Map.ofList attackerModels 
+                              Models = Map.ofList attackerModels
                               Deployment =
                                   { attacker.Deployment with Dimensions =
                                                                  { attacker.Deployment.Dimensions with Top =
                                                                                                            attacker.Deployment.Dimensions.Top 
-                                                                                                           + ft.ToMM 2<ft> + ft.ToMM 1<ft> } } }
+                                                                                                           + ft.ToMM 
+                                                                                                                 2<ft> 
+                                                                                                           + ft.ToMM 
+                                                                                                                 1<ft> } } }
           Defender =
-              { defender with Location = { defender.Location with Fill = "#CCCCFF" }
+              { defender with Location =
+                                  { defender.Location with Fill = "#CCCCFF" }
                               ElementFill = "#0B79CE"
                               Models = Map.ofList defenderModels
                               ElementStroke = "#023963" }
@@ -134,10 +148,27 @@ let init() : Model * Cmd<Types.Msg> =
           Choices = Map.empty<_, _>
           SelectedChoices = Map.empty<_, _> }
     model, 
-    Cmd.batch [ List.map (Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap))) (attackerCmd :: attackerCmds) |> Cmd.batch
-                List.map (Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap))) [defenderCmd;  defenderCmds ] |> Cmd.batch
-                Cmd.ofMsg (UnitListMsg(UnitList.Types.Distribute(UnitList.Types.Area model.Attacker.Deployment.Dimensions), Some defenderMap))
-                Cmd.ofMsg (UnitListMsg(UnitList.Types.Distribute(UnitList.Types.Area model.Defender.Deployment.Dimensions), Some attackerMap))
+    Cmd.batch [ List.map 
+                    (Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap))) 
+                    (attackerCmd :: attackerCmds) |> Cmd.batch
+                
+                List.map 
+                    (Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap))) 
+                    [ defenderCmd; defenderCmds ] |> Cmd.batch
+                
+                Cmd.ofMsg 
+                    (UnitListMsg
+                         (UnitList.Types.Distribute
+                              (UnitList.Types.Area 
+                                   model.Attacker.Deployment.Dimensions), 
+                          Some defenderMap))
+                
+                Cmd.ofMsg 
+                    (UnitListMsg
+                         (UnitList.Types.Distribute
+                              (UnitList.Types.Area 
+                                   model.Defender.Deployment.Dimensions), 
+                          Some attackerMap))
                 Cmd.ofMsg RebindEnvironment ]
 
 let update msg model : Model * Cmd<Types.Msg> =
@@ -147,96 +178,136 @@ let update msg model : Model * Cmd<Types.Msg> =
             let mmsg = UnitList.Types.ModelMsg(rebind, name)
             Cmd.ofMsg (UnitListMsg(mmsg, source))) nameOpt
     match msg with
-    | UnitListMsg(UnitList.Types.ModelMsg(Models.Types.Msg.MakeChoice(key, options), _), _) -> 
-        { model with Choices = Map.mergeSet model.Choices key options }, []
-    | UnitListMsg(UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), Some "Attacker") -> 
-        { model with SelectedAttacker = Some m }, Cmd.batch [ Cmd.ofMsg BindAttacker ]
-    | UnitListMsg(UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), Some "Defender") -> 
+    | UnitListMsg(UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), 
+                  Some "Attacker") -> 
+        { model with SelectedAttacker = Some m }, 
+        Cmd.batch [ Cmd.ofMsg BindAttacker ]
+    | UnitListMsg(UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), 
+                  Some "Defender") -> 
         { model with SelectedDefender = Some m }, 
-        Cmd.batch [ Cmd.ofMsg BindDefender
-                    Cmd.ofMsg BindAttacker ]
+        Cmd.batch [ Cmd.ofMsg BindDefender ]
     | UnitListMsg(msg, Some "Attacker") -> 
         let (ula, ulCmdsa) = UnitList.State.update msg model.Attacker
-        { model with Attacker = ula }, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some "Attacker")) ulCmdsa ]
+        { model with Attacker = ula }, 
+        Cmd.batch 
+            [ Cmd.map (fun msg -> UnitListMsg(msg, Some "Attacker")) ulCmdsa ]
     | UnitListMsg(msg, Some "Defender") -> 
         let (uld, ulCmdsd) = UnitList.State.update msg model.Defender
-        { model with Defender = uld }, Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some "Defender")) ulCmdsd ]
-    | Choose(key, value) -> { model with SelectedChoices = Map.add key value model.SelectedChoices }, Cmd.ofMsg RebindEnvironment
+        { model with Defender = uld }, 
+        Cmd.batch 
+            [ Cmd.map (fun msg -> UnitListMsg(msg, Some "Defender")) ulCmdsd ]
+    | Choose(key, value) -> 
+        { model with SelectedChoices = Map.add key value model.SelectedChoices
+                     Environment = Map.add key (Value(Str(value))) model.Environment }, 
+        Cmd.batch [ Cmd.ofMsg BindDefender
+                    Cmd.ofMsg BindAttacker ]
     | UnitListMsg(_, Some _) -> failwith "No list of that name"
     | UnitListMsg(msg, None) -> 
         let (ula, ulCmdsa) = UnitList.State.update msg model.Attacker
         let (uld, ulCmdsd) = UnitList.State.update msg model.Defender
         { model with Attacker = ula
                      Defender = uld }, 
-        Cmd.batch [ Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap)) ulCmdsa
-                    Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap)) ulCmdsd ]
+        Cmd.batch 
+            [ Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap)) ulCmdsa
+              Cmd.map (fun msg -> UnitListMsg(msg, Some defenderMap)) ulCmdsd ]
     | ChangeMode mode -> { model with Mode = mode }, Cmd.none
     | Swap -> 
-        { model with Attacker = { model.Attacker with Models = model.Defender.Models }
-                     Defender = { model.Defender with Models = model.Attacker.Models }
+        { model with Attacker =
+                         { model.Attacker with Models = model.Defender.Models }
+                     Defender =
+                         { model.Defender with Models = model.Attacker.Models }
                      SelectedAttacker = None
                      SelectedDefender = None }, 
-        Cmd.batch [ Cmd.ofMsg 
-                        (UnitListMsg(UnitList.Types.Distribute(UnitList.Types.Area model.Attacker.Deployment.Dimensions), Some defenderMap))
-                    
-                    Cmd.ofMsg 
-                        (UnitListMsg(UnitList.Types.Distribute(UnitList.Types.Area model.Defender.Deployment.Dimensions), Some attackerMap))
-                    Cmd.ofMsg RebindEnvironment ]
+        Cmd.batch 
+            [ Cmd.ofMsg 
+                  (UnitListMsg
+                       (UnitList.Types.Distribute
+                            (UnitList.Types.Area 
+                                 model.Attacker.Deployment.Dimensions), 
+                        Some defenderMap))
+              
+              Cmd.ofMsg 
+                  (UnitListMsg
+                       (UnitList.Types.Distribute
+                            (UnitList.Types.Area 
+                                 model.Defender.Deployment.Dimensions), 
+                        Some attackerMap)) ]
     | RebindEnvironment -> 
-        let choices = model.SelectedChoices |> Map.map (fun _ value -> Set.singleton value)
-        let initial = model.SelectedChoices |> Map.map (fun _ value -> Value(Str value))
-        
-        let (choices, environment) =
+        let environment =
             model.GlobalOperations
             |> List.sortBy (snd >> fst)
-            |> List.fold (fun (choices, env) (key, (_, op)) -> 
-                   let (newChoices, normal) = op |> normalize
-                   let result = normal |> evalOp env
-                   Map.mergeSets choices newChoices, Map.add key result env) (choices, initial)
+            |> List.fold (fun env (key, (_, op)) -> 
+                   let result = op |> evalOp env
+                   Map.add key result env) Map.empty<_, _>
         
-        // let newDefenders = 
-        //             Map.map (fun _ (m:MathHammer.Models.Types.Model) -> 
-        //                 { m with ProbabilityRules = 
-        //                             m.Rules <*> noValue
-        //                             |> evalOp model.Environment
-        //                             |> Some }
-        //             ) model.Defender.Models
-
-        let cmds =
-            Cmd.batch [ Cmd.ofMsg BindDefender
-                        Cmd.ofMsg BindAttacker ]
+        let allChoices =
+            [ model.Attacker.Models
+              |> Map.toList
+              |> List.map (fun (_, m) -> m.Choices)
+              model.Defender.Models
+              |> Map.toList
+              |> List.map (fun (_, m) -> m.Choices) ]
+            |> List.collect id
+            |> List.reduceSafe Map.empty<_, _> (Map.mergeSets)
+            |> Map.mergeSets model.Choices
         
         { model with Environment = environment
-                     Matchups = Map.empty<_,_>
-                    //  Defender = { model.Defender with Models = newDefenders }
-                     Choices = choices }, cmds
+                     Matchups = Map.empty<_, _>
+                     Choices = allChoices
+                     SelectedDefender = None
+                     SelectedAttacker = None }, Cmd.none
     | BindDefender -> 
-        match model.SelectedDefender with
-        | None -> model, Cmd.none
-        | Some defender -> 
-            let newEnvironment = Map.tryFind defender model.Defender.Models |> bindModelToEnvironment model.Environment defenderMap
-            match newEnvironment with
-            | Some(choices, environment) -> 
-                let cmds =
-                    [ rebind environment (Some defenderMap) model.SelectedDefender
-                      rebind environment (Some attackerMap) model.SelectedAttacker ]
-                    |> List.choose id
-                    |> Cmd.batch
-                { model with Environment = environment
-                             Choices = Map.mergeSets choices model.Choices }, cmds
-            | None -> model, Cmd.none
+        let models =
+            match model.SelectedDefender, model.SelectedAttacker with
+            | Some key, Some key2 -> 
+                let matchup =
+                    Map.find { Defender = key
+                               Attacker = key2 } model.Matchups
+                Map.map (fun k (m : Models.Types.Model) -> 
+                    if k = key2 then { m with ProbabilityRules = Some matchup }
+                    else m) model.Attacker.Models
+            | _ -> model.Attacker.Models
+             
+        let defenderModels = 
+            Map.map (fun k (m : Models.Types.Model) -> 
+                    match model.SelectedDefender  with 
+                    | Some key when key = k -> { m with ProbabilityRules = Some (evalOp model.Environment m.Rules) }
+                    | _ -> m  ) model.Defender.Models
+
+        { model with Attacker = { model.Attacker with Models = models }
+                     Defender = { model.Defender with Models = defenderModels } }, 
+        Cmd.none
     | BindAttacker -> 
-        match model.SelectedAttacker with
+        let foundAttacker =
+            model.SelectedAttacker 
+            |> Option.bind 
+                   (fun attacker -> Map.tryFind attacker model.Attacker.Models)
+        match foundAttacker with
         | None -> model, Cmd.none
-        | Some attacker -> 
-            let newEnvironment = Map.tryFind attacker model.Attacker.Models |> bindModelToEnvironment model.Environment attackerMap
-            match newEnvironment with
-            | Some(choices, environment) -> 
-                let cmds =
-                    [ rebind environment (Some defenderMap) model.SelectedDefender
-                      rebind environment (Some attackerMap) model.SelectedAttacker ]
-                    |> List.choose id
-                    |> Cmd.batch
-                { model with Environment = environment
-                             Choices = Map.mergeSets choices model.Choices }, cmds
-            | None -> model, Cmd.none
+        | Some attacker ->             
+            let performMatchup (def : Models.Types.Model) 
+                (attacker : Models.Types.Model) env =
+                let initial = Map.add defenderMap def.Rules env
+                let evaluatedRule = attacker.Rules |> evalOp initial
+                ({ Defender = def.Name
+                   Attacker = attacker.Name }, evaluatedRule)
+            
+            let matchups =
+                [ for def in model.Defender.Models do
+                      yield performMatchup def.Value attacker model.Environment ]
+                |> Map.ofList
+            
+            let models =
+                match model.SelectedDefender, model.SelectedAttacker with
+                | Some key, Some key2 -> 
+                    let matchup =
+                        Map.find { Defender = key
+                                   Attacker = key2 } matchups
+                    Map.map (fun k (m : Models.Types.Model) -> 
+                        if k = key2 then 
+                            { m with ProbabilityRules = Some matchup }
+                        else m) model.Attacker.Models
+                | _ -> Map.remove attackerMap model.Attacker.Models
+            
+            { model with Attacker = { model.Attacker with Models = models }
+                         Matchups = matchups }, Cmd.none

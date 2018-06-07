@@ -13,10 +13,10 @@ type Model =
       Size : int<mm>
       Attributes : Map<string, Order * Operation>
       Rules : Operation
-      ProbabilityRules : Operation option }
+      ProbabilityRules : Operation option
+      Choices : Map<string, Set<string>> }
 
 type Msg =
     | ChangePosition of float * float
-    | MakeChoice of string * Set<string>
     | Rebind of Environment
     | Select
