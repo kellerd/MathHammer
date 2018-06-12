@@ -101,12 +101,17 @@ let init() : Model * Cmd<Types.Msg> =
                Cmd.map (fun msg -> UnitList.Types.ModelMsg(msg, name)) cmd)
         |> List.unzip
     
-    let ((_, geq), modelCmd) = initGeq "Geq" defenderDefinition
-    let defenderCmds =
-        Cmd.map (fun msg -> UnitList.Types.ModelMsg(msg, "Geq")) modelCmd
-    let defenderModels =
+    let geq = initGeq "Geq" defenderDefinition
+    let (defenderModels, modelCmds) =
         [ 'a'..'z' ] 
-        |> List.map (fun c -> string c, { geq with Name = string c })
+        |> List.mapi (fun i c -> 
+            let ((_, geq), modelCmd) =  geq i (6-i % 5)
+            let name = sprintf "T%d Sv%d" i (6 - i  % 5)
+            (name, { geq with Name = name}), modelCmd )
+        |> List.unzip 
+    let defenderCmds = 
+        List.map ( Cmd.map (fun msg -> UnitList.Types.ModelMsg(msg, "Geq")) ) modelCmds
+        |> Cmd.batch
     
     let model : Model =
         { Environment =

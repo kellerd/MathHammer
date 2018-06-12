@@ -56,18 +56,18 @@ let initMeq name coreRules =
                         Choices = choices
                         Attributes = Map.ofList attributes }), Cmd.none
 
-let initGeq name coreRules =
+let initGeq name coreRules t sv =
     let attributes =
         [ "Weapon Range", (1, vInt 30)
           "M", (2, vInt 6)
           "WS", (3, dPlus 6 3)
           "BS", (4, dPlus 6 3)
           "S", (5, vInt 5)
-          "T", (6, vInt 4)
+          "T", (6, vInt t)
           "W", (7, vInt 1)
           "A", (8, vInt 2)
           "Ld", (9, vInt 8)
-          "Sv", (10, dPlus 6 3)
+          "Sv", (10, dPlus 6 sv)
           "InvSv", (11, noValue) ]
     
     let (choices, rules) =

@@ -22,8 +22,7 @@ let showAttributes ((key : string), operation) dispatch =
           GameActions.Primitives.View.probabilities operation dispatch ]
 
 let rangeStops (dist : Distribution.Distribution<_>) =
-    let length = List.length dist.Probabilities
-    
+   
     let minRange, maxRange, _, _ =
         { dist with Probabilities = dist.Probabilities |> List.rev }
         |> Distribution.choose (function 
@@ -54,7 +53,8 @@ let rangeStops (dist : Distribution.Distribution<_>) =
             <| (1. - (float (range - minRange) / float (maxRange - minRange))) 
                * 255.
     
-    let stopsPercentGreenAndOpacity =
+    let stopsPercentGreenAndOpacity (dist:Distribution.Distribution<_>) =
+        let length = List.length dist.Probabilities
         let stops =
             { dist with Probabilities = dist.Probabilities |> List.rev }
             |> Distribution.get
@@ -98,7 +98,7 @@ let rangeStops (dist : Distribution.Distribution<_>) =
                       SVGAttr.StopColor stopcolor
                       SVGAttr.StopOpacity opacity ] [])
     
-    (minRange, maxRange, stopsPercentGreenAndOpacity)
+    (minRange, maxRange, stopsPercentGreenAndOpacity dist)
 
 let safe (id : string) =
     match id with

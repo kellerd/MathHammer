@@ -7,7 +7,7 @@ open GameActions.Primitives.Types
 open Models.View
 open GameActions.Primitives.State
 
-let line colour (x1, y1) (x2, y2) tension =
+let line colour (x1, y1) (x2, y2) tension width =
     let (hx1, hy1, hx2, hy2) =
         let delta =
             if tension < 0.0 then (y2 - y1) * tension
@@ -20,6 +20,7 @@ let line colour (x1, y1) (x2, y2) tension =
     path [ SVGAttr.D pathString
            SVGAttr.Fill "none"
            SVGAttr.Stroke colour
+           SVGAttr.StrokeWidth width
            SVGAttr.MarkerEnd "url(#arrow)"
            SVGAttr.MarkerStart "url(#arrowBack)" ] []
 
@@ -31,18 +32,18 @@ let arrowDef =
                SVGAttr.Custom("refX", "25")
                SVGAttr.Custom("refY", "10")
                SVGAttr.Custom("orient", "auto")
-               SVGAttr.Custom("markerUnits", "strokeWidth")
+               SVGAttr.Custom("markerUnits", "userSpaceOnUse")
                Id "arrow" ] [ path [ D "M0,0 L0,20 L25,10 z"
-                                     SVGAttr.Fill "#ff0000" ] [] ]
+                                     SVGAttr.Fill "green" ] [] ]
       marker [ SVGAttr.Custom("markerWidth", "50")
                SVGAttr.Custom("markerHeight", "50")
                SVGAttr.Custom("refX", "25")
                SVGAttr.Custom("refY", "10")
                SVGAttr.Custom("orient", "auto")
-               SVGAttr.Custom("markerUnits", "strokeWidth")
+               SVGAttr.Custom("markerUnits", "userSpaceOnUse")
                Id "arrowBack" ] [ path [ SVGAttr.Transform "rotate(180 25,10)"
                                          D "M25,10 L0,20 L0,0 z"
-                                         SVGAttr.Fill "#ff0000" ] [] ] ]
+                                         SVGAttr.Fill "green" ] [] ] ]
     |> defs []
 
 let root model dispatch =
@@ -50,38 +51,65 @@ let root model dispatch =
         ViewBox
             (sprintf "%d %d %d %d" model.Board.Top model.Board.Left 
                  model.Board.Width model.Board.Height)
+
     let selectedAttacker =
         model.SelectedAttacker 
         |> Option.bind (fun name -> Map.tryFind name model.Attacker.Models)
-    let selectedDefender =
-        model.SelectedDefender 
-        |> Option.bind (fun name -> Map.tryFind name model.Defender.Models)
-    
-    let selectedBoth =
-        match selectedAttacker, selectedDefender with
-        | Some a, Some d -> Some((a.PosX, a.PosY), (d.PosX, d.PosY))
-        | _ -> None
-    
-    let selectedLine =
-        selectedBoth
-        |> Option.map (fun (a, d) -> line "red" a d -0.5)
-        |> ofOption
+    let selectedLines =
+        selectedAttacker         
+        |> Option.toList
+        |> List.collect (fun a -> 
+            [ for d in model.Defender.Models do
+                let matchup = Map.find {Attacker = a.Name; Defender = d.Key} model.Matchups
+                let environment = Map.add defenderMap d.Value.Rules model.Environment
+                let ap = (a.PosX, a.PosY)
+                let dp = (d.Value.PosX, d.Value.PosY)
+                let log f = printfn "%A" f; f
+                let unsavedWounds = 
+                    match (getp "Unsaved Wounds" matchup |> evalOp environment ) |> log with 
+                    | Value (v) -> 
+                        match v with 
+                        | Int _         
+                        | Float _       -> Some v
+                        | Str _         -> None
+                        | Check _       -> None
+                        | NoValue       -> failwith "Not Implemented"
+                        | ParamArray _  -> failwith "Not Implemented"
+                        | Tuple(Check (Check.Pass v), Check (Check.Fail _)) -> Some (Check (Check.Pass v))                      
+                        | Tuple _       -> None                        
+                        | Dist(d)       -> d.Probabilities |> List.sumBy (fun (a, p) -> a * (Float p)) |> Some
+                    | Call _                                  -> None
+                    | PropertyGet _                     -> None
+                    | Var _                                 -> None
+                    | App _                           -> None
+                    | Lam _                      -> None
+                    | Let _                    -> None
+                    | IfThenElse _   -> None
+                    | Choice _               -> None                        
+                    |> Option.map (function 
+                                       | Check(Check.Pass(Int(wounds))) -> float wounds
+                                       | Tuple(Check (Check.Pass (Float(wounds))), Check (Check.Fail _)) -> wounds
+                                       | Tuple(Check (Check.Pass (Int(wounds))), Check (Check.Fail _)) -> float wounds
+                                       | Check(Check.Pass(Float(wounds))) -> wounds
+                                       | Int(wounds) -> float wounds 
+                                       | Float(wounds) -> wounds 
+                                       | v -> log v |> ignore; 0.0
+                                    >> (*) 25.0
+                                    >> line "green" ap dp -0.5 )    
+                yield unsavedWounds ] )
+        |> List.choose id        
     
     let drawing =
         svg [ viewbox
-              unbox ("width", "100%") ] [ arrowDef
+              unbox ("width", "100%") ] [ //arrowDef
                                           
-                                          UnitList.View.rootLocation 
-                                              model.Defender.Location
-                                          
-                                          UnitList.View.rootLocation 
-                                              model.Attacker.Location
-                                          
-                                          UnitList.View.rootLocation 
-                                              model.Defender.Deployment
-                                          
-                                          UnitList.View.rootLocation 
-                                              model.Attacker.Deployment
+                                          [ model.Defender.Location
+                                            model.Attacker.Location
+                                            model.Defender.Deployment
+                                            model.Attacker.Deployment ]
+                                          |> List.map UnitList.View.rootLocation 
+                                          |> ofList    
+
                                           model.SelectedAttacker
                                           |> Option.bind 
                                                  (UnitList.View.rootRanges 
@@ -116,7 +144,9 @@ let root model dispatch =
                                               (fun msg -> 
                                               UnitListMsg(msg, Some defenderMap) 
                                               |> dispatch)
-                                          selectedLine ]
+
+                                          selectedLines
+                                          |> ofList ]
     
     let swap =
         i [ ClassName "fa fa-arrows-v"
