@@ -60,13 +60,12 @@ let root model dispatch =
         |> Option.toList
         |> List.collect (fun a -> 
             [ for d in model.Defender.Models do
-                let matchup = Map.find {Attacker = a.Name; Defender = d.Key} model.Matchups
+                let matchup = Map.find {Attacker = a.Name; Defender = Some d.Key} model.Matchups
                 let environment = Map.add defenderMap d.Value.Rules model.Environment
                 let ap = (a.PosX, a.PosY)
                 let dp = (d.Value.PosX, d.Value.PosY)
-                let log f = printfn "%A" f; f
                 let unsavedWounds = 
-                    match (getp "Unsaved Wounds" matchup |> evalOp environment ) |> log with 
+                    match (getp "Unsaved Wounds" matchup |> evalOp environment ) with 
                     | Value (v) -> 
                         match v with 
                         | Int _         
@@ -93,7 +92,7 @@ let root model dispatch =
                                        | Check(Check.Pass(Float(wounds))) -> wounds
                                        | Int(wounds) -> float wounds 
                                        | Float(wounds) -> wounds 
-                                       | v -> log v |> ignore; 0.0
+                                       | v -> 0.0
                                     >> (*) 25.0
                                     >> line "green" ap dp -0.5 )    
                 yield unsavedWounds ] )
@@ -205,11 +204,12 @@ let root model dispatch =
                           [ str (mode.ToString()) ] ]
             
             let resultsDiv =
-                selected.ProbabilityRules
-                |> Option.map (getListOfOps
-                               >> List.map (showFunction dispatch)
-                               >> columnsOf)
-                |> ofOption
+                match selected.ProbabilityRules with 
+                | Some r -> r 
+                | None -> selected.Rules <*> Value NoValue |> evalOp model.Environment
+                |> getListOfOps
+                |> List.map (showFunction dispatch)
+                |> columnsOf
             
             let inline chunkBySize size =
                 Seq.ofList

@@ -16,7 +16,7 @@ type Mode =
 
 type Matchup =
     { Attacker : string
-      Defender : string }
+      Defender : string option }
 
 type Model =
     { Attacker : UnitList.Types.Model

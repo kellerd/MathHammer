@@ -263,10 +263,10 @@ let update msg model : Model * Cmd<Types.Msg> =
                      SelectedAttacker = None }, Cmd.none
     | BindDefender -> 
         let models =
-            match model.SelectedDefender, model.SelectedAttacker with
-            | Some key, Some key2 -> 
+            match model.SelectedAttacker with
+            | Some key2 -> 
                 let matchup =
-                    Map.find { Defender = key
+                    Map.find { Defender = model.SelectedDefender
                                Attacker = key2 } model.Matchups
                 Map.map (fun k (m : Models.Types.Model) -> 
                     if k = key2 then { m with ProbabilityRules = Some matchup }
@@ -290,23 +290,27 @@ let update msg model : Model * Cmd<Types.Msg> =
         match foundAttacker with
         | None -> model, Cmd.none
         | Some attacker ->             
-            let performMatchup (def : Models.Types.Model) 
-                (attacker : Models.Types.Model) env =
-                let initial = Map.add defenderMap def.Rules env
+            let performMatchup def (attacker : Models.Types.Model) env =
+                let (defName,defRules) = 
+                    match def with 
+                    | Some (d  : Models.Types.Model) -> Some d.Name, d.Rules 
+                    | None -> None, Value(NoValue) 
+                let initial = Map.add defenderMap defRules env
                 let evaluatedRule = attacker.Rules |> evalOp initial
-                ({ Defender = def.Name
+                ({ Defender = defName
                    Attacker = attacker.Name }, evaluatedRule)
             
             let matchups =
-                [ for def in model.Defender.Models do
-                      yield performMatchup def.Value attacker model.Environment ]
+                [ yield performMatchup None attacker model.Environment
+                  for def in model.Defender.Models do
+                      yield performMatchup (Some def.Value) attacker model.Environment ]
                 |> Map.ofList
             
             let models =
-                match model.SelectedDefender, model.SelectedAttacker with
-                | Some key, Some key2 -> 
+                match model.SelectedAttacker with
+                | Some key2 -> 
                     let matchup =
-                        Map.find { Defender = key
+                        Map.find { Defender = model.SelectedDefender
                                    Attacker = key2 } matchups
                     Map.map (fun k (m : Models.Types.Model) -> 
                         if k = key2 then 
