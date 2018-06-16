@@ -5,7 +5,6 @@ open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
-open Distribution.Example
 
 let range = vInt
 
@@ -102,19 +101,22 @@ let init() : Model * Cmd<Types.Msg> =
         |> List.unzip
     
     let geq = initGeq "Geq" defenderDefinition
+    
     let (defenderModels, modelCmds) =
-        [ 'a'..'z' ] 
+        [ 'a'..'z' ]
         |> List.mapi (fun i c -> 
-            let ((_, geq), modelCmd) =  geq i (6-i % 5)
-            let name = sprintf "T%d Sv%d" i (6 - i  % 5)
-            (name, { geq with Name = name}), modelCmd )
-        |> List.unzip 
-    let defenderCmds = 
-        List.map ( Cmd.map (fun msg -> UnitList.Types.ModelMsg(msg, "Geq")) ) modelCmds
-        |> Cmd.batch
+               let ((_, geq), modelCmd) = geq i (6 - i % 5)
+               let name = sprintf "T%d Sv%d" i (6 - i % 5)
+               (name, { geq with Name = name }), modelCmd)
+        |> List.unzip
+    
+    let defenderCmds =
+        List.map (Cmd.map (fun msg -> UnitList.Types.ModelMsg(msg, "Geq"))) 
+            modelCmds |> Cmd.batch
     
     let model : Model =
-        { Environment =
+        { Dragging = None, None
+          Environment =
               Map.empty<_, _> |> Map.add "Phase" (Str "Assault" |> Value)
           Attacker =
               { attacker with Location =
@@ -183,13 +185,23 @@ let update msg model : Model * Cmd<Types.Msg> =
             let mmsg = UnitList.Types.ModelMsg(rebind, name)
             Cmd.ofMsg (UnitListMsg(mmsg, source))) nameOpt
     match msg with
+    | EndDrag -> 
+        let (_, name) = model.Dragging
+        { model with Dragging = None, name }, Cmd.none
+    | StartDrag(draggable, offset) -> 
+        let (_, name) = model.Dragging
+        { model with Dragging = Some(draggable, offset), name }, Cmd.none
     | UnitListMsg(UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), 
                   Some "Attacker") -> 
-        { model with SelectedAttacker = Some m }, 
+        let (guy, _) = model.Dragging
+        { model with SelectedAttacker = Some m
+                     Dragging = (guy, Some(attackerMap, m)) }, 
         Cmd.batch [ Cmd.ofMsg BindAttacker ]
     | UnitListMsg(UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), 
                   Some "Defender") -> 
-        { model with SelectedDefender = Some m }, 
+        let (guy, _) = model.Dragging
+        { model with SelectedDefender = Some m
+                     Dragging = (guy, Some(defenderMap, m)) }, 
         Cmd.batch [ Cmd.ofMsg BindDefender ]
     | UnitListMsg(msg, Some "Attacker") -> 
         let (ula, ulCmdsa) = UnitList.State.update msg model.Attacker
@@ -203,7 +215,8 @@ let update msg model : Model * Cmd<Types.Msg> =
             [ Cmd.map (fun msg -> UnitListMsg(msg, Some "Defender")) ulCmdsd ]
     | Choose(key, value) -> 
         { model with SelectedChoices = Map.add key value model.SelectedChoices
-                     Environment = Map.add key (Value(Str(value))) model.Environment }, 
+                     Environment =
+                         Map.add key (Value(Str(value))) model.Environment }, 
         Cmd.batch [ Cmd.ofMsg BindDefender
                     Cmd.ofMsg BindAttacker ]
     | UnitListMsg(_, Some _) -> failwith "No list of that name"
@@ -272,13 +285,15 @@ let update msg model : Model * Cmd<Types.Msg> =
                     if k = key2 then { m with ProbabilityRules = Some matchup }
                     else m) model.Attacker.Models
             | _ -> model.Attacker.Models
-             
-        let defenderModels = 
+        
+        let defenderModels =
             Map.map (fun k (m : Models.Types.Model) -> 
-                    match model.SelectedDefender  with 
-                    | Some key when key = k -> { m with ProbabilityRules = Some (evalOp model.Environment m.Rules) }
-                    | _ -> m  ) model.Defender.Models
-
+                match model.SelectedDefender with
+                | Some key when key = k -> 
+                    { m with ProbabilityRules =
+                                 Some(evalOp model.Environment m.Rules) }
+                | _ -> m) model.Defender.Models
+        
         { model with Attacker = { model.Attacker with Models = models }
                      Defender = { model.Defender with Models = defenderModels } }, 
         Cmd.none
@@ -289,12 +304,13 @@ let update msg model : Model * Cmd<Types.Msg> =
                    (fun attacker -> Map.tryFind attacker model.Attacker.Models)
         match foundAttacker with
         | None -> model, Cmd.none
-        | Some attacker ->             
+        | Some attacker -> 
             let performMatchup def (attacker : Models.Types.Model) env =
-                let (defName,defRules) = 
-                    match def with 
-                    | Some (d  : Models.Types.Model) -> Some d.Name, d.Rules 
-                    | None -> None, Value(NoValue) 
+                let (defName, defRules) =
+                    match def with
+                    | Some(d : Models.Types.Model) -> Some d.Name, d.Rules
+                    | None -> None, Value(NoValue)
+                
                 let initial = Map.add defenderMap defRules env
                 let evaluatedRule = attacker.Rules |> evalOp initial
                 ({ Defender = defName
@@ -302,8 +318,10 @@ let update msg model : Model * Cmd<Types.Msg> =
             
             let matchups =
                 [ yield performMatchup None attacker model.Environment
+                  
                   for def in model.Defender.Models do
-                      yield performMatchup (Some def.Value) attacker model.Environment ]
+                      yield performMatchup (Some def.Value) attacker 
+                                model.Environment ]
                 |> Map.ofList
             
             let models =

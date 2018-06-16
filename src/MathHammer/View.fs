@@ -1,5 +1,6 @@
 module MathHammer.View
 
+open Fable.Core.JsInterop
 open Fable.Helpers.React
 open Props
 open Types
@@ -51,64 +52,124 @@ let root model dispatch =
         ViewBox
             (sprintf "%d %d %d %d" model.Board.Top model.Board.Left 
                  model.Board.Width model.Board.Height)
-
     let selectedAttacker =
         model.SelectedAttacker 
         |> Option.bind (fun name -> Map.tryFind name model.Attacker.Models)
+    
     let selectedLines =
-        selectedAttacker         
+        selectedAttacker
         |> Option.toList
         |> List.collect (fun a -> 
-            [ for d in model.Defender.Models do
-                let matchup = Map.find {Attacker = a.Name; Defender = Some d.Key} model.Matchups
-                let environment = Map.add defenderMap d.Value.Rules model.Environment
-                let ap = (a.PosX, a.PosY)
-                let dp = (d.Value.PosX, d.Value.PosY)
-                let unsavedWounds = 
-                    match (getp "Unsaved Wounds" matchup |> evalOp environment ) with 
-                    | Value (v) -> 
-                        match v with 
-                        | Int _         
-                        | Float _       -> Some v
-                        | Str _         -> None
-                        | Check _       -> None
-                        | NoValue       -> failwith "Not Implemented"
-                        | ParamArray _  -> failwith "Not Implemented"
-                        | Tuple(Check (Check.Pass v), Check (Check.Fail _)) -> Some (Check (Check.Pass v))                      
-                        | Tuple _       -> None                        
-                        | Dist(d)       -> d.Probabilities |> List.sumBy (fun (a, p) -> a * (Float p)) |> Some
-                    | Call _                                  -> None
-                    | PropertyGet _                     -> None
-                    | Var _                                 -> None
-                    | App _                           -> None
-                    | Lam _                      -> None
-                    | Let _                    -> None
-                    | IfThenElse _   -> None
-                    | Choice _               -> None                        
-                    |> Option.map (function 
-                                       | Check(Check.Pass(Int(wounds))) -> float wounds
-                                       | Tuple(Check (Check.Pass (Float(wounds))), Check (Check.Fail _)) -> wounds
-                                       | Tuple(Check (Check.Pass (Int(wounds))), Check (Check.Fail _)) -> float wounds
-                                       | Check(Check.Pass(Float(wounds))) -> wounds
-                                       | Int(wounds) -> float wounds 
-                                       | Float(wounds) -> wounds 
-                                       | v -> 0.0
-                                    >> (*) 25.0
-                                    >> line "green" ap dp -0.5 )    
-                yield unsavedWounds ] )
-        |> List.choose id        
+               [ for d in model.Defender.Models do
+                     let matchup =
+                         Map.find { Attacker = a.Name
+                                    Defender = Some d.Key } model.Matchups
+                     
+                     let environment =
+                         Map.add defenderMap d.Value.Rules model.Environment
+                     let ap = (a.PosX, a.PosY)
+                     let dp = (d.Value.PosX, d.Value.PosY)
+                     
+                     let unsavedWounds =
+                         match (getp "Unsaved Wounds" matchup 
+                                |> evalOp environment) with
+                         | Value(v) -> 
+                             match v with
+                             | Int _ | Float _ -> Some v
+                             | Str _ -> None
+                             | Check _ -> None
+                             | NoValue -> failwith "Not Implemented"
+                             | ParamArray _ -> failwith "Not Implemented"
+                             | Tuple(Check(Check.Pass v), Check(Check.Fail _)) -> 
+                                 Some(Check(Check.Pass v))
+                             | Tuple _ -> None
+                             | Dist(d) -> 
+                                 d.Probabilities
+                                 |> List.sumBy (fun (a, p) -> a * (Float p))
+                                 |> Some
+                         | Call _ -> None
+                         | PropertyGet _ -> None
+                         | Var _ -> None
+                         | App _ -> None
+                         | Lam _ -> None
+                         | Let _ -> None
+                         | IfThenElse _ -> None
+                         | Choice _ -> None
+                         |> Option.map (function 
+                                        | Check(Check.Pass(Int(wounds))) -> 
+                                            float wounds
+                                        | Tuple(Check(Check.Pass(Float(wounds))), 
+                                                Check(Check.Fail _)) -> wounds
+                                        | Tuple(Check(Check.Pass(Int(wounds))), 
+                                                Check(Check.Fail _)) -> 
+                                            float wounds
+                                        | Check(Check.Pass(Float(wounds))) -> 
+                                            wounds
+                                        | Int(wounds) -> float wounds
+                                        | Float(wounds) -> wounds
+                                        | _ -> 0.0
+                                        >> (*) 25.0
+                                        >> line "green" ap dp -0.5)
+                     yield unsavedWounds ])
+        |> List.choose id
+    
+    let getMousePosition svg drg =
+        let ctm = svg?getScreenCTM ()
+        
+        let evt =
+            if (!!drg?touches) then !!drg?touches [ 0 ]
+            else drg
+        (!!evt?clientX - !!ctm?e) / !!ctm?a, (!!evt?clientY - !!ctm?f) / !!ctm?d
+    
+    let startDrag (evt : Fable.Import.React.MouseEvent) =
+        if !!evt.target?classList |> Array.contains "draggable" then 
+            let svg = Fable.Import.Browser.document.getElementById ("mainBoard")
+            let (x : float, y : float) = getMousePosition svg evt
+            let offset =
+                (x - !!(!!(evt.target)?getAttributeNS (null, "x"))), 
+                (y - !!(!!(evt.target)?getAttributeNS (null, "y")))
+            StartDrag offset |> dispatch
+    
+    let drag (evt : Fable.Import.React.MouseEvent) =
+        match model.Dragging with
+        | Some _, Some(map, model) -> 
+            evt.preventDefault()
+            let svg = Fable.Import.Browser.document.getElementById ("mainBoard")
+            let (x, y) = getMousePosition svg evt
+            let msg = MathHammer.Models.Types.Msg.ChangePosition(x, y)
+            UnitListMsg
+                (MathHammer.UnitList.Types.ModelMsg(msg, model), Some map) 
+            |> dispatch
+        | _ -> ()
+    
+    let cancelDrag _ = dispatch EndDrag
+    
+    let endDrag (evt : Fable.Import.React.MouseEvent) =
+        let svg = Fable.Import.Browser.document.getElementById ("mainBoard")
+        let (x, y) = getMousePosition svg evt
+        match model.Dragging with
+        | Some _, Some(map, model) -> 
+            let msg = MathHammer.Models.Types.Msg.ChangePosition(x, y)
+            UnitListMsg
+                (MathHammer.UnitList.Types.ModelMsg(msg, model), Some map) 
+            |> dispatch
+            dispatch EndDrag
+        | _ -> ()
     
     let drawing =
-        svg [ viewbox
+        svg [ Id "mainBoard"
+              OnMouseDown startDrag
+              OnMouseMove drag
+              OnMouseUp endDrag
+              OnMouseLeave cancelDrag
+              viewbox
               unbox ("width", "100%") ] [ //arrowDef
-                                          
-                                          [ model.Defender.Location
-                                            model.Attacker.Location
-                                            model.Defender.Deployment
+                                          [ model.Defender.Location; 
+                                            model.Attacker.Location; 
+                                            model.Defender.Deployment; 
                                             model.Attacker.Deployment ]
-                                          |> List.map UnitList.View.rootLocation 
-                                          |> ofList    
-
+                                          |> List.map UnitList.View.rootLocation
+                                          |> ofList
                                           model.SelectedAttacker
                                           |> Option.bind 
                                                  (UnitList.View.rootRanges 
@@ -143,9 +204,7 @@ let root model dispatch =
                                               (fun msg -> 
                                               UnitListMsg(msg, Some defenderMap) 
                                               |> dispatch)
-
-                                          selectedLines
-                                          |> ofList ]
+                                          selectedLines |> ofList ]
     
     let swap =
         i [ ClassName "fa fa-arrows-v"
@@ -204,9 +263,10 @@ let root model dispatch =
                           [ str (mode.ToString()) ] ]
             
             let resultsDiv =
-                match selected.ProbabilityRules with 
-                | Some r -> r 
-                | None -> selected.Rules <*> Value NoValue |> evalOp model.Environment
+                match selected.ProbabilityRules with
+                | Some r -> r
+                | None -> 
+                    selected.Rules <*> Value NoValue |> evalOp model.Environment
                 |> getListOfOps
                 |> List.map (showFunction dispatch)
                 |> columnsOf

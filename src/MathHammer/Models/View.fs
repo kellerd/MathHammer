@@ -1,5 +1,6 @@
 module MathHammer.Models.View
 
+open Fable.Core.JsInterop
 open Fable.Helpers.React
 open Props
 open Types
@@ -22,7 +23,6 @@ let showAttributes ((key : string), operation) dispatch =
           GameActions.Primitives.View.probabilities operation dispatch ]
 
 let rangeStops (dist : Distribution.Distribution<_>) =
-   
     let minRange, maxRange, _, _ =
         { dist with Probabilities = dist.Probabilities |> List.rev }
         |> Distribution.choose (function 
@@ -53,8 +53,9 @@ let rangeStops (dist : Distribution.Distribution<_>) =
             <| (1. - (float (range - minRange) / float (maxRange - minRange))) 
                * 255.
     
-    let stopsPercentGreenAndOpacity (dist:Distribution.Distribution<_>) =
+    let stopsPercentGreenAndOpacity (dist : Distribution.Distribution<_>) =
         let length = List.length dist.Probabilities
+        
         let stops =
             { dist with Probabilities = dist.Probabilities |> List.rev }
             |> Distribution.get
@@ -106,7 +107,8 @@ let safe (id : string) =
     | id -> id.Replace(" ", "")
 
 let groupFor model display =
-    g [ SVGAttr.Transform(sprintf "translate(%f,%f)" model.PosX model.PosY) ] 
+    g [ Id model.Name
+        SVGAttr.Transform(sprintf "translate(%f,%f)" model.PosX model.PosY) ] 
         [ g [] display ]
 
 let rangeRoot name model =
@@ -134,7 +136,8 @@ let rangeRoot name model =
 let root model dispatch =
     let modelDisplay =
         [ circle [ R(model.Size / 2 |> float)
-                   OnMouseOver(fun _ -> Select |> dispatch) ] []
+                   OnMouseOver(fun _ -> Select |> dispatch)
+                   Class "draggable" ] []
           text [ SVGAttr.TextAnchor "middle"
                  SVGAttr.Y 50.
                  SVGAttr.StrokeWidth(".5")
