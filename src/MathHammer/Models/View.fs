@@ -1,6 +1,5 @@
 module MathHammer.Models.View
 
-open Fable.Core.JsInterop
 open Fable.Helpers.React
 open Props
 open Types

@@ -115,7 +115,7 @@ let init() : Model * Cmd<Types.Msg> =
             modelCmds |> Cmd.batch
     
     let model : Model =
-        { Dragging = None, None
+        { Dragging = false, None
           Environment =
               Map.empty<_, _> |> Map.add "Phase" (Str "Assault" |> Value)
           Attacker =
@@ -187,22 +187,25 @@ let update msg model : Model * Cmd<Types.Msg> =
     match msg with
     | EndDrag -> 
         let (_, name) = model.Dragging
-        { model with Dragging = None, name }, Cmd.none
-    | StartDrag(draggable, offset) -> 
+        { model with Dragging = false, name }, Cmd.none
+    | StartDrag -> 
         let (_, name) = model.Dragging
-        { model with Dragging = Some(draggable, offset), name }, Cmd.none
+        { model with Dragging = true, name }, Cmd.none
     | UnitListMsg(UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), 
                   Some "Attacker") -> 
-        let (guy, _) = model.Dragging
-        { model with SelectedAttacker = Some m
-                     Dragging = (guy, Some(attackerMap, m)) }, 
-        Cmd.batch [ Cmd.ofMsg BindAttacker ]
+        let (isDragging, _) = model.Dragging
+        if not isDragging then 
+            { model with SelectedAttacker = Some m
+                         Dragging = (false, Some(attackerMap, m)) }, Cmd.batch [ Cmd.ofMsg BindAttacker ]  
+        else model, Cmd.none
     | UnitListMsg(UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), 
                   Some "Defender") -> 
-        let (guy, _) = model.Dragging
-        { model with SelectedDefender = Some m
-                     Dragging = (guy, Some(defenderMap, m)) }, 
-        Cmd.batch [ Cmd.ofMsg BindDefender ]
+        let (isDragging, _) = model.Dragging
+        if not isDragging then 
+            { model with SelectedDefender = Some m
+                         Dragging = (false, Some(defenderMap, m)) }, Cmd.batch [ Cmd.ofMsg BindDefender ]
+        else 
+            model, Cmd.none
     | UnitListMsg(msg, Some "Attacker") -> 
         let (ula, ulCmdsa) = UnitList.State.update msg model.Attacker
         { model with Attacker = ula }, 

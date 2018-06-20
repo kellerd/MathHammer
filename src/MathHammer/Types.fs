@@ -29,12 +29,12 @@ type Model =
       Choices : Map<string, Set<string>>
       SelectedChoices : Map<string, string>
       Matchups : Map<Matchup, Operation>
-      Dragging : Option<float * float> * Option<string * string>
+      Dragging : bool * Option<string * string>
       Mode : Mode }
 
 type Msg =
     | UnitListMsg of UnitList.Types.Msg * string option
-    | StartDrag of float * float
+    | StartDrag 
     | EndDrag
     | Drag
     | Choose of string * string

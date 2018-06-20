@@ -123,16 +123,11 @@ let root model dispatch =
     
     let startDrag (evt : Fable.Import.React.MouseEvent) =
         if !!evt.target?classList |> Array.contains "draggable" then 
-            let svg = Fable.Import.Browser.document.getElementById ("mainBoard")
-            let (x : float, y : float) = getMousePosition svg evt
-            let offset =
-                (x - !!(!!(evt.target)?getAttributeNS (null, "x"))), 
-                (y - !!(!!(evt.target)?getAttributeNS (null, "y")))
-            StartDrag offset |> dispatch
+            dispatch StartDrag
     
     let drag (evt : Fable.Import.React.MouseEvent) =
         match model.Dragging with
-        | Some _, Some(map, model) -> 
+        | true, Some(map, model) -> 
             evt.preventDefault()
             let svg = Fable.Import.Browser.document.getElementById ("mainBoard")
             let (x, y) = getMousePosition svg evt
@@ -148,13 +143,13 @@ let root model dispatch =
         let svg = Fable.Import.Browser.document.getElementById ("mainBoard")
         let (x, y) = getMousePosition svg evt
         match model.Dragging with
-        | Some _, Some(map, model) -> 
+        | true, Some(map, model) -> 
             let msg = MathHammer.Models.Types.Msg.ChangePosition(x, y)
             UnitListMsg
                 (MathHammer.UnitList.Types.ModelMsg(msg, model), Some map) 
             |> dispatch
-            dispatch EndDrag
         | _ -> ()
+        dispatch EndDrag
     
     let drawing =
         svg [ Id "mainBoard"
