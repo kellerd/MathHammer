@@ -38,9 +38,30 @@ let denyTest =
     |> opList
     |> total
 
+let rangeCheck =
+    let greater =
+        [ get "Assault Range"
+          get "Range" ]
+        |> opList
+        |> call GreaterThan
+    
+    let eq =
+        [ get "Assault Range"
+          get "Range" ]
+        |> opList
+        |> call Equals
+    
+    [ greater; eq ]
+    |> opList
+    |> call Or
+    |> count
+    |> lam "Assault Range"
+    |> lam "Range"
+
 let toHit =
-    repeatOp (get "WS") (get "A")
+    repeatOp (get "Can Hit") (repeatOp (get "WS") (get "A") |> total)
     |> total
+    |> lam "Can Hit"
     |> lam "A"
     |> lam "WS"
 
@@ -142,6 +163,7 @@ let globalOperations =
       "Strength vs Toughness Table", Text None, sVsT
       "Charge Range", Text None, chargeRange
       "Assault Range", Text None, meleeRange
+      "Range Check", Text None, rangeCheck
       "Shooting Range", Text None, shootingRange
       "Psychic Test", Text None, psychicTest
       "Deny Test", Text None, denyTest

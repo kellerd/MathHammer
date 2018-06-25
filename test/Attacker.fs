@@ -6,7 +6,13 @@ open MathHammer.State
 open GameActions.GameActionsList.State
 open Expecto
 
-let (==?) x y = Expect.equal x y ""
+let (==?) x y = 
+    match x,y with
+    | Value(Dist({ Probabilities = x })), Value(Dist({ Probabilities = y })) -> 
+        let lists = 
+            List.zip (List.sort x) (List.sort y) 
+        Expect.all lists (fun ((a,pa), (b,pb)) -> Expect.floatClose Accuracy.medium pa pb ""; a = b )  "" 
+    | _ -> Expect.equal x y ""
 
 let (==~) x y =
     match y with
@@ -93,66 +99,20 @@ let defApplied =
     |> normalize
     |> snd
     |> evalOp newEnv
+let passRangeMap = 
+    let alwaysPassRange = (Value(Float (0.<inch> |> float)))
+    newEnv
+    |> Map.add "Range" alwaysPassRange
+    |> Map.add "Defender" defApplied 
+let failRangeMap = 
+    let alwaysFailRange = (Value(Float (50000.<inch> |> float)))
+    newEnv
+    |> Map.add "Range" alwaysFailRange
+    |> Map.add "Defender" defApplied 
+let (chc, attApplied) =  applyArgs attacker seargent |> normalize
 
-let initialMap = Map.add "Defender" defApplied newEnv
-let (chc, attApplied) = applyArgs attacker seargent |> normalize
-let eval x op = getp x op |> evalOp initialMap
+let eval x op = getp x op |> evalOp passRangeMap
 
-// initialMap |> Map.find "Strength vs Toughness Table"
-// get "Strength vs Toughness Table" <*> get "S" <*> get "Defender" |> evalOp initialMap |> Map.find "Strength vs Toughness Table")
-// App
-//    (App
-//       (  Lam
-//             ("WS",
-//              Lam
-//                ("A",
-//                 App
-//                   (Call Total,
-//                    App
-//                      (Call Repeat,
-//                       Value (ParamArray [Lam ("unusedVariable",Var "WS"); Var "A"]))))),
-//        App
-//          (Call Count,
-//           Let
-//             ("roll",App (Call (Dice D6),Value NoValue),
-//              Let
-//                ("gt",
-//                 App
-//                   (Call GreaterThan,
-//                    Value (ParamArray [Var "roll"; Value (Int 3)])),
-//                 Let
-//                   ("eq",
-//                    App
-//                      (Call Equals,
-//                       Value (ParamArray [Var "roll"; Value (Int 3)])),
-//                    App (Call Or,Value (ParamArray [Var "eq"; Var "gt"]))))))),
-//     Value (Int 2))
-// |> (evalOp  initialMap )
-// getp "Charge Range" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Assault"))  initialMap )
-// getp "Assault Range" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Assault"))  initialMap )
-// getp "Hit Results" attApplied  |> (evalOp <| Map.add "Phase" (Value (Str  "Assault")) initialMap )
-// getp "Wound Results" attApplied  |> (evalOp  <| Map.add "Phase" (Value (Str  "Assault")) initialMap )
-// getp "Psychic Test" attApplied  |> (evalOp  <| Map.add "Phase" (Value(Str "Psychic")) initialMap )
-// let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  
-// let a' = vInt 2
-// a' |> count |> evalOp Map.empty<_,_> 
-// let ws' = dPlus D6 3
-// ws' |> evalOp Map.empty<_,_> 
-// ws' |> count |> evalOp Map.empty<_,_> 
-// let hits' = repeatOp (ws' |> count ) (a') |> total |> evalOp Map.empty<_,_>  
-// let svst' = dPlus D6 3 
-// svst' |> evalOp Map.empty<_,_> 
-// svst' |> count |> evalOp Map.empty<_,_> 
-// let wounds' = repeatOp (svst' |> count   ) (hits') |> evalOp Map.empty<_,_>
-// let wounds'' = repeatOp (svst' |> count ) (hits') |> total |> evalOp Map.empty<_,_>  
-// let x = d6 |> count  |> evalOp Map.empty<_,_>  
-// let D6D6s = repeatOp (d6) (d6)  |> total  |> evalOp Map.empty<_,_> 
-// let TwoD6 = repeatOp (d6) (vInt 2) |> total  |> evalOp Map.empty<_,_>  
-// let x = repeatOp (vInt 4) (d6)  |> evalOp Map.empty<_,_> 
-// let x = repeatOp (d6) (d6)  |> evalOp Map.empty<_,_>  
-// let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp Map.empty<_,_> 
-// let x = repeatOp (Value(ParamArray([vInt 3; vInt 2]))) (vInt 4)  |> evalOp Map.empty<_,_> 
-//|> count |> evalOp initialMap
 [<Tests>]
 let tests =
     let pairs = List.zip stats seargent
@@ -171,13 +131,13 @@ let tests =
                      | key, IsDPlus(3, plus) -> key, expectedDice 3 plus
                      | key, op -> key, op)
     testList "Attacker Tests" [ test "Check Charge Range" { 
-                                    let result = getp "Charge Range" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) initialMap)
+                                    let result = getp "Charge Range" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) passRangeMap)
                                     let expected =
                                         Distribution.takeN (Distribution.uniformDistribution [ 1..6 ]) 2 |> Distribution.map (List.sum >> Int)
                                     result ==? (Value(Dist(expected)))
                                 }
                                 test "Check Assault Range" { 
-                                    let result = getp "Assault Range" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) initialMap)
+                                    let result = getp "Assault Range" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) passRangeMap)
                                     
                                     let expected =
                                         Distribution.takeN (Distribution.uniformDistribution [ 1..6 ]) 2 |> Distribution.map (List.sum
@@ -186,7 +146,7 @@ let tests =
                                     result ==? (Value(Dist(expected)))
                                 }
                                 test "Check Hit Results" { 
-                                    let result = getp "Hit Results" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) initialMap)
+                                    let result = getp "Hit Results" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) passRangeMap)
                                     
                                     let expected =
                                         Value(Dist { Probabilities =
@@ -195,8 +155,16 @@ let tests =
                                                            (Check(Check.Fail(Int 2)), (1. / 9.)) ] })
                                     result ==? expected
                                 }
+                                test "Check Hit Results out of range" { 
+                                    let result = getp "Hit Results" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) failRangeMap)
+                                    
+                                    let expected =
+                                        Value(Dist { Probabilities =
+                                                         [ (Check(Check.Fail(Int 2)), (1.)) ] })
+                                    result ==? expected
+                                }
                                 test "Check Wound Results" { 
-                                    let result = getp "Wound Results" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) initialMap)
+                                    let result = getp "Wound Results" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) passRangeMap)
                                     
                                     let expected =
                                         Value(Dist { Probabilities =
@@ -205,8 +173,16 @@ let tests =
                                                            (Check(Check.Fail(Int 2)), (4. / 9.)) ] })
                                     result ==? expected
                                 }
+                                test "Check Wound Results out of range" { 
+                                    let result = getp "Wound Results" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) failRangeMap)
+                                    
+                                    let expected =
+                                        Value(Dist { Probabilities =
+                                                         [ (Check(Check.Fail(Int 2)), (1.)) ] })
+                                    result ==? expected
+                                }
                                 test "Check Psychic Test" { 
-                                    let result = getp "Psychic Test" attApplied |> evalOp (Map.add "Phase" (Value(Str "Psychic")) initialMap)
+                                    let result = getp "Psychic Test" attApplied |> evalOp (Map.add "Phase" (Value(Str "Psychic")) passRangeMap)
                                     let expected =
                                         Distribution.takeN (Distribution.uniformDistribution [ 1..6 ]) 2 |> Distribution.map (List.sum >> Int)
                                     result ==? (Value(Dist(expected)))

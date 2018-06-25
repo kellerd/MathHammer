@@ -117,7 +117,7 @@ let root model dispatch =
         let ctm = svg?getScreenCTM ()
         
         let evt =
-            if (!!drg?touches) then !!drg?touches [ 0 ]
+            if (!!drg?touches) then (!!) drg?touches [ 0 ]
             else drg
         (!!evt?clientX - !!ctm?e) / !!ctm?a, (!!evt?clientY - !!ctm?f) / !!ctm?d
     
@@ -135,6 +135,7 @@ let root model dispatch =
             UnitListMsg
                 (MathHammer.UnitList.Types.ModelMsg(msg, model), Some map) 
             |> dispatch
+            Drag |> dispatch
         | _ -> ()
     
     let cancelDrag _ = dispatch EndDrag

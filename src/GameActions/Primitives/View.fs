@@ -158,11 +158,11 @@ let unparseValue =
             |> paren
         | Check c -> unparseCheck unparseV c
         | ParamArray [] -> ofOption None
-        | ParamArray [ Value(Str _); Value(NoValue) ] -> ofOption None
-        | ParamArray [ Value(Str _); Var _ ] -> ofOption None
-        | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> 
-            ofOption None
-        | ParamArray [ Value(Str _); PropertyGet(_, Var _) ] -> ofOption None
+        // | ParamArray [ Value(Str _); Value(NoValue) ] -> ofOption None
+        // | ParamArray [ Value(Str _); Var _ ] -> ofOption None
+        // | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> 
+        //     ofOption None
+        // | ParamArray [ Value(Str _); PropertyGet(_, Var _) ] -> ofOption None
         | ParamArray(m) -> displayParamArray unparseV m
     unparseV
 
@@ -185,11 +185,11 @@ let unparseAverage =
             |> paren
         | Check c -> unparseCheck unparseV c
         | ParamArray [] -> ofOption None
-        | ParamArray [ Value(Str _); Value(NoValue) ] -> ofOption None
-        | ParamArray [ Value(Str _); Var _ ] -> ofOption None
-        | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> 
-            ofOption None
-        | ParamArray [ Value(Str _); PropertyGet(_, Var _) ] -> ofOption None
+        // | ParamArray [ Value(Str _); Value(NoValue) ] -> ofOption None
+        // | ParamArray [ Value(Str _); Var _ ] -> ofOption None
+        // | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> 
+        //     ofOption None
+        // | ParamArray [ Value(Str _); PropertyGet(_, Var _) ] -> ofOption None
         | ParamArray(m) -> displayParamArray unparseV m
     unparseV
 
@@ -209,11 +209,11 @@ let unparseSample =
             |> paren
         | Check c -> unparseCheck unparseV c
         | ParamArray [] -> ofOption None
-        | ParamArray [ Value(Str _); Value(NoValue) ] -> ofOption None
-        | ParamArray [ Value(Str _); Var _ ] -> ofOption None
-        | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> 
-            ofOption None
-        | ParamArray [ Value(Str _); PropertyGet(_, Var _) ] -> ofOption None
+        // | ParamArray [ Value(Str _); Value(NoValue) ] -> ofOption None
+        // | ParamArray [ Value(Str _); Var _ ] -> ofOption None
+        // | ParamArray [ Value(Str _); PropertyGet(_, Value(NoValue)) ] -> 
+        //     ofOption None
+        // | ParamArray [ Value(Str _); PropertyGet(_, Var _) ] -> ofOption None
         | ParamArray(m) -> displayParamArray unparseV m
     unparseV
 

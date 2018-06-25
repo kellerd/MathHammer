@@ -17,7 +17,7 @@ let init name =
 
 let initSgt name coreRules =
     let attributes =
-        [ "M", (1, vInt 6)
+        [ "M", (1, vInt 18)
           "WS", (2, dPlus 6 3)
           "BS", (3, dPlus 6 3)
           "S", (4, vInt 5)

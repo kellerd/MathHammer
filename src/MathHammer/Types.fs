@@ -34,7 +34,7 @@ type Model =
 
 type Msg =
     | UnitListMsg of UnitList.Types.Msg * string option
-    | StartDrag 
+    | StartDrag
     | EndDrag
     | Drag
     | Choose of string * string

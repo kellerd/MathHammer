@@ -5,6 +5,8 @@ open Types
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.Models.State
+open MathHammer.UnitList.State
+open Fable
 
 let range = vInt
 
@@ -14,8 +16,11 @@ let phaseActions =
                          [ get "Assault Range" <*> get "M" 
                            <*> get "Charge Range" >>= "Assault Range"
                            
+                           get "Range Check" <*> get "Range" 
+                           <*> get "Assault Range" >>= "Can Hit"
+                           
                            get "To Hit" <*> get "WS" <*> get "A" 
-                           >>= "Hit Results"
+                           <*> get "Can Hit" >>= "Hit Results"
                            
                            // (get "Strength vs Toughness Table" <*> get "S" <*> get "Defender") >>= "Wound Results"                  
                            get "To Wound" <*> get "Hit Results" 
@@ -28,6 +33,7 @@ let phaseActions =
                            <*> get "Wound Results" >>= "Unsaved Wounds" ]
                      <| opList [ labelVar "Charge Range"
                                  labelVar "Assault Range"
+                                 labelVar "Can Hit"
                                  labelVar "Hit Results"
                                  labelVar "Wound Results"
                                  labelVar "App2"
@@ -45,7 +51,18 @@ let dPhaseActions =
     >>= "Actions"
 
 let allPropsa =
-    opList [ labelVar "M"
+    opList [ //  labelVar "D6Test"
+             //  labelVar "D3Test"
+             labelProp "Actions" "Can Hit"
+             labelProp "Actions" "Hit Results"
+             labelProp "Actions" "Wound Results"
+             // labelProp "Actions" "App2"
+             labelProp "Actions" "Unsaved Wounds"
+             labelProp "Actions" "Charge Range"
+             labelProp "Actions" "Assault Range"
+             labelProp "Actions" "Psychic Test"
+             labelProp "Actions" "Shooting Range"
+             labelVar "M"
              labelVar "WS"
              labelVar "BS"
              labelVar "S"
@@ -54,17 +71,7 @@ let allPropsa =
              labelVar "A"
              labelVar "Ld"
              labelVar "Sv"
-             labelVar "InvSv"
-             labelVar "D6Test"
-             labelVar "D3Test"
-             labelProp "Actions" "Charge Range"
-             labelProp "Actions" "Assault Range"
-             labelProp "Actions" "Hit Results"
-             labelProp "Actions" "Wound Results"
-             labelProp "Actions" "App2"
-             labelProp "Actions" "Unsaved Wounds"
-             labelProp "Actions" "Psychic Test"
-             labelProp "Actions" "Shooting Range" ]
+             labelVar "InvSv" ]
 
 let allPropsd =
     opList [ labelVar "M"
@@ -178,6 +185,27 @@ let init() : Model * Cmd<Types.Msg> =
                           Some attackerMap))
                 Cmd.ofMsg RebindEnvironment ]
 
+let performMatchup def (attacker : Models.Types.Model) env =
+    let (defName, defRules, defRange) =
+        match def with
+        | Some(d : Models.Types.Model) -> 
+            let range =
+                distance (d.PosX, d.PosY) (attacker.PosX, attacker.PosY)
+                |> abs
+                |> (*) 1.<mm>
+                |> inch.FromMMf
+            Some d.Name, d.Rules, Value(Float(float range))
+        | None -> None, Value(NoValue), Value(NoValue)
+    
+    let initial =
+        env
+        |> Map.add "Range" defRange
+        |> Map.add defenderMap defRules
+    
+    let evaluatedRule = attacker.Rules |> evalOp initial
+    ({ Defender = defName
+       Attacker = attacker.Name }, evaluatedRule)
+
 let update msg model : Model * Cmd<Types.Msg> =
     let rebind environment source nameOpt =
         Option.map (fun name -> 
@@ -187,7 +215,20 @@ let update msg model : Model * Cmd<Types.Msg> =
     match msg with
     | EndDrag -> 
         let (_, name) = model.Dragging
-        { model with Dragging = false, name }, Cmd.none
+        
+        let cmds =
+            match name with
+            | Some(a, _) when a = attackerMap -> Cmd.ofMsg BindAttacker
+            | Some(d, _) when d = defenderMap -> Cmd.ofMsg BindDefender
+            | _ -> Cmd.none
+        { model with Dragging = false, name }, cmds
+    | Drag -> 
+        let cmds =
+            match model.Dragging with
+            | true, Some(a, _) when a = attackerMap -> Cmd.ofMsg BindAttacker
+            | true, Some(d, _) when d = defenderMap -> Cmd.ofMsg BindDefender
+            | _ -> Cmd.none
+        model, cmds
     | StartDrag -> 
         let (_, name) = model.Dragging
         { model with Dragging = true, name }, Cmd.none
@@ -196,16 +237,17 @@ let update msg model : Model * Cmd<Types.Msg> =
         let (isDragging, _) = model.Dragging
         if not isDragging then 
             { model with SelectedAttacker = Some m
-                         Dragging = (false, Some(attackerMap, m)) }, Cmd.batch [ Cmd.ofMsg BindAttacker ]  
+                         Dragging = (false, Some(attackerMap, m)) }, 
+            Cmd.batch [ Cmd.ofMsg BindAttacker ]
         else model, Cmd.none
     | UnitListMsg(UnitList.Types.ModelMsg(Models.Types.Msg.Select, m), 
                   Some "Defender") -> 
         let (isDragging, _) = model.Dragging
         if not isDragging then 
             { model with SelectedDefender = Some m
-                         Dragging = (false, Some(defenderMap, m)) }, Cmd.batch [ Cmd.ofMsg BindDefender ]
-        else 
-            model, Cmd.none
+                         Dragging = (false, Some(defenderMap, m)) }, 
+            Cmd.batch [ Cmd.ofMsg BindDefender ]
+        else model, Cmd.none
     | UnitListMsg(msg, Some "Attacker") -> 
         let (ula, ulCmdsa) = UnitList.State.update msg model.Attacker
         { model with Attacker = ula }, 
@@ -289,6 +331,21 @@ let update msg model : Model * Cmd<Types.Msg> =
                     else m) model.Attacker.Models
             | _ -> model.Attacker.Models
         
+        let newMatchup =
+            let d =
+                model.SelectedDefender 
+                |> Option.map 
+                       (fun defender -> Map.find defender model.Defender.Models)
+            let a =
+                model.SelectedAttacker 
+                |> Option.map 
+                       (fun attacker -> Map.find attacker model.Attacker.Models)
+            match a with
+            | Some a -> 
+                let (key, matchup) = performMatchup d a model.Environment
+                Map.add key matchup model.Matchups
+            | _ -> model.Matchups
+        
         let defenderModels =
             Map.map (fun k (m : Models.Types.Model) -> 
                 match model.SelectedDefender with
@@ -298,8 +355,8 @@ let update msg model : Model * Cmd<Types.Msg> =
                 | _ -> m) model.Defender.Models
         
         { model with Attacker = { model.Attacker with Models = models }
-                     Defender = { model.Defender with Models = defenderModels } }, 
-        Cmd.none
+                     Defender = { model.Defender with Models = defenderModels }
+                     Matchups = newMatchup }, Cmd.none
     | BindAttacker -> 
         let foundAttacker =
             model.SelectedAttacker 
@@ -308,17 +365,6 @@ let update msg model : Model * Cmd<Types.Msg> =
         match foundAttacker with
         | None -> model, Cmd.none
         | Some attacker -> 
-            let performMatchup def (attacker : Models.Types.Model) env =
-                let (defName, defRules) =
-                    match def with
-                    | Some(d : Models.Types.Model) -> Some d.Name, d.Rules
-                    | None -> None, Value(NoValue)
-                
-                let initial = Map.add defenderMap defRules env
-                let evaluatedRule = attacker.Rules |> evalOp initial
-                ({ Defender = defName
-                   Attacker = attacker.Name }, evaluatedRule)
-            
             let matchups =
                 [ yield performMatchup None attacker model.Environment
                   

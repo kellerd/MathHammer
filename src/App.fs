@@ -53,14 +53,14 @@ open Elmish.HMR
 // App
 Program.mkProgram init update root
 |> Program.toNavigable (parseHash pageParser) urlUpdate
-|> Program.withHMR
+// #if DEBUG
+// |> Program.withHMR
+// #endif
 |> Program.withReact "elmish-app"
 //-:cnd
-
-#if DEBUG
-|> Program.withConsoleTrace
-|> Program.withDebugger
-#endif
-
+// #if DEBUG
+// |> Program.withConsoleTrace
+// |> Program.withDebugger
+// #endif
 //+:cnd
 |> Program.run

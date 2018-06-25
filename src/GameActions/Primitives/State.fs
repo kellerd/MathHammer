@@ -5,6 +5,12 @@ open TypeChecker
 
 let get v = Var(v)
 let noValue = NoValue |> Value
+
+let toGp =
+    function 
+    | Value(gp) -> gp
+    | op -> ParamArray [ op ]
+
 let opList ops = ParamArray(ops) |> Value
 let pair x y = opList [ x; y ]
 let call f op = App(Call f, op)
@@ -36,6 +42,11 @@ let labelProp c v = pair (vStr v) (getp v (get c))
 let apply f x = App(f, x)
 let (<*>) = apply
 let (>>=) o s = bindOp s o
+
+let failOp op =
+    [ op; op ]
+    |> opList
+    |> call NotEquals
 
 let dPlus sides plusValue =
     let gt =
@@ -558,20 +569,19 @@ let normalize op : ChoiceSet * Operation =
 
 let rec evalDie n : Distribution.Distribution<_> =
     match n with
-    | n when n > 0 -> Distribution.uniformDistribution [ n .. -1 .. 1 ]
-    //   | Reroll(rerolls, d) -> 
-   //         Distribution.dist {
-   //               let! roll = evalDie d
-   //               if List.contains roll rerolls then
-   //                     return! evalDie d
-   //               else return roll                        
-   //         }
-   //let times = evalOp env op2  
-    //failwith <| sprintf "Invalid call %A\n%A" x (Map.toList env |> List.map fst)
-    // printfn "%A" operation
-    //printfn "Couldn't find property %s in %A" str op;
-    //printfn "%A" r
-                                                            
+    | n when n > 0 -> Distribution.uniformDistribution [ n.. -1 ..1 ]
+        //   | Reroll(rerolls, d) -> 
+                                                           //         Distribution.dist {
+                                                           //               let! roll = evalDie d
+                                                           //               if List.contains roll rerolls then
+                                                           //                     return! evalDie d
+                                                           //               else return roll                        
+                                                           //         }
+                                                           //let times = evalOp env op2  
+                                                           //failwith <| sprintf "Invalid call %A\n%A" x (Map.toList env |> List.map fst)
+                                                           // printfn "%A" operation
+                                                           //printfn "Couldn't find property %s in %A" str op;
+                                                           //printfn "%A" r
     | _ -> Distribution.uniformDistribution []
 
 let closure env op =
@@ -859,19 +869,31 @@ and evalOp env (operation : Operation) : Operation =
             let result = evalOp env op
             match tryFindLabel str result with
             | Some result -> result
-            | None -> 
-                PropertyGet(str, op)
+            | None -> PropertyGet(str, op)
         | Lam _ as l -> closure env l
         | IfThenElse(gp, thenPart, elsePart) -> 
             let result = evalOp env gp
-            match result with
-            | Value(Check(Check.Fail(_)) | NoValue) -> elsePart
-            | Value _ -> Some thenPart
-            | _ -> None
-            |> Option.map (evalOp env)
-            |> function 
-            | Some(v) -> v
-            | None -> noValue
+            let thenPart' = evalOp env thenPart
+            
+            let elsePart' =
+                match Option.map (evalOp env) elsePart with
+                | Some v -> v
+                | _ -> noValue
+            
+            let rec checkIf trueValue falseValue result =
+                match result with
+                | Value(Check(Check.Fail(_)) | NoValue) -> falseValue
+                | Value(Dist(d)) -> 
+                    d
+                    |> Distribution.map (Value
+                                         >> checkIf trueValue falseValue
+                                         >> toGp)
+                    |> Dist
+                    |> Value
+                | Value _ -> trueValue
+                | _ -> noValue
+            
+            checkIf thenPart' elsePart' result
         | MadeChoice env selectedChoice -> 
             let result = evalOp env selectedChoice
             result
