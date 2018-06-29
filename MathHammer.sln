@@ -5,6 +5,10 @@ Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "MathHammer", "src\MathHamme
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MathHammer.Tests", "test\MathHammer.Tests.fsproj", "{CF252E5C-9C4D-4320-AC14-ED2F0F1514A1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DCE42903-3E23-4FBD-B6E0-477D44CF87F8}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "nlp", "src\nlp\nlp.fsproj", "{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,5 +35,20 @@ Global
 		{CF252E5C-9C4D-4320-AC14-ED2F0F1514A1}.Release|x64.Build.0 = Release|x64
 		{CF252E5C-9C4D-4320-AC14-ED2F0F1514A1}.Release|x86.ActiveCfg = Release|x86
 		{CF252E5C-9C4D-4320-AC14-ED2F0F1514A1}.Release|x86.Build.0 = Release|x86
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Debug|x64.ActiveCfg = Debug|x64
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Debug|x64.Build.0 = Debug|x64
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Debug|x86.ActiveCfg = Debug|x86
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Debug|x86.Build.0 = Debug|x86
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Release|x64.ActiveCfg = Release|x64
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Release|x64.Build.0 = Release|x64
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Release|x86.ActiveCfg = Release|x86
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB} = {DCE42903-3E23-4FBD-B6E0-477D44CF87F8}
 	EndGlobalSection
 EndGlobal
