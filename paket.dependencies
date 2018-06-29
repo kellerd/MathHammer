@@ -13,6 +13,7 @@ nuget Argu 3.7
 clitool dotnet-fable
 nuget NETStandard.Library.NETFramework 2.0.0-preview2-25405-01 preview
 nuget System.IO.Compression
+nuget System.IO.Compression.Zipfile
 
 clitool dotnet-fantomas 2.7.1
 nuget Stanford.NLP.Parser.Fsharp

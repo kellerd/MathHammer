@@ -13,7 +13,7 @@
 #r "../../../../../../.nuget/packages/system.linq.expressions/4.3.0/lib/netstandard1.6/System.Linq.Expressions.dll" 
 #r "../../../../../../.nuget/packages/system.threading.tasks.parallel/4.3.0/lib/netstandard1.3/System.Threading.Tasks.Parallel.dll" 
 #r "../../../../../../.nuget/packages/system.xml.readerwriter/4.3.1/lib/netstandard1.3/System.Xml.ReaderWriter.dll" 
-#r "../../../../../../.nuget/packages/system.buffers/4.4.0/lib/netstandard2.0/System.Buffers.dll" 
+#r "../../../../../../.nuget/packages/system.buffers/4.5.0/lib/netstandard2.0/System.Buffers.dll" 
 #r "../../../../../../.nuget/packages/system.collections.concurrent/4.3.0/lib/netstandard1.3/System.Collections.Concurrent.dll" 
 #r "../../../../../../.nuget/packages/system.linq/4.3.0/lib/netstandard1.6/System.Linq.dll" 
 #r "../../../../../../.nuget/packages/system.net.webheadercollection/4.3.0/lib/netstandard1.3/System.Net.WebHeaderCollection.dll" 
