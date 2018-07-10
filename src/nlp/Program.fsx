@@ -77,7 +77,7 @@ questions
 
 let codexFolder = __SOURCE_DIRECTORY__ + @"\..\..\paket-files\codexes"
 if Directory.Exists(codexFolder) |> not then
-    let sourceFolder = @"C:\Users\diese\Downloads\"
+    let sourceFolder = @"%USERPROFILE%\Downloads\"
     [ @"Warhammer 40,000 - Codex - Tyranids" ]
     |> List.iter (fun codex -> ZipFile.ExtractToDirectory(sourceFolder + codex + ".epub", codexFolder + @"\" + codex))
 
