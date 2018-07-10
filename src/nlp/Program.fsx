@@ -136,7 +136,7 @@ let (|RuleDefinitions|) (file:string) =
 let (|PointsValues|_|) (file:string) =
     let (RuleDefinitions body) = file
     body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
-    |> List.tryFind (fun node -> node.InnerText() = "POINTS VALUES")
+    |> List.tryFind (fun node -> HtmlNode.innerText node = "POINTS VALUES")
     |> Option.map (fun _ -> body)
 let (|Datasheets|_|) (file:string) =
     let (RuleDefinitions body) = file
@@ -151,7 +151,7 @@ let (|Chapters|_|) (file:string) =
 let (|Stratagems|_|) (file:string) =
     let (RuleDefinitions body) = file
     body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
-    |> List.tryFind (fun node -> node.InnerText() = "STRATAGEMS")
+    |> List.tryFind (fun node -> HtmlNode.innerText node = "STRATAGEMS")
     |> Option.map (fun _ -> body)
 let (|Relics|_|) (file:string) =
     let (RuleDefinitions body) = file
@@ -172,18 +172,17 @@ let (|WarlordTraits|_|) (file:string) =
 
 let map8thCodex (file:Path) = 
     let datasheets (body:HtmlNode) = 
-        let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-9.xhtml"
-        let (RuleDefinitions body) = file
+        //let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-9.xhtml"
+        //let (RuleDefinitions body) = file
         let powerLevels = 
             body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-3-Datasheet-Power-Rating-40K8Codex")  
-            |> List.map (fun node -> Value (Str (node.InnerText())))
-        let getImgSrc (node :HtmlNode) = (node.Attribute "src").Value()
+            |> List.map (HtmlNode.innerText >> Str >> Value)
         let matchUnitType (str:string) = 
             let ut = (new System.Text.RegularExpressions.Regex("image/[^_]+_([^_]+)_Icon_Cutout.png")).Replace(str, "$1")
             Value (Str ut)
         let unitTypes = 
             body.CssSelect("img[src*='Icon_Cutout']") 
-            |> List.map (getImgSrc >> matchUnitType)
+            |> List.map (HtmlNode.attributeValue "src" >> matchUnitType)
 
         let extractStats (node:HtmlNode, (powerLevel, unitType)) = 
             //let node = sheet |> List.head
@@ -198,16 +197,43 @@ let map8thCodex (file:Path) =
             let parseRules title (s:string) = 
                 if (s.StartsWith("(pg")) && Option.isSome title then Var (Option.get title)
                 else s.Trim() |> Str |> Value
+            let weapons = 
+                let allHeaders = 
+                    node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span")     
+                let firstHeaderTop = 
+                    let value = allHeaders |> Seq.head |> HtmlNode.attributeValue "style" 
+                    let index = value.IndexOf("top:") 
+                    let index2 = value.IndexOf("px;", index)
+                    value.Substring(index, index2 - index)
+                let headers = 
+                    allHeaders 
+                    |> List.collect(fun n -> n.CssSelect(sprintf "span[style*='%s']" firstHeaderTop)) 
+                    |> List.map (HtmlNode.innerText)
+
+                let weaponsTable = 
+                    node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex")
+                    |> List.map (HtmlNode.innerText >> Str >> Value)
+                    |> List.chunkBySize (List.length headers)
+                    |> List.map(fun weapon -> 
+                        List.zip headers weapon 
+                        |> List.filter(fun (_,op) -> op <> Value (Str "-"))
+                        |> List.map (fun (l,op) -> label l op)
+                        |> (fun ((Value (ParamArray [Value (Str _); Value (Str name)]))::stats) -> 
+                            name,opList stats
+                        )
+                    )
+                Choice("WEAPON", weaponsTable )
             let rules = 
                 node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex") 
+                @ node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-8-Datasheet-body-text-Table-Bullets-408Codex")
                 |> List.choose (
                         HtmlNode.descendantsNamed true ["span"] 
                         >> Seq.fold (function 
-                                     | a, Some text -> fun n -> a, Some ((n.InnerText()) :: text)
-                                     | Some title, None -> fun n -> if n.HasClass "CharOverride-17" then Some (n.InnerText() :: title), None
-                                                                    else Some title, Some [n.InnerText()]
-                                     | None, None -> fun n -> if n.HasClass "CharOverride-17" then Some [n.InnerText()], None
-                                                              else None, Some [n.InnerText()]  ) (None,None)
+                                     | a, Some text -> HtmlNode.innerText >> fun s -> a, Some (s :: text)
+                                     | Some title, None -> fun n -> if n.HasClass "CharOverride-17" then Some (HtmlNode.innerText n :: title), None
+                                                                    else Some title, Some [HtmlNode.innerText n]
+                                     | None, None -> fun n -> if n.HasClass "CharOverride-17" then Some [HtmlNode.innerText n], None
+                                                              else None, Some [HtmlNode.innerText n]  ) (None,None)
                         >> function 
                             | None, None -> None 
                             | Some title, Some text -> 
@@ -221,7 +247,7 @@ let map8thCodex (file:Path) =
             let params = 
                 Value(ParamArray [ Value (Str "Power Level"); powerLevel])
                 :: Value(ParamArray [ Value (Str "Unit Types"); unitType])
-                :: keywords @ rules
+                :: weapons :: keywords @ rules 
                 |> ParamArray
                 |> Value
             params
