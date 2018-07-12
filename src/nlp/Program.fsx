@@ -90,7 +90,6 @@ let filter8thCodex (file:string) = file.Contains("Army_Rules") || file.Contains(
 #load @"C:\Users\diese\Source\Repos\MathHammer\src\Collections\List.fs"
 #load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\State.fs"
 open GameActions.Primitives.Types
-open GameActions.Primitives.State
 type Label = string 
 type Characteristic = string 
 type UnitName = string
@@ -115,6 +114,7 @@ type Page =
     | Datasheet of Unit list
     | RuleDefs of Operation list 
     | Points of Map<(string*string), Operation>
+    | Errors of Path
 type Codex = { Folder: Folder; Pages : Page seq }
 
 type CodexParser = { 
@@ -176,15 +176,40 @@ let (|WarlordTraits|_|) (file:string) =
 // | Datasheets f -> f
 // | Chapters f -> f
 // | RuleDefinitions f -> f
-
+let corrections8thEdition (file:Path) = 
+    let correct (str:string) replace = 
+        let text = System.IO.File.ReadAllText(file)
+        System.IO.File.WriteAllText(file, text.Replace(str,replace))
+    match file with 
+    | @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-11.xhtml" ->
+        correct 
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan48379" class="_0K8-Body-Text-Bold_Minion CharOverride-17" style="position:absolute;top:3792.24px;left:1974.25px;letter-spacing:-0.36px;">Instinctive </span><span id="_idTextSpan48380" class="_0K8-Body-Text-Bold_Minion CharOverride-17" style="position:absolute;top:3792.24px;left:2722.25px;letter-spacing:0.05px;">Behaviour </span><span id="_idTextSpan48381" class="CharOverride-18" style="position:absolute;top:3792.24px;left:3450.88px;">(pg </span><span id="_idTextSpan48382" class="CharOverride-18" style="position:absolute;top:3792.24px;left:3701.27px;">82)</span></p>"""
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan48097" class="_0K8-Body-Text-Bold_Minion CharOverride-17" style="position:absolute;top:3792.24px;left:1974.01px;letter-spacing:-0.36px;">Instinctive </span><span id="_idTextSpan48098" class="_0K8-Body-Text-Bold_Minion CharOverride-17" style="position:absolute;top:3792.24px;left:2722px;letter-spacing:0.05px;">Behaviour </span><span id="_idTextSpan48099" class="CharOverride-18" style="position:absolute;top:3792.24px;left:3450.63px;">(pg </span><span id="_idTextSpan48100" class="CharOverride-18" style="position:absolute;top:3792.24px;left:3701.02px;">82)</span></p>"""
+    | @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-12.xhtml" ->
+        correct 
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan48435" class="CharOverride-18" style="position:absolute;top:1444.2px;left:113.39px;">A """
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan48435" class="CharOverride-18" style="position:absolute;top:1444.2px;left:113.39px;">A """
+        correct
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan48665" class="CharOverride-18" style="position:absolute;top:1403.89px;left:113.39px;letter-spacing:0px;">Deathleaper"""
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan48665" class="CharOverride-18" style="position:absolute;top:1403.89px;left:113.39px;letter-spacing:0px;">Deathleaper"""
+    | @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-13.xhtml" ->
+        correct 
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan48952" class="CharOverride-18" style="position:absolute;top:1417.32px;left:113.39px;text-rendering:optimizeLegibility;letter-spacing:-0.1px;">This </span>"""
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan48952" class="CharOverride-18" style="position:absolute;top:1417.32px;left:113.39px;text-rendering:optimizeLegibility;letter-spacing:-0.1px;">This </span>"""
+        correct
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan49155" class="CharOverride-18" style="position:absolute;top:4675.66px;left:1974.01px;letter-spacing:-0.51px;">When"""
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan49155" class="CharOverride-18" style="position:absolute;top:4675.66px;left:1974.01px;letter-spacing:-0.51px;">When"""
+        correct
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan49074" class="CharOverride-18" style="position:absolute;top:3595.66px;left:1974.01px;">A """
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan49074" class="CharOverride-18" style="position:absolute;top:3595.66px;left:1974.01px;">A """
+        correct
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan49408" class="CharOverride-18" style="position:absolute;top:4327.66px;left:1974.01px;">A """
+            """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan49408" class="CharOverride-18" style="position:absolute;top:4327.66px;left:1974.01px;">A """
+    | _ -> ()
+    file
 let map8thCodex (file:Path) = 
     let datasheets (body:HtmlNode) = 
-        //let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-9.xhtml"
-        //let (RuleDefinitions body) = file
-
         let getTable (node:HtmlNode) headerStyle tableStyle : Map<WeaponName, (Label*Characteristic) list> = 
-            // let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span"
-            // let tableStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"
             let allHeaders = 
                     node.CssSelect headerStyle     
             let firstHeaderTop = 
@@ -196,22 +221,17 @@ let map8thCodex (file:Path) =
                 allHeaders 
                 |> List.collect(fun n -> n.CssSelect(sprintf "span[style*='%s']" firstHeaderTop)) 
                 |> List.map (HtmlNode.innerText)
-            try
-                node.CssSelect tableStyle
-                |> List.map (HtmlNode.innerText)
-                |> List.chunkBySize (List.length headers)
-                |> List.choose(fun tableRow -> 
-                    let labeledRows = 
-                        List.zip headers tableRow 
-                        |> List.filter(fun (_,op) -> op <> "-")
-                    labeledRows 
-                    |> List.tryHead 
-                    |> Option.map (fun (_,name) -> (name, List.tail labeledRows) )
-                ) |> Map.ofList 
-            with _ ->
-                printfn "Problem with file %A" file
-                printfn "Table: %s" headerStyle
-                Map.empty<_,_>
+            node.CssSelect tableStyle
+            |> List.map (HtmlNode.innerText)
+            |> List.chunkBySize (List.length headers)
+            |> List.choose(fun tableRow -> 
+                let labeledRows = 
+                    List.zip headers tableRow 
+                    |> List.filter(fun (_,op) -> op <> "-")
+                labeledRows 
+                |> List.tryHead 
+                |> Option.map (fun (_,name) -> (name, List.tail labeledRows) )
+            ) |> Map.ofList 
         let extractStats (node:HtmlNode, (powerLevel, unitType)) = 
             let keywords = 
                 node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-9-Datasheet-Keywords-Caps-408Codex")
@@ -250,8 +270,8 @@ let map8thCodex (file:Path) =
                     "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"
             let name = 
                 node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-1-Datasheet-Header-Table-408Codex > span")                        
-                |> List.head
-                |> HtmlNode.innerText
+                |> List.map (HtmlNode.innerText)
+                |> String.concat ""
             name.Trim(), { Powerlevel = powerLevel
                            UnitType = unitType
                            Abilities = rules
@@ -272,6 +292,7 @@ let map8thCodex (file:Path) =
             List.zip sheet comboStats
             |> List.map extractStats
         unitStats |> Datasheet  
+
     let chapters (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
     let relics (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
     let warlordTraits (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
@@ -288,11 +309,31 @@ let map8thCodex (file:Path) =
     | WarlordTraits body       -> warlordTraits body
     | RuleDefinitions body     -> rules body 
 
+
+
+// let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-9.xhtml"
+// let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-11.xhtml"
+// let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-12.xhtml"
+// let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-13.xhtml"
+// let (RuleDefinitions body) = file
+// let sheet = body.CssSelect(".Basic-Text-Frame")
+// let node = sheet.[1]
+// let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span"
+// let tableStyle  = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"   
+// let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
+// let tableStyle  = "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"
+let failGracefully f file  = 
+    try 
+        f file
+    with ex -> 
+        printfn "Failed parsing file %s" file
+        printfn "Error: %A" ex.Message
+        Errors file
 let EigthEdition = {
     PageFilter = filter8thCodex
     CodexFolder = codexFolder
-    PageMap = map8thCodex
+    PageMap = corrections8thEdition >> failGracefully map8thCodex
 }
 let codexes = enumerateCodexes EigthEdition
 let nidCodex = codexes |> List.head 
-nidCodex.Pages |> Seq.take 2 |> Seq.toList
+nidCodex.Pages |> Seq.filter(function Datasheet _ -> true | _ -> false) |> Seq.length
