@@ -91,14 +91,23 @@ let filter8thCodex (file:string) = file.Contains("Army_Rules") || file.Contains(
 #load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\State.fs"
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
+type Label = string 
+type Characteristic = string 
+type UnitName = string
+type WeaponName = string
+type Rule = 
+    | LabelOnly of string 
+    | RuleOnly of string 
+    | LabelledRule of string * string
 type Datasheet = 
-    { Powerlevel : GameActions.Primitives.Types.Operation 
-      UnitSize : Operation 
-      Characteristics : Map<string, Operation>
-      Abilities : Operation list
-      Weapons : Map<string, Operation>
-      Keywords : Operation list 
-      Factions : Operation list   } 
+    { 
+        Powerlevel : int 
+        UnitType : string
+        Characteristics : Map<UnitName, (Label * Characteristic) list>
+        Abilities : Rule list
+        Weapons :  Map<WeaponName, (Label * Characteristic) list>
+        Keywords : string list 
+    } 
 type Unit = string * Datasheet
 type Path = string    
 type Folder = string   
@@ -106,7 +115,7 @@ type Page =
     | Datasheet of Unit list
     | RuleDefs of Operation list 
     | Points of Map<(string*string), Operation>
-type Codex = { Folder: Folder; Pages : Page list }
+type Codex = { Folder: Folder; Pages : Page seq }
 
 type CodexParser = { 
     CodexFolder : Folder
@@ -122,14 +131,12 @@ let enumerateCodexes parser =
           Pages = Directory.EnumerateFiles(folder, "*.xhtml", SearchOption.AllDirectories) 
                   |> Seq.filter parser.PageFilter
                   |> Seq.map parser.PageMap
-                  |> Seq.toList 
         } )
-
+    |> Seq.toList
 
 //let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-13.xhtml"
 //let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-1.xhtml"
 //let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-4.xhtml"
-open FSharp.Data
 let (|RuleDefinitions|) (file:string) =
     let body = HtmlDocument.Load(file).Body()
     body
@@ -174,90 +181,97 @@ let map8thCodex (file:Path) =
     let datasheets (body:HtmlNode) = 
         //let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-9.xhtml"
         //let (RuleDefinitions body) = file
-        let powerLevels = 
-            body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-3-Datasheet-Power-Rating-40K8Codex")  
-            |> List.map (HtmlNode.innerText >> Str >> Value)
-        let matchUnitType (str:string) = 
-            let ut = (new System.Text.RegularExpressions.Regex("image/[^_]+_([^_]+)_Icon_Cutout.png")).Replace(str, "$1")
-            Value (Str ut)
-        let unitTypes = 
-            body.CssSelect("img[src*='Icon_Cutout']") 
-            |> List.map (HtmlNode.attributeValue "src" >> matchUnitType)
 
+        let getTable (node:HtmlNode) headerStyle tableStyle : Map<WeaponName, (Label*Characteristic) list> = 
+            // let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span"
+            // let tableStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"
+            let allHeaders = 
+                    node.CssSelect headerStyle     
+            let firstHeaderTop = 
+                let value = allHeaders |> List.head |> HtmlNode.attributeValue "style" 
+                let index = value.IndexOf("top:") 
+                let index2 = value.IndexOf("px;", index)
+                value.Substring(index, index2 - index)
+            let headers = 
+                allHeaders 
+                |> List.collect(fun n -> n.CssSelect(sprintf "span[style*='%s']" firstHeaderTop)) 
+                |> List.map (HtmlNode.innerText)
+            try
+                node.CssSelect tableStyle
+                |> List.map (HtmlNode.innerText)
+                |> List.chunkBySize (List.length headers)
+                |> List.choose(fun tableRow -> 
+                    let labeledRows = 
+                        List.zip headers tableRow 
+                        |> List.filter(fun (_,op) -> op <> "-")
+                    labeledRows 
+                    |> List.tryHead 
+                    |> Option.map (fun (_,name) -> (name, List.tail labeledRows) )
+                ) |> Map.ofList 
+            with _ ->
+                printfn "Problem with file %A" file
+                printfn "Table: %s" headerStyle
+                Map.empty<_,_>
         let extractStats (node:HtmlNode, (powerLevel, unitType)) = 
-            //let node = sheet |> List.head
-            //let powerLevel = powerLevels |> List.head
-            //let unitType = unitTypes |> List.head
             let keywords = 
                 node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-9-Datasheet-Keywords-Caps-408Codex")
                 |> List.collect(fun kw -> kw.InnerText().Split(',') |> List.ofArray)
-                |> List.map(fun s -> 
-                    if s.Trim().StartsWith("<") then labelVar "Chapter"
-                    else Str (s.Trim()) |> Value)
-            let parseRules title (s:string) = 
-                if (s.StartsWith("(pg")) && Option.isSome title then Var (Option.get title)
-                else s.Trim() |> Str |> Value
+                |> List.map (fun (s:string) -> s.Trim())
             let weapons = 
-                let allHeaders = 
-                    node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span")     
-                let firstHeaderTop = 
-                    let value = allHeaders |> Seq.head |> HtmlNode.attributeValue "style" 
-                    let index = value.IndexOf("top:") 
-                    let index2 = value.IndexOf("px;", index)
-                    value.Substring(index, index2 - index)
-                let headers = 
-                    allHeaders 
-                    |> List.collect(fun n -> n.CssSelect(sprintf "span[style*='%s']" firstHeaderTop)) 
-                    |> List.map (HtmlNode.innerText)
-
-                let weaponsTable = 
-                    node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex")
-                    |> List.map (HtmlNode.innerText >> Str >> Value)
-                    |> List.chunkBySize (List.length headers)
-                    |> List.map(fun weapon -> 
-                        List.zip headers weapon 
-                        |> List.filter(fun (_,op) -> op <> Value (Str "-"))
-                        |> List.map (fun (l,op) -> label l op)
-                        |> (fun ((Value (ParamArray [Value (Str _); Value (Str name)]))::stats) -> 
-                            name,opList stats
-                        )
-                    )
-                Choice("WEAPON", weaponsTable )
+                getTable 
+                    node 
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span"
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"
             let rules = 
                 node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex") 
                 @ node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-8-Datasheet-body-text-Table-Bullets-408Codex")
-                |> List.choose (
-                        HtmlNode.descendantsNamed true ["span"] 
-                        >> Seq.fold (function 
-                                     | a, Some text -> HtmlNode.innerText >> fun s -> a, Some (s :: text)
-                                     | Some title, None -> fun n -> if n.HasClass "CharOverride-17" then Some (HtmlNode.innerText n :: title), None
-                                                                    else Some title, Some [HtmlNode.innerText n]
-                                     | None, None -> fun n -> if n.HasClass "CharOverride-17" then Some [HtmlNode.innerText n], None
-                                                              else None, Some [HtmlNode.innerText n]  ) (None,None)
-                        >> function 
-                            | None, None -> None 
-                            | Some title, Some text -> 
-                                let title' = (List.rev title |> String.concat "").Trim() 
-                                let text' = (List.rev text |> String.concat "") |> parseRules (Some title')
-                                pair (Value(Str(title'))) text' |> Some
-                            | Some title, None -> (List.rev title |> String.concat "").Trim()  |> Str |> Value |> Some
-                            | None, Some text -> (List.rev text |> String.concat "") |> parseRules None |> Some
+                |> List.choose (fun rulesNodes -> 
+                        //let rulesNodes = rules |> List.skip 1 |> List.head
+                        let nodes = 
+                            rulesNodes 
+                            |> HtmlNode.descendantsNamed true ["span"] 
+                            |> List.ofSeq
+                        let index = nodes |> List.tryFindIndex (fun n -> n.HasClass "CharOverride-18")
+                        match nodes, index with 
+                        | [], None -> None // Empty and no text
+                        | nodes, None   -> nodes |> List.map (fun n -> n.InnerText().Trim()) |> String.concat " " |> LabelOnly |> Some    // Some text, but no split, so all title
+                        | nodes, Some 0 -> nodes |> List.map (fun n -> n.InnerText().Trim()) |> String.concat " " |> RuleOnly |> Some  // Some text, but no split (found at 0), so all text               
+                        | nodes, Some i -> 
+                            let (title, text) = 
+                                nodes 
+                                |> List.map (fun n -> n.InnerText().Trim())
+                                |> List.splitAt i 
+                            LabelledRule(String.concat " " title, String.concat " " text) |> Some
                         ) 
-                                    
-            let params = 
-                Value(ParamArray [ Value (Str "Power Level"); powerLevel])
-                :: Value(ParamArray [ Value (Str "Unit Types"); unitType])
-                :: weapons :: keywords @ rules 
-                |> ParamArray
-                |> Value
-            params
+            let characteristics = 
+                getTable 
+                    node 
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"
+            let name = 
+                node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-1-Datasheet-Header-Table-408Codex > span")                        
+                |> List.head
+                |> HtmlNode.innerText
+            name.Trim(), { Powerlevel = powerLevel
+                           UnitType = unitType
+                           Abilities = rules
+                           Weapons = weapons
+                           Keywords = keywords
+                           Characteristics = characteristics } 
+        let powerLevels = 
+            body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-3-Datasheet-Power-Rating-40K8Codex")  
+            |> List.map (HtmlNode.innerText >> int)
+        let matchUnitType str = 
+            System.Text.RegularExpressions.Regex("image/[^_]+_([^_]+)_Icon_Cutout.png").Replace(str, "$1")
+        let unitTypes = 
+            body.CssSelect("img[src*='Icon_Cutout']") 
+            |> List.map (HtmlNode.attributeValue "src" >> matchUnitType)                
         let unitStats = 
             let comboStats = List.zip powerLevels unitTypes
             let sheet = body.CssSelect(".Basic-Text-Frame") |> List.truncate (powerLevels.Length) 
             List.zip sheet comboStats
             |> List.map extractStats
-
-        []|> Datasheet  
+        unitStats |> Datasheet  
     let chapters (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
     let relics (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
     let warlordTraits (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
@@ -280,4 +294,5 @@ let EigthEdition = {
     PageMap = map8thCodex
 }
 let codexes = enumerateCodexes EigthEdition
-codexes |> Seq.toList
+let nidCodex = codexes |> List.head 
+nidCodex.Pages |> Seq.take 2 |> Seq.toList
