@@ -209,10 +209,44 @@ let (|WarlordTraits|_|) (file:string) =
 //     | _ -> ()
 //     file
 type TextBlock = {Top:float; Left:float; Bottom:float;Right:float}
-open System
+let expandTextBlock { Top = t; Left = l; Bottom = b; Right = r } { Top    = top;Left   = left;Bottom = bottom; Right  = right }= 
+    { Top    = max t top
+      Left   = min l left
+      Bottom = min b bottom
+      Right  = max r right }
+let (|LeftOf|_|) b a = 
+    if a.Right <= b.Left then Some (expandTextBlock a b)
+    else None
+let (|RightOf|_|) b a = 
+    if a.Left >= b.Right then Some (expandTextBlock a b)
+    else None   
+let (|Above|_|) b a = 
+    if a.Bottom >= b.Top then Some (expandTextBlock a b)
+    else None     
+let (|Below|_|) b a = 
+    if a.Top <= b.Bottom then Some (expandTextBlock a b)
+    else None 
+let (|SameRow|_|) b a =
+    if a.Bottom <= b.Bottom && a.Top >= b.Bottom ||
+       a.Top >= b.Top && a.Bottom <= b.Top ||
+       a.Top <= b.Top && a.Bottom >= b.Bottom then Some (expandTextBlock a b)
+    else None
+let (|SameCell|_|) b a =
+    if a.Left <= b.Left && a.Right >= b.Left ||
+       a.Right >= b.Right && a.Left <= b.Right ||
+       a.Right <= b.Right && a.Left >= b.Left then Some (expandTextBlock a b)
+    else None
+let (|SurroundsV|_|) b a = 
+    if a.Bottom <= b.Bottom && a.Top >= b.Top then Some(expandTextBlock a b)
+    else None
+let (|SurroundsH|_|) b a = 
+    if a.Left <= b.Left && a.Right >= b.Right then Some(expandTextBlock a b)
+    else None
+let (|Surrounds|_|) b a = 
+    Option.map2 (fun a _ -> a) ((|SurroundsH|_|) b a)  ((|SurroundsV|_|) b a)
 let map8thCodex (file:Path) = 
     let datasheets (body:HtmlNode) = 
-        let getTable (node:HtmlNode) headerStyle tableStyle : Map<WeaponName, (Label*Characteristic) list> = 
+        let getTable (node:HtmlNode) headerStyle tableStyle = 
             let allHeaders = 
                     node.CssSelect headerStyle     
             let positionOf text span = 
@@ -223,10 +257,15 @@ let map8thCodex (file:Path) =
                 value.Substring(index, index2 - index) |> float
             let headers = 
                 allHeaders 
-                |> List.collect(fun n -> n.CssSelect(sprintf "span[style*='%s']" (allHeaders |> List.head |> positionOf "top"))) 
+                |> List.collect(fun n -> n.CssSelect(sprintf "span[style*='%s']" (allHeaders |> List.head |> positionOf "top" |> string))) 
                 |> List.map (HtmlNode.innerText)
-            let tableStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"
-            let (table, extraRules) = 
+            let getText : HtmlNode list -> string = 
+                Seq.collect(fun (n:HtmlNode) -> 
+                    n.Descendants["span"] 
+                    |> Seq.map(fun n -> n.InnerText().Trim()) 
+                    |> Seq.filter (String.IsNullOrEmpty >> not)
+                ) >> String.concat " "
+            let (table, rules) = 
                 node.CssSelect tableStyle
                 |> List.groupBy (fun n -> 
                     //let n = node.CssSelect tableStyle |> Seq.head
@@ -235,48 +274,70 @@ let map8thCodex (file:Path) =
                             //let span = n.Descendants["span"] |> Seq.head
                             let top = positionOf "top" span
                             let left = positionOf "left" span
-                            match blockPosition with 
-                            | None -> Some  { Top    = top
-                                              Left   = left
-                                              Bottom = top
-                                              Right  = left }
-                            | Some { Top = t; Left = l; Bottom = b; Right = r } ->
-                                   Some  { Top    = max t top
-                                           Left   = min l left
-                                           Bottom = min b top
-                                           Right  = max r left }) None
-                ) 
-                |> List.map (fun (position,nodes) -> position, Seq.map(fun (n:HtmlNode) -> n.Descendants["span"] |> Seq.map(fun n -> n.InnerText().Trim()) |> String.concat " ") nodes |> Seq.toList )
-                |> List.partition(fun (position,nodes) -> position.Top)
-            let extraRules' = 
-                extraRules 
-                |> List.map(fun (_,rules) -> rules |> List.map(fun n -> n.InnerText().Trim()) |> String.concat " ")
+                            blockPosition 
+                            |> Option.map (expandTextBlock  {Top = top; Left = left; Right = left; Bottom = top})
+                            |> Option.defaultValue { Top    = top; Left   = left; Bottom = top; Right  = left }
+                            |> Some) None
+                ) //|> List.map (fun (p,t) -> p, getText t)
+                |> List.fold (fun (currentPosition, nodes) (nextPosition,nextNode) ->
+                    let sameRow nextNode ns otherRows = (nextNode :: ns) :: otherRows
+                    let nextRow nextNode nodes = sameRow nextNode [] nodes
 
+                    match currentPosition, nextPosition with 
+                    | None, _ -> 
+                        match nodes with 
+                        | [] -> nextPosition, nextRow nextNode []
+                        | ns::otherRows ->  nextPosition, sameRow nextNode ns otherRows
+                    | Some currentPosition, None -> 
+                        Some currentPosition, nodes
+                    | Some currentPosition, Some nextPosition -> 
+                        match nextPosition, nodes with 
+                        | _, [] -> 
+                            Some nextPosition, nextRow nextNode []
+                        | RightOf currentPosition _ & 
+                             SameRow currentPosition _, ns::otherRows -> 
+                            Some nextPosition, sameRow nextNode ns otherRows
+                        | nextPosition, nodes -> 
+                            Some nextPosition, nextRow nextNode nodes
+                       // | _ -> (Some currentPosition, nodes)
+                ) (None,[])
+                |> snd
+                |> List.map (List.rev)
+                |> List.partition (fun l -> List.length l = List.length headers)
+            let extraRules = List.collect id rules |> List.collect id              
+            let tableValues = 
+                table
+                |> List.choose(fun tableRow -> 
+                    let labeledRows = 
+                        List.zip headers tableRow 
+                        |> List.map(fun (h,op) -> h, getText op)
+                        |> List.filter(fun (_,op) -> op <> "-")
+                    labeledRows 
+                    |> List.tryHead 
+                    |> Option.map (fun (_,name) -> (name, List.tail labeledRows) )
+                ) |> Map.ofList 
+            extraRules, tableValues
 
-            table
-            |> List.map (snd >> List.map (fun (n:HtmlNode) -> n.InnerText().Trim()) >> String.concat " ")
-            |> List.chunkBySize (List.length headers)
-            |> List.choose(fun tableRow -> 
-                let labeledRows = 
-                    List.zip headers tableRow 
-                    |> List.filter(fun (_,op) -> op <> "-")
-                labeledRows 
-                |> List.tryHead 
-                |> Option.map (fun (_,name) -> (name, List.tail labeledRows) )
-            ) |> Map.ofList 
         let extractStats (node:HtmlNode, (powerLevel, unitType)) = 
             let keywords = 
                 node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-9-Datasheet-Keywords-Caps-408Codex")
                 |> List.collect(fun kw -> kw.InnerText().Split(',') |> List.ofArray)
                 |> List.map (fun (s:string) -> s.Trim())
-            let weapons = 
+            let (extraRules, weapons) = 
                 getTable 
                     node 
                     "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span"
                     "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"
+            let (extraRules', characteristics) = 
+                getTable 
+                    node 
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"                
             let rules = 
                 node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex") 
                 @ node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-8-Datasheet-body-text-Table-Bullets-408Codex")
+                @ extraRules
+                @ extraRules'
                 |> List.choose (fun rulesNodes -> 
                         //let rulesNodes = rules |> List.skip 1 |> List.head
                         let nodes = 
@@ -295,11 +356,7 @@ let map8thCodex (file:Path) =
                                 |> List.splitAt i 
                             LabelledRule(String.concat " " title, String.concat " " text) |> Some
                         ) 
-            let characteristics = 
-                getTable 
-                    node 
-                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
-                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"
+
             let name = 
                 node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-1-Datasheet-Header-Table-408Codex > span")                        
                 |> List.map (HtmlNode.innerText)
@@ -355,6 +412,13 @@ let map8thCodex (file:Path) =
 // let tableStyle  = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"   
 // let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
 // let tableStyle  = "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"
+
+@"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-11.xhtml" |> map8thCodex
+@"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-12.xhtml" |> map8thCodex
+@"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-13.xhtml" |> map8thCodex
+@"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-16.xhtml" |> map8thCodex
+
+
 let failGracefully f file  = 
     try 
         f file
@@ -365,7 +429,7 @@ let failGracefully f file  =
 let EigthEdition = {
     PageFilter = filter8thCodex
     CodexFolder = codexFolder
-    PageMap = corrections8thEdition >> failGracefully map8thCodex
+    PageMap = failGracefully map8thCodex
 }
 let codexes = enumerateCodexes EigthEdition
 let nidCodex = codexes |> List.head 
