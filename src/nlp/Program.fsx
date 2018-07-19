@@ -57,10 +57,10 @@ let getKeyPhrases (tree:Tree) =
     foldTree [] tree
 
 let questions =
-    [|"How to make an F# project work with the object browser"
-      "How can I build WebSharper on Mono 3.0 on Mac?"
-      "Adding extra methods as type extensions in F#"
-      "How to get MonoDevelop to compile F# projects?"|]
+    [|" When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or
+an additional 3 mortal wounds if it contains 6 Zoanthropes."
+      "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain."
+      |]
 
 questions
 |> Seq.iter (fun question ->
@@ -84,17 +84,17 @@ if Directory.Exists(codexFolder) |> not then
 
 let filter8thCodex (file:string) = file.Contains("Army_Rules") || file.Contains("Army_List")
 
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\Check\Check.fs"
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\Probability\Distribution.fs"
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\Types.fs"
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\Collections\Map.fs"
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\Collections\List.fs"
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\State.fs"
-open GameActions.Primitives.Types
+// #load @"C:\Users\diese\Source\Repos\MathHammer\src\Check\Check.fs"
+// #load @"C:\Users\diese\Source\Repos\MathHammer\src\Probability\Distribution.fs"
+// #load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\Types.fs"
+// #load @"C:\Users\diese\Source\Repos\MathHammer\src\Collections\Map.fs"
+// #load @"C:\Users\diese\Source\Repos\MathHammer\src\Collections\List.fs"
+// #load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\State.fs"
 type Label = string 
 type Characteristic = string 
 type UnitName = string
 type WeaponName = string
+type WoundsRemaining = string
 type Rule = 
     | LabelOnly of string 
     | RuleOnly of string 
@@ -107,16 +107,17 @@ type Datasheet =
         Abilities : Rule list
         Weapons :  Map<WeaponName, (Label * Characteristic) list>
         Keywords : string list 
+        CharacteristicsDegrade : Map<WoundsRemaining,(Label * Characteristic) list> option
     } 
 type Unit = string * Datasheet
 type Path = string    
 type Folder = string   
 type Page = 
     | Datasheet of Unit list
-    | RuleDefs of Operation list 
-    | Points of Map<(string*string), Operation>
+    | RuleDefs of Rule list 
+    | Points of Map<(string*string), int>
     | Errors of Path
-type Codex = { Folder: Folder; Pages : Page seq }
+type Codex = { Folder: Folder; Pages : (Path*Page) seq }
 
 type CodexParser = { 
     CodexFolder : Folder
@@ -131,7 +132,7 @@ let enumerateCodexes parser =
         { Folder = folder 
           Pages = Directory.EnumerateFiles(folder, "*.xhtml", SearchOption.AllDirectories) 
                   |> Seq.filter parser.PageFilter
-                  |> Seq.map parser.PageMap
+                  |> Seq.map (fun path -> path, parser.PageMap path)
         } )
     |> Seq.toList
 
@@ -172,42 +173,6 @@ let (|WarlordTraits|_|) (file:string) =
     |> List.tryHead
     |> Option.map (fun _  -> body) 
 
-// match file with 
-// | PointsValues f -> f
-// | Datasheets f -> f
-// | Chapters f -> f
-// | RuleDefinitions f -> f
-// let corrections8thEdition (file:Path) = 
-//     let correct (str:string) replace = 
-//         let text = System.IO.File.ReadAllText(file)
-//         System.IO.File.WriteAllText(file, text.Replace(str,replace))
-//     match file with 
-//     | @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-11.xhtml" ->
-//         correct 
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan48379" class="_0K8-Body-Text-Bold_Minion CharOverride-17" style="position:absolute;top:3792.24px;left:1974.25px;letter-spacing:-0.36px;">Instinctive </span><span id="_idTextSpan48380" class="_0K8-Body-Text-Bold_Minion CharOverride-17" style="position:absolute;top:3792.24px;left:2722.25px;letter-spacing:0.05px;">Behaviour </span><span id="_idTextSpan48381" class="CharOverride-18" style="position:absolute;top:3792.24px;left:3450.88px;">(pg </span><span id="_idTextSpan48382" class="CharOverride-18" style="position:absolute;top:3792.24px;left:3701.27px;">82)</span></p>"""
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan48097" class="_0K8-Body-Text-Bold_Minion CharOverride-17" style="position:absolute;top:3792.24px;left:1974.01px;letter-spacing:-0.36px;">Instinctive </span><span id="_idTextSpan48098" class="_0K8-Body-Text-Bold_Minion CharOverride-17" style="position:absolute;top:3792.24px;left:2722px;letter-spacing:0.05px;">Behaviour </span><span id="_idTextSpan48099" class="CharOverride-18" style="position:absolute;top:3792.24px;left:3450.63px;">(pg </span><span id="_idTextSpan48100" class="CharOverride-18" style="position:absolute;top:3792.24px;left:3701.02px;">82)</span></p>"""
-//     | @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-12.xhtml" ->
-//         correct 
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan48435" class="CharOverride-18" style="position:absolute;top:1444.2px;left:113.39px;">A """
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan48435" class="CharOverride-18" style="position:absolute;top:1444.2px;left:113.39px;">A """
-//         correct
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan48665" class="CharOverride-18" style="position:absolute;top:1403.89px;left:113.39px;letter-spacing:0px;">Deathleaper"""
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan48665" class="CharOverride-18" style="position:absolute;top:1403.89px;left:113.39px;letter-spacing:0px;">Deathleaper"""
-//     | @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-13.xhtml" ->
-//         correct 
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan48952" class="CharOverride-18" style="position:absolute;top:1417.32px;left:113.39px;text-rendering:optimizeLegibility;letter-spacing:-0.1px;">This </span>"""
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan48952" class="CharOverride-18" style="position:absolute;top:1417.32px;left:113.39px;text-rendering:optimizeLegibility;letter-spacing:-0.1px;">This </span>"""
-//         correct
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan49155" class="CharOverride-18" style="position:absolute;top:4675.66px;left:1974.01px;letter-spacing:-0.51px;">When"""
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan49155" class="CharOverride-18" style="position:absolute;top:4675.66px;left:1974.01px;letter-spacing:-0.51px;">When"""
-//         correct
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan49074" class="CharOverride-18" style="position:absolute;top:3595.66px;left:1974.01px;">A """
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan49074" class="CharOverride-18" style="position:absolute;top:3595.66px;left:1974.01px;">A """
-//         correct
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex ParaOverride-1"><span id="_idTextSpan49408" class="CharOverride-18" style="position:absolute;top:4327.66px;left:1974.01px;">A """
-//             """<p class="_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex ParaOverride-1"><span id="_idTextSpan49408" class="CharOverride-18" style="position:absolute;top:4327.66px;left:1974.01px;">A """
-//     | _ -> ()
-//     file
 type TextBlock = {Top:float; Left:float; Bottom:float;Right:float}
 let expandTextBlock { Top = t; Left = l; Bottom = b; Right = r } { Top    = top;Left   = left;Bottom = bottom; Right  = right }= 
     { Top    = max t top
@@ -244,27 +209,50 @@ let (|SurroundsH|_|) b a =
     else None
 let (|Surrounds|_|) b a = 
     Option.map2 (fun a _ -> a) ((|SurroundsH|_|) b a)  ((|SurroundsV|_|) b a)
+//divides a list L into chunks for which all elements match pred
+let divide (func : _ -> bool) (sequence : _ seq) : _ list list =
+    seq {
+        use en = sequence.GetEnumerator ()
+        let more = ref true
+        while !more do
+            let wasGood = ref true
+            let sublist = 
+                [
+                    while !wasGood && en.MoveNext() do
+                        if not (func en.Current) then yield en.Current
+                        else wasGood := false
+                ]
+            if List.isEmpty sublist then more := false
+            else yield sublist
+    } |> Seq.toList
 let map8thCodex (file:Path) = 
     let datasheets (body:HtmlNode) = 
+        let getText : HtmlNode list -> string = 
+            Seq.collect(fun (n:HtmlNode) -> 
+                n.Descendants["span"] 
+                |> Seq.map(fun n -> n.InnerText().Trim()) 
+                |> Seq.filter (String.IsNullOrEmpty >> not)
+            ) >> String.concat " "
         let getTable (node:HtmlNode) headerStyle tableStyle = 
             let allHeaders = 
                     node.CssSelect headerStyle     
             let positionOf text span = 
                 //let text = "top"
-                let value = span |> HtmlNode.attributeValue "style" 
+                //let span = node.CssSelect headerStyle |> Seq.head
+                let iAmSpan = span |> HtmlNode.attributeValue "style" 
+                let value = 
+                    if String.IsNullOrWhiteSpace(iAmSpan) |> not then iAmSpan
+                    else span.Descendants["span"] |> Seq.head |> HtmlNode.attributeValue "style" 
                 let index = value.IndexOf(sprintf "%s:" text, StringComparison.InvariantCultureIgnoreCase) + (text.Length + 1)
                 let index2 = value.IndexOf("px;", index, StringComparison.InvariantCultureIgnoreCase)
                 value.Substring(index, index2 - index) |> float
             let headers = 
                 allHeaders 
-                |> List.collect(fun n -> n.CssSelect(sprintf "span[style*='%s']" (allHeaders |> List.head |> positionOf "top" |> string))) 
-                |> List.map (HtmlNode.innerText)
-            let getText : HtmlNode list -> string = 
-                Seq.collect(fun (n:HtmlNode) -> 
-                    n.Descendants["span"] 
-                    |> Seq.map(fun n -> n.InnerText().Trim()) 
-                    |> Seq.filter (String.IsNullOrEmpty >> not)
-                ) >> String.concat " "
+                |> List.map(fun n -> n.CssSelect(sprintf "span[style*='%s']" (allHeaders |> List.head |> positionOf "top" |> string))
+                                     |> Seq.map(fun n -> n.InnerText().Trim()) 
+                                     |> Seq.filter (String.IsNullOrEmpty >> not)
+                                     |> String.concat " ") 
+                
             let (table, rules) = 
                 node.CssSelect tableStyle
                 |> List.groupBy (fun n -> 
@@ -295,8 +283,11 @@ let map8thCodex (file:Path) =
                         | _, [] -> 
                             Some nextPosition, nextRow nextNode []
                         | RightOf currentPosition _ & 
-                             SameRow currentPosition _, ns::otherRows -> 
-                            Some nextPosition, sameRow nextNode ns otherRows
+                            SameRow currentPosition combinedPosition, ns::otherRows -> 
+                            Some combinedPosition, sameRow nextNode ns otherRows
+                        | RightOf currentPosition _ & 
+                            Above currentPosition combinedPosition, ns::otherRows -> //Futher text probably wouldn't be above unless it's a superscript
+                            Some combinedPosition, sameRow nextNode ns otherRows
                         | nextPosition, nodes -> 
                             Some nextPosition, nextRow nextNode nodes
                        // | _ -> (Some currentPosition, nodes)
@@ -316,19 +307,19 @@ let map8thCodex (file:Path) =
                     |> List.tryHead 
                     |> Option.map (fun (_,name) -> (name, List.tail labeledRows) )
                 ) |> Map.ofList 
-            extraRules, tableValues
+            tableValues, extraRules
 
         let extractStats (node:HtmlNode, (powerLevel, unitType)) = 
             let keywords = 
                 node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-9-Datasheet-Keywords-Caps-408Codex")
                 |> List.collect(fun kw -> kw.InnerText().Split(',') |> List.ofArray)
                 |> List.map (fun (s:string) -> s.Trim())
-            let (extraRules, weapons) = 
+            let (weapons, extraRules) = 
                 getTable 
                     node 
                     "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span"
                     "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"
-            let (extraRules', characteristics) = 
+            let (characteristics, extraRules') = 
                 getTable 
                     node 
                     "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
@@ -338,23 +329,40 @@ let map8thCodex (file:Path) =
                 @ node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-8-Datasheet-body-text-Table-Bullets-408Codex")
                 @ extraRules
                 @ extraRules'
-                |> List.choose (fun rulesNodes -> 
+                |> List.collect (fun rulesNodes -> 
                         //let rulesNodes = rules |> List.skip 1 |> List.head
                         let nodes = 
                             rulesNodes 
                             |> HtmlNode.descendantsNamed true ["span"] 
                             |> List.ofSeq
-                        let index = nodes |> List.tryFindIndex (fun n -> n.HasClass "CharOverride-18")
+                        let index = 
+                            nodes 
+                            |> List.filter(fun n -> not ( (HtmlNode.innerText n).Trim() = "," || 
+                                                          String.IsNullOrWhiteSpace(HtmlNode.innerText n)|| 
+                                                           (HtmlNode.innerText n).Trim() = "(pg" ||
+                                                           (HtmlNode.innerText n).Trim().EndsWith(")")
+                                                        ))
+                            |> List.tryFindIndex (fun n -> n.HasClass "CharOverride-18")
                         match nodes, index with 
-                        | [], None -> None // Empty and no text
-                        | nodes, None   -> nodes |> List.map (fun n -> n.InnerText().Trim()) |> String.concat " " |> LabelOnly |> Some    // Some text, but no split, so all title
-                        | nodes, Some 0 -> nodes |> List.map (fun n -> n.InnerText().Trim()) |> String.concat " " |> RuleOnly |> Some  // Some text, but no split (found at 0), so all text               
+                        | [], None -> [] // Empty and no text
+                        | nodes, None -> 
+                            nodes 
+                            |> divide (fun n -> 
+                                n.HasClass "CharOverride-18" && (HtmlNode.innerText n).Trim() = ",") 
+                            |> List.map (fun l -> 
+                                let text =
+                                    l 
+                                    |> List.map (fun n -> n.InnerText().Trim()) 
+                                    |> String.concat " " 
+                                LabelOnly text)     // Some text, but no split, so all title
+                        | nodes, Some 0 -> nodes |> List.map (fun n -> n.InnerText().Trim()) |> String.concat " " |> RuleOnly |> List.singleton  // Some text, but no split (found at 0), so all text               
                         | nodes, Some i -> 
                             let (title, text) = 
                                 nodes 
                                 |> List.map (fun n -> n.InnerText().Trim())
                                 |> List.splitAt i 
-                            LabelledRule(String.concat " " title, String.concat " " text) |> Some
+                            LabelledRule(String.concat " " title, String.concat " " text) 
+                            |> List.singleton
                         ) 
 
             let name = 
@@ -366,27 +374,52 @@ let map8thCodex (file:Path) =
                            Abilities = rules
                            Weapons = weapons
                            Keywords = keywords
-                           Characteristics = characteristics } 
+                           Characteristics = characteristics
+                           CharacteristicsDegrade = None} 
         let powerLevels = 
             body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-3-Datasheet-Power-Rating-40K8Codex")  
             |> List.map (HtmlNode.innerText >> int)
         let matchUnitType str = 
-            System.Text.RegularExpressions.Regex("image/[^_]+_([^_]+)_Icon_Cutout.png").Replace(str, "$1")
+            System.Text.RegularExpressions.Regex("image/[^_]+_([^_]+)_(Icon_)?Cutout.png").Replace(str, "$1")
         let unitTypes = 
-            body.CssSelect("img[src*='Icon_Cutout']") 
-            |> List.map (HtmlNode.attributeValue "src" >> matchUnitType)                
+            body.CssSelect("img[src*='_Cutout']") 
+            |> List.map (HtmlNode.attributeValue "src" >> matchUnitType)  
+        let parseDamageTable (table:HtmlNode) : Map<WoundsRemaining, (Label * Characteristic) list> = 
+            //let table = damageTable.[0]
+            //    let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex"
+            //    let tableStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex"   
+            getTable 
+                table         
+                "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex" 
+                "._0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex"    
+            |> fst  
+        let applyDamageTable (datasheets,damageTable:HtmlNode list) (name,newDatasheet:Datasheet) = 
+            match damageTable with 
+            | [] -> (name,newDatasheet)::datasheets, damageTable
+            | table::rest -> 
+                if Map.tryPick (fun _ -> List.tryFind(fun (_,c) -> c = "*") ) newDatasheet.Characteristics |> Option.isSome then
+                    (name,{ newDatasheet with CharacteristicsDegrade = Some(parseDamageTable table)})::datasheets, rest
+                else 
+                    (name,newDatasheet)::datasheets, damageTable
+
         let unitStats = 
             let comboStats = List.zip powerLevels unitTypes
-            let sheet = body.CssSelect(".Basic-Text-Frame") |> List.truncate (powerLevels.Length) 
+            let (sheet,damageTable) = 
+                body.CssSelect(".Basic-Text-Frame") 
+                |> List.filter(fun n -> n.CssSelect(".Background-Styles-40k8Codex_4--Captions-and-Lists-40K8Codex_4-7-Art-Caption-White-40K8Codex").IsEmpty && 
+                                        n.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-3-Datasheet-Power-Rating-40K8Codex").IsEmpty) 
+                |> List.splitAt (powerLevels.Length) 
             List.zip sheet comboStats
             |> List.map extractStats
+            |> List.fold applyDamageTable ([],damageTable)
+            |> fst
         unitStats |> Datasheet  
 
-    let chapters (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
-    let relics (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
-    let warlordTraits (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
-    let stratagems (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
-    let rules (body:HtmlNode) = NoValue |>Value |> List.singleton |> RuleDefs
+    let chapters (body:HtmlNode) = [] |> RuleDefs
+    let relics (body:HtmlNode) = [] |> RuleDefs
+    let warlordTraits (body:HtmlNode) = [] |> RuleDefs
+    let stratagems (body:HtmlNode) = [] |> RuleDefs
+    let rules (body:HtmlNode) = [] |> RuleDefs
     let pointsValues (body:HtmlNode) = Map.empty<_,_>|> Points  
 
     match file with 
@@ -407,7 +440,7 @@ let map8thCodex (file:Path) =
 // let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-16.xhtml"
 // let (RuleDefinitions body) = file
 // let sheet = body.CssSelect(".Basic-Text-Frame")
-// let node = sheet.[0]
+// let node = sheet.[1]
 // let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span"
 // let tableStyle  = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"   
 // let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
@@ -433,4 +466,7 @@ let EigthEdition = {
 }
 let codexes = enumerateCodexes EigthEdition
 let nidCodex = codexes |> List.head 
-nidCodex.Pages |> Seq.filter(function Errors _ -> true | _ -> false) |> Seq.head
+let pages = 
+    nidCodex.Pages 
+    |> Seq.filter (function | (_,RuleDefs []) -> true | _ -> false ) 
+    |> Seq.iter(fst >> printfn "%s")
