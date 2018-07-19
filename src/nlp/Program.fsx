@@ -60,7 +60,7 @@ let questions =
     [|" When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or
 an additional 3 mortal wounds if it contains 6 Zoanthropes."
       "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain."
-      |]
+      "You can re-roll failed charge rolls for units with this adaptation." |]
 
 questions
 |> Seq.iter (fun question ->
@@ -155,6 +155,7 @@ let (|Datasheets|_|) (file:string) =
 let (|Chapters|_|) (file:string) =
     let (RuleDefinitions body) = file
     body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-4-Header-4-Sava-40K8Codex") 
+    |> List.filter(fun n -> (not ((HtmlNode.innerText n).Contains("WARGEAR"))) )
     |> List.tryHead
     |> Option.map (fun _ -> body)
 let (|Stratagems|_|) (file:string) =
@@ -225,14 +226,22 @@ let divide (func : _ -> bool) (sequence : _ seq) : _ list list =
             if List.isEmpty sublist then more := false
             else yield sublist
     } |> Seq.toList
+
+let divideInclusive (selector:'a->bool) source =
+  let i = ref 0
+  source
+  |> List.groupBy (fun elem -> if selector elem then incr i
+                               !i)
+  |> List.map snd
 let map8thCodex (file:Path) = 
+    let getText : HtmlNode list -> string = 
+        Seq.collect(fun (n:HtmlNode) -> 
+            n.Descendants["span"] 
+            |> Seq.map(fun n -> n.InnerText().Trim()) 
+            |> Seq.filter (String.IsNullOrEmpty >> not)
+        ) >> String.concat " "
     let datasheets (body:HtmlNode) = 
-        let getText : HtmlNode list -> string = 
-            Seq.collect(fun (n:HtmlNode) -> 
-                n.Descendants["span"] 
-                |> Seq.map(fun n -> n.InnerText().Trim()) 
-                |> Seq.filter (String.IsNullOrEmpty >> not)
-            ) >> String.concat " "
+
         let getTable (node:HtmlNode) headerStyle tableStyle = 
             let allHeaders = 
                     node.CssSelect headerStyle     
@@ -415,7 +424,15 @@ let map8thCodex (file:Path) =
             |> fst
         unitStats |> Datasheet  
 
-    let chapters (body:HtmlNode) = [] |> RuleDefs
+    let chapters (body:HtmlNode) = 
+        body.CssSelect(".Basic-Text-Frame > div > p")
+        |> List.filter(fun n -> (n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-3-Body-Text-Semibold-Italic-40K8Codex" || 
+                                n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-4-Header-4-Sava-40K8Codex") |> not)
+        |> divideInclusive (fun n -> n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-5-Header-5-Sava---Sub-header-40K8Codex")
+        |> List.choose (function | [] -> None
+                                 | [n] -> RuleOnly(getText [n]) |> Some
+                                 | n::ns -> LabelledRule(getText [n], getText ns) |> Some )
+        |> RuleDefs
     let relics (body:HtmlNode) = [] |> RuleDefs
     let warlordTraits (body:HtmlNode) = [] |> RuleDefs
     let stratagems (body:HtmlNode) = [] |> RuleDefs
@@ -446,12 +463,6 @@ let map8thCodex (file:Path) =
 // let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
 // let tableStyle  = "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"
 
-@"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-11.xhtml" |> map8thCodex
-@"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-12.xhtml" |> map8thCodex
-@"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-13.xhtml" |> map8thCodex
-@"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-16.xhtml" |> map8thCodex
-
-
 let failGracefully f file  = 
     try 
         f file
@@ -468,5 +479,5 @@ let codexes = enumerateCodexes EigthEdition
 let nidCodex = codexes |> List.head 
 let pages = 
     nidCodex.Pages 
-    |> Seq.filter (function | (_,RuleDefs []) -> true | _ -> false ) 
-    |> Seq.iter(fst >> printfn "%s")
+    |> Seq.filter (function | (Chapters _, _) -> true | _ -> false ) 
+    |> Seq.toList
