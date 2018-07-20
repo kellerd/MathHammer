@@ -101,6 +101,7 @@ type Rule =
     | LabelOnly of string 
     | RuleOnly of string 
     | LabelledRule of string * string
+    | ConditionRule of label:string * condition:string * text:string
 type Datasheet = 
     { 
         Powerlevel : int 
@@ -234,8 +235,8 @@ let (|WarlordTraits|_|) (file:string) =
     |> Option.map(fun _ -> body)
 let (|Stratagems|_|) (file:string) =
     let (RuleDefinitions body) = file
-    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
-    |> List.tryFind (fun node -> HtmlNode.innerText node = "STRATAGEMS")
+    body.CssSelect("._0K8---Rule-Styles_4--Stratagems-40k8Codex_4-1-Stratagem-Name-40K8Codex")
+    |> List.tryHead
     |> Option.map (fun _ -> body)
 let (|Relics|_|) (file:string) =
     let (RuleDefinitions body) = file
@@ -457,7 +458,21 @@ let map8thCodex (file:Path) =
                         | r -> r )     
         |> List.filter (function RuleOnly "D6 RESULT" -> false | _ -> true)                            
         |> RuleDefs
-    let stratagems (body:HtmlNode) = [] |> RuleDefs
+    let stratagems (body:HtmlNode) = 
+        body.CssSelect("p")
+        |> List.filter (fun n -> n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-1-Stratagem-Name-40K8Codex"  ||
+                                 n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-2-Strategem-Type-Style-40K8Codex" ||
+                                 n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-3-Strategem-Body-Text-40K8Codex")
+        |> List.chunkBySize 3  
+        |> List.map(function 
+            | [ label; condition; text ] -> 
+                ConditionRule(getText [label], getText [condition], getText [text])
+            | [ label; text ] -> 
+                LabelledRule(getText [label], getText [text])
+            | rule ->
+                RuleOnly(getText rule)
+        ) 
+        |> RuleDefs
     let rules (body:HtmlNode) = [] |> RuleDefs
     let pointsValues (body:HtmlNode) = Map.empty<_,_>|> Points  
 
@@ -500,16 +515,16 @@ let codexes = enumerateCodexes EigthEdition
 let nidCodex = codexes |> List.head 
 let pages = 
     nidCodex.Pages 
-    |> Seq.filter (function | (WarlordTraits _, _) -> true | _ -> false ) 
+    |> Seq.filter (function | (Stratagems _, _) -> true | _ -> false ) 
     |> Seq.toList
 
 nidCodex.Pages 
-|> Seq.filter (function | (WarlordTraits _, _) -> true | _ -> false ) 
+|> Seq.filter (function | (Stratagems _, _) -> true | _ -> false ) 
 |> Seq.iter(fst >> printfn "%s")
 let sheets = 
     nidCodex.Pages 
-    |> Seq.filter (function | (WarlordTraits _, _) -> true | _ -> false ) 
+    |> Seq.filter (function | (Stratagems _, _) -> true | _ -> false ) 
     |> Seq.map(fun (file,_) -> (|RuleDefinitions|) file)
     |> Seq.toList
 
-// let body = warlordTraits sheets.[1]    
+// let body = stratagems sheets.[0]    
