@@ -60,9 +60,11 @@ let questions =
     [|" When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or
 an additional 3 mortal wounds if it contains 6 Zoanthropes."
       "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain."
-      "You can re-roll failed charge rolls for units with this adaptation." |]
+      "You can re-roll failed charge rolls for units with this adaptation."
+      "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation." |]
 
 questions
+|> Seq.skip 3
 |> Seq.iter (fun question ->
     printfn "Question : %s" question
     question
@@ -125,55 +127,6 @@ type CodexParser = {
     PageMap : Path -> Page
 }
 #r @"../../../../../.nuget\packages/FSharp.Data/2.4.6/lib/net45/FSharp.Data.dll"
-open FSharp.Data
-let enumerateCodexes parser = 
-    Directory.EnumerateDirectories(parser.CodexFolder)
-    |> Seq.map(fun folder -> 
-        { Folder = folder 
-          Pages = Directory.EnumerateFiles(folder, "*.xhtml", SearchOption.AllDirectories) 
-                  |> Seq.filter parser.PageFilter
-                  |> Seq.map (fun path -> path, parser.PageMap path)
-        } )
-    |> Seq.toList
-
-//let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-13.xhtml"
-//let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-1.xhtml"
-//let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-4.xhtml"
-let (|RuleDefinitions|) (file:string) =
-    let body = HtmlDocument.Load(file).Body()
-    body
-let (|PointsValues|_|) (file:string) =
-    let (RuleDefinitions body) = file
-    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
-    |> List.tryFind (fun node -> HtmlNode.innerText node = "POINTS VALUES")
-    |> Option.map (fun _ -> body)
-let (|Datasheets|_|) (file:string) =
-    let (RuleDefinitions body) = file
-    body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-1-Datasheet-Header-Table-408Codex") 
-    |> List.tryHead
-    |> Option.map (fun _ -> body)
-let (|Chapters|_|) (file:string) =
-    let (RuleDefinitions body) = file
-    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-4-Header-4-Sava-40K8Codex") 
-    |> List.filter(fun n -> (not ((HtmlNode.innerText n).Contains("WARGEAR"))) )
-    |> List.tryHead
-    |> Option.map (fun _ -> body)
-let (|Stratagems|_|) (file:string) =
-    let (RuleDefinitions body) = file
-    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
-    |> List.tryFind (fun node -> HtmlNode.innerText node = "STRATAGEMS")
-    |> Option.map (fun _ -> body)
-let (|Relics|_|) (file:string) =
-    let (RuleDefinitions body) = file
-    let titles =  body.CssSelect("._0K8---Rule-Styles_5--Warlord-Traits_5-1-Warlord-Trait-40K8Codex") |> List.tryHead 
-    let weapons = body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-Header-40K8")  |> List.tryHead
-    Option.map2 (fun _ _ -> body) titles weapons
-let (|WarlordTraits|_|) (file:string) =
-    let (RuleDefinitions body) = file
-    body.CssSelect("._0K8---Rule-Styles_5--Warlord-Traits_5-1-Warlord-Trait-40K8Codex")  
-    |> List.tryHead
-    |> Option.map (fun _  -> body) 
-
 type TextBlock = {Top:float; Left:float; Bottom:float;Right:float}
 let expandTextBlock { Top = t; Left = l; Bottom = b; Right = r } { Top    = top;Left   = left;Bottom = bottom; Right  = right }= 
     { Top    = max t top
@@ -233,6 +186,62 @@ let divideInclusive (selector:'a->bool) source =
   |> List.groupBy (fun elem -> if selector elem then incr i
                                !i)
   |> List.map snd
+open System.Text.RegularExpressions
+let (|Matches|_|) pattern input =
+    if input = null then None
+    else
+        let m = Regex.Match(input, pattern, RegexOptions.Compiled)
+        if m.Success then Some [for x in m.Groups -> x]
+        else None
+open FSharp.Data
+let enumerateCodexes parser = 
+    Directory.EnumerateDirectories(parser.CodexFolder)
+    |> Seq.map(fun folder -> 
+        { Folder = folder 
+          Pages = Directory.EnumerateFiles(folder, "*.xhtml", SearchOption.AllDirectories) 
+                  |> Seq.filter parser.PageFilter
+                  |> Seq.map (fun path -> path, parser.PageMap path)
+        } )
+    |> Seq.toList
+
+//let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-13.xhtml"
+//let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-1.xhtml"
+//let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-4.xhtml"
+let (|RuleDefinitions|) (file:string) =
+    let body = HtmlDocument.Load(file).Body()
+    body
+let (|PointsValues|_|) (file:string) =
+    let (RuleDefinitions body) = file
+    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
+    |> List.tryFind (fun node -> HtmlNode.innerText node = "POINTS VALUES")
+    |> Option.map (fun _ -> body)
+let (|Datasheets|_|) (file:string) =
+    let (RuleDefinitions body) = file
+    body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-1-Datasheet-Header-Table-408Codex") 
+    |> List.tryHead
+    |> Option.map (fun _ -> body)
+let (|Chapters|_|) (file:string) =
+    let (RuleDefinitions body) = file
+    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-4-Header-4-Sava-40K8Codex") 
+    |> List.filter(fun n -> (not ((HtmlNode.innerText n).Contains("WARGEAR"))) )
+    |> List.tryHead
+    |> Option.map (fun _ -> body)
+let (|WarlordTraits|_|) (file:string) =
+    let (RuleDefinitions body) = file
+    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
+    @ body.CssSelect("._0K8---Rule-Styles_5--Warlord-Traits_5-1-Warlord-Trait-40K8Codex")
+    |> List.tryFind (fun n -> n.InnerText().ToUpper().Contains("WARLORD TRAITS"))
+    |> Option.map(fun _ -> body)
+let (|Stratagems|_|) (file:string) =
+    let (RuleDefinitions body) = file
+    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
+    |> List.tryFind (fun node -> HtmlNode.innerText node = "STRATAGEMS")
+    |> Option.map (fun _ -> body)
+let (|Relics|_|) (file:string) =
+    let (RuleDefinitions body) = file
+    let titles =  body.CssSelect("._0K8---Rule-Styles_5--Warlord-Traits_5-1-Warlord-Trait-40K8Codex") |> List.tryHead 
+    let weapons = body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-Header-40K8")  |> List.tryHead
+    Option.map2 (fun _ _ -> body) titles weapons
 let map8thCodex (file:Path) = 
     let getText : HtmlNode list -> string = 
         Seq.collect(fun (n:HtmlNode) -> 
@@ -427,28 +436,39 @@ let map8thCodex (file:Path) =
     let chapters (body:HtmlNode) = 
         body.CssSelect(".Basic-Text-Frame > div > p")
         |> List.filter(fun n -> (n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-3-Body-Text-Semibold-Italic-40K8Codex" || 
-                                n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-4-Header-4-Sava-40K8Codex") |> not)
+                                 n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-4-Header-4-Sava-40K8Codex") |> not)
         |> divideInclusive (fun n -> n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-5-Header-5-Sava---Sub-header-40K8Codex")
         |> List.choose (function | [] -> None
                                  | [n] -> RuleOnly(getText [n]) |> Some
                                  | n::ns -> LabelledRule(getText [n], getText ns) |> Some )
         |> RuleDefs
     let relics (body:HtmlNode) = [] |> RuleDefs
-    let warlordTraits (body:HtmlNode) = [] |> RuleDefs
+    let warlordTraits (body:HtmlNode) = 
+        body.CssSelect(".Basic-Text-Frame > div > p")
+        |> List.filter(fun n -> (n.HasClass "_0K8---Rule-Styles_5--Warlord-Traits_5-1-Warlord-Trait-40K8Codex" || 
+                                 n.HasClass "_0K8---Rule-Styles_5--Warlord-Traits_5-3-Warlord-Trait-Rules-Text-40K8Codex"))
+        |> divideInclusive (fun n -> n.HasClass "_0K8---Rule-Styles_5--Warlord-Traits_5-1-Warlord-Trait-40K8Codex" )
+        |> List.choose (function | [] -> None
+                                 | [n] -> RuleOnly(getText [n]) |> Some
+                                 | n::ns -> LabelledRule(getText [n], getText ns) |> Some )
+        |> List.map (function 
+                        | LabelledRule (Matches "[1-6] (.*)" [ _ ; label ],text) -> 
+                            LabelledRule(label.Value, text) 
+                        | r -> r )     
+        |> List.filter (function RuleOnly "D6 RESULT" -> false | _ -> true)                            
+        |> RuleDefs
     let stratagems (body:HtmlNode) = [] |> RuleDefs
     let rules (body:HtmlNode) = [] |> RuleDefs
     let pointsValues (body:HtmlNode) = Map.empty<_,_>|> Points  
 
     match file with 
-    | PointsValues body        -> pointsValues body
     | Datasheets body          -> datasheets body
-    | Chapters body            -> chapters body
-    | Stratagems body          -> stratagems body
-    | Relics body              -> relics body
+    | Chapters body            -> chapters body 
     | WarlordTraits body       -> warlordTraits body
+    | Stratagems body          -> stratagems body
+    | PointsValues body        -> pointsValues body
+    | Relics body              -> relics body
     | RuleDefinitions body     -> rules body 
-
-
 
 // let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-9.xhtml"
 // let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-11.xhtml"
@@ -463,6 +483,7 @@ let map8thCodex (file:Path) =
 // let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
 // let tableStyle  = "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"
 
+@"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\098-113_40K8_Tyranids_Army_List_02-13.xhtml" |> map8thCodex
 let failGracefully f file  = 
     try 
         f file
@@ -479,5 +500,16 @@ let codexes = enumerateCodexes EigthEdition
 let nidCodex = codexes |> List.head 
 let pages = 
     nidCodex.Pages 
-    |> Seq.filter (function | (Chapters _, _) -> true | _ -> false ) 
+    |> Seq.filter (function | (WarlordTraits _, _) -> true | _ -> false ) 
     |> Seq.toList
+
+nidCodex.Pages 
+|> Seq.filter (function | (WarlordTraits _, _) -> true | _ -> false ) 
+|> Seq.iter(fst >> printfn "%s")
+let sheets = 
+    nidCodex.Pages 
+    |> Seq.filter (function | (WarlordTraits _, _) -> true | _ -> false ) 
+    |> Seq.map(fun (file,_) -> (|RuleDefinitions|) file)
+    |> Seq.toList
+
+// let body = warlordTraits sheets.[1]    
