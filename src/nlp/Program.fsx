@@ -62,10 +62,11 @@ let questions =
 an additional 3 mortal wounds if it contains 6 Zoanthropes."
       "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain."
       "You can re-roll failed charge rolls for units with this adaptation."
-      "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation." |]
+      "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation."
+      "Use this Stratagem at the end of the Fight phase. Select a TYRANIDS unit from your army – that unit can immediately fight again." |]
 
 questions
-|> Seq.skip 3
+|> Seq.skip 4
 |> Seq.iter (fun question ->
     printfn "Question : %s" question
     question
@@ -102,7 +103,7 @@ type Rule =
     | LabelOnly of string 
     | RuleOnly of string 
     | LabelledRule of string * string
-    | ConditionRule of label:string * condition:string * text:string
+type Stratagem = Stratagem of cp:string * condition:string option * Rule    
 type Weapon =  (Label * Characteristic) list   
 type Datasheet = 
     { 
@@ -120,7 +121,8 @@ type Path = string
 type Folder = string   
 type Page = 
     | Datasheet of Unit list
-    | RuleDefs of Rule list 
+    | RuleDefs of Weapons : Map<WeaponName, Weapon> * Rule list 
+    | Stratagems of Stratagem list
     | Relics of Relic list
     | Points of Map<(string*string), int>
     | Errors of Path
@@ -309,6 +311,12 @@ let map8thCodex (file:Path) =
                     | RightOf currentPosition _ & 
                         Above currentPosition combinedPosition, ns::otherRows -> //Futher text probably wouldn't be above unless it's a superscript
                         Some combinedPosition, sameRow nextNode ns otherRows
+                    | LeftOf currentPosition __ & 
+                        Below currentPosition combinedPosition, ns:otherRows  -> 
+                        match currentPosition with 
+                        | SurroundsV nextPosition _ -> 
+                            //Add a copy of latest node to nodes
+                        | _ -> Some nextPosition, nextRow nextNode nodes
                     | nextPosition, nodes -> 
                         Some nextPosition, nextRow nextNode nodes
                    // | _ -> (Some currentPosition, nodes)
@@ -454,7 +462,7 @@ let map8thCodex (file:Path) =
         |> List.collect (fun nodes -> 
             //let nodes = relics.[0]
             let (weapons,rules) = nodes |> List.partition (fun n -> HtmlNode.name n = "div")
-            let n = HtmlNode.NewElement ("div",[],weapons)
+            let n = HtmlNode.NewElement ("div",[],weapons) 
             let (weaponTable, extraRules) = 
                 getTable 
                     n
@@ -494,21 +502,60 @@ let map8thCodex (file:Path) =
         |> List.filter (function RuleOnly "D6 RESULT" -> false | _ -> true)                            
         |> RuleDefs
     let stratagems (body:HtmlNode) = 
-        body.CssSelect("p")
-        |> List.filter (fun n -> n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-1-Stratagem-Name-40K8Codex"  ||
-                                 n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-2-Strategem-Type-Style-40K8Codex" ||
-                                 n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-3-Strategem-Body-Text-40K8Codex")
-        |> List.chunkBySize 3  
+        let text = 
+            body.CssSelect("p")
+            |> List.filter (fun n -> n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-1-Stratagem-Name-40K8Codex"  ||
+                                     n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-2-Strategem-Type-Style-40K8Codex" ||
+                                     n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-3-Strategem-Body-Text-40K8Codex")
+            |> List.chunkBySize 3  
+        let costs = 
+            body.CssSelect("._0K8---Rule-Styles_4--Stratagems-40k8Codex_4-4-Stratagem-Cost-40K8Codex") 
+            |> List.map (HtmlNode.innerText)    
+        List.zip text costs        
         |> List.map(function 
-            | [ label; condition; text ] -> 
-                ConditionRule(getText [label], getText [condition], getText [text])
-            | [ label; text ] -> 
-                LabelledRule(getText [label], getText [text])
-            | rule ->
-                RuleOnly(getText rule)
+            | [ label; condition; text ], cost -> 
+                Stratagem(cost, getText [condition] |> Some, LabelledRule(getText [label], getText [text]))
+            | [ label; text ], cost -> 
+                Stratagem(cost, None, LabelledRule(getText [label], getText [text]))
+            | rule, cost ->
+                Stratagem(cost, None, RuleOnly(getText rule))
         ) 
-        |> RuleDefs
-    let rules (body:HtmlNode) = [] |> RuleDefs
+        |> Stratagems
+    let rules (body:HtmlNode) = 
+  //  let rulesText =  
+        let (weapons,rules)  =
+            body.CssSelect(".Basic-Text-Frame > div")
+            |> List.collect(fun n -> n.Elements() )
+            |> List.filter (fun n -> (n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-4-Intro-Minion-40K8Codex" || 
+                                        n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-3-Body-Text-Semibold-Italic-40K8Codex" || 
+                                        n.HasClass "Background-Styles-40k8Codex_3--Quotes-and-Other-40K8Codex_3-1-Quote-Direct-Speech-40K8Codex" || 
+                                        n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex" || 
+                                        n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-2-Body-Text-Bold-40K8Codex" || 
+                                        n.HasClass "Background-Styles-40k8Codex_3--Quotes-and-Other-40K8Codex_3-3-Quote-Attribution-40K8Codex" ||
+                                        n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-2-Header-2-Sava---Section-Header-40K8Codex") |> not)
+            |> divideInclusive(fun n -> n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-5-Header-5-Sava---Sub-header-40K8Codex" ||
+                                        n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-6-Header-6-Sava-40K8Codex")        
+            |> List.map (fun nodes -> 
+                //let nodes = rulesText.[0]
+                let (weapons,rules) = nodes |> List.partition (fun n -> HtmlNode.name n = "div")
+                let n = HtmlNode.NewElement ("div",[], weapons  |> List.skipWhile(fun x -> HtmlNode.innerText x = "MELEE WEAPONS" || HtmlNode.innerText x = "RANGED WEAPONS"))
+                let (weaponTable, extraRules) = 
+                    getTable 
+                        n
+                        "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex"
+                        "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex" 
+                let rule =         
+                    match rules@extraRules with 
+                    | []  -> None
+                    | [n] -> RuleOnly(getText [n]) |> Some
+                    | n::ns -> LabelledRule(getText [n], getText ns) |> Some   
+                weaponTable,rule)   
+            |> List.unzip   
+        let weapons' = 
+            weapons 
+            |> List.fold(Map.fold (fun acc key value -> Map.add key value acc)) Map.empty<_,_> 
+        let rules' = rules |> List.collect(Option.toList)            
+        RuleDefs(weapons', rules')            
     let pointsValues (body:HtmlNode) = Map.empty<_,_>|> Points  
 
     match file with 
@@ -520,13 +567,16 @@ let map8thCodex (file:Path) =
     | Relics body              -> relics body
     | RuleDefinitions body     -> rules body 
 
-// let file = @"C:\Users\diese\Source\Repos\MathHammer\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-9.xhtml"
-// let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-11.xhtml"
-// let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-12.xhtml"
-// let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-13.xhtml"
-// let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-16.xhtml"
-// let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-10.xhtml"
-// let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-9.xhtml"
+//let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-2.xhtml"
+//let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\098-113_40K8_Tyranids_Army_List_02-14.xhtml"
+//let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\098-113_40K8_Tyranids_Army_List_02-15.xhtml"
+//let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\098-113_40K8_Tyranids_Army_List_02-16.xhtml"
+//let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-1.xhtml"
+//let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-14.xhtml"
+//let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-15.xhtml"
+//let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-2.xhtml"
+//let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-3.xhtml"
+//let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-8.xhtml"
 // let (RuleDefinitions body) = file
 // let sheet = body.CssSelect(".Basic-Text-Frame")
 // let node = sheet.[1]
@@ -534,7 +584,7 @@ let map8thCodex (file:Path) =
 // let tableStyle  = "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"   
 // let headerStyle = "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
 // let tableStyle  = "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"
-
+// rules body
 //@"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\098-113_40K8_Tyranids_Army_List_02-13.xhtml" |> map8thCodex
 let failGracefully f file  = 
     try 
@@ -552,15 +602,37 @@ let codexes = enumerateCodexes EigthEdition
 let nidCodex = codexes |> List.head 
 let pages = 
     nidCodex.Pages 
-    |> Seq.filter (function | (Relics _, _) -> true | _ -> false ) 
+    |> Seq.filter (function 
+        | (Stratagems _, _) -> false
+        | (Chapters _, _) -> false
+        | (PointsValues _, _) -> false
+        | (Relics _, _) -> false
+        | (WarlordTraits _, _) -> false
+        | (Datasheets _, _) -> false
+        |(RuleDefinitions _, _) -> true ) 
     |> Seq.toList
+    |> Seq.iter (printf "%A")
 
 nidCodex.Pages 
-|> Seq.filter (function | (Relics _, _) -> true | _ -> false ) 
+|> Seq.filter (function 
+        | (Stratagems _, _) -> false
+        | (Chapters _, _) -> false
+        | (PointsValues _, _) -> false
+        | (Relics _, _) -> false
+        | (WarlordTraits _, _) -> false
+        | (Datasheets _, _) -> false
+        |(RuleDefinitions _, _) -> true ) 
 |> Seq.iter(fst >> printfn "%s")
 let sheets = 
     nidCodex.Pages 
-    |> Seq.filter (function | (Relics _, _) -> true | _ -> false ) 
+    |> Seq.filter (function 
+        | (Stratagems _, _) -> false
+        | (Chapters _, _) -> false
+        | (PointsValues _, _) -> false
+        | (Relics _, _) -> false
+        | (WarlordTraits _, _) -> false
+        | (Datasheets _, _) -> false
+        |(RuleDefinitions _, _) -> true ) 
     |> Seq.map(fun (file,_) -> (|RuleDefinitions|) file)
     |> Seq.toList
 
