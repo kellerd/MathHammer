@@ -63,10 +63,10 @@ an additional 3 mortal wounds if it contains 6 Zoanthropes."
       "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain."
       "You can re-roll failed charge rolls for units with this adaptation."
       "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation."
-      "Use this Stratagem at the end of the Fight phase. Select a TYRANIDS unit from your army – that unit can immediately fight again." |]
-
+      "Use this Stratagem at the end of the Fight phase. Select a TYRANIDS unit from your army – that unit can immediately fight again."
+      "If a rule requires you to roll a D3, roll a D6 and halve the result." |]
 questions
-|> Seq.skip 4
+|> Seq.skip 5
 |> Seq.iter (fun question ->
     printfn "Question : %s" question
     question
