@@ -59,7 +59,7 @@ let update msg model =
                                                          operations
                                                      Choices =
                                                          List.reduceSafe 
-                                                             Map.empty<_, _> 
+                                                             Map.empty 
                                                              Map.mergeSets 
                                                              choices } }
     | MathHammerMsg msg -> mathHammerUpdate msg model

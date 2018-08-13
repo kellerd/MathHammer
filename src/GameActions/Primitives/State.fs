@@ -225,7 +225,7 @@ let uniqueId taken s =
 
 let getChoices (key, choices) =
     let keys = List.map (fst) choices |> Set.ofList
-    Map.add key keys Map.empty<_, _>
+    Map.add key keys Map.empty
 
 let rename all (t, s, x) =
     let choicesOf =
@@ -237,7 +237,7 @@ let rename all (t, s, x) =
     
     let rec halp =
         function 
-        | Var(_) -> Fine Map.empty<_, _>
+        | Var(_) -> Fine Map.empty
         | App(f, a) -> 
             match halp f with
             | Renamed(c, rf) -> Renamed(c, App(rf, a))
@@ -276,7 +276,7 @@ let rename all (t, s, x) =
                    | Fine c, Renamed(c2, rop) -> 
                        Renamed(Map.mergeSets c c2, Choice(name, [ key, rop ]))
                    | Fine c, Fine c2 -> Fine(Map.mergeSets c c2)) 
-                   (Fine Map.empty<_, _>)
+                   (Fine Map.empty)
             |> function 
             | Renamed(c, Choice(name, choices)) -> 
                 Renamed
@@ -285,14 +285,14 @@ let rename all (t, s, x) =
             | Renamed(c, op) -> 
                 Renamed(Map.mergeSets (getChoices (name, choices)) c, op)
             | Fine c -> Fine(Map.mergeSets (getChoices (name, choices)) c)
-        | Call _ -> Fine Map.empty<_, _>
+        | Call _ -> Fine Map.empty
         | Value v -> 
             let rec halpGp v =
                 match v with
-                | Int(_) -> Fine Map.empty<_, _>
-                | Str(_) -> Fine Map.empty<_, _>
-                | Float(_) -> Fine Map.empty<_, _>
-                | NoValue -> Fine Map.empty<_, _>
+                | Int(_) -> Fine Map.empty
+                | Str(_) -> Fine Map.empty
+                | Float(_) -> Fine Map.empty
+                | NoValue -> Fine Map.empty
                 | Check(Check.Pass gp) -> 
                     match halpGp gp with
                     | Fine c -> Fine c
@@ -338,7 +338,7 @@ let rename all (t, s, x) =
                                              ({ Probabilities =
                                                     [ ParamArray([ rop ]), p ] })))
                            | Fine c, Fine c2 -> Fine(Map.mergeSets c c2)) 
-                           (Fine Map.empty<_, _>)
+                           (Fine Map.empty)
                     |> function 
                     | Renamed(c, Value(Dist({ Probabilities = gps }))) -> 
                         Renamed
@@ -362,7 +362,7 @@ let rename all (t, s, x) =
                                    (Map.mergeSets c c2, 
                                     Value(ParamArray([ rop ])))
                            | Fine c, Fine c2 -> Fine(Map.mergeSets c c2)) 
-                           (Fine Map.empty<_, _>)
+                           (Fine Map.empty)
                     |> function 
                     | Renamed(c, Value(ParamArray(ops))) -> 
                         Renamed(c, Value(ParamArray(List.rev ops)))
@@ -376,7 +376,7 @@ let rename all (t, s, x) =
                 match halp thenExpr, elseExpr |> Option.map (halp) with
                 | Renamed(c2, rt), (Some e) -> 
                     let choices =
-                        List.reduceSafe Map.empty<_, _> Map.mergeSets 
+                        List.reduceSafe Map.empty Map.mergeSets 
                             [ c
                               c2
                               choicesOf e ]
@@ -386,12 +386,12 @@ let rename all (t, s, x) =
                         (Map.mergeSets c c2, IfThenElse(ifExpr, rt, elseExpr))
                 | Fine c2, Some(Renamed(c3, re)) -> 
                     Renamed
-                        (List.reduceSafe Map.empty<_, _> Map.mergeSets 
+                        (List.reduceSafe Map.empty Map.mergeSets 
                              [ c; c2; c3 ], 
                          IfThenElse(ifExpr, thenExpr, Some re))
                 | Fine c2, Some(Fine c3) -> 
                     Fine
-                        (List.reduceSafe Map.empty<_, _> Map.mergeSets 
+                        (List.reduceSafe Map.empty Map.mergeSets 
                              [ c; c2; c3 ])
                 | Fine c2, None -> Fine(Map.mergeSets c c2)
     match halp x, s with
@@ -418,8 +418,8 @@ let normalize op : ChoiceSet * Operation =
     
     let rec reduce : Operation -> NormalizedResult =
         function 
-        | Var _ -> Map.empty<_, _>, Normal
-        | Call _ -> Map.empty<_, _>, Normal
+        | Var _ -> Map.empty, Normal
+        | Call _ -> Map.empty, Normal
         | App(Lam(p, b), a) -> 
             let redex = a, p, b
             match rename all redex with
@@ -450,7 +450,7 @@ let normalize op : ChoiceSet * Operation =
         | Choice(name, choices) -> 
             let newChoices =
                 Map.add name (Set.ofList (choices |> List.map fst)) 
-                    Map.empty<_, _>
+                    Map.empty
             
             let (cs, rops, expr) =
                 choices
@@ -463,15 +463,15 @@ let normalize op : ChoiceSet * Operation =
                    | Next _ -> true
                    | Normal -> false) expr
             then 
-                List.reduceSafe Map.empty<_, _> Map.mergeSets (newChoices :: cs), 
+                List.reduceSafe Map.empty Map.mergeSets (newChoices :: cs), 
                 Next(Choice(name, rops))
             else 
-                List.reduceSafe Map.empty<_, _> Map.mergeSets (newChoices :: cs), 
+                List.reduceSafe Map.empty Map.mergeSets (newChoices :: cs), 
                 Normal
         | Value v -> 
             let rec halpGp =
                 function 
-                | NoValue | Str _ | Float _ | Int _ -> Map.empty<_, _>, Normal
+                | NoValue | Str _ | Float _ | Int _ -> Map.empty, Normal
                 | Check(Check.Pass gp) -> 
                     match halpGp gp with
                     | c, Normal -> c, Normal
@@ -496,10 +496,10 @@ let normalize op : ChoiceSet * Operation =
                            | Next _ -> true
                            | Normal -> false) expr
                     then 
-                        List.reduceSafe Map.empty<_, _> Map.mergeSets cs, 
+                        List.reduceSafe Map.empty Map.mergeSets cs, 
                         Next(Value(ParamArray(rops)))
                     else 
-                        List.reduceSafe Map.empty<_, _> Map.mergeSets cs, Normal
+                        List.reduceSafe Map.empty Map.mergeSets cs, Normal
                 | Tuple(gp, gp2) -> 
                     match halpGp gp with
                     | c, Next(Value(rgp)) -> c, Next(Value(Tuple(rgp, gp2)))
@@ -528,10 +528,10 @@ let normalize op : ChoiceSet * Operation =
                            | Next _ -> true
                            | Normal -> false) expr
                     then 
-                        List.reduceSafe Map.empty<_, _> Map.mergeSets cs, 
+                        List.reduceSafe Map.empty Map.mergeSets cs, 
                         Next(Value(Dist({ Probabilities = rgps })))
                     else 
-                        List.reduceSafe Map.empty<_, _> Map.mergeSets cs, Normal
+                        List.reduceSafe Map.empty Map.mergeSets cs, Normal
             halpGp v
         | Let(s, v, op) -> 
             match reduce v with
@@ -546,19 +546,19 @@ let normalize op : ChoiceSet * Operation =
             | c, Normal -> 
                 match reduce thenExpr, elseExpr |> Option.map reduce with
                 | (c2, Next rt), Some(c3, _) -> 
-                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ], 
+                    List.reduceSafe Map.empty Map.mergeSets [ c; c2; c3 ], 
                     Next(IfThenElse(ifExpr, rt, elseExpr))
                 | (c2, Next rt), None -> 
-                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2 ], 
+                    List.reduceSafe Map.empty Map.mergeSets [ c; c2 ], 
                     Next(IfThenElse(ifExpr, rt, elseExpr))
                 | (c2, Normal), Some(c3, Next(re)) -> 
-                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ], 
+                    List.reduceSafe Map.empty Map.mergeSets [ c; c2; c3 ], 
                     Next(IfThenElse(ifExpr, thenExpr, Some re))
                 | (c2, Normal), Some(c3, Normal) -> 
-                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2; c3 ], 
+                    List.reduceSafe Map.empty Map.mergeSets [ c; c2; c3 ], 
                     Normal
                 | (c2, Normal), None -> 
-                    List.reduceSafe Map.empty<_, _> Map.mergeSets [ c; c2 ], 
+                    List.reduceSafe Map.empty Map.mergeSets [ c; c2 ], 
                     Normal
     Seq.unfold (function 
         | (Next rop) -> 

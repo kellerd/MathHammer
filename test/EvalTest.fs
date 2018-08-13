@@ -26,7 +26,7 @@ let tests =
         let result =
             try 
                 op
-                |> evalAndRemoveLamdas (evalOp Map.empty<_, _>)
+                |> evalAndRemoveLamdas (evalOp Map.empty)
                 |> Choice1Of2
             with ex -> Choice2Of2(ex.Message.Substring(0, 15))
         
@@ -35,7 +35,7 @@ let tests =
                 op
                 |> normalize
                 |> snd
-                |> evalAndRemoveLamdas (evalOp Map.empty<_, _>)
+                |> evalAndRemoveLamdas (evalOp Map.empty)
                 |> Choice1Of2
             with ex -> Choice2Of2(ex.Message.Substring(0, 15))
         

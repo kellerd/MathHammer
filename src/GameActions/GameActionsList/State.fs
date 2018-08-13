@@ -186,7 +186,7 @@ let update msg model : Model * Cmd<Types.Msg> =
     | AddRow when not model.Editing -> 
         let (newRow, newRowCmd) = initRow()
         { model with Editing = true
-                     Functions = (Map.empty<_, _>, newRow) :: model.Functions }, 
+                     Functions = (Map.empty, newRow) :: model.Functions }, 
         newRowCmd
     | ChangeNewRowName(str) when model.Editing -> 
         let newRows =

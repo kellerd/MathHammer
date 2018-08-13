@@ -124,7 +124,7 @@ let init() : Model * Cmd<Types.Msg> =
     let model : Model =
         { Dragging = false, None
           Environment =
-              Map.empty<_, _> |> Map.add "Phase" (Str "Assault" |> Value)
+              Map.empty |> Map.add "Phase" (Str "Assault" |> Value)
           Attacker =
               { attacker with Location =
                                   { attacker.Location with Fill = "#FFCCCC"
@@ -151,7 +151,7 @@ let init() : Model * Cmd<Types.Msg> =
                               ElementStroke = "#023963" }
           SelectedAttacker = None
           SelectedDefender = None
-          Matchups = Map.empty<_, _>
+          Matchups = Map.empty
           Board =
               { Top = 0<mm>
                 Left = 0<mm>
@@ -159,8 +159,8 @@ let init() : Model * Cmd<Types.Msg> =
                 Height = ft.ToMM 4<ft> }
           GlobalOperations = []
           Mode = Probability
-          Choices = Map.empty<_, _>
-          SelectedChoices = Map.empty<_, _> }
+          Choices = Map.empty
+          SelectedChoices = Map.empty }
     model, 
     Cmd.batch [ List.map 
                     (Cmd.map (fun msg -> UnitListMsg(msg, Some attackerMap))) 
@@ -301,7 +301,7 @@ let update msg model : Model * Cmd<Types.Msg> =
             |> List.sortBy (snd >> fst)
             |> List.fold (fun env (key, (_, op)) -> 
                    let result = op |> evalOp env
-                   Map.add key result env) Map.empty<_, _>
+                   Map.add key result env) Map.empty
         
         let allChoices =
             [ model.Attacker.Models
@@ -311,11 +311,11 @@ let update msg model : Model * Cmd<Types.Msg> =
               |> Map.toList
               |> List.map (fun (_, m) -> m.Choices) ]
             |> List.collect id
-            |> List.reduceSafe Map.empty<_, _> (Map.mergeSets)
+            |> List.reduceSafe Map.empty (Map.mergeSets)
             |> Map.mergeSets model.Choices
         
         { model with Environment = environment
-                     Matchups = Map.empty<_, _>
+                     Matchups = Map.empty
                      Choices = allChoices
                      SelectedDefender = None
                      SelectedAttacker = None }, Cmd.none

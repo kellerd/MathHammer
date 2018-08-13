@@ -10,10 +10,10 @@ let init name =
       PosY = 0.
       Name = name
       Size = 28<mm>
-      Attributes = Map.empty<_, _>
+      Attributes = Map.empty
       Rules = noValue
       ProbabilityRules = None
-      Choices = Map.empty<_, _> }
+      Choices = Map.empty }
 
 let initSgt name coreRules =
     let attributes =

@@ -113,7 +113,7 @@ let groupFor model display =
 let rangeRoot name model =
     let dist =
         model.ProbabilityRules 
-        |> Option.map (getp name >> evalOp Map.empty<_, _>)
+        |> Option.map (getp name >> evalOp Map.empty)
     
     let ranges id (_ : int<mm>, max : int<mm>, stops) =
         g [] [ defs [] [ radialGradient [ Id(safe id) ] stops ]

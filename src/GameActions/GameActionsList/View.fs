@@ -566,7 +566,7 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
 let root model dispatch =
     let (tableRows, _) =
         List.mapFold (mkRows model.Dragging model.Editing dispatch) 
-            Map.empty<_, _> model.Functions
+            Map.empty model.Functions
     table [ ClassName "table is-fullwidth  is-striped" ] [ thead [] 
                                                                [ tr [] 
                                                                      [ th [] 

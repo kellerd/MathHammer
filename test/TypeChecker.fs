@@ -34,7 +34,7 @@ let floor gpType =
 let eval x op =
     get x
     |> op
-    |> evalOp Map.empty<_, _>
+    |> evalOp Map.empty
 
 [<Tests>]
 let tests =

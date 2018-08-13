@@ -13,14 +13,14 @@ let (==?) x y =
 let eval x op =
     get x
     |> op
-    |> evalOp Map.empty<_, _>
+    |> evalOp Map.empty
 
 [<Tests>]
 let tests =
     let ``Repeating an operation gives correct length`` (FsCheck.NonNegativeInt x) op =
         let a = vInt x
         let repeat = repeatOp op a
-        let result = repeat |> evalOp Map.empty<_, _>
+        let result = repeat |> evalOp Map.empty
         match result with
         | Value(ParamArray []) -> Expect.equal x 0 "X should be 0 if an empty list is the result"
         | Value(ParamArray((head :: tail) as result)) -> 
@@ -50,12 +50,12 @@ let tests =
         
         (eval "ThreePasses" ``Three Passes``) ==? (eval "ThreePasses" ``Three Passes Repeat``)
     
-    // let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty<_,_>  
-    // let x = repeatOp (d6) (vInt 4) |> evalOp Map.empty<_,_>  
-    // let x = repeatOp (vInt 4) (d6)  |> evalOp Map.empty<_,_> 
-    // let x = repeatOp (d6) (d6)  |> evalOp Map.empty<_,_>  
-    // let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp Map.empty<_,_> 
-    // let x = repeatOp (Value(ParamArray([vInt 3; vInt 2]))) (vInt 4)  |> evalOp Map.empty<_,_> 
+    // let x = repeatOp (vInt 4) (vInt 4) |> evalOp Map.empty  
+    // let x = repeatOp (d6) (vInt 4) |> evalOp Map.empty  
+    // let x = repeatOp (vInt 4) (d6)  |> evalOp Map.empty 
+    // let x = repeatOp (d6) (d6)  |> evalOp Map.empty  
+    // let x = repeatOp (vInt 4) (Value(ParamArray([vInt 3; vInt 2])))  |> evalOp Map.empty 
+    // let x = repeatOp (Value(ParamArray([vInt 3; vInt 2]))) (vInt 4)  |> evalOp Map.empty 
     let ``Repeat Sum is the same as product`` (TwoSimilarTypes(x, y)) =
         try 
             let result =

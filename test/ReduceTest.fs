@@ -12,7 +12,7 @@ let tests =
     let eval x op =
         get x
         |> op
-        |> evalOp Map.empty<_, _>
+        |> evalOp Map.empty
     
     let d6Dist =
         [ 1..6 ]

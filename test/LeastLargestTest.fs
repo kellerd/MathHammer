@@ -15,7 +15,7 @@ let tests =
     testList "Least Largest Avg Tests" [ let eval =
                                              normalize
                                              >> snd
-                                             >> evalOp Map.empty<_, _>
+                                             >> evalOp Map.empty
                                          
                                          let largestTest data n =
                                              let result =

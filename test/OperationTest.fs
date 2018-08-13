@@ -14,7 +14,7 @@ let tests =
     testList "Operation Tests" [ let eval =
                                      normalize
                                      >> snd
-                                     >> evalOp Map.empty<_, _>
+                                     >> evalOp Map.empty
                                  yield test "WithLams gives some values" { 
                                            let t1 =
                                                Lam("X", 
@@ -169,12 +169,12 @@ let tests =
                                      let evaled =
                                          Let("x", Value(v), Var("x"))
                                          |> f
-                                         |> evalOp Map.empty<_, _>
+                                         |> evalOp Map.empty
                                      
                                      let evaled' =
                                          Value(v)
                                          |> f
-                                         |> evalOp Map.empty<_, _>
+                                         |> evalOp Map.empty
                                      
                                      evaled ==? evaled'
                                  yield testPropertyWithConfig config "let x = 3 returns 3 evaluated without normalization" (retValueIsSame id)
@@ -189,7 +189,7 @@ let tests =
                                                  App(Call Total, 
                                                      opList [ Value(x)
                                                               Var("y") ]))
-                                             |> evalOp Map.empty<_, _>
+                                             |> evalOp Map.empty
                                              |> Choice1Of2
                                          with ex -> Choice2Of2(ex.Message.Substring(0, 30))
                                      
@@ -225,7 +225,7 @@ let tests =
                                  yield testPropertyWithConfig config "Addition in child scope is valid" addition
                                  let totalOfXIsX x =
                                      let expected = x |> Value
-                                     let result = Let("x", expected, App(Call Total, Var("x"))) |> evalOp Map.empty<_, _>
+                                     let result = Let("x", expected, App(Call Total, Var("x"))) |> evalOp Map.empty
                                      result ==? expected
                                  yield testPropertyWithConfig config "Total of x is x" totalOfXIsX
                                  yield test "Check primitive partial application" { 
@@ -242,7 +242,7 @@ let tests =
                                                         ("g", App(get "f", Value(Int 6)), 
                                                          Let("h", App(get "g", Value(Int 7)), App(get "h", Value(Int 8)))))
                                            
-                                           let result = value |> evalOp Map.empty<_, _>
+                                           let result = value |> evalOp Map.empty
                                            let f x y : int -> int list = fun z -> [ x; y; z ]
                                            let g = f 6
                                            let h = g 7
@@ -260,7 +260,7 @@ let tests =
                                                                Value(ParamArray [ get "X"
                                                                                   get "Y" ]))), Value(Int 2)), Value(Int 3))
                                            
-                                           let result = value |> evalOp Map.empty<_, _>
+                                           let result = value |> evalOp Map.empty
                                            
                                            let expected =
                                                (fun x y -> [ x; y ]) 2 3
@@ -286,7 +286,7 @@ let tests =
                                                                                     |> Value)
                                      
                                      let apps = xs |> List.fold (fun op v -> App(op, v)) lams
-                                     let result = apps |> (evalOp Map.empty<_, _>)
-                                     let expected = Value(ParamArray(List.map (evalOp Map.empty<_, _>) xs))
+                                     let result = apps |> (evalOp Map.empty)
+                                     let expected = Value(ParamArray(List.map (evalOp Map.empty) xs))
                                      result ==? expected
                                  yield testPropertyWithConfig config "Partial application is in the correct order" partialApplication ]

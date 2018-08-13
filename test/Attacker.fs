@@ -82,8 +82,8 @@ let ld = vInt 8
 let sv = threePlus
 let invSave = noValue
 let seargent = [ move; ws; bs; s; t; w; a; ld; sv; invSave ]
-let choices = Map.empty<_, _>
-let env = Map.empty<_, _>
+let choices = Map.empty
+let env = Map.empty
 
 let (newChoices, newEnv) =
     globalOperations
