@@ -130,6 +130,7 @@ type Page =
     | Stratagems of Stratagem list
     | Relics of Relic list
     | Points of Map<(string*string), int>
+    | Tactical of (int * Rule) list  
     | Errors of Path
 type Codex = { Folder: Folder; Pages : (Path*Page) seq }
 
@@ -255,6 +256,11 @@ let (|Relics|_|) (file:string) =
     let titles =  body.CssSelect("._0K8---Rule-Styles_5--Warlord-Traits_5-1-Warlord-Trait-40K8Codex") |> List.tryHead 
     let weapons = body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-Header-40K8")  |> List.tryHead
     Option.map2 (fun _ _ -> body) titles weapons
+let (|TacticalObjectives|_|) (file:string) =
+    let (RuleDefinitions body) = file
+    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
+    |> List.tryFind (fun n -> n.InnerText().ToUpper().Contains("TACTICAL OBJECTIVES"))
+    |> Option.map(fun _ -> body)    
 let emptyWeaponList = [None, Map.empty]    
 let getText : HtmlNode list -> string = 
     Seq.collect(fun (n:HtmlNode) -> 
@@ -282,48 +288,34 @@ let positionOf text span =
     let index2 = value.IndexOf("px;", index, StringComparison.InvariantCultureIgnoreCase)
     value.Substring(index, index2 - index) |> float
 
-let nodes = [([],
-                  ["If the bearer is slain in the Fight phase before it has made its attacks, leave it where it is. When its unit is chosen to fight in that phase, the bearer can do so as normal before being removed
-                from the battlefield.";
-                   "1"; "-2"; "User"; "Melee"; "Melee"; "Lash whip and bonesword"]);]
-let nextNode = "Lash whip and monstrous bonesword"
-let currentPosition = {Top = 4477.0;
- Left = 61.69;
- Bottom = 4110.79;
- Right = 8790.28;}
-let nextPosition = {Top = 4506.86;
- Left = 61.69;
- Bottom = 4336.86;
- Right = 972.78;}
-(|OverBelow|_|) currentPosition nextPosition 
-let collectRows (currentPosition, (nodes:(string list * string list) list)) (nextPosition,nextNode) : TextBlock option * (string list * string list) list =
+let collectRows (currentPosition, nodes) (nextPosition,nextNode)  =
     match currentPosition, nextPosition with 
     | None, _ -> 
         match nodes with 
-        | [] -> nextPosition, ([], [nextNode]) :: nodes
-        | (l,r)::otherRows ->  nextPosition, (l, nextNode::r) :: otherRows
+        | [] -> nextPosition, [nextNode] :: nodes
+        | ns::otherRows ->  nextPosition, (nextNode::ns) :: otherRows
     | Some currentPosition, None -> 
         Some currentPosition, nodes
     | Some currentPosition, Some nextPosition -> 
         match nextPosition, nodes with 
         | _, [] -> 
-            Some nextPosition, ([], [nextNode]) :: nodes
+            Some nextPosition, [nextNode] :: nodes
         | RightOf currentPosition _ & 
-            SameRow currentPosition combinedPosition, (l,r)::otherRows -> 
-            Some combinedPosition, (l, nextNode::r) :: otherRows
+            SameRow currentPosition combinedPosition, ns::otherRows -> 
+            Some combinedPosition,  (nextNode::ns) :: otherRows
         | RightOf currentPosition _ & 
-            Above currentPosition combinedPosition, (l,r)::otherRows -> //Futher text probably wouldn't be above unless it's a superscript
-            Some combinedPosition, (l, nextNode::r) :: otherRows
-        | SameCell currentPosition _ & 
-             OverBelow currentPosition combinedPosition, (_,lastNode::_)::_-> 
-             Some combinedPosition, (([lastNode], [nextNode]) :: nodes)
+            Above currentPosition combinedPosition, ns::otherRows -> //Futher text probably wouldn't be above unless it's a superscript
+            Some combinedPosition,  (nextNode::ns) :: otherRows
+        // | SameCell currentPosition _ & 
+        //      OverBelow currentPosition combinedPosition, (_,lastNode::_)::_-> 
+        //      Some combinedPosition, (([lastNode], [nextNode]) :: nodes)
         | nextPosition, nodes -> 
-            if nextNode = "Lash whip and monstrous bonesword" then 
-                printfn "let nodes = %A" nodes
-                printfn "let nextNode = %A" nextNode 
-                printfn "let currentPosition = %A" currentPosition
-                printfn "let nextPosition = %A" nextPosition
-            Some nextPosition, ([], [nextNode]) :: nodes
+            // if HtmlNode.innerText nextNode = "Lash whip and monstrous bonesword" then 
+            //     printfn "let nodes = %A" nodes
+            //     printfn "let nextNode = %A" nextNode 
+            //     printfn "let currentPosition = %A" currentPosition
+            //     printfn "let nextPosition = %A" nextPosition
+            Some nextPosition, [nextNode] :: nodes
         // | _ -> (Some currentPosition, nodes)
         
 let getTable (node:HtmlNode) headerStyle tableStyle =    
@@ -337,22 +329,28 @@ let getTable (node:HtmlNode) headerStyle tableStyle =
         | []       -> None,               []
         | x :: ys -> getCategory x ys ,   List.map snd ys |> List.last |> getHeaderText
     let (table, rules) = 
-        node.CssSelect tableStyle
-        |> List.groupBy (fun n -> 
-                n.Descendants["span"] 
-                |> Seq.fold(fun blockPosition span ->
-                    //let span = n.Descendants["span"] |> Seq.head
-                    let top = positionOf "top" span
-                    let left = positionOf "left" span
-                    blockPosition 
-                    |> Option.map (expandTextBlock  {Top = top; Left = left; Right = left; Bottom = top})
-                    |> Option.defaultValue { Top    = top; Left   = left; Bottom = top; Right  = left }
-                    |> Some) None
-        ) |> List.map (fun (p,t) -> p, getText t)
-        |> List.fold collectRows (None,[])
-        |> snd
-        |> List.head
-        |> List.map (List.rev)
+        let table' = 
+            node.CssSelect tableStyle
+            |> List.groupBy (fun n -> 
+                    n.Descendants["span"] 
+                    |> Seq.fold(fun blockPosition span ->
+                        //let span = n.Descendants["span"] |> Seq.head
+                        let top = positionOf "top" span
+                        let left = positionOf "left" span
+                        blockPosition 
+                        |> Option.map (expandTextBlock  {Top = top; Left = left; Right = left; Bottom = top})
+                        |> Option.defaultValue { Top    = top; Left   = left; Bottom = top; Right  = left }
+                        |> Some) None
+            )// |> List.map (fun (p,t) -> p, getText t)
+            |> List.fold collectRows (None,[]) 
+            |> snd
+        table'   
+        |> List.mapi (fun i ns -> 
+            let item = 
+                if List.length ns = List.length headers - 1 then 
+                    List.tryItem (i + 1) table' |> Option.bind (List.tryHead) |> Option.toList 
+                else []             
+            item @ ns |> List.rev)
         |> List.partition (fun l -> List.length l = List.length headers)
     let extraRules = List.collect id rules |> List.collect id              
     let tableValues = 
@@ -551,36 +549,41 @@ let stratagems (body:HtmlNode) =
     ) 
     |> Stratagems
 let rules (body:HtmlNode) = 
+    
     let (weapons,rules)  =
         body.CssSelect(".Basic-Text-Frame > div")
-        |> List.collect(fun n -> n.Elements() )
-        |> List.filter (fun n -> (n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-4-Intro-Minion-40K8Codex" || 
-                                    n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-3-Body-Text-Semibold-Italic-40K8Codex" || 
-                                    n.HasClass "Background-Styles-40k8Codex_3--Quotes-and-Other-40K8Codex_3-1-Quote-Direct-Speech-40K8Codex" || 
-                                    n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex" || 
-                                    n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-2-Body-Text-Bold-40K8Codex" || 
-                                    n.HasClass "Background-Styles-40k8Codex_3--Quotes-and-Other-40K8Codex_3-3-Quote-Attribution-40K8Codex" ||
-                                    n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-2-Header-2-Sava---Section-Header-40K8Codex") |> not)
-        |> divideInclusive(fun n -> n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-5-Header-5-Sava---Sub-header-40K8Codex" ||
-                                    n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-6-Header-6-Sava-40K8Codex")        
-        |> List.map (fun nodes -> 
-            //let nodes = rulesText.[0]
-            let (weapons,rules) = nodes |> List.partition (fun n -> HtmlNode.name n = "div")
-            let n = HtmlNode.NewElement ("div",[], weapons  |> List.skipWhile(fun x -> HtmlNode.innerText x = "MELEE WEAPONS" || HtmlNode.innerText x = "RANGED WEAPONS"))
-            let (category, weaponTable, extraRules) = 
-                getTable 
-                    n
-                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex"
-                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex" 
-            let rule =         
-                match rules@extraRules with 
-                | []  -> None
-                | [n] -> RuleOnly(getText [n]) |> Some
-                | n::ns -> LabelledRule(getText [n], getText ns) |> Some   
-            (category, weaponTable),rule)   
-        |> List.unzip   
-    let rules' = rules |> List.collect(Option.toList)            
-    RuleDefs(weapons, rules')            
+        |> List.map(fun n -> 
+            //let (weapons,rules)  =
+                n.Elements()  
+                |> List.filter (fun n -> (n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-4-Intro-Minion-40K8Codex" || 
+                                        n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-3-Body-Text-Semibold-Italic-40K8Codex" || 
+                                        n.HasClass "Background-Styles-40k8Codex_3--Quotes-and-Other-40K8Codex_3-1-Quote-Direct-Speech-40K8Codex" || 
+                                        n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex" || 
+                                        n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-2-Body-Text-Bold-40K8Codex" || 
+                                        n.HasClass "Background-Styles-40k8Codex_3--Quotes-and-Other-40K8Codex_3-3-Quote-Attribution-40K8Codex" ||
+                                        n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-2-Header-2-Sava---Section-Header-40K8Codex") |> not)
+                |> divideInclusive(fun n -> n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-5-Header-5-Sava---Sub-header-40K8Codex" ||
+                                            n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-6-Header-6-Sava-40K8Codex")        
+                |> List.map (fun nodes -> 
+                //let nodes = rulesText.[0]
+                    let (weapons,rules) = nodes |> List.partition (fun n -> HtmlNode.name n = "div")
+                    let n = HtmlNode.NewElement ("div",[], weapons)
+                    let (category, weaponTable, extraRules) = 
+                        getTable 
+                            n
+                            "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex"
+                            "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex" 
+                    let rule =         
+                        match rules@extraRules with 
+                        | []  -> None
+                        | [n] -> RuleOnly(getText [n]) |> Some
+                        | n::ns -> LabelledRule(getText [n], getText ns) |> Some   
+                    (category, weaponTable),rule )   
+                |> List.unzip    
+            //weapons, rules            
+        ) |> List.unzip          
+    RuleDefs(List.collect id weapons, rules |> List.collect id |> List.collect (Option.toList) )       
+
 let pointsValues (body:HtmlNode) = Map.empty|> Points  
 let map8thCodex (file:Path) = 
     match file with 
@@ -591,12 +594,9 @@ let map8thCodex (file:Path) =
     | PointsValues body        -> pointsValues body
     | Relics body              -> relics body
     | RuleDefinitions body     -> rules body 
-let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\098-113_40K8_Tyranids_Army_List_02-14.xhtml")
-//let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\098-113_40K8_Tyranids_Army_List_02-15.xhtml")
-//let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\098-113_40K8_Tyranids_Army_List_02-16.xhtml")
-//let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-1.xhtml")
+
 //let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-14.xhtml")
-//let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-15.xhtml")
+let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-15.xhtml")
 //let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-2.xhtml")
 //let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-3.xhtml")
 //let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-8.xhtml")
