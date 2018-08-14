@@ -1,6 +1,7 @@
-﻿#load "../../.paket/load/netstandard2.0/System.IO.Compression.ZipFile.fsx"
+﻿#load @"../../.paket/load/netstandard2.0/System.IO.Compression.ZipFile.fsx"
 open FSharp.Data
 open System
+#r "netstandard"
 #r "System.IO.Compression"
 #r "System.Text.Encoding"
 open System.IO

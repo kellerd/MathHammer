@@ -2,4 +2,4 @@
 #load @"Fable.Elmish.fsx" 
 #load @"Fable.PowerPack.fsx" 
 #load @"Fable.React.fsx" 
-#r "../../../../../../.nuget/packages/fable.elmish.react/1.0.1/lib/netstandard1.6/Fable.Elmish.React.dll" 
+#r "../../../../../../.nuget/packages/fable.elmish.react/2.0.0-beta-4/lib/netstandard2.0/Fable.Elmish.React.dll" 

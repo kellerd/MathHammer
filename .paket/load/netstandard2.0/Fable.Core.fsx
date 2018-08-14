@@ -1,2 +1,1 @@
-#load @"NETStandard.Library.fsx" 
-#r "../../../../../../.nuget/packages/fable.core/1.3.11/lib/netstandard1.6/Fable.Core.dll" 
+#r "../../../../../../.nuget/packages/fable.core/2.0.0-beta-001/lib/netstandard2.0/Fable.Core.dll" 

@@ -1,1 +1,1 @@
-#r "../../../../../../.nuget/packages/system.reflection.typeextensions/4.4.0/lib/netstandard2.0/System.Reflection.TypeExtensions.dll" 
+#r "../../../../../../.nuget/packages/system.reflection.typeextensions/4.5.0/lib/netstandard2.0/System.Reflection.TypeExtensions.dll" 

@@ -1,5 +1,6 @@
 FSharp.Core
 Fable.Core
+System.Text.Encoding
 Fable.Elmish.React
 Fable.Elmish.Browser
 Fable.Elmish.Debugger
