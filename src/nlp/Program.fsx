@@ -296,23 +296,7 @@ let positionOf text span =
         else span.Descendants["span"] |> Seq.head |> HtmlNode.attributeValue "style" 
     let index = value.IndexOf(sprintf "%s:" text, StringComparison.InvariantCultureIgnoreCase) + (text.Length + 1)
     let index2 = value.IndexOf("px;", index, StringComparison.InvariantCultureIgnoreCase)
-    value.Substring(index, index2 - index) |> float
-let currentPosition= {Top = 43.93;
-          Left = 61.69;
-          Bottom = 43.93;
-          Right = 61.69;}
-let nextPosition= {Top = 517.16;
-          Left = 61.69;
-          Bottom = 517.16;
-          Right = 61.69;}
-let nextPosition2 = {Top = 627.16;
-          Left = 2281.78;
-          Bottom = 407.16;
-          Right = 2573.79;}
-let nextPosition3 =  {Top = 337.16;
-          Left = 3123.92;
-          Bottom = 337.16;
-          Right = 3949.6;}                   
+    value.Substring(index, index2 - index) |> float                
 let getPosition n = 
     HtmlNode.descendantsNamed true ["span"] n 
     |> Seq.fold(fun blockPosition span ->
@@ -323,10 +307,6 @@ let getPosition n =
         |> Option.map (expandTextBlock  {Top = top; Left = left; Right = left; Bottom = top})
         |> Option.defaultValue { Top    = top; Left   = left; Bottom = top; Right  = left }
         |> Some) None
-(|RightOf|_|) currentPosition nextPosition
-(|SameRow|_|) currentPosition nextPosition
-(|Above|_|) currentPosition nextPosition
-(|OverAbove|_|) currentPosition nextPosition
 let collectRows (currentPosition, nodes) (nextPosition,nextNode)  =
     match currentPosition, nextPosition with 
     | None, _ -> 
@@ -348,21 +328,11 @@ let collectRows (currentPosition, nodes) (nextPosition,nextNode)  =
         | RightOf currentPosition _ & 
             OverAbove currentPosition combinedPosition, ns::otherRows -> //Futher text probably wouldn't be above unless it's a superscript
             Some combinedPosition,  (nextNode::ns) :: otherRows
-        // | SameCell currentPosition _ & 
-        //      OverBelow currentPosition combinedPosition, (_,lastNode::_)::_-> 
-        //      Some combinedPosition, (([lastNode], [nextNode]) :: nodes)
         | nextPosition, nodes -> 
-            // if HtmlNode.innerText nextNode = "Lash whip and monstrous bonesword" then 
-            //     printfn "let nodes = %A" nodes
-            //     printfn "let nextNode = %A" nextNode 
-            //     printfn "let currentPosition = %A" currentPosition
-            //     printfn "let nextPosition = %A" nextPosition
             Some nextPosition, [nextNode] :: nodes
-        // | _ -> (Some currentPosition, nodes)
         
 let getTable (node:HtmlNode) headerStyle tableStyle =   
     //let node = body.CssSelect(".Basic-Text-Frame > div").[4]
-
     let allHeaders = 
             node.CssSelect headerStyle 
             |> List.groupBy getPosition
