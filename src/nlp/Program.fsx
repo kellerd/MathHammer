@@ -129,8 +129,9 @@ type Page =
     | RuleDefs of Weapons : Weapons list * Rule list 
     | Stratagems of Stratagem list
     | Relics of Relic list
-    | Points of Map<(string*string), int>
+    | Points of (Category option * Map<(string), int>) list
     | Tactical of (int * Rule) list  
+    | Psychic of (int * Rule) list  
     | Errors of Path
 type Codex = { Folder: Folder; Pages : (Path*Page) seq }
 
@@ -146,16 +147,19 @@ let expandTextBlock { Top = t; Left = l; Bottom = b; Right = r } { Top    = top;
       Bottom = min b bottom
       Right  = max r right }
 let (|LeftOf|_|) b a = 
-    if a.Right <= b.Left then Some (expandTextBlock a b)
+    if a.Right < b.Left then Some (expandTextBlock a b)
     else None
 let (|RightOf|_|) b a = 
-    if a.Left >= b.Right then Some (expandTextBlock a b)
+    if a.Left > b.Right then Some (expandTextBlock a b)
     else None   
 let (|Above|_|) b a = 
     if a.Bottom >= b.Top then Some (expandTextBlock a b)
     else None     
 let (|Below|_|) b a = 
     if a.Top <= b.Bottom then Some (expandTextBlock a b)
+    else None 
+let (|OverAbove|_|) b a = 
+    if a.Top <= b.Top then Some (expandTextBlock a b)
     else None 
 let (|OverBelow|_|) b a = 
     if a.Top >= b.Top then Some (expandTextBlock a b)
@@ -261,6 +265,12 @@ let (|TacticalObjectives|_|) (file:string) =
     body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
     |> List.tryFind (fun n -> n.InnerText().ToUpper().Contains("TACTICAL OBJECTIVES"))
     |> Option.map(fun _ -> body)    
+let (|Psychic|_|) (file:string) =
+    let (RuleDefinitions body) = file
+    let text = body.InnerText().ToUpper()
+    if text.Contains("WARP CHARGE") && text.Contains("PSYKERS") then 
+        Some body 
+    else None
 let emptyWeaponList = [None, Map.empty]    
 let getText : HtmlNode list -> string = 
     Seq.collect(fun (n:HtmlNode) -> 
@@ -287,7 +297,36 @@ let positionOf text span =
     let index = value.IndexOf(sprintf "%s:" text, StringComparison.InvariantCultureIgnoreCase) + (text.Length + 1)
     let index2 = value.IndexOf("px;", index, StringComparison.InvariantCultureIgnoreCase)
     value.Substring(index, index2 - index) |> float
-
+let currentPosition= {Top = 43.93;
+          Left = 61.69;
+          Bottom = 43.93;
+          Right = 61.69;}
+let nextPosition= {Top = 517.16;
+          Left = 61.69;
+          Bottom = 517.16;
+          Right = 61.69;}
+let nextPosition2 = {Top = 627.16;
+          Left = 2281.78;
+          Bottom = 407.16;
+          Right = 2573.79;}
+let nextPosition3 =  {Top = 337.16;
+          Left = 3123.92;
+          Bottom = 337.16;
+          Right = 3949.6;}                   
+let getPosition n = 
+    HtmlNode.descendantsNamed true ["span"] n 
+    |> Seq.fold(fun blockPosition span ->
+        //let span = n.Descendants["span"] |> Seq.head
+        let top = positionOf "top" span
+        let left = positionOf "left" span
+        blockPosition 
+        |> Option.map (expandTextBlock  {Top = top; Left = left; Right = left; Bottom = top})
+        |> Option.defaultValue { Top    = top; Left   = left; Bottom = top; Right  = left }
+        |> Some) None
+(|RightOf|_|) currentPosition nextPosition
+(|SameRow|_|) currentPosition nextPosition
+(|Above|_|) currentPosition nextPosition
+(|OverAbove|_|) currentPosition nextPosition
 let collectRows (currentPosition, nodes) (nextPosition,nextNode)  =
     match currentPosition, nextPosition with 
     | None, _ -> 
@@ -306,6 +345,9 @@ let collectRows (currentPosition, nodes) (nextPosition,nextNode)  =
         | RightOf currentPosition _ & 
             Above currentPosition combinedPosition, ns::otherRows -> //Futher text probably wouldn't be above unless it's a superscript
             Some combinedPosition,  (nextNode::ns) :: otherRows
+        | RightOf currentPosition _ & 
+            OverAbove currentPosition combinedPosition, ns::otherRows -> //Futher text probably wouldn't be above unless it's a superscript
+            Some combinedPosition,  (nextNode::ns) :: otherRows
         // | SameCell currentPosition _ & 
         //      OverBelow currentPosition combinedPosition, (_,lastNode::_)::_-> 
         //      Some combinedPosition, (([lastNode], [nextNode]) :: nodes)
@@ -318,9 +360,15 @@ let collectRows (currentPosition, nodes) (nextPosition,nextNode)  =
             Some nextPosition, [nextNode] :: nodes
         // | _ -> (Some currentPosition, nodes)
         
-let getTable (node:HtmlNode) headerStyle tableStyle =    
+let getTable (node:HtmlNode) headerStyle tableStyle =   
+    //let node = body.CssSelect(".Basic-Text-Frame > div").[4]
+
     let allHeaders = 
-            node.CssSelect headerStyle |> List.groupBy (positionOf "top") 
+            node.CssSelect headerStyle 
+            |> List.groupBy getPosition
+            |> List.fold collectRows (None,[]) 
+            |> snd
+            |> List.map (fun ls -> ls |> List.collect id |> List.map (positionOf "top") |> List.max , ls |> List.rev |> List.collect id )
             |> List.sortBy (snd >> List.length) 
     let (category, headers) = 
         match allHeaders with 
@@ -331,17 +379,7 @@ let getTable (node:HtmlNode) headerStyle tableStyle =
     let (table, rules) = 
         let table' = 
             node.CssSelect tableStyle
-            |> List.groupBy (fun n -> 
-                    n.Descendants["span"] 
-                    |> Seq.fold(fun blockPosition span ->
-                        //let span = n.Descendants["span"] |> Seq.head
-                        let top = positionOf "top" span
-                        let left = positionOf "left" span
-                        blockPosition 
-                        |> Option.map (expandTextBlock  {Top = top; Left = left; Right = left; Bottom = top})
-                        |> Option.defaultValue { Top    = top; Left   = left; Bottom = top; Right  = left }
-                        |> Some) None
-            )// |> List.map (fun (p,t) -> p, getText t)
+            |> List.groupBy getPosition //|> List.map (fun (p,t) -> p, getText t)
             |> List.fold collectRows (None,[]) 
             |> snd
         table'   
@@ -549,19 +587,18 @@ let stratagems (body:HtmlNode) =
     ) 
     |> Stratagems
 let rules (body:HtmlNode) = 
-    
     let (weapons,rules)  =
         body.CssSelect(".Basic-Text-Frame > div")
         |> List.map(fun n -> 
             //let (weapons,rules)  =
                 n.Elements()  
                 |> List.filter (fun n -> (n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-4-Intro-Minion-40K8Codex" || 
-                                        n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-3-Body-Text-Semibold-Italic-40K8Codex" || 
-                                        n.HasClass "Background-Styles-40k8Codex_3--Quotes-and-Other-40K8Codex_3-1-Quote-Direct-Speech-40K8Codex" || 
-                                        n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex" || 
-                                        n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-2-Body-Text-Bold-40K8Codex" || 
-                                        n.HasClass "Background-Styles-40k8Codex_3--Quotes-and-Other-40K8Codex_3-3-Quote-Attribution-40K8Codex" ||
-                                        n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-2-Header-2-Sava---Section-Header-40K8Codex") |> not)
+                                          n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-3-Body-Text-Semibold-Italic-40K8Codex" || 
+                                          n.HasClass "Background-Styles-40k8Codex_3--Quotes-and-Other-40K8Codex_3-1-Quote-Direct-Speech-40K8Codex" || 
+                                          n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex" || 
+                                          n.HasClass "Background-Styles-40k8Codex_2--Main-Text-40K8Codex_2-2-Body-Text-Bold-40K8Codex" || 
+                                          n.HasClass "Background-Styles-40k8Codex_3--Quotes-and-Other-40K8Codex_3-3-Quote-Attribution-40K8Codex" ||
+                                          n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-2-Header-2-Sava---Section-Header-40K8Codex") |> not)
                 |> divideInclusive(fun n -> n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-5-Header-5-Sava---Sub-header-40K8Codex" ||
                                             n.HasClass "Background-Styles-40k8Codex_1--Headers-40k8Codex_1-6-Header-6-Sava-40K8Codex")        
                 |> List.map (fun nodes -> 
@@ -581,8 +618,9 @@ let rules (body:HtmlNode) =
                     (category, weaponTable),rule )   
                 |> List.unzip    
             //weapons, rules            
-        ) |> List.unzip          
-    RuleDefs(List.collect id weapons, rules |> List.collect id |> List.collect (Option.toList) )       
+        ) |> List.unzip     
+        //weapons |> List.collect id |> List.head |> snd |> Map.iter (printfn "%s %A")     
+    RuleDefs(List.collect id weapons |> List.filter(fun (_,m) -> Map.count m > 0), rules |> List.collect id |> List.collect (Option.toList) )       
 let tactical (body:HtmlNode) = 
     let cardData = 
         body.CssSelect("p")
@@ -592,12 +630,49 @@ let tactical (body:HtmlNode) =
     let (labels,conditions) = 
         cardData        
         |> List.splitAt (cardData.Length * 2 / 3)
-    let (points,names) = labels |> List.mapi(fun i l -> i,l) |> List.partition(fun (i,_) -> i % 2 = 0)
+    let (points,names) = 
+        labels 
+        |> List.mapi(fun i l -> i,l) 
+        |> List.partition(fun (i,_) -> i % 2 = 0)
     List.zip (List.map (snd >> getText) names) (List.map getText conditions)
     |> List.map LabelledRule
     |> List.zip (List.map (snd >> getText >> int) points) 
     |> Tactical
-let pointsValues (body:HtmlNode) = Map.empty|> Points  
+let psychic (body:HtmlNode) = 
+    let cardData = 
+        body.CssSelect("p")
+        |> List.filter (fun n -> (n.HasClass "_0K8---Rule-Styles_5--Warlord-Traits_5-1-Warlord-Trait-40K8Codex" ||
+                                  n.HasClass "_0K8---Rule-Styles_5--Warlord-Traits_5-3-Warlord-Trait-Rules-Text-40K8Codex") && 
+                                  not (getText [n] = "D6 RESULT") ) 
+        |> List.map (List.singleton)
+    let (labels,conditions) = 
+        cardData   
+        |> List.mapi(fun i l -> (i,l))
+        |> List.partition(fun (i,_) -> i % 2 = 0)
+    let (points,names) = 
+        labels 
+        |> List.map(snd >> getText >> (fun s -> let [|p;n|] = s.Split([|' '|], 2) in p,n)) 
+        |> List.unzip
+
+    List.zip (names) (List.map (snd >> getText) conditions)
+    |> List.map LabelledRule
+    |> List.zip (List.map (int) points) 
+    |> Psychic
+let pointsValues (body:HtmlNode) = 
+    body.CssSelect(".Basic-Text-Frame > div")
+    |> List.map(fun node -> 
+        let (category,weapons,_)  =
+            getTable 
+                node
+                "p[class*=Header-40K8]"
+                "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"                      
+        category, weapons 
+                   |> Map.map (fun _ -> List.tryLast >> Option.map (fun (_, pt) -> int pt))
+                   |> Map.filter (fun _ -> function Some v -> true | _ -> false)
+                   |> Map.map (fun _ -> Option.get)
+    ) 
+    |> List.filter(fun (_,m) -> Map.count m > 0)
+    |> Points  
 let map8thCodex (file:Path) = 
     match file with 
     | Datasheets body          -> datasheets body
@@ -607,18 +682,13 @@ let map8thCodex (file:Path) =
     | PointsValues body        -> pointsValues body
     | Relics body              -> relics body
     | TacticalObjectives body  -> tactical body
+    | Psychic body             -> psychic body
     | RuleDefinitions body     -> rules body 
 
-//let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-14.xhtml")
-let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-15.xhtml")
-//let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-2.xhtml")
-//let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-3.xhtml")
-//let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-8.xhtml")
-System.Console.WriteLine(file)
-let proc = System.Diagnostics.Process.Start("iexplore", file)
+let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-3.xhtml")
 let (RuleDefinitions body) = file
-// rules body
-
+let proc = System.Diagnostics.Process.Start("iexplore", file)
+// rules body |> printfn " %A"
 let sheet = body.CssSelect(".Basic-Text-Frame")
 sheet.Length
 let node = sheet.[0]
