@@ -583,7 +583,20 @@ let rules (body:HtmlNode) =
             //weapons, rules            
         ) |> List.unzip          
     RuleDefs(List.collect id weapons, rules |> List.collect id |> List.collect (Option.toList) )       
-
+let tactical (body:HtmlNode) = 
+    let cardData = 
+        body.CssSelect("p")
+        |> List.filter (fun n -> n.HasClass "_0K8---Rule-Styles_2--Tactical-Objectives-408Codex_2-4-Tactical-Objective-Rules-Text-40K8Codex" ||
+                                 n.HasClass "_0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-Stat-Body-40K8" ) 
+        |> List.map (List.singleton)
+    let (labels,conditions) = 
+        cardData        
+        |> List.splitAt (cardData.Length * 2 / 3)
+    let (points,names) = labels |> List.mapi(fun i l -> i,l) |> List.partition(fun (i,_) -> i % 2 = 0)
+    List.zip (List.map (snd >> getText) names) (List.map getText conditions)
+    |> List.map LabelledRule
+    |> List.zip (List.map (snd >> getText >> int) points) 
+    |> Tactical
 let pointsValues (body:HtmlNode) = Map.empty|> Points  
 let map8thCodex (file:Path) = 
     match file with 
@@ -593,6 +606,7 @@ let map8thCodex (file:Path) =
     | Stratagems body          -> stratagems body
     | PointsValues body        -> pointsValues body
     | Relics body              -> relics body
+    | TacticalObjectives body  -> tactical body
     | RuleDefinitions body     -> rules body 
 
 //let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-14.xhtml")
