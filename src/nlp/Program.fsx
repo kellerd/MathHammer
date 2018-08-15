@@ -392,6 +392,7 @@ let matchUnitType str =
     System.Text.RegularExpressions.Regex("image/[^_]+_([^_]+)_(Icon_)?Cutout.png").Replace(str, "$1")
 let datasheets (body:HtmlNode) = 
     let extractStats (node:HtmlNode, (powerLevel, unitType)) = 
+        //let node = sheet.[0]
         let keywords = 
             node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-9-Datasheet-Keywords-Caps-408Codex")
             |> List.collect(fun kw -> kw.InnerText().Split(',') |> List.ofArray)
@@ -399,12 +400,12 @@ let datasheets (body:HtmlNode) =
         let (_, weapons, extraRules) = 
             getTable 
                 node 
-                "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span"
+                "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex"
                 "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"
         let (_, characteristics, extraRules') = 
             getTable 
                 node 
-                "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
+                "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex"
                 "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"                
         let rules = 
             node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex") 
@@ -655,13 +656,13 @@ let map8thCodex (file:Path) =
     | Psychic body             -> psychic body
     | RuleDefinitions body     -> rules body 
 
-let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-3.xhtml")
+let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-13.xhtml")
 let (RuleDefinitions body) = file
 let proc = System.Diagnostics.Process.Start("iexplore", file)
 // rules body |> printfn " %A"
-let sheet = body.CssSelect(".Basic-Text-Frame")
-sheet.Length
-let node = sheet.[0]
+// let sheet = body.CssSelect(".Basic-Text-Frame")
+// sheet.Length
+// let node = sheet.[0]
 //let node = sheet.[1]
 //let node = sheet.[2]
 
@@ -686,17 +687,18 @@ let codexes = enumerateCodexes EigthEdition
 let nidCodex = codexes |> List.head 
 let pages = 
     nidCodex.Pages 
-    |> Seq.filter (function 
-        | (Stratagems _, _) -> false
-        | (Chapters _, _) -> false
-        | (PointsValues _, _) -> false
-        | (Relics _, _) -> false
-        | (WarlordTraits _, _) -> false
-        | (Datasheets _, _) -> false
-        |(RuleDefinitions _, _) -> true ) 
+    // |> Seq.filter (function 
+    //     | (Stratagems _, _) -> false
+    //     | (Chapters _, _) -> false
+    //     | (PointsValues _, _) -> false
+    //     | (Relics _, _) -> false
+    //     | (WarlordTraits _, _) -> false
+    //     | (Datasheets _, _) -> false
+    //     |(RuleDefinitions _, _) -> true ) 
     |> Seq.toList
-    |> Seq.iter (printf "%A")
-
+    // |> Seq.iter (printf "%A")
+let sheets = pages|> List.filter(snd >> function Datasheet _ -> true | _ -> false)
+let errors = pages |> List.map (snd) |> List.filter(function Errors _ -> true | _ -> false)
 nidCodex.Pages 
 |> Seq.filter (function 
         | (Stratagems _, _) -> false
@@ -707,7 +709,7 @@ nidCodex.Pages
         | (Datasheets _, _) -> false
         |(RuleDefinitions _, _) -> true ) 
 |> Seq.iter(fst >> printfn "%s")
-let sheets = 
+let sheetsFilenames = 
     nidCodex.Pages 
     |> Seq.filter (function 
         | (Stratagems _, _) -> false
