@@ -470,7 +470,7 @@ let stratagems (body:HtmlNode) =
     List.zip text costs        
     |> List.map(function 
         | [ label; condition; text ], cost -> 
-            Stratagem(cost, getText [condition] |> Some, LabelledRule(getText [label], getText [text]))
+            Stratagem(cost, (getText [condition]).Replace(" Stratagem", "").ToUpper() |> Some, LabelledRule(getText [label], getText [text]))
         | [ label; text ], cost -> 
             Stratagem(cost, None, LabelledRule(getText [label], getText [text]))
         | rule, cost ->

@@ -54,14 +54,19 @@ let parseRules (path,page) =
                                 | RuleOnly s -> None, vStr s
                                 | LabelOnly n -> Some n, vStr "") rl
     | Page.Stratagems g -> 
-        path, List.map (fun  (cp,condition,rule) -> 
+        // nidCodex.Pages |> Seq.filter(fun (path,_) -> (|Stratagems|_|) path |> Option.isSome);;
+        path, List.map (fun (Stratagem (cp,condition,rule)) -> 
             let name, ruleText =
                 match rule with 
                 | LabelledRule(n,s) -> Some n, (vStr s)
                 | RuleOnly s -> None, vStr s
                 | LabelOnly n -> Some n, vStr ""
-            match condition with 
-                        
+            let rule =               
+                let cpCheck = IfThenElse(App(Call GreaterThan, opList [get "Available CP"; vInt cp]), ruleText, None)  
+                match condition with 
+                | Some condition -> IfThenElse(App(Call Contains, opList [get "Keywords"; vStr condition]), cpCheck, None)   
+                | None -> cpCheck
+            name, rule            
         ) g
     | Page.Relics g -> path, tokenizeRelics g
     | Points g -> path, tokenizePoints g

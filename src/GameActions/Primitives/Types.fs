@@ -1,4 +1,5 @@
 module GameActions.Primitives.Types
+open Check
 
 type GamePrimitive =
     | Int of int
@@ -29,6 +30,7 @@ and Call =
     | Repeat
     | Dice
     | GreaterThan
+    | Contains
     | Equals
     | NotEquals
     | LessThan
@@ -217,7 +219,25 @@ module GamePrimitive =
         | gp, Check(r) -> Check.map (fun b -> f gp b) r |> Check
         | Check(r), gp -> Check.map (fun a -> f a gp) r |> Check
         | x, y -> f x y
-
+let contains =
+    GamePrimitive.map2 
+        (fun gp gp2 -> 
+        match gp, gp2 with
+        ParamArray gs, (Int _ | Float(_) | Tuple _ | NoValue) -> 
+            if gs |> List.contains (Value gp2) then ParamArray gs |> Check.Pass
+            else ParamArray gs |> Check.Fail 
+            |> Check
+        | Str(s)  , Str(s2) -> 
+            (if s.Contains(s2) then Str(s) |> Check.Pass
+             else Str(s) |> Check.Fail)
+            |> Check
+        | ParamArray gs, Str(s2) -> 
+            match List.tryFind(function  Value(Str s) -> s.Contains(s2) | _ -> false ) gs with 
+            | Some _ -> ParamArray gs |> Check.Pass
+            | None -> ParamArray gs |> Check.Fail 
+            |> Check
+        | _ -> NoValue //printfn "Couldn't compare %A > %A" gp gp2;
+                    )
 let greaterThan =
     GamePrimitive.map2 
         (fun gp gp2 -> 

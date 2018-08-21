@@ -795,6 +795,8 @@ let rec evalCall func v env : Operation =
         notEquals gp gp2 |> Value
     | NotEquals, Value(ParamArray([ Value(gp); Value(gp2) ])) -> 
         lessThan gp gp2 |> Value
+    | Contains, Value(ParamArray([ Value(gp); Value(gp2) ])) -> 
+        contains gp gp2 |> Value
     | And, Value(ParamArray([ Value(gp); Value(gp2) ])) -> andGp gp gp2 |> Value
     | Or, Value(ParamArray([ Value(gp); Value(gp2) ])) -> orGp gp gp2 |> Value
     | Repeat, Value(ParamArray([ lam; op2 ])) -> repeat lam op2
