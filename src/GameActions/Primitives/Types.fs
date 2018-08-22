@@ -1,5 +1,4 @@
 module GameActions.Primitives.Types
-open Check
 
 type GamePrimitive =
     | Int of int

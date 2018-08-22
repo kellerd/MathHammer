@@ -35,13 +35,16 @@ let options = [|"-maxLength"; "500";
 let parser = LexicalizedParser.loadModel(model, options)
 let tlp = PennTreebankLanguagePack()
 let gsf = tlp.grammaticalStructureFactory()
-
 open ParseCodexes
-
 open GameActions.Primitives.Types
 open GameActions.Primitives.State    
-let tokenizeDatasheet (g:Unit list) = 
 
+let parseRule = 
+    let nlpRule = Str >> Value
+    function 
+    | LabelledRule(n,s) -> Some n, (nlpRule s)
+    | RuleOnly s -> None, nlpRule s
+    | LabelOnly n -> Some n, nlpRule ""
 
 let parseRules (path,page) = 
     match page with 
@@ -50,28 +53,33 @@ let parseRules (path,page) =
             Some name, Value(NoValue)
         ) g 
     | RuleDefs (wl,rl) -> 
-        path, List.map(function | LabelledRule(n,s) -> Some n, (vStr s)
-                                | RuleOnly s -> None, vStr s
-                                | LabelOnly n -> Some n, vStr "") rl
+        path, List.map parseRule rl
     | Page.Stratagems g -> 
         // nidCodex.Pages |> Seq.filter(fun (path,_) -> (|Stratagems|_|) path |> Option.isSome);;
-        path, List.map (fun (Stratagem (cp,condition,rule)) -> 
-            let name, ruleText =
-                match rule with 
-                | LabelledRule(n,s) -> Some n, (vStr s)
-                | RuleOnly s -> None, vStr s
-                | LabelOnly n -> Some n, vStr ""
+        path, 
+        List.map (fun (Stratagem (cp,condition,rule)) -> 
+            let name, ruleText = parseRule rule
             let rule =               
                 let cpCheck = IfThenElse(App(Call GreaterThan, opList [get "Available CP"; vInt cp]), ruleText, None)  
                 match condition with 
                 | Some condition -> IfThenElse(App(Call Contains, opList [get "Keywords"; vStr condition]), cpCheck, None)   
                 | None -> cpCheck
-            name, rule            
-        ) g
-    | Page.Relics g -> path, tokenizeRelics g
+            name, rule ) g
+    | Page.Relics g -> 
+        path, List.map(fun (name, rule, relic) -> 
+            let name' = Some name
+            let rule' = Option.map parseRule rule
+            let relic' = Option.map parseWeapon relic
+            match rule', relic' with 
+            | Some (_, rule), Some relic -> name', (ParamArray [rule; relic] |> Value)
+            | Some (_, rule), None       -> name', rule
+            | None, Some relic           -> name', relic 
+            | None, None                 -> name', (NoValue |> Value) ) g
     | Points g -> path, tokenizePoints g
-    | Tactical g -> path, tokenizeTactical g
-    | Page.Psychic g -> path, tokenizePsychic g
+    | Tactical g -> 
+        path, List.map(snd >> parseRule) g
+    | Page.Psychic g -> 
+        path, List.map(snd >> parseRule) g
     | Errors g -> 
         path, [ None, (sprintf "Error parsing file: %s" g |> Str |> Value) ]
 let outputToDirectory codexName (file, rules)= 

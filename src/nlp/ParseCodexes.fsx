@@ -26,7 +26,7 @@ type Rule =
     | LabelOnly of string 
     | RuleOnly of string 
     | LabelledRule of string * string
-type Stratagem = Stratagem of cp:string * condition:string option * Rule    
+type Stratagem = Stratagem of cp:int * condition:string option * Rule    
 type Weapon =  (Label * Characteristic) list   
 type Category = string
 type Weapons = Category option * Map<WeaponName, Weapon>
@@ -470,11 +470,11 @@ let stratagems (body:HtmlNode) =
     List.zip text costs        
     |> List.map(function 
         | [ label; condition; text ], cost -> 
-            Stratagem(cost, (getText [condition]).Replace(" Stratagem", "").ToUpper() |> Some, LabelledRule(getText [label], getText [text]))
+            Stratagem(int cost, (getText [condition]).Replace(" Stratagem", "").ToUpper() |> Some, LabelledRule(getText [label], getText [text]))
         | [ label; text ], cost -> 
-            Stratagem(cost, None, LabelledRule(getText [label], getText [text]))
+            Stratagem(int cost, None, LabelledRule(getText [label], getText [text]))
         | rule, cost ->
-            Stratagem(cost, None, RuleOnly(getText rule))
+            Stratagem(int cost, None, RuleOnly(getText rule))
     ) 
     |> Stratagems
 let rules (body:HtmlNode) = 
