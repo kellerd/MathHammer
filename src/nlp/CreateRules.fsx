@@ -1,9 +1,8 @@
-open System
-open System.IO
-open System.IO.Compression
+
 
 #load "ParseCodexes.fsx"
-
+open System.IO
+open System.IO.Compression
 #load @"C:\Users\diese\Source\Repos\MathHammer\src\Check\Check.fs"
 #load @"C:\Users\diese\Source\Repos\MathHammer\src\Probability\Distribution.fs"
 #load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\Types.fs"
@@ -39,13 +38,20 @@ open ParseCodexes
 open GameActions.Primitives.Types
 open GameActions.Primitives.State    
 
+let nlpRule = Str >> Value
 let parseRule = 
-    let nlpRule = Str >> Value
     function 
     | LabelledRule(n,s) -> Some n, (nlpRule s)
     | RuleOnly s -> None, nlpRule s
     | LabelOnly n -> Some n, nlpRule ""
-
+let parseWeapon (weapon:Weapon) = 
+    List.map (fun (label,characteristic) -> 
+        if label = "ABILITIES" then 
+            pair (vStr label) (nlpRule characteristic)
+        else pair (vStr label) (vStr characteristic)      
+    ) weapon
+    |> ParamArray 
+    |> Value  
 let parseRules (path,page) = 
     match page with 
     | Datasheet g ->         
@@ -53,9 +59,10 @@ let parseRules (path,page) =
             Some name, Value(NoValue)
         ) g 
     | RuleDefs (wl,rl) -> 
-        path, List.map parseRule rl
+        path, 
+            List.map parseRule rl @ 
+            List.collect (snd >> Map.toList >> List.map (fun (name,weapon) -> Some name, parseWeapon weapon) ) wl
     | Page.Stratagems g -> 
-        // nidCodex.Pages |> Seq.filter(fun (path,_) -> (|Stratagems|_|) path |> Option.isSome);;
         path, 
         List.map (fun (Stratagem (cp,condition,rule)) -> 
             let name, ruleText = parseRule rule
@@ -75,13 +82,15 @@ let parseRules (path,page) =
             | Some (_, rule), None       -> name', rule
             | None, Some relic           -> name', relic 
             | None, None                 -> name', (NoValue |> Value) ) g
-    | Points g -> path, tokenizePoints g
+    | Points g -> path, [None, Value(NoValue)]//tokenizePoints g
     | Tactical g -> 
         path, List.map(snd >> parseRule) g
     | Page.Psychic g -> 
         path, List.map(snd >> parseRule) g
     | Errors g -> 
         path, [ None, (sprintf "Error parsing file: %s" g |> Str |> Value) ]
+        
+nidCodex.Pages |> Seq.map parseRules |> Seq.toList
 let outputToDirectory codexName (file, rules)= 
     let output = Path.Combine(__SOURCE_DIRECTORY__, sprintf "Output\\%s" codexName)
     let outfile = 
