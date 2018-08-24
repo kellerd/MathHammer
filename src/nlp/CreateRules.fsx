@@ -1,14 +1,12 @@
-
-
 #load "ParseCodexes.fsx"
 open System.IO
 open System.IO.Compression
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\Check\Check.fs"
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\Probability\Distribution.fs"
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\Types.fs"
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\Collections\Map.fs"
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\Collections\List.fs"
-#load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\State.fs"
+#load @"..\Check\Check.fs"
+#load @"..\Probability\Distribution.fs"
+#load @"..\GameActions\Primitives\Types.fs"
+#load @"..\Collections\Map.fs"
+#load @"..\Collections\List.fs"
+#load @"..\GameActions\Primitives\State.fs"
 
 let modelsFolder = __SOURCE_DIRECTORY__ + @"\..\..\paket-files\nlp.stanford.edu\stanford-parser-full-2013-06-20\stanford-parser-3.2.0-models"
 if Directory.Exists(modelsFolder) |> not then
@@ -38,7 +36,7 @@ open ParseCodexes
 open GameActions.Primitives.Types
 open GameActions.Primitives.State    
 
-let nlpRule = Str >> Value
+let nlpRule (s:string) = s.Replace("\"", "\\\"") |> Str |> Value
 let parseRule = 
     function 
     | LabelledRule(n,s) -> Some n, (nlpRule s)
@@ -55,15 +53,15 @@ let parseWeapon (weapon:Weapon) =
 let parseRules (path,page) = 
     match page with 
     | Datasheet g ->         
-        path, List.map(fun (name,datasheet) -> 
+        page, List.map(fun (name,datasheet) -> 
             Some name, Value(NoValue)
         ) g 
     | RuleDefs (wl,rl) -> 
-        path, 
+        page, 
             List.map parseRule rl @ 
             List.collect (snd >> Map.toList >> List.map (fun (name,weapon) -> Some name, parseWeapon weapon) ) wl
     | Page.Stratagems g -> 
-        path, 
+        page, 
         List.map (fun (Stratagem (cp,condition,rule)) -> 
             let name, ruleText = parseRule rule
             let rule =               
@@ -73,7 +71,7 @@ let parseRules (path,page) =
                 | None -> cpCheck
             name, rule ) g
     | Page.Relics g -> 
-        path, List.map(fun (name, rule, relic) -> 
+        page, List.map(fun (name, rule, relic) -> 
             let name' = Some name
             let rule' = Option.map parseRule rule
             let relic' = Option.map parseWeapon relic
@@ -82,17 +80,16 @@ let parseRules (path,page) =
             | Some (_, rule), None       -> name', rule
             | None, Some relic           -> name', relic 
             | None, None                 -> name', (NoValue |> Value) ) g
-    | Points g -> path, [None, Value(NoValue)]//tokenizePoints g
+    | Points g -> page, [None, Value(NoValue)]//tokenizePoints g
     | Tactical g -> 
-        path, List.map(snd >> parseRule) g
+        page, List.map(snd >> parseRule) g
     | Page.Psychic g -> 
-        path, List.map(snd >> parseRule) g
+        page, List.map(snd >> parseRule) g
     | Errors g -> 
-        path, [ None, (sprintf "Error parsing file: %s" g |> Str |> Value) ]
-        
-nidCodex.Pages |> Seq.map parseRules |> Seq.toList
-let outputToDirectory codexName (file, rules)= 
+        page, [ None, (sprintf "Error parsing file: %s" g |> Str |> Value) ]
+let filename codexName file = 
     let output = Path.Combine(__SOURCE_DIRECTORY__, sprintf "Output\\%s" codexName)
+    Directory.CreateDirectory(output) |> ignore
     let outfile = 
         match file with 
         | Datasheet _ -> "Datasheet.fs"
@@ -103,24 +100,38 @@ let outputToDirectory codexName (file, rules)=
         | Tactical _ -> "Tactical.fs"
         | Page.Psychic _ -> "Psychic.fs"
         | Errors _ -> "Errors.fs"
-    let outfilePath = Path.Combine(output,outfile)        
-    File.WriteAllText(outfilePath,sprintf "%A" rules)
+    Path.Combine(output,outfile)     
+let startOver codexName file = 
+    let init = 
+        """#if INTERACTIVE
+#load @"..\..\..\Check\Check.fs"
+#load @"..\..\..\Probability\Distribution.fs"
+#load @"..\..\..\GameActions\Primitives\Types.fs"
+#load @"..\..\..\Collections\Map.fs"
+#load @"..\..\..\Collections\List.fs"
+#load @"..\..\..\GameActions\Primitives\State.fs"
+#endif
+"""
+    let outfilePath = filename codexName file
+    File.Delete(outfilePath)
+    File.AppendAllText(outfilePath, init)    
+let outputToDirectory codexName (file, rules)= 
+    let outfilePath = filename codexName file
+    File.AppendAllText(outfilePath,sprintf "%A" rules)
     
-
 let exportCodexes codex = 
-    let outputToFolder = outputToDirectory codex.Folder
-
-
+    let codexName = Path.GetFileName(codex.Folder)
     codex.Pages
     |> Seq.map parseRules
-    |> Seq.iter outputToFolder
+    |> Seq.iter (outputToDirectory codexName)
 
+let cleanDir codex = 
+    let codexName = Path.GetFileName(codex.Folder)
+    codex.Pages
+    |> Seq.iter (snd >> startOver codexName)
+
+nidCodex |> cleanDir
 nidCodex |> exportCodexes
-
-
-
-
-
 
 let getTree question =
     let tokenizer = tlp.getTokenizerFactory().getTokenizer(new java.io.StringReader(question))
