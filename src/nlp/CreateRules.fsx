@@ -1,4 +1,5 @@
 #load "ParseCodexes.fsx"
+open ParseCodexes
 open System.IO
 open System.IO.Compression
 #load @"..\Check\Check.fs"
@@ -19,7 +20,6 @@ if Directory.Exists(modelsFolder) |> not then
 #r "../../../../../.nuget/packages/stanford.nlp.parser/3.8.0/lib/slf4j-api.dll"
 #r "../../../../../.nuget/packages/stanford.nlp.parser/3.8.0/lib/stanford-parser.dll"
 #r "../../../../../.nuget/packages/stanford.nlp.parser.fsharp/0.0.14/lib/Stanford.NLP.Parser.Fsharp.dll"
-
 open edu.stanford.nlp.parser.lexparser
 open edu.stanford.nlp.trees
 open java.util
@@ -29,19 +29,33 @@ let options = [|"-maxLength"; "500";
                 "-retainTmpSubcategories";
                 "-MAX_ITEMS"; "500000";
                 "-outputFormat"; "penn,typedDependenciesCollapsed"|]
+
+let escape_string (str : string) =
+   let buf = System.Text.StringBuilder(str.Length)
+   let replaceOrLeave c =
+      match c with
+      | '\r' -> buf.Append "\\r"
+      | '\n' -> buf.Append "\\n"
+      | '\t' -> buf.Append "\\t"
+      | '\\' -> buf.Append "\\\\"
+      | '"' -> buf.Append "\\\""
+      | _ -> buf.Append c
+   str.ToCharArray() |> Array.iter (replaceOrLeave >> ignore)
+   buf.ToString()
 let parser = LexicalizedParser.loadModel(model, options)
 let tlp = PennTreebankLanguagePack()
-let gsf = tlp.grammaticalStructureFactory()
+//let gsf = tlp.grammaticalStructureFactory()
 open ParseCodexes
 open GameActions.Primitives.Types
 open GameActions.Primitives.State    
-
-let nlpRule (s:string) = s.Replace("\"", "\\\"") |> Str |> Value
+let nlpRule (s:string) = s |> escape_string |> Str |> Value
 let parseRule = 
     function 
     | LabelledRule(n,s) -> Some n, (nlpRule s)
     | RuleOnly s -> None, nlpRule s
     | LabelOnly n -> Some n, nlpRule ""
+
+let vStr s = s |> escape_string |> vStr
 let parseWeapon (weapon:Weapon) = 
     List.map (fun (label,characteristic) -> 
         if label = "ABILITIES" then 
@@ -64,8 +78,16 @@ let parseRules (path,page) =
         page, 
         List.map (fun (Stratagem (cp,condition,rule)) -> 
             let name, ruleText = parseRule rule
+            let cpCheck = 
+                let name' = Option.defaultValue "" name
+                let cpChoice cpList = 
+                    let cpChoices = List.map (fun cp -> string cp, IfThenElse(App(Call GreaterThan, opList [get "Available CP"; get name']), ruleText, None)) cpList
+                    ("<Not selected>", ruleText) :: cpChoices
+
+                match cp with
+                | CpChoice(cp1, cp2) -> Choice(name', cpChoice [cp1; cp2])
+                | Cp (cp)            -> Choice(name', cpChoice [cp])
             let rule =               
-                let cpCheck = IfThenElse(App(Call GreaterThan, opList [get "Available CP"; vInt cp]), ruleText, None)  
                 match condition with 
                 | Some condition -> IfThenElse(App(Call Contains, opList [get "Keywords"; vStr condition]), cpCheck, None)   
                 | None -> cpCheck
@@ -86,9 +108,61 @@ let parseRules (path,page) =
     | Page.Psychic g -> 
         page, List.map(snd >> parseRule) g
     | Errors g -> 
-        page, [ None, (sprintf "Error parsing file: %s" g |> Str |> Value) ]
+        let errDebug = 
+            sprintf """
+open FSharp.Data
+let file = @"%s"
+let (RuleDefinitions body) = file
+let sheet = body.CssSelect(".Basic-Text-Frame")
+let node = sheet.[0]
+let headerStyle = "%s"
+let tableStyle = "%s"
+%s body
+
+            """ path
+        let debugMessage = 
+            match path with 
+            | Datasheets (body)          ->  
+                errDebug 
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex"
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex" "datasheets" 
+                     +
+                errDebug   
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex"
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"
+                    "datasheets"               
+            | Chapters (body)            ->  
+                errDebug "" ""  "chapters"         
+            | WarlordTraits (body)       ->  
+                errDebug  "" "" "warlordTraits"
+            | IsStratagem (body)          ->  
+                errDebug  "" "" "stratagems"
+            | PointsValues (body)        ->  
+                errDebug 
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex"
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"
+                    "pointsValues"
+            | Relics (body)              ->  
+                errDebug 
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-Header-40K8"
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-Stat-Body-40K8"  
+                    "relics"
+            | TacticalObjectives (body)  ->  
+                errDebug "tactical" "" ""
+            | Psychic (body)             ->  
+                errDebug "psychic" "" ""
+            | RuleDefinitions (body)     ->  
+                errDebug 
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex"
+                    "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex" 
+                    "rules"
+        printfn "%s" (sprintf "%s" debugMessage)                    
+        page, [ None, g |> escape_string |> sprintf "Error parsing file: %s" |> Str |> Value ]
+
+let codexPath codexName =  
+    Path.Combine(__SOURCE_DIRECTORY__, sprintf "Output\\%s" codexName)
 let filename codexName file = 
-    let output = Path.Combine(__SOURCE_DIRECTORY__, sprintf "Output\\%s" codexName)
+    let output = codexPath codexName
     Directory.CreateDirectory(output) |> ignore
     let outfile = 
         match file with 
@@ -101,23 +175,45 @@ let filename codexName file =
         | Page.Psychic _ -> "Psychic.fs"
         | Errors _ -> "Errors.fs"
     Path.Combine(output,outfile)     
-let startOver codexName file = 
+let startOver (codexName:string) file =
+    let outfile = 
+        match file with 
+        | Datasheet _ -> "Datasheet"
+        | RuleDefs _ -> "Rule"
+        | Page.Stratagems _ -> "Stratagem"
+        | Page.Relics _ -> "Relic"
+        | Points _ -> "Point"
+        | Tactical _ -> "Tactical"
+        | Page.Psychic _ -> "Psychic"
+        | Errors _ -> "Error" 
     let init = 
-        """#if INTERACTIVE
-#load @"..\..\..\Check\Check.fs"
-#load @"..\..\..\Probability\Distribution.fs"
-#load @"..\..\..\GameActions\Primitives\Types.fs"
-#load @"..\..\..\Collections\Map.fs"
-#load @"..\..\..\Collections\List.fs"
-#load @"..\..\..\GameActions\Primitives\State.fs"
-#endif
+        sprintf """namespace ``%s`` 
+module %s = 
+    #if INTERACTIVE
+    #load @"..\..\..\Check\Check.fs"
+    #load @"..\..\..\Probability\Distribution.fs"
+    #load @"..\..\..\GameActions\Primitives\Types.fs"
+    #load @"..\..\..\Collections\Map.fs"
+    #load @"..\..\..\Collections\List.fs"
+    #load @"..\..\..\GameActions\Primitives\State.fs"
+    #endif
+    open GameActions.Primitives.Types
+    open GameActions.Primitives.State  
+    let _ = ignore
 """
+    
     let outfilePath = filename codexName file
     File.Delete(outfilePath)
-    File.AppendAllText(outfilePath, init)    
+    File.AppendAllText(outfilePath, init codexName outfile)    
 let outputToDirectory codexName (file, rules)= 
     let outfilePath = filename codexName file
-    File.AppendAllText(outfilePath,sprintf "%A" rules)
+    List.iter (fun (name, rule) -> 
+        let text = 
+            match name with 
+            | Some name -> (sprintf "let ``%s`` = \r\n%A" name rule)
+            | None -> (sprintf "let _ = \r\n%A"  rule)
+        File.AppendAllText(outfilePath, sprintf "    %s\r\n" (text.Replace("\n", "\n        ")))
+    ) rules
     
 let exportCodexes codex = 
     let codexName = Path.GetFileName(codex.Folder)
@@ -125,13 +221,19 @@ let exportCodexes codex =
     |> Seq.map parseRules
     |> Seq.iter (outputToDirectory codexName)
 
+open System.IO
 let cleanDir codex = 
-    let codexName = Path.GetFileName(codex.Folder)
-    codex.Pages
-    |> Seq.iter (snd >> startOver codexName)
+    Directory.EnumerateFiles(codex.Folder) 
+    |> Seq.iter(File.Delete)
 
-nidCodex |> cleanDir
-nidCodex |> exportCodexes
+    let codexName = Path.GetFileName(codex.Folder) 
+
+    codex.Pages
+    |> Seq.toList 
+    |> List.iter (snd >> startOver codexName)
+let codex = nidCodex
+cleanDir codex
+exportCodexes codex
 
 let getTree question =
     let tokenizer = tlp.getTokenizerFactory().getTokenizer(new java.io.StringReader(question))

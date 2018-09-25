@@ -12,6 +12,7 @@
     <Compile Include="GameActions/Primitives/Types.fs" />
     <Compile Include="GameActions/Primitives/State.fs" />
     <Compile Include="GameActions/Primitives/View.fs" />
+    <Compile Include="nlp/Output/**/*.fs" />
     <Compile Include="GameActions/GameActionsList/Types.fs" />
     <Compile Include="GameActions/GameActionsList/State.fs" />
     <Compile Include="GameActions/GameActionsList/View.fs" />
