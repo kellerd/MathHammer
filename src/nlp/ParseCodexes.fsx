@@ -26,7 +26,10 @@ type Rule =
     | LabelOnly of string 
     | RuleOnly of string 
     | LabelledRule of string * string
-type Stratagem = Stratagem of cp:int * condition:string option * Rule    
+type Cost = 
+    | Cp of int
+    | CpChoice of int * int
+type Stratagem = Stratagem of cp:Cost * condition:string option * Rule    
 type Weapon =  (Label * Characteristic) list   
 type Category = string
 type Weapons = Category option * Map<WeaponName, Weapon>
@@ -170,7 +173,7 @@ let (|WarlordTraits|_|) (file:string) =
     @ body.CssSelect("._0K8---Rule-Styles_5--Warlord-Traits_5-1-Warlord-Trait-40K8Codex")
     |> List.tryFind (fun n -> n.InnerText().ToUpper().Contains("WARLORD TRAITS"))
     |> Option.map(fun _ -> body)
-let (|Stratagems|_|) (file:string) =
+let (|IsStratagem|_|) (file:string) =
     let (RuleDefinitions body) = file
     body.CssSelect("._0K8---Rule-Styles_4--Stratagems-40k8Codex_4-1-Stratagem-Name-40K8Codex")
     |> List.tryHead
@@ -464,17 +467,23 @@ let stratagems (body:HtmlNode) =
                                  n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-2-Strategem-Type-Style-40K8Codex" ||
                                  n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-3-Strategem-Body-Text-40K8Codex")
         |> List.chunkBySize 3  
+        
+    let mapCp (cost:string) = 
+        match cost with 
+        | cp when cp.Contains("/") -> CpChoice (cp.Substring(0,cp.IndexOf("/")).Replace("CP", "") |> int, cp.Substring(cp.IndexOf("/") + 1).Replace("CP", "") |> int)
+        | cp -> cp.Replace("CP", "") |> int |> Cp
+
     let costs = 
         body.CssSelect("._0K8---Rule-Styles_4--Stratagems-40k8Codex_4-4-Stratagem-Cost-40K8Codex") 
-        |> List.map (HtmlNode.innerText)    
+        |> List.map (HtmlNode.innerText >> mapCp)    
     List.zip text costs        
     |> List.map(function 
         | [ label; condition; text ], cost -> 
-            Stratagem(int cost, (getText [condition]).Replace(" Stratagem", "").ToUpper() |> Some, LabelledRule(getText [label], getText [text]))
+            Stratagem(cost, (getText [condition]).Replace(" Stratagem", "").ToUpper() |> Some, LabelledRule(getText [label], getText [text]))
         | [ label; text ], cost -> 
-            Stratagem(int cost, None, LabelledRule(getText [label], getText [text]))
+            Stratagem(cost, None, LabelledRule(getText [label], getText [text]))
         | rule, cost ->
-            Stratagem(int cost, None, RuleOnly(getText rule))
+            Stratagem(cost, None, RuleOnly(getText rule))
     ) 
     |> Stratagems
 let rules (body:HtmlNode) = 
@@ -569,7 +578,7 @@ let map8thCodex (file:Path) =
     | Datasheets body          -> datasheets body
     | Chapters body            -> chapters body 
     | WarlordTraits body       -> warlordTraits body
-    | Stratagems body          -> stratagems body
+    | IsStratagem body          -> stratagems body
     | PointsValues body        -> pointsValues body
     | Relics body              -> relics body
     | TacticalObjectives body  -> tactical body
@@ -595,7 +604,7 @@ let failGracefully f file  =
     try 
         f file
     with ex -> 
-        printfn "Failed parsing file %s" file
+        printfn "Mapping codex page to rules - Failed parsing file %s" file
         printfn "Error: %A" ex.Message
         Errors file
 let EigthEdition = {
