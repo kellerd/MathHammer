@@ -2,4 +2,4 @@
 #load @"System.IO.Compression.fsx" 
 #load @"System.IO.FileSystem.fsx" 
 #load @"System.IO.FileSystem.Primitives.fsx" 
-#r "../../../../../../.nuget/packages/system.io.compression.zipfile/4.3.0/lib/netstandard1.3/System.IO.Compression.ZipFile.dll" 
+#r "../../../../../../.nuget\\packages\\system.io.compression.zipfile\\4.3.0\\lib\\netstandard1.3\\System.IO.Compression.ZipFile.dll" 

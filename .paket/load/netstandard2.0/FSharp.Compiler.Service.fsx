@@ -6,4 +6,4 @@
 #load @"System.Reflection.TypeExtensions.fsx" 
 #load @"System.Runtime.Loader.fsx" 
 #load @"System.Security.Cryptography.Algorithms.fsx" 
-#r "../../../../../../.nuget/packages/fsharp.compiler.service/23.0.3/lib/netstandard2.0/FSharp.Compiler.Service.dll" 
+#r "../../../../../../.nuget\\packages\\fsharp.compiler.service\\25.0.1\\lib\\netstandard2.0\\FSharp.Compiler.Service.dll" 

@@ -1,1 +1,1 @@
-#r "../../../../../../.nuget/packages/system.security.principal.windows/4.5.0/lib/netstandard2.0/System.Security.Principal.Windows.dll" 
+#r "../../../../../../.nuget\\packages\\system.security.principal.windows\\4.5.0\\lib\\netstandard2.0\\System.Security.Principal.Windows.dll" 

@@ -1,0 +1,5 @@
+#load @"Microsoft.VisualStudio.Threading.fsx" 
+#load @"Newtonsoft.Json.fsx" 
+#load @"System.Net.Http.fsx" 
+#load @"System.Reflection.Emit.fsx" 
+#r "..\\..\\..\\..\\..\\..\\.nuget\\packages\\streamjsonrpc\\1.4.121\\lib\\netstandard2.0\\StreamJsonRpc.dll" 
