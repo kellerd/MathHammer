@@ -152,9 +152,10 @@ let (|RuleDefinitions|) (file:string) =
     let body = HtmlDocument.Load(file).Body()
     body
 let (|PointsValues|_|) (file:string) =
+    //let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-13.xhtml"
     let (RuleDefinitions body) = file
-    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
-    |> List.tryFind (fun node -> HtmlNode.innerText node = "POINTS VALUES")
+    body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-Header-40K8")
+    |> List.tryFind (fun node -> (HtmlNode.innerText node).Contains "POINTS")
     |> Option.map (fun _ -> body)
 let (|Datasheets|_|) (file:string) =
     let (RuleDefinitions body) = file
@@ -617,5 +618,13 @@ let nidCodex = codexes |> List.head
 let pages = 
     nidCodex.Pages
 
-
+// let points = 
+//     pages 
+//     |> Seq.filter (fun(path:Path,_) ->     
+//         match path with 
+//         | PointsValues _        -> true | _ -> false )
+//     |> Seq.toList
+//     |> Seq.length
+//     |> fst
+//     |> printfn "%s"
 // let body = stratagems sheets.[0]    

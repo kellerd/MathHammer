@@ -1,6 +1,6 @@
 module MathHammer.UnitList.Types
 
-open GameActions.Primitives.Types
+open GameActions.Primitives.Units
 
 type Area =
     { Top : int<mm>

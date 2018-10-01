@@ -2,13 +2,8 @@
 open ParseCodexes
 open System.IO
 open System.IO.Compression
-#load @"..\Check\Check.fs"
-#load @"..\Probability\Distribution.fs"
-#load @"..\GameActions\Primitives\Types.fs"
-#load @"..\Collections\Map.fs"
-#load @"..\Collections\List.fs"
-#load @"..\GameActions\Primitives\State.fs"
-
+#load "NLP.fsx"
+open NLP
 let modelsFolder = __SOURCE_DIRECTORY__ + @"\..\..\paket-files\nlp.stanford.edu\stanford-parser-full-2013-06-20\stanford-parser-3.2.0-models"
 if Directory.Exists(modelsFolder) |> not then
     ZipFile.ExtractToDirectory(modelsFolder + ".jar", modelsFolder)
@@ -30,31 +25,18 @@ let options = [|"-maxLength"; "500";
                 "-MAX_ITEMS"; "500000";
                 "-outputFormat"; "penn,typedDependenciesCollapsed"|]
 
-let escape_string (str : string) =
-   let buf = System.Text.StringBuilder(str.Length)
-   let replaceOrLeave c =
-      match c with
-      | '\r' -> buf.Append "\\r"
-      | '\n' -> buf.Append "\\n"
-      | '\t' -> buf.Append "\\t"
-      | '\\' -> buf.Append "\\\\"
-      | '"' -> buf.Append "\\\""
-      | _ -> buf.Append c
-   str.ToCharArray() |> Array.iter (replaceOrLeave >> ignore)
-   buf.ToString()
-let parser = LexicalizedParser.loadModel(model, options)
-let tlp = PennTreebankLanguagePack()
 //let gsf = tlp.grammaticalStructureFactory()
+#load @"..\GameActions\Primitives\Types.fs"
+#load @"..\GameActions\Primitives\State.fs"
 open ParseCodexes
 open GameActions.Primitives.Types
 open GameActions.Primitives.State    
-let nlpRule (s:string) = s |> escape_string |> Str |> Value
+let nlpRule s = nlpRule s |> Str |> Value
 let parseRule = 
     function 
     | LabelledRule(n,s) -> Some n, (nlpRule s)
     | RuleOnly s -> None, nlpRule s
     | LabelOnly n -> Some n, nlpRule ""
-
 let vStr s = s |> escape_string |> vStr
 let parseWeapon (weapon:Weapon) = 
     List.map (fun (label,characteristic) -> 
@@ -71,9 +53,12 @@ let parseRules (path,page) =
             Some name, Value(NoValue)
         ) g 
     | RuleDefs (wl,rl) -> 
+        let rules = List.map parseRule rl 
+        let weapons = List.collect (snd >> Map.toList >> List.map (fun (name,weapon) -> Some name, parseWeapon weapon) ) wl
         page, 
-            List.map parseRule rl @ 
-            List.collect (snd >> Map.toList >> List.map (fun (name,weapon) -> Some name, parseWeapon weapon) ) wl
+            (rules @ weapons)
+            |> List.filter (fun (name,_) -> name <> Some "ABILITIES")
+            |> List.distinctBy fst
     | Page.Stratagems g -> 
         page, 
         List.map (fun (Stratagem (cp,condition,rule)) -> 
@@ -234,53 +219,3 @@ let cleanDir codex =
 let codex = nidCodex
 cleanDir codex
 exportCodexes codex
-
-let getTree question =
-    let tokenizer = tlp.getTokenizerFactory().getTokenizer(new java.io.StringReader(question))
-    let sentence = tokenizer.tokenize()
-    parser.apply(sentence)
-let getKeyPhrases (tree:Tree) =
-    tree.pennPrint()
-    let isNNx =  function
-        | Label NN | Label NNS
-        | Label NNP | Label NNPS -> true
-        | _ -> false
-    let isNPwithNNx = function
-        | Label NP as node ->
-            node.getChildrenAsList()
-            |> Iterable.castToSeq<Tree>
-            |> Seq.exists isNNx
-        | _ -> false
-    let rec foldTree acc (node:Tree) =
-        let acc =
-            if node.isLeaf() then acc
-            else node.getChildrenAsList()
-                 |> Iterable.castToSeq<Tree>
-                 |> Seq.fold foldTree acc
-        if isNPwithNNx node
-          then node :: acc
-          else acc
-    foldTree [] tree
-
-let questions =
-    [|" When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or
-an additional 3 mortal wounds if it contains 6 Zoanthropes."
-      "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain."
-      "You can re-roll failed charge rolls for units with this adaptation."
-      "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation."
-      "Use this Stratagem at the end of the Fight phase. Select a TYRANIDS unit from your army – that unit can immediately fight again."
-      "If a rule requires you to roll a D3, roll a D6 and halve the result." |]
-questions
-|> Seq.skip 5
-|> Seq.iter (fun question ->
-    printfn "Question : %s" question
-    question
-    |> getTree
-    |> getKeyPhrases
-    |> List.rev
-    |> List.iter (fun p ->
-        p.getLeaves()
-        |> Iterable.castToArray<Tree>
-        |> Array.map(fun x-> x.label().value())
-        |> printfn "\t%A")
-)

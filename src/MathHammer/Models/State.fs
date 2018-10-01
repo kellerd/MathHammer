@@ -2,7 +2,7 @@ module MathHammer.Models.State
 
 open Elmish
 open Types
-open GameActions.Primitives.Types
+open GameActions.Primitives.Units
 open GameActions.Primitives.State
 
 let init name =

@@ -4,6 +4,7 @@ open Fable.Helpers.React
 open Props
 open Types
 open GameActions.Primitives.Types
+open GameActions.Primitives.Units
 open GameActions.Primitives.State
 open Probability.View
 

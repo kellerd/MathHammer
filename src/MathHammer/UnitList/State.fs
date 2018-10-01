@@ -1,6 +1,6 @@
 module MathHammer.UnitList.State
 
-open GameActions.Primitives.Types
+open GameActions.Primitives.Units
 open Elmish
 open Types
 

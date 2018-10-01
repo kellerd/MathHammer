@@ -3,6 +3,7 @@ module MathHammer.State
 open Elmish
 open Types
 open GameActions.Primitives.Types
+open GameActions.Primitives.Units
 open GameActions.Primitives.State
 open MathHammer.Models.State
 open MathHammer.UnitList.State

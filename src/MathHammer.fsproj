@@ -9,10 +9,13 @@
     <Compile Include="Check/Check.fs" />
     <Compile Include="Probability/Distribution.fs" />
     <Compile Include="Probability/View.fs" />
+    <Compile Include="GameActions/Primitives/Units.fs" />
     <Compile Include="GameActions/Primitives/Types.fs" />
+    <Compile Include="GameActions/Primitives/GamePrimitiveOperations.fs" />
+    <Compile Include="GameActions/Primitives/TypeChecker.fs" />
     <Compile Include="GameActions/Primitives/State.fs" />
     <Compile Include="GameActions/Primitives/View.fs" />
-    <Compile Include="nlp/Output/**/*.fs" />
+    <!-- <Compile Include="nlp/Output/**/*.fs" /> -->
     <Compile Include="GameActions/GameActionsList/Types.fs" />
     <Compile Include="GameActions/GameActionsList/State.fs" />
     <Compile Include="GameActions/GameActionsList/View.fs" />

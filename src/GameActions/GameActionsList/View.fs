@@ -4,6 +4,7 @@ open Fable.Core.JsInterop
 open Fable.Helpers.React
 open Props
 open GameActions.Primitives.Types
+open GameActions.Primitives.TypeChecker
 open GameActions.Primitives.View
 open Types
 
