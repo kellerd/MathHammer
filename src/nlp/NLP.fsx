@@ -44,6 +44,7 @@ let rec (|ChildrenLabeled|_|) labels children =
     //let children = [tree]
     //let labels = [NN;NP] 
     let childTags = children |> Seq.collect(fun (n:Tree) -> n.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag())) |> Set.ofSeq
+    printfn "%A" childTags
     let labelTags = labels |> Seq.map (sprintf "%A") |> Set.ofSeq
     let both = Set.intersect childTags labelTags
     if Set.count both > 0 then 
@@ -112,25 +113,41 @@ let tree =
 
 let getGameOperation (tree:Tree) =
     let node = tree
-    let rec foldTree acc (node:Tree) =
-        let acc = 
+    tree.pennPrint()
+    let rec foldTree level acc (node:Tree) =
+        let newAcc = 
             node.getChildrenAsList() 
             |> Iterable.castToSeq<Tree>
-            |> Seq.fold foldTree acc    
-        if  getHeadText node = "+" then printfn "%A" (getLabel node)
+            |> Seq.fold (foldTree (level+1)) acc    
+        let nodeText = getHeadText node   
         match getLabel node with 
         | Some (SYM | NNS | Punctuation)-> 
-            match acc with 
-            | Value(Str text)::acc -> (text + getHeadText node |> Str |> Value) :: acc
-            | acc -> (getHeadText node |> Str |> Value)::acc
-        | Some WordLevel -> 
-            match acc with 
-            | Value(Str text)::acc -> (text + " " + getHeadText node |> Str |> Value) :: acc
-            | acc -> (getHeadText node |> Str |> Value)::acc
-        | _ -> acc
+            match newAcc with 
+            | Value(Str text)::newAcc -> (text + nodeText |> Str |> Value) :: newAcc
+            | newAcc -> (nodeText |> Str |> Value)::newAcc
+        | Some (WordLevel as tag) -> 
+            //printfn "Word: %A - Level %d - %s  - ACC: %A" tag level nodeText newAcc
+            match newAcc with 
+            | Value(Str text)::newAcc -> (text + " " + nodeText |> Str |> Value) :: newAcc
+            | newAcc -> (nodeText |> Str |> Value)::newAcc
+        | Some (PhraseLevel as tag) -> 
+            let nodeText = getHeadText node  
+            match node with 
+            | IsLabeledWith [NP] (_, ChildrenLabeled [DT;NN] ["a"; "D6"]) -> 
+                printfn "Phrase: %A - Level %d - %s - ACC: %A" tag level nodeText acc
+                App(Call Dice, Value(ParamArray[Value(Int 6)])) :: acc
+            | IsLabeledWith [VP] (_, ChildrenLabeled [VB] text) when getHeadText node = "roll" ->
+                printfn "Phrase: %A - Level %d - %s - ACC: %A" tag level nodeText acc
+                let text = node.children() |> Array.skip 1 |> Array.collect(fun n -> n.children()) |> Array.rev |> Array.head |> getAllText
+                Let(text, newAcc |> List.rev |> List.skip 1 |> ParamArray |> Value, Value(NoValue)) :: acc               
+            | _ -> newAcc 
+        | Some tag -> 
+            //printfn "Unknown: %A - %s " tag nodeText
+            newAcc
         | None -> 
-            acc      
-    match foldTree [] tree with 
+            //printfn "No match: %A - %s " (node.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag()) |> Seq.tryHead) nodeText
+            newAcc      
+    match foldTree 0 [] tree with 
     | []  -> NoValue |> Value
     | [x] -> x 
     | xs  -> xs |> List.rev |> ParamArray |> Value
