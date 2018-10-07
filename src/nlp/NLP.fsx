@@ -1,4 +1,5 @@
 ﻿#r "../../../../../.nuget/packages/ikvm/8.1.5717/lib/IKVM.Runtime.dll"
+open sun.reflect.generics.tree
 #r "../../../../../.nuget/packages/ikvm/8.1.5717/lib/IKVM.OpenJDK.Core.dll"
 #r "../../../../../.nuget/packages/ikvm/8.1.5717/lib/IKVM.OpenJDK.Text.dll"
 #r "../../../../../.nuget/packages/stanford.nlp.parser/3.8.0/lib/ejml-0.23.dll"
@@ -44,7 +45,6 @@ let rec (|ChildrenLabeled|_|) labels children =
     //let children = [tree]
     //let labels = [NN;NP] 
     let childTags = children |> Seq.collect(fun (n:Tree) -> n.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag())) |> Set.ofSeq
-    printfn "%A" childTags
     let labelTags = labels |> Seq.map (sprintf "%A") |> Set.ofSeq
     let both = Set.intersect childTags labelTags
     if Set.count both > 0 then 
@@ -104,46 +104,144 @@ and Call =
     | Mode
     | Least
     | Largest
+    | Suffer
 
 let tree =  
     "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
     |> getTree
 // [tree]
 // |> function | ChildrenLabeled [NN] n -> n
+type WordScan = 
+    | Tree of PennTreebankIITags option * WordScanNode * WordScan list
+and WordScanNode = 
+    | Node of Tree
+    | Word of Operation 
+let word op = 
+    Word(op)    
 
+let gt plusValue =
+    App(Call GreaterThan, Value(ParamArray [ Var "roll"; Value(Int(plusValue))]))
+let eq plusValue =
+    App(Call Equals, Value(ParamArray [ Var "roll"; Value(Int(plusValue))]))
+let gte plusValue =
+    let gte = App(Call Or, Value(ParamArray [ Var "eq"; Var "gt" ]))
+    Lam("roll", Let("gt", gt plusValue, Let("eq", eq plusValue, gte)))
+    
+let (|DValue|_|) s = 
+    match s with 
+    | "1"  -> Some 1
+    | "2"  -> Some 2
+    | "3"  -> Some 3
+    | "4"  -> Some 4
+    | "5"  -> Some 5
+    | "6"  -> Some 6
+    | _ -> None
+
+let (|TryInteger|_|) n = 
+    match System.Int32.TryParse(n) with 
+    | true, n -> Some n 
+    | false, _ -> None
+let (|TryFloat|_|) n = 
+    match System.Double.TryParse(n) with 
+    | true, n -> Some n 
+    | false, _ -> None
+let (|AnyContains|_|) words check = 
+    List.windowed (List.length words) check 
+    |> List.tryFind ((=) words)
+
+let convertNode tree =     
+    match tree with 
+    | IsLabeled [NN] "D6" -> App(Call Dice, Value(Int 6)) |> word
+    | IsLabeled [NN] "D3" -> App(Call Dice, Value(Int 3)) |> word
+    | IsLabeled [NN] "enemy" -> Var("Target") |> word
+    | IsLabeledWith [NP] (_, ChildrenLabeled [JJ;NN] (AnyContains ["mortal";"wound"] _))  -> ParamArray[ Value(Str("Mortal Wound")); Value (Int 1)] |> Value |> word
+    | IsLabeledWith [NP] (_, ChildrenLabeled [JJ;NN] (AnyContains ["Fight"; "phase"] _))  -> ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word
+    | IsLabeledWith [NP] (_, ChildrenLabeled [CD;NNS] [_; DValue n;"+"])  -> gte n |> word
+    | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word
+    | IsLabeled [CD] (TryFloat n) -> Value(Float n) |> word
+    | IsLabeled [VBZ] "suffers" -> Call Suffer |> word
+    | _ -> Node tree 
+let scanWords (tree:Tree) =     
+    tree.pennPrint();
+    let rec mapTree (tree:Tree) = 
+        let wsn = convertNode tree
+        let nodes = tree.getChildrenAsList() |> Iterable.castToSeq<Tree> |> Seq.map mapTree |> Seq.toList
+        Tree(getLabel tree, wsn, nodes)
+    mapTree tree    
+let scanPhrases (tree:WordScan) = 
+    let rec foldTree acc tree = 
+        match tree with 
+        | Tree(_, Word op, _) -> 
+            // let children' = 
+            //     children
+            //     |> Seq.fold foldTree acc    
+            op :: acc   
+        | Tree(Some (SYM | NNS | Punctuation), Node op, children) ->
+            let children' = 
+                children
+                |> Seq.fold foldTree acc   
+            match children' with 
+            | Value(Str text)::moreChildren -> (sprintf "%s%s" text (getHeadText op) |> Str |> Value) :: moreChildren
+            | moreChildren -> ((getHeadText op) |> Str |> Value) :: moreChildren
+        | Tree(Some WordLevel, Node op, children) ->    
+            let children' = 
+                children
+                |> Seq.fold foldTree acc   
+            match children' with 
+            | Value(Str text)::moreChildren -> (sprintf "%s %s" text (getHeadText op) |> Str |> Value) :: moreChildren
+            | moreChildren -> ((getHeadText op) |> Str |> Value) :: moreChildren
+        | Tree(_, Node op, children) ->
+                 children
+                 |> Seq.fold foldTree acc
+        | _ -> acc        
+        // match getLabel node with 
+        // | Some (PhraseLevel as tag) ->
+        //     match node with 
+        //     | IsLabeledWith [VP] (_, ChildrenLabeled [VB] text) when getHeadText node = "roll" 
+    foldTree [] tree   
+    |> List.rev
+
+tree
+|> scanWords 
+|> scanPhrases
+
+Seq.scan
 let getGameOperation (tree:Tree) =
     let node = tree
     tree.pennPrint()
-    let rec foldTree level acc (node:Tree) =
-        let newAcc = 
-            node.getChildrenAsList() 
-            |> Iterable.castToSeq<Tree>
-            |> Seq.fold (foldTree (level+1)) acc    
+    let rec newAcc level acc (node:Tree) =
+        node.getChildrenAsList() 
+        |> Iterable.castToSeq<Tree>
+        |> Seq.fold (foldTree (level+1)) acc   
+    and  foldTree level acc (node:Tree) =
         let nodeText = getHeadText node   
         match getLabel node with 
         | Some (SYM | NNS | Punctuation)-> 
-            match newAcc with 
+            match newAcc level acc node with 
             | Value(Str text)::newAcc -> (text + nodeText |> Str |> Value) :: newAcc
             | newAcc -> (nodeText |> Str |> Value)::newAcc
         | Some (WordLevel as tag) -> 
-            //printfn "Word: %A - Level %d - %s  - ACC: %A" tag level nodeText newAcc
-            match newAcc with 
-            | Value(Str text)::newAcc -> (text + " " + nodeText |> Str |> Value) :: newAcc
-            | newAcc -> (nodeText |> Str |> Value)::newAcc
-        | Some (PhraseLevel as tag) -> 
-            let nodeText = getHeadText node  
+            printfn "Word: %A - Level %d - %s  - ACC: %A" tag level nodeText newAcc
             match node with 
-            | IsLabeledWith [NP] (_, ChildrenLabeled [DT;NN] ["a"; "D6"]) -> 
-                printfn "Phrase: %A - Level %d - %s - ACC: %A" tag level nodeText acc
-                App(Call Dice, Value(ParamArray[Value(Int 6)])) :: acc
-            | IsLabeledWith [VP] (_, ChildrenLabeled [VB] text) when getHeadText node = "roll" ->
-                printfn "Phrase: %A - Level %d - %s - ACC: %A" tag level nodeText acc
-                let text = node.children() |> Array.skip 1 |> Array.collect(fun n -> n.children()) |> Array.rev |> Array.head |> getAllText
-                Let(text, newAcc |> List.rev |> List.skip 1 |> ParamArray |> Value, Value(NoValue)) :: acc               
-            | _ -> newAcc 
+            | IsLabeled [NN] "D6" -> (Var("D6")) :: newAcc level acc node
+            | _ -> 
+                match newAcc level acc node with 
+                | Value(Str text)::newAcc -> (text + " " + nodeText |> Str |> Value) :: newAcc
+                | newAcc -> (nodeText |> Str |> Value) :: newAcc
+        // | Some (PhraseLevel as tag) -> 
+        //     let nodeText = getHeadText node  
+        //     match node with 
+        //     // | IsLabeledWith [NP] (_, ChildrenLabeled [DT; NN] ["a"; "D6"]) -> 
+        //     //     printfn "Phrase: %A - Level %d - %s - ACC: %A" tag level nodeText acc
+        //     //     Var("D6") :: acc
+        //     | IsLabeledWith [VP] (_, ChildrenLabeled [VB] text) when getHeadText node = "roll" ->
+        //         printfn "Phrase: %A - Level %d - %s - ACC: %A" tag level nodeText acc
+        //         let text = node.children() |> Array.skip 1 |> Array.collect(fun n -> n.children()) |> Array.rev |> Array.head |> getAllText
+        //         Let(text, newAcc |> List.rev |> List.skip 1 |> ParamArray |> Value, Value(NoValue)) :: acc               
+        //     | _ -> newAcc level acc node 
         | Some tag -> 
             //printfn "Unknown: %A - %s " tag nodeText
-            newAcc
+            newAcc level acc node
         | None -> 
             //printfn "No match: %A - %s " (node.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag()) |> Seq.tryHead) nodeText
             newAcc      
