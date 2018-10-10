@@ -48,7 +48,7 @@ let rec (|ChildrenLabeled|_|) labels children =
     let labelTags = labels |> Seq.map (sprintf "%A") |> Set.ofSeq
     let both = Set.intersect childTags labelTags
     if Set.count both > 0 then 
-        children |> Seq.map(getAllText) |> Seq.toList |> Some 
+        children |> Some 
     else None
     
 type Probability = double
@@ -112,7 +112,7 @@ let tree =
 // [tree]
 // |> function | ChildrenLabeled [NN] n -> n
 type WordScan = 
-    | Tree of PennTreebankIITags option * WordScanNode * WordScan list
+    | Tree of PennTreebankIITags option * WordScanNode * skip:int * WordScan list
 and WordScanNode = 
     | Node of Tree
     | Word of Operation 
@@ -145,67 +145,107 @@ let (|TryFloat|_|) n =
     match System.Double.TryParse(n) with 
     | true, n -> Some n 
     | false, _ -> None
-let (|AnyContains|_|) words check = 
-    List.windowed (List.length words) check 
-    |> List.tryFind ((=) words)
+let anyContains (check:string list) (words:string list) = 
+    List.windowed (List.length check) words 
+    |> List.tryFindIndex (fun n -> n = check)
+    |> Option.map (fun i -> words.[0..i+1], words.[i+List.length check..words.Length-1])
+let (|AnyContains|_|) = anyContains
 
-let convertNode tree =     
-    match tree with 
-    | IsLabeled [NN] "D6" -> App(Call Dice, Value(Int 6)) |> word
-    | IsLabeled [NN] "D3" -> App(Call Dice, Value(Int 3)) |> word
-    | IsLabeled [NN] "enemy" -> Var("Target") |> word
-    | IsLabeledWith [NP] (_, ChildrenLabeled [JJ;NN] (AnyContains ["mortal";"wound"] _))  -> ParamArray[ Value(Str("Mortal Wound")); Value (Int 1)] |> Value |> word
-    | IsLabeledWith [NP] (_, ChildrenLabeled [JJ;NN] (AnyContains ["Fight"; "phase"] _))  -> ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word
-    | IsLabeledWith [NP] (_, ChildrenLabeled [CD;NNS] [_; DValue n;"+"])  -> gte n |> word
-    | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word
-    | IsLabeled [CD] (TryFloat n) -> Value(Float n) |> word
-    | IsLabeled [VBZ] "suffers" -> Call Suffer |> word
-    | _ -> Node tree 
-let scanWords (tree:Tree) =     
+
+let scanWords (tree:Tree) =   
+    let (|Siblings|_|) labels check (node:Tree) = 
+        // let children = [tree]
+        // //let labels = [NN;NN] 
+        // let check =  [(=) "Fight";(=) "phase"]
+        // let chillins = children |> Seq.collect(fun n -> n.children()) |> Seq.collect(fun n -> n.children()) |> Seq.toList
+        // let parent = chillins.[0].children().[1].children().[1].children().[1]
+        // let node = parent.children().[1]
+        // getHeadText node
+        // getAllText parent
+        match node.parent tree with
+        | null -> None 
+        | parent -> 
+            let rightSiblings = parent.children() |> Seq.skipWhile(fun n -> n.equals(node) |> not) |> Seq.toList
+            // let siblings = node.siblings root
+            // rightSiblings  |> Seq.map (getHeadText)
+            // rightSiblings  |> Seq.map (getLabel)
+            match rightSiblings with 
+            | [] -> None
+            | rightSiblings ->
+                let combined = Seq.zip3 rightSiblings labels check 
+                let both = 
+                    combined
+                    |> Seq.filter (fun (n, l, c) -> getLabel n = Some l && getHeadText n |> c)
+                if Seq.length labels = Seq.length both then 
+                    Seq.length labels - 1 |> Some 
+                else None
+
+    let convertNode node =     
+        match node with 
+        | IsLabeled [NN] "D6" -> App(Call Dice, Value(Int 6)) |> word, 0
+        | IsLabeled [NN] "D3" -> App(Call Dice, Value(Int 3)) |> word, 0
+        | IsLabeled [NN] "enemy" -> Var("Target") |> word, 0
+        | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> (ParamArray[ Value(Str("Mortal Wound")); Value (Int 1)] |> Value |> word), skip
+        | Siblings [JJ;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
+        | Siblings [CD;NNS]  [(=) "1";(=) "+"] skip  ->  (gte 1 |> word), skip
+        | Siblings [CD;NNS]  [(=) "2";(=) "+"] skip  ->  (gte 2 |> word), skip
+        | Siblings [CD;NNS]  [(=) "3";(=) "+"] skip  ->  (gte 3 |> word), skip
+        | Siblings [CD;NNS]  [(=) "4";(=) "+"] skip  ->  (gte 4 |> word), skip
+        | Siblings [CD;NNS]  [(=) "5";(=) "+"] skip  ->  (gte 5 |> word), skip
+        | Siblings [CD;NNS]  [(=) "6";(=) "+"] skip  ->  (gte 6 |> word), skip
+        | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
+        | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
+        | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
+        | _ -> Node node,0   
     tree.pennPrint();
-    let rec mapTree (tree:Tree) = 
-        let wsn = convertNode tree
-        let nodes = tree.getChildrenAsList() |> Iterable.castToSeq<Tree> |> Seq.map mapTree |> Seq.toList
-        Tree(getLabel tree, wsn, nodes)
+    let rec mapTree (node:Tree) = 
+        let (wsn, skip) = convertNode node
+        let nodes = 
+            node.getChildrenAsList() |> Iterable.castToSeq<Tree> |> Seq.map mapTree |> Seq.toList
+        Tree(getLabel node, wsn, skip, nodes)
     mapTree tree    
 let scanPhrases (tree:WordScan) = 
-    let rec foldTree acc tree = 
-        match tree with 
-        | Tree(_, Word op, _) -> 
-            // let children' = 
-            //     children
-            //     |> Seq.fold foldTree acc    
-            op :: acc   
-        | Tree(Some (SYM | NNS | Punctuation), Node op, children) ->
-            let children' = 
-                children
-                |> Seq.fold foldTree acc   
-            match children' with 
-            | Value(Str text)::moreChildren -> (sprintf "%s%s" text (getHeadText op) |> Str |> Value) :: moreChildren
-            | moreChildren -> ((getHeadText op) |> Str |> Value) :: moreChildren
-        | Tree(Some WordLevel, Node op, children) ->    
-            let children' = 
-                children
-                |> Seq.fold foldTree acc   
-            match children' with 
-            | Value(Str text)::moreChildren -> (sprintf "%s %s" text (getHeadText op) |> Str |> Value) :: moreChildren
-            | moreChildren -> ((getHeadText op) |> Str |> Value) :: moreChildren
-        | Tree(_, Node op, children) ->
-                 children
-                 |> Seq.fold foldTree acc
-        | _ -> acc        
+    let rec foldTree (skip,acc) tree = 
+        if skip > 0 then skip-1, acc
+        else
+            match tree with 
+            | Tree(_, Word op, skip, _) -> 
+                // let children' = 
+                //     children
+                //     |> Seq.fold foldTree acc    
+                skip, op :: acc   
+            | Tree(Some (SYM | NNS | Punctuation), Node op, _, children) ->
+                let (skip,children') = 
+                    children 
+                    |> Seq.fold foldTree (0,acc)   
+                match children' with 
+                | Value(Str text)::moreChildren -> skip, (sprintf "%s%s" text (getHeadText op) |> Str |> Value) :: moreChildren
+                | moreChildren -> skip, ((getHeadText op) |> Str |> Value) :: moreChildren
+            | Tree(Some WordLevel, Node op, skip, children) ->    
+                let (_,children') = 
+                    children
+                    |> Seq.fold foldTree (0,acc)    
+                match children' with 
+                | Value(Str text)::moreChildren -> skip, (sprintf "%s %s" text (getHeadText op) |> Str |> Value) :: moreChildren
+                | moreChildren -> skip, ((getHeadText op) |> Str |> Value) :: moreChildren
+            | Tree(_, Node op, skip, children) ->
+                skip, (children |> Seq.fold foldTree (0,acc) |> snd)
         // match getLabel node with 
         // | Some (PhraseLevel as tag) ->
         //     match node with 
         //     | IsLabeledWith [VP] (_, ChildrenLabeled [VB] text) when getHeadText node = "roll" 
-    foldTree [] tree   
+    foldTree (0,[]) tree   
+    |> snd 
     |> List.rev
 
 tree
 |> scanWords 
 |> scanPhrases
 
-Seq.scan
+let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
+let children = head.children() |> Seq.map (fun c -> c.siblings(tree) |> Iterable.castToSeq<Tree> |> Seq.map getHeadText |> Seq.toList) |> Seq.toList
+
+
 let getGameOperation (tree:Tree) =
     let node = tree
     tree.pennPrint()
