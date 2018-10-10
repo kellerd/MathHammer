@@ -62,6 +62,7 @@ type Check<'a> =
     
 type GamePrimitive =
     | Int of int
+    | Distance of int
     | Str of string
     | Float of float
     | Check of Check<GamePrimitive>
@@ -179,20 +180,17 @@ let scanWords (tree:Tree) =
                 if Seq.length labels = Seq.length both then 
                     Seq.length labels - 1 |> Some 
                 else None
-
+    let always (_:string) = true
+    let dvalue = (|DValue|_|) >> Option.isSome
     let convertNode node =     
         match node with 
         | IsLabeled [NN] "D6" -> App(Call Dice, Value(Int 6)) |> word, 0
         | IsLabeled [NN] "D3" -> App(Call Dice, Value(Int 3)) |> word, 0
         | IsLabeled [NN] "enemy" -> Var("Target") |> word, 0
-        | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> (ParamArray[ Value(Str("Mortal Wound")); Value (Int 1)] |> Value |> word), skip
+        | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
         | Siblings [JJ;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
-        | Siblings [CD;NNS]  [(=) "1";(=) "+"] skip  ->  (gte 1 |> word), skip
-        | Siblings [CD;NNS]  [(=) "2";(=) "+"] skip  ->  (gte 2 |> word), skip
-        | Siblings [CD;NNS]  [(=) "3";(=) "+"] skip  ->  (gte 3 |> word), skip
-        | Siblings [CD;NNS]  [(=) "4";(=) "+"] skip  ->  (gte 4 |> word), skip
-        | Siblings [CD;NNS]  [(=) "5";(=) "+"] skip  ->  (gte 5 |> word), skip
-        | Siblings [CD;NNS]  [(=) "6";(=) "+"] skip  ->  (gte 6 |> word), skip
+        | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
+        | IsLabeledWith [NP] (_, ChildrenLabeled [CD] _) &  Siblings [NP;EQT] [always; always] skip as n -> (n |> getHeadText) |> int |> Distance |> Value |> word, skip
         | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
         | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
         | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
@@ -228,6 +226,10 @@ let scanPhrases (tree:WordScan) =
                 match children' with 
                 | Value(Str text)::moreChildren -> skip, (sprintf "%s %s" text (getHeadText op) |> Str |> Value) :: moreChildren
                 | moreChildren -> skip, ((getHeadText op) |> Str |> Value) :: moreChildren
+            // | Tree(Some NP, Node node, skip, Tree(Some DT, Node firstNode, _, _ )::moreChildren) when getHeadText firstNode = "a" ->
+            //     let children' = moreChildren |> Seq.fold foldTree (0,acc) |> snd |> ParamArray |> Value
+
+            //     skip, [ App(Call Repeat, Value(ParamArray[children'; Value(Int(1))])) ]
             | Tree(_, Node op, skip, children) ->
                 skip, (children |> Seq.fold foldTree (0,acc) |> snd)
         // match getLabel node with 
