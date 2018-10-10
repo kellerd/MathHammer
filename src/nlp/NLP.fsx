@@ -193,6 +193,7 @@ let scanWords (tree:Tree) =
         | IsLabeledWith [NP] (_, ChildrenLabeled [CD] _) &  Siblings [NP;EQT] [always; always] skip as n -> (n |> getHeadText) |> int |> Distance |> Value |> word, skip
         | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
         | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
+        | IsLabeled [DT] "a"   -> Lam("obj", App(Call Repeat, Value(ParamArray[Var "obj"; Value(Int(1))]))) |> word,0
         | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
         | _ -> Node node,0   
     tree.pennPrint();
