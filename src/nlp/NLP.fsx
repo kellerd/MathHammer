@@ -153,7 +153,12 @@ let anyContains (check:string list) (words:string list) =
     |> List.tryFindIndex (fun n -> n = check)
     |> Option.map (fun i -> words.[0..i+1], words.[i+List.length check..words.Length-1])
 let (|AnyContains|_|) = anyContains
-
+let (|AllOperations|_|) children = 
+    let check =  List.choose (fun n -> match n with 
+                                       | InternalNode(NodeInfo(_, Word op, _), []) -> Some op 
+                                       | _ -> None) children            
+    if List.length check = List.length children then Some check
+    else None
 
 let scanWords (tree:Tree) =   
     let (|Siblings|_|) labels check (node:Tree) = 
@@ -241,27 +246,19 @@ let rec foldBack fEmpty fNode (tree:Tree<'INodeData>) acc : 'r =
         // ... and return it
         finalAccum 
 
+let skipChildren children = 
+    Seq.fold(fun (num,acc) t -> 
+                if num > 0 then num - 1, acc
+                else match t with 
+                     | Empty -> num, acc
+                     | InternalNode(NodeInfo(penTags, node, skip),_) -> skip, t::acc) (0,[]) children |> snd |> Seq.rev |> Seq.toList 
+
 
 let scanPhrases (tree:Tree<NodeInfo<WordScanNode>>) =
     let fEmpty = Empty
     let fNode (NodeInfo(penTags, node, skip) as n) children = 
-        let children' = 
-            children
-            |> Seq.fold(fun (num,acc) t -> 
-                if num > 0 then num - 1, acc
-                else
-                    match t with 
-                    | Empty -> num, acc
-                    | InternalNode(NodeInfo(penTags, node, skip),_) -> skip, t::acc) (0,[])
-            |> snd       
-            |> Seq.rev   
-            |> Seq.toList 
-        let (|AllOperations|_|) children = 
-            let check =  List.choose (fun n -> match n with 
-                                               | InternalNode(NodeInfo(_, Word op, _), []) -> Some op 
-                                               | _ -> None) children            
-            if List.length check = List.length children then Some check
-            else None
+        let children' = children |> skipChildren
+
         match node with 
         | Word op -> InternalNode(n, children')  
         | Node op -> 
