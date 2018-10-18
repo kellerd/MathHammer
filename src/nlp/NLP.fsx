@@ -220,7 +220,6 @@ let rec cata fEmpty fNode (tree:Tree<'INodeData>) =
          fEmpty
     | InternalNode (nodeInfo,subtrees) -> 
         fNode nodeInfo (subtrees |> Seq.map recurse)
-
 let rec fold fEmpty fNode acc (tree:Tree<'INodeData>) :'r = 
     let recurse = fold fEmpty fNode  
     match tree with
@@ -245,15 +244,12 @@ let rec foldBack fEmpty fNode (tree:Tree<'INodeData>) acc : 'r =
         // thread the local accumulator through all the subitems using Seq.fold
         // ... and return it
         finalAccum 
-
 let skipChildren children = 
     Seq.fold(fun (num,acc) t -> 
                 if num > 0 then num - 1, acc
                 else match t with 
                      | Empty -> num, acc
                      | InternalNode(NodeInfo(penTags, node, skip),_) -> skip, t::acc) (0,[]) children |> snd |> Seq.rev |> Seq.toList 
-
-
 let scanPhrases (tree:Tree<NodeInfo<WordScanNode>>) =
     let fEmpty = Empty
     let fNode (NodeInfo(penTags, node, skip) as n) children = 
@@ -285,58 +281,8 @@ tree
 |> scanWords 
 |> scanPhrases
 
-
 let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
 let children = head.children() |> Seq.map (fun c -> c.siblings(tree) |> Iterable.castToSeq<Tree> |> Seq.map getHeadText |> Seq.toList) |> Seq.toList
-
-
-let getGameOperation (tree:Tree) =
-    let node = tree
-    tree.pennPrint()
-    let rec newAcc level acc (node:Tree) =
-        node.getChildrenAsList() 
-        |> Iterable.castToSeq<Tree>
-        |> Seq.fold (foldTree (level+1)) acc   
-    and  foldTree level acc (node:Tree) =
-        let nodeText = getHeadText node   
-        match getLabel node with 
-        | Some (SYM | NNS | Punctuation)-> 
-            match newAcc level acc node with 
-            | Value(Str text)::newAcc -> (text + nodeText |> Str |> Value) :: newAcc
-            | newAcc -> (nodeText |> Str |> Value)::newAcc
-        | Some (WordLevel as tag) -> 
-            printfn "Word: %A - Level %d - %s  - ACC: %A" tag level nodeText newAcc
-            match node with 
-            | IsLabeled [NN] "D6" -> (Var("D6")) :: newAcc level acc node
-            | _ -> 
-                match newAcc level acc node with 
-                | Value(Str text)::newAcc -> (text + " " + nodeText |> Str |> Value) :: newAcc
-                | newAcc -> (nodeText |> Str |> Value) :: newAcc
-        // | Some (PhraseLevel as tag) -> 
-        //     let nodeText = getHeadText node  
-        //     match node with 
-        //     // | IsLabeledWith [NP] (_, ChildrenLabeled [DT; NN] ["a"; "D6"]) -> 
-        //     //     printfn "Phrase: %A - Level %d - %s - ACC: %A" tag level nodeText acc
-        //     //     Var("D6") :: acc
-        //     | IsLabeledWith [VP] (_, ChildrenLabeled [VB] text) when getHeadText node = "roll" ->
-        //         printfn "Phrase: %A - Level %d - %s - ACC: %A" tag level nodeText acc
-        //         let text = node.children() |> Array.skip 1 |> Array.collect(fun n -> n.children()) |> Array.rev |> Array.head |> getAllText
-        //         Let(text, newAcc |> List.rev |> List.skip 1 |> ParamArray |> Value, Value(NoValue)) :: acc               
-        //     | _ -> newAcc level acc node 
-        | Some tag -> 
-            //printfn "Unknown: %A - %s " tag nodeText
-            newAcc level acc node
-        | None -> 
-            //printfn "No match: %A - %s " (node.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag()) |> Seq.tryHead) nodeText
-            newAcc      
-    match foldTree 0 [] tree with 
-    | []  -> NoValue |> Value
-    | [x] -> x 
-    | xs  -> xs |> List.rev |> ParamArray |> Value
-
-getGameOperation tree |> printfn "%A"
-
-
 
 tree.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag())
 tree.``yield``() |> Iterable.castToSeq<CoreLabel> |> Seq.iter(fun n -> printfn "%s" (n.word()))
