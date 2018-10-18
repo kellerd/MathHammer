@@ -1,5 +1,4 @@
 ﻿#r "../../../../../.nuget/packages/ikvm/8.1.5717/lib/IKVM.Runtime.dll"
-open sun.reflect.generics.tree
 #r "../../../../../.nuget/packages/ikvm/8.1.5717/lib/IKVM.OpenJDK.Core.dll"
 #r "../../../../../.nuget/packages/ikvm/8.1.5717/lib/IKVM.OpenJDK.Text.dll"
 #r "../../../../../.nuget/packages/stanford.nlp.parser/3.8.0/lib/ejml-0.23.dll"
@@ -109,12 +108,15 @@ and Call =
 
 let tree =  
     "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
+    //"Roll a D6."
     |> getTree
 // [tree]
 // |> function | ChildrenLabeled [NN] n -> n
-type WordScan = 
-    | Tree of PennTreebankIITags option * WordScanNode * skip:int * WordScan list
-and WordScanNode = 
+type Tree<'INodeData> =
+    | Empty
+    | InternalNode of 'INodeData * Tree<'INodeData> list
+type NodeInfo<'a> = NodeInfo of PennTreebankIITags option * 'a * int
+type WordScanNode = 
     | Node of Tree
     | Word of Operation 
 let word op = 
@@ -194,6 +196,7 @@ let scanWords (tree:Tree) =
         | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
         | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
         | IsLabeled [DT] "a"   -> Lam("obj", App(Call Repeat, Value(ParamArray[Var "obj"; Value(Int(1))]))) |> word,0
+        | IsLabeled [DT] _   -> Lam("obj", Var "obj") |> word,0
         | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
         | _ -> Node node,0   
     tree.pennPrint();
@@ -201,49 +204,90 @@ let scanWords (tree:Tree) =
         let (wsn, skip) = convertNode node
         let nodes = 
             node.getChildrenAsList() |> Iterable.castToSeq<Tree> |> Seq.map mapTree |> Seq.toList
-        Tree(getLabel node, wsn, skip, nodes)
+        let nodeInfo = NodeInfo(getLabel node, wsn, skip)        
+        InternalNode (nodeInfo, nodes)
     mapTree tree    
-let scanPhrases (tree:WordScan) = 
-    let rec foldTree (skip,acc) tree = 
-        if skip > 0 then skip-1, acc
-        else
-            match tree with 
-            | Tree(_, Word op, skip, _) -> 
-                // let children' = 
-                //     children
-                //     |> Seq.fold foldTree acc    
-                skip, op :: acc   
-            | Tree(Some (SYM | NNS | Punctuation), Node op, _, children) ->
-                let (skip,children') = 
-                    children 
-                    |> Seq.fold foldTree (0,acc)   
-                match children' with 
-                | Value(Str text)::moreChildren -> skip, (sprintf "%s%s" text (getHeadText op) |> Str |> Value) :: moreChildren
-                | moreChildren -> skip, ((getHeadText op) |> Str |> Value) :: moreChildren
-            | Tree(Some WordLevel, Node op, skip, children) ->    
-                let (_,children') = 
-                    children
-                    |> Seq.fold foldTree (0,acc)    
-                match children' with 
-                | Value(Str text)::moreChildren -> skip, (sprintf "%s %s" text (getHeadText op) |> Str |> Value) :: moreChildren
-                | moreChildren -> skip, ((getHeadText op) |> Str |> Value) :: moreChildren
-            // | Tree(Some NP, Node node, skip, Tree(Some DT, Node firstNode, _, _ )::moreChildren) when getHeadText firstNode = "a" ->
-            //     let children' = moreChildren |> Seq.fold foldTree (0,acc) |> snd |> ParamArray |> Value
 
-            //     skip, [ App(Call Repeat, Value(ParamArray[children'; Value(Int(1))])) ]
-            | Tree(_, Node op, skip, children) ->
-                skip, (children |> Seq.fold foldTree (0,acc) |> snd)
-        // match getLabel node with 
-        // | Some (PhraseLevel as tag) ->
-        //     match node with 
-        //     | IsLabeledWith [VP] (_, ChildrenLabeled [VB] text) when getHeadText node = "roll" 
-    foldTree (0,[]) tree   
-    |> snd 
-    |> List.rev
+let rec cata fEmpty fNode (tree:Tree<'INodeData>) = 
+    let recurse = cata fEmpty fNode  
+    match tree with
+    | Empty -> 
+         fEmpty
+    | InternalNode (nodeInfo,subtrees) -> 
+        fNode nodeInfo (subtrees |> Seq.map recurse)
+
+let rec fold fEmpty fNode acc (tree:Tree<'INodeData>) :'r = 
+    let recurse = fold fEmpty fNode  
+    match tree with
+    | Empty  -> 
+        fEmpty acc  
+    | InternalNode (nodeInfo,subtrees) -> 
+        // determine the local accumulator at this level
+        let localAccum = fNode acc nodeInfo
+        // thread the local accumulator through all the subitems using Seq.fold
+        let finalAccum = subtrees |> Seq.fold recurse localAccum 
+        // ... and return it
+        finalAccum 
+let rec foldBack fEmpty fNode (tree:Tree<'INodeData>) acc : 'r = 
+    let recurse = foldBack fEmpty fNode  
+    match tree with
+    | Empty  -> 
+        fEmpty acc  
+    | InternalNode (nodeInfo,subtrees) -> 
+        let childAccum =  Seq.foldBack recurse subtrees acc 
+        // determine the local accumulator at this level
+        let finalAccum = fNode childAccum nodeInfo
+        // thread the local accumulator through all the subitems using Seq.fold
+        // ... and return it
+        finalAccum 
+
+
+let scanPhrases (tree:Tree<NodeInfo<WordScanNode>>) =
+    let fEmpty = Empty
+    let fNode (NodeInfo(penTags, node, skip) as n) children = 
+        let children' = 
+            children
+            |> Seq.fold(fun (num,acc) t -> 
+                if num > 0 then num - 1, acc
+                else
+                    match t with 
+                    | Empty -> num, acc
+                    | InternalNode(NodeInfo(penTags, node, skip),_) -> skip, t::acc) (0,[])
+            |> snd       
+            |> Seq.rev   
+            |> Seq.toList 
+        let (|AllOperations|_|) children = 
+            let check =  List.choose (fun n -> match n with 
+                                               | InternalNode(NodeInfo(_, Word op, _), []) -> Some op 
+                                               | _ -> None) children            
+            if List.length check = List.length children then Some check
+            else None
+        match node with 
+        | Word op -> InternalNode(n, children')  
+        | Node op -> 
+            match penTags with 
+            | Some (SYM | NNS | Punctuation) -> 
+                let word = (getHeadText op) |> Str |> Value |> Word
+                InternalNode(NodeInfo(penTags, word, skip), children')
+            | Some WordLevel -> 
+                let word = (getHeadText op) |> Str |> Value |> Word
+                InternalNode(NodeInfo(penTags, word, skip), children')
+            | Some NP -> 
+                match children' with 
+                | InternalNode(NodeInfo(Some DT, Word op, skip),_) :: AllOperations(moreChildren) -> 
+                    if List.length moreChildren = 1 then 
+                        InternalNode(NodeInfo(penTags, Word(App(op, List.head moreChildren)), skip), []) 
+                    else InternalNode(NodeInfo(penTags, Word(App(op, Value(ParamArray(moreChildren)))), skip), [])  
+                | _ -> InternalNode(n, children') 
+            | None -> Empty
+            | _ -> InternalNode(n, children')  
+
+    cata fEmpty fNode tree 
 
 tree
 |> scanWords 
 |> scanPhrases
+
 
 let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
 let children = head.children() |> Seq.map (fun c -> c.siblings(tree) |> Iterable.castToSeq<Tree> |> Seq.map getHeadText |> Seq.toList) |> Seq.toList
