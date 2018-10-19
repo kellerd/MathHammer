@@ -191,18 +191,18 @@ let scanWords (tree:Tree) =
     let dvalue = (|DValue|_|) >> Option.isSome
     let convertNode node =     
         match node with 
-        | IsLabeled [NN] "D6" -> App(Call Dice, Value(Int 6)) |> word, 0
-        | IsLabeled [NN] "D3" -> App(Call Dice, Value(Int 3)) |> word, 0
-        | IsLabeled [NN] "enemy" -> Var("Target") |> word, 0
-        | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
-        | Siblings [JJ;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
-        | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
-        | IsLabeledWith [NP] (_, ChildrenLabeled [CD] _) &  Siblings [NP;EQT] [always; always] skip as n -> (n |> getHeadText) |> int |> Distance |> Value |> word, skip
-        | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
-        | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
-        | IsLabeled [DT] "a"   -> Lam("obj", App(Call Repeat, Value(ParamArray[Var "obj"; Value(Int(1))]))) |> word,0
-        | IsLabeled [DT] _   -> Lam("obj", Var "obj") |> word,0
-        | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
+        // | IsLabeled [NN] "D6" -> App(Call Dice, Value(Int 6)) |> word, 0
+        // | IsLabeled [NN] "D3" -> App(Call Dice, Value(Int 3)) |> word, 0
+        // | IsLabeled [NN] "enemy" -> Var("Target") |> word, 0
+        // | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
+        // | Siblings [JJ;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
+        // | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
+        // | IsLabeledWith [NP] (_, ChildrenLabeled [CD] _) &  Siblings [NP;EQT] [always; always] skip as n -> (n |> getHeadText) |> int |> Distance |> Value |> word, skip
+        // | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
+        // | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
+        // | IsLabeled [DT] "a"   -> Lam("obj", App(Call Repeat, Value(ParamArray[Var "obj"; Value(Int(1))]))) |> word,0
+        // | IsLabeled [DT] _   -> Lam("obj", Var "obj") |> word,0
+        // | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
         | _ -> Node node,0   
     tree.pennPrint();
     let rec mapTree (node:Tree) = 
@@ -256,10 +256,10 @@ let scanPhrases (tree:Tree<NodeInfo<WordScanNode>>) =
         let children' = children |> skipChildren
 
         match node with 
-        | Word op -> InternalNode(n, children')  
+        | Word _ -> InternalNode(n, children')  
         | Node op -> 
             match penTags with 
-            | Some (SYM | NNS | Punctuation) -> 
+            | Some (SYM | NNS | Punctuation | EQT) -> 
                 let word = (getHeadText op) |> Str |> Value |> Word
                 InternalNode(NodeInfo(penTags, word, skip), children')
             | Some WordLevel -> 
@@ -272,14 +272,39 @@ let scanPhrases (tree:Tree<NodeInfo<WordScanNode>>) =
                         InternalNode(NodeInfo(penTags, Word(App(op, List.head moreChildren)), skip), []) 
                     else InternalNode(NodeInfo(penTags, Word(App(op, Value(ParamArray(moreChildren)))), skip), [])  
                 | _ -> InternalNode(n, children') 
-            | None -> Empty
+            | None -> fEmpty
             | _ -> InternalNode(n, children')  
-
     cata fEmpty fNode tree 
+
+let foldToOperation (tree:Tree<NodeInfo<WordScanNode>>) = 
+    let fEmpty acc = acc
+    let fNode (tag,acc) (NodeInfo(penTags, node, skip) as n)  = 
+        match node with 
+        | Word (Value(Str(s)) as op ) ->
+            match tag, acc with 
+            | (Some SentenceCloser | Some Comma | Some EQT | Some Punctuation), Value(Str(acc))::rest -> 
+                let s' = sprintf "%s%s" s acc
+                penTags, Value(Str(s')) :: rest
+            | _, Value(Str(acc))::rest -> 
+                let s' = sprintf "%s %s" s acc
+                penTags, Value(Str(s')) :: rest
+            | _ -> penTags, op:: acc
+        | Word op -> penTags, op :: acc
+        | Node n -> 
+            match penTags with 
+            | Some WordLevel ->  
+                penTags, acc
+            | Some tag -> penTags, acc
+            | None -> penTags, acc
+    foldBack fEmpty fNode tree (None, [])
+    |> snd
 
 tree
 |> scanWords 
 |> scanPhrases
+|> foldToOperation
+|> printfn "%A"
+
 
 let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
 let children = head.children() |> Seq.map (fun c -> c.siblings(tree) |> Iterable.castToSeq<Tree> |> Seq.map getHeadText |> Seq.toList) |> Seq.toList
