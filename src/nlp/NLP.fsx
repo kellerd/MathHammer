@@ -275,7 +275,7 @@ let scanPhrases (tree:Tree<NodeInfo<WordScanNode>>) =
 
 let foldToOperation (tree:Tree<NodeInfo<WordScanNode>>) = 
     let fEmpty acc = acc
-    let (EndOfPhase) (tag,acc) node = 
+    let (|EndOfPhase|_|) (tag,acc) node = 
         match node with 
         | Word (Value(Str("At")) as op) -> 
             match acc with 
