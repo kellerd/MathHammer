@@ -109,10 +109,12 @@ and Call =
 
 // [tree]
 // |> function | ChildrenLabeled [NN] n -> n
-type Tree<'INodeData> =
-    | Empty
-    | InternalNode of 'INodeData * Tree<'INodeData> list
-type NodeInfo<'a> = NodeInfo of PennTreebankIITags option * 'a * int
+type Tree<'ITag, 'INodeData> =
+    | Empty of 'ITag
+    | BasicNode of 'ITag * 'INodeData * Tree<'ITag,'INodeData> list
+    | Assignment of 'ITag * label:string * value:Tree<'ITag,'INodeData> list * inExpr:Tree<'ITag,'INodeData> list 
+type NodeInfo<'a> = NodeInfo of 'a * int
+type Tag = PennTreebankIITags option
 type WordScanNode = 
     | Node of Tree
     | Word of Operation 
@@ -152,11 +154,22 @@ let anyContains (check:string list) (words:string list) =
 let (|AnyContains|_|) = anyContains
 let (|AllOperations|_|) children = 
     let check =  List.choose (fun n -> match n with 
-                                       | InternalNode(NodeInfo(_, Word op, _), []) -> Some op 
+                                       | BasicNode(_, NodeInfo(Word op, _), []) -> Some op 
                                        | _ -> None) children            
     if List.length check = List.length children then Some check
     else None
-
+let (|Tagged|_|) t tree = 
+    let tag = 
+        match tree with 
+        | Empty tag -> tag
+        | BasicNode(tag, _, _) -> tag
+        | Assignment(tag, _, _, _) -> tag
+    printfn "%A" tag    
+    if t = tag then Some tree else None 
+let (|Trio|_|) a b c nodes = 
+    match nodes with 
+    | Tagged (Some a) n :: Tagged (Some b) n2 :: Tagged (Some c) n3 :: [] -> Some (n,n2,n3)
+    | _ -> None
 let scanWords (tree:Tree) =   
     let (|Siblings|_|) labels check (node:Tree) = 
         // let children = [tree]
@@ -206,120 +219,161 @@ let scanWords (tree:Tree) =
         let (wsn, skip) = convertNode node
         let nodes = 
             node.getChildrenAsList() |> Iterable.castToSeq<Tree> |> Seq.map mapTree |> Seq.toList
-        let nodeInfo = NodeInfo(getLabel node, wsn, skip)        
-        InternalNode (nodeInfo, nodes)
+        let nodeInfo = NodeInfo(wsn, skip)        
+        BasicNode (getLabel node, nodeInfo, nodes)
     mapTree tree    
-let rec cata fEmpty fNode (tree:Tree<'INodeData>) = 
-    let recurse = cata fEmpty fNode  
+let rec cata fEmpty fNode fAssign (tree:Tree<'ITag, 'INodeData>) = 
+    let recurse = cata fEmpty fNode fAssign 
     match tree with
-    | Empty -> 
-         fEmpty
-    | InternalNode (nodeInfo,subtrees) -> 
-        fNode nodeInfo (subtrees |> Seq.map recurse)
-let rec fold fEmpty fNode acc (tree:Tree<'INodeData>) :'r = 
-    let recurse = fold fEmpty fNode  
+    | Empty tag -> 
+         fEmpty tag
+    | BasicNode (tag, nodeInfo,subtrees) -> 
+        fNode tag nodeInfo (subtrees |> Seq.map recurse)
+    | Assignment(tag, label, value, inExpr) -> 
+        fAssign tag label (value |> Seq.map recurse) (inExpr |> Seq.map recurse)
+let rec fold fEmpty fNode fAssign acc (tree:Tree<'ITag, 'INodeData>) :'r = 
+    let recurse = fold fEmpty fNode fAssign 
     match tree with
-    | Empty  -> 
-        fEmpty acc  
-    | InternalNode (nodeInfo,subtrees) -> 
+    | Empty tag -> 
+        fEmpty tag acc 
+    | BasicNode (tag, nodeInfo,subtrees) -> 
         // determine the local accumulator at this level
-        let localAccum = fNode acc nodeInfo
+        let localAccum = fNode tag acc nodeInfo
         // thread the local accumulator through all the subitems using Seq.fold
         let finalAccum = subtrees |> Seq.fold recurse localAccum 
         // ... and return it
         finalAccum 
-let rec foldBack fEmpty fNode (tree:Tree<'INodeData>) acc : 'r = 
-    let recurse = foldBack fEmpty fNode  
+    | Assignment(tag, label, value, inExpr) -> 
+        let localAccum = fAssign tag acc label    
+        let vAccum = value |> Seq.fold recurse localAccum
+        let finalAccum = inExpr |> Seq.fold recurse vAccum 
+        finalAccum
+let rec foldBack fEmpty fNode fAssign (tree:Tree<'ITag, 'INodeData>) acc : 'r = 
+    let recurse = foldBack fEmpty fNode fAssign 
     match tree with
-    | Empty  -> 
-        fEmpty acc  
-    | InternalNode (nodeInfo,subtrees) -> 
+    | Empty tag -> 
+        fEmpty tag acc 
+    | BasicNode (tag, nodeInfo,subtrees) -> 
         let childAccum =  Seq.foldBack recurse subtrees acc 
         // determine the local accumulator at this level
-        let finalAccum = fNode childAccum nodeInfo
+        let finalAccum = fNode tag childAccum nodeInfo
         // thread the local accumulator through all the subitems using Seq.fold
         // ... and return it
-        finalAccum 
+        finalAccum
+    | Assignment(tag, label, value, inExpr) -> 
+        let vAccum = Seq.foldBack recurse value acc
+        let expr = Seq.foldBack recurse inExpr acc 
+        fAssign tag label vAccum expr
 let skipChildren children = 
     Seq.fold(fun (num,acc) t -> 
                 if num > 0 then num - 1, acc
                 else match t with 
-                     | Empty -> num, acc
-                     | InternalNode(NodeInfo(penTags, node, skip),_) -> skip, t::acc) (0,[]) children |> snd |> Seq.rev |> Seq.toList 
-let scanPhrases (tree:Tree<NodeInfo<WordScanNode>>) =
-    let fEmpty = Empty
-    let fNode (NodeInfo(penTags, node, skip) as n) children = 
+                     | Empty _ -> num, acc
+                     | BasicNode(_, NodeInfo(_, skip),_) -> skip, t::acc
+                     | Assignment(_, label, value, inExpr) -> num, t::acc) (0,[]) children |> snd |> Seq.rev |> Seq.toList 
+let (|AsText|_|) n = 
+    match n with 
+    | BasicNode (_, NodeInfo (Word (Value (Str label)),_),_) -> label |> Some
+    | BasicNode(_, NodeInfo(Node label, _),_) -> getHeadText label |> Some
+    | _ -> None
+let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<WordScanNode>> =
+    // let node = 
+    //     ("""At the end of the Fight phase, roll a 
+    //       D6 for each enemy unit within 1\" of the Warlord. 
+    //       On a 4+ that unit suffers a mortal wound."""  |> getTree ).children().[0].children().[2] |> Node
+    let fEmpty tag = Empty tag
+    let fNode penTags (NodeInfo(node, skip) as n) children = 
+        // let node' = 
+        //     ("""At the end of the Fight phase, roll a 
+        //       D6 for each enemy unit within 1" of the Warlord. 
+        //       On a 4+ that unit suffers a mortal wound."""  |> getTree ).children().[0].children().[2]
+        // let node = Node node'      
+        // let children = node'.children() |> Array.map scanWords |> Array.toSeq
+        // let n = (NodeInfo(node, 0))
+        // let penTags = Some VP
+        // let skip = 0
         let children' = children |> skipChildren
-
         match node with 
-        | Word _ -> InternalNode(n, children')  
+        | Word _ -> BasicNode(penTags, n, children')  
         | Node op -> 
             match penTags with 
             | Some (SYM | NNS | Punctuation | EQT) -> 
                 // let word = (getHeadText op) |> Str |> Value |> Word
-                // InternalNode(NodeInfo(penTags, word, skip), children')
-                fEmpty
+                // BasicNode(NodeInfo(penTags, word, skip), children')
+                fEmpty penTags
             | Some WordLevel -> 
                 let word = (getHeadText op) |> Str |> Value |> Word
-                InternalNode(NodeInfo(penTags, word, skip), children')
+                BasicNode(penTags, NodeInfo(word, skip), children')
             | Some NP -> 
                 match children' with 
-                | InternalNode(NodeInfo(Some DT, Word op, skip),_) :: AllOperations(moreChildren) -> 
+                | BasicNode(Some DT, NodeInfo( Word op, skip),_) :: AllOperations(moreChildren) -> 
                     if List.length moreChildren = 1 then 
-                        InternalNode(NodeInfo(penTags, Word(App(op, List.head moreChildren)), skip), []) 
-                    else InternalNode(NodeInfo(penTags, Word(App(op, Value(ParamArray(moreChildren)))), skip), [])  
-                | _ -> InternalNode(n, children') 
-            | None -> fEmpty
-            | _ -> InternalNode(n, children')  
-    cata fEmpty fNode tree 
+                        BasicNode(penTags, NodeInfo(Word(App(op, List.head moreChildren)), skip), []) 
+                    else BasicNode(penTags, NodeInfo(Word(App(op, Value(ParamArray(moreChildren)))), skip), [])  
+                | _ -> BasicNode(penTags, n, children') 
+            | Some VP -> 
+                match children' with 
+                // | Trio VB S SBAR (BasicNode(_, NodeInfo(Node label, _),_), v, inExpr) when getHeadText label = "roll" -> 
+                //     Empty (Some VP)
+                | Trio VB S SBAR (AsText ("roll" as t), v, inExpr) -> 
+                    Assignment(penTags, t, [v], [inExpr])
+                | _ -> 
+                    //fEmpty penTags
+                    BasicNode(penTags, n, children')  
+                //| BasicNode(Some VB, NodeInfo( Node fstNode, skip),_) :: more  when getHeadText fstNode = "roll" -> 
+                    //Let
+            | None -> fEmpty penTags
+            | _ -> BasicNode(penTags, n, children')
+    let fAssign tag label child inExpr =
+        Assignment(tag,label,Seq.toList child,Seq.toList inExpr)  
+    cata fEmpty fNode fAssign tree 
 
-let foldToOperation (tree:Tree<NodeInfo<WordScanNode>>) = 
-    let fEmpty acc = acc
+let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) = 
+    let fEmpty tag acc = acc
     let (|EndOfPhase|_|) (tag,acc) node = 
-        match node with 
-        | Word (Value(Str("At")) as op) -> 
-            match acc with 
-            | App (Lam ("obj",Var "obj"),Value (Str "end")) :: Value (Str "of") :: App (Lam ("obj",Var "obj"), Value (ParamArray [Value (Str "Phase"); Value (Str phase)])) :: rest -> 
-                (phase,rest) |> Some 
-            | _ -> None
+        match node, acc with
+        | Word (Value(Str("At"))), App (Lam ("obj",Var "obj"),Value (Str "end")) :: Value (Str "of") :: App (Lam ("obj",Var "obj"), Value (ParamArray [Value (Str "Phase"); Value (Str phase)])) :: rest -> 
+            (phase,rest) |> Some 
         | _ -> None        
 
-    let fNode (tag,acc) (NodeInfo(penTags, node, skip) as n)  = 
+    let fNode pennTags (tag,acc) (NodeInfo(node, skip) as n)  = 
         match node with
         | EndOfPhase (tag, acc) (phase,rest) -> 
-            penTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
+            pennTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
         | Word (Value(Str(s)) as op ) ->
             match tag, acc with 
             | (Some SentenceCloser | Some Comma | Some EQT | Some Punctuation), Value(Str(acc))::rest -> 
                 let s' = sprintf "%s%s" s acc
-                penTags, Value(Str(s')) :: rest
+                pennTags, Value(Str(s')) :: rest
             | _, Value(Str(acc))::rest -> 
                 let s' = sprintf "%s %s" s acc
-                penTags, Value(Str(s')) :: rest
-            | _ -> penTags, op:: acc
+                pennTags, Value(Str(s')) :: rest
+            | _ -> pennTags, op:: acc
         | Word (Value(Int(n)) as op) when tag = Some EQT -> //EQT 
             match acc with 
-            |  Value(Distance(0)) :: rest when tag = Some EQT -> penTags, Value(Distance(n)) :: rest
-            | _ -> penTags, op :: acc
-        | Word op -> penTags, op :: acc
-        | Node n -> 
-            match penTags with 
-            | Some WordLevel ->  
-                penTags, acc
-            | Some penTags -> Some penTags, acc
-            | None -> penTags, acc
-    foldBack fEmpty fNode tree (None, [])
-    |> snd
+            |  Value(Distance(0)) :: rest when tag = Some EQT ->  pennTags, Value(Distance(n)) :: rest
+            | _ ->  pennTags, op :: acc
+        | Word op ->  pennTags, op :: acc
+        | Node n ->  pennTags, acc
+            // match penTags with 
+            // | Some WordLevel ->  
+            //     penTags, acc
+            // | Some penTags -> Some penTags, acc
+            // | None -> penTags, acc
+    let fAssign tag label (_, vAccum) (_, inExpr) = 
+        tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]     
+    foldBack fEmpty fNode fAssign tree (None, [])
 let tree =  
     "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
-    //"Roll a D6."
+    //"Roll a D6 and count the results, then roll another D6 for each success."
     //"roll a D6 within 1\""
     |> getTree
+tree.pennPrint()
 tree
 |> scanWords 
 |> scanPhrases
 |> foldToOperation
-|> printfn "%A"
+|> ignore
 
 
 let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
