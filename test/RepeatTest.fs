@@ -27,7 +27,6 @@ let tests =
             Expect.equal (List.length result) (max x 0) "Length of repeat should be same as length input, or 0 if < 1"
             Expect.allEqual tail head "All elements in repeat should be the same"
         | x -> failtest <| sprintf "Result is wrong type %A" x
-    
     let ``Repeat is same as List.init`` functionToCall operation =
         let passOrFailCount =
             operation

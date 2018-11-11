@@ -1,10 +1,10 @@
-module TypeChecker
+module TypeCheckerTest
 
 open FsCheckGen
 open Expecto
 open GameActions.Primitives.Types
 open GameActions.Primitives.State
-open TypeChecker
+open GameActions.Primitives.TypeChecker
 
 let (==?) x y =
     //printfn "%A" x

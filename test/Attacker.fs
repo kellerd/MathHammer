@@ -4,6 +4,7 @@ open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.State
 open GameActions.GameActionsList.State
+open GameActions.Primitives.Units
 open Expecto
 
 let (==?) x y = 

@@ -117,9 +117,8 @@ type NodeInfo<'a> = NodeInfo of 'a * int
 type Tag = PennTreebankIITags option
 type WordScanNode = 
     | Node of Tree
-    | Word of Operation 
-let word op = 
-    Word(op)    
+    | Word of original:Tree * Operation 
+    | Cont of original:Tree * (Operation -> Operation)
 
 let gt plusValue =
     App(Call GreaterThan, Value(ParamArray [ Var "roll"; Value(Int(plusValue))]))
@@ -154,7 +153,7 @@ let anyContains (check:string list) (words:string list) =
 let (|AnyContains|_|) = anyContains
 let (|AllOperations|_|) children = 
     let check =  List.choose (fun n -> match n with 
-                                       | BasicNode(_, NodeInfo(Word op, _), []) -> Some op 
+                                       | BasicNode(_, NodeInfo(Word (_, op), _), []) -> Some op 
                                        | _ -> None) children            
     if List.length check = List.length children then Some check
     else None
@@ -200,18 +199,21 @@ let scanWords (tree:Tree) =
     let always (_:string) = true
     let dvalue = (|DValue|_|) >> Option.isSome
     let convertNode node =     
+        let word op = Word(node, op) 
         match node with 
-        | IsLabeled [EQT] _ -> Distance 0 |> Value |> word, 0        
+        | IsLabeled [EQT] _ -> Distance 0 |> Value |> word , 0        
         | IsLabeled [NN] "D6" -> App(Call Dice, Value(Int 6)) |> word, 0
         | IsLabeled [NN] "D3" -> App(Call Dice, Value(Int 3)) |> word, 0
-        | IsLabeled [NN] "enemy" -> Var("Target") |> word, 0
+        | IsLabeled [NN] ("enemy" | "unit") -> Var("Target") |> word, 0
         | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
+        | Siblings [NN;NN]  [(=) "enemy";(=) "unit"] skip   -> Var("unit") |> word, skip
         | Siblings [NN;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
         | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
         | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
         | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
-        | IsLabeled [DT] "a"   -> Lam("obj", App(Call Repeat, Value(ParamArray[Var "obj"; Value(Int(1))]))) |> word,0
-        | IsLabeled [DT] _   -> Lam("obj", Var "obj") |> word,0
+        | IsLabeled [DT] "a"      -> Value(Int(1)) |> word,0
+        | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
+        | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0
         | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
         | _ -> Node node,0   
     tree.pennPrint();
@@ -271,11 +273,21 @@ let skipChildren children =
                      | Empty _ -> num, acc
                      | BasicNode(_, NodeInfo(_, skip),_) -> skip, t::acc
                      | Assignment(_, label, value, inExpr) -> num, t::acc) (0,[]) children |> snd |> Seq.rev |> Seq.toList 
-let (|AsText|_|) n = 
-    match n with 
-    | BasicNode (_, NodeInfo (Word (Value (Str label)),_),_) -> label |> Some
-    | BasicNode(_, NodeInfo(Node label, _),_) -> getHeadText label |> Some
+
+let (|AsText|_|) t n = 
+    match t, n with 
+    | None,              BasicNode (_, NodeInfo (Word (label, _),_),_) 
+    | Some _,  Tagged t (BasicNode (_, NodeInfo (Word (label, _),_),_))
+    | None,              BasicNode(_, NodeInfo(Node label, _),_) 
+    | Some _,  Tagged t (BasicNode(_, NodeInfo(Node label, _),_) )-> getHeadText label |> Some
     | _ -> None
+let (|AllWords|_|) n = 
+    let textOnly = 
+        List.choose (function AsText None t -> Some t | _ -> None) n
+    if List.length textOnly = List.length n then 
+        String.concat " " textOnly  |> Some
+    else 
+        None
 let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<WordScanNode>> =
     // let node = 
     //     ("""At the end of the Fight phase, roll a 
@@ -294,6 +306,7 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
         // let skip = 0
         let children' = children |> skipChildren
         match node with 
+        | Cont _ -> BasicNode(penTags, n, children')  
         | Word _ -> BasicNode(penTags, n, children')  
         | Node op -> 
             match penTags with 
@@ -302,37 +315,41 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
                 // BasicNode(NodeInfo(penTags, word, skip), children')
                 fEmpty penTags
             | Some WordLevel -> 
-                let word = (getHeadText op) |> Str |> Value |> Word
+                let word = Word(op, (getHeadText op) |> Str |> Value)
                 BasicNode(penTags, NodeInfo(word, skip), children')
             | Some NP -> 
                 match children' with 
-                | BasicNode(Some DT, NodeInfo( Word op, skip),_) :: AllOperations(moreChildren) -> 
+                | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: _ when getHeadText original = "each" ->  BasicNode(penTags, n, children') 
+                | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: AllOperations(moreChildren) -> 
                     if List.length moreChildren = 1 then 
-                        BasicNode(penTags, NodeInfo(Word(App(op, List.head moreChildren)), skip), []) 
-                    else BasicNode(penTags, NodeInfo(Word(App(op, Value(ParamArray(moreChildren)))), skip), [])  
+                        BasicNode(penTags, NodeInfo(Word(original, App(Call Repeat, Value(ParamArray[op; List.head moreChildren]))), skip), []) 
+                    else BasicNode(penTags, NodeInfo(Word(original, App(op, Value(ParamArray(moreChildren)))), skip), [])  
                 | _ -> BasicNode(penTags, n, children') 
+            | Some SBAR ->
+                match children' with 
+                | AsText (Some IN) "For" :: 
+                     BasicNode(Some S, n, (BasicNode(Some NP, np,  AsText (Some DT) "each" :: AllWords label) ) :: action) :: rest -> 
+                    let labelText =  label
+                    let for' = fun op -> App(Call Repeat, Value(ParamArray[Lam(labelText, op); Var labelText]))
+                    let children'' = BasicNode(Some S, n, action) :: rest
+                    BasicNode(penTags, NodeInfo(Cont (op, for'),skip), children'')                            
+                | _ -> BasicNode(penTags, n, children')                 
             | Some VP -> 
                 match children' with 
-                // | Trio VB S SBAR (BasicNode(_, NodeInfo(Node label, _),_), v, inExpr) when getHeadText label = "roll" -> 
-                //     Empty (Some VP)
-                | Trio VB S SBAR (AsText ("roll" as t), v, inExpr) -> 
+                | Trio VB S SBAR (AsText (Some VB) ("roll" as t), v, inExpr) -> 
                     Assignment(penTags, t, [v], [inExpr])
                 | _ -> 
-                    //fEmpty penTags
                     BasicNode(penTags, n, children')  
-                //| BasicNode(Some VB, NodeInfo( Node fstNode, skip),_) :: more  when getHeadText fstNode = "roll" -> 
-                    //Let
             | None -> fEmpty penTags
             | _ -> BasicNode(penTags, n, children')
     let fAssign tag label child inExpr =
         Assignment(tag,label,Seq.toList child,Seq.toList inExpr)  
     cata fEmpty fNode fAssign tree 
-
 let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) = 
     let fEmpty tag acc = acc
     let (|EndOfPhase|_|) (tag,acc) node = 
         match node, acc with
-        | Word (Value(Str("At"))), App (Lam ("obj",Var "obj"),Value (Str "end")) :: Value (Str "of") :: App (Lam ("obj",Var "obj"), Value (ParamArray [Value (Str "Phase"); Value (Str phase)])) :: rest -> 
+        | Word (_, Value(Str("At"))), App (Lam ("obj",Var "obj"),Value (Str "end")) :: Value (Str "of") :: App (Lam ("obj",Var "obj"), Value (ParamArray [Value (Str "Phase"); Value (Str phase)])) :: rest -> 
             (phase,rest) |> Some 
         | _ -> None        
 
@@ -340,7 +357,7 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
         match node with
         | EndOfPhase (tag, acc) (phase,rest) -> 
             pennTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
-        | Word (Value(Str(s)) as op ) ->
+        | Word (_, (Value(Str(s)) as op) ) ->
             match tag, acc with 
             | (Some SentenceCloser | Some Comma | Some EQT | Some Punctuation), Value(Str(acc))::rest -> 
                 let s' = sprintf "%s%s" s acc
@@ -349,12 +366,17 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
                 let s' = sprintf "%s %s" s acc
                 pennTags, Value(Str(s')) :: rest
             | _ -> pennTags, op:: acc
-        | Word (Value(Int(n)) as op) when tag = Some EQT -> //EQT 
+        | Word (_, (Value(Int(n)) as op)) when tag = Some EQT -> //EQT 
             match acc with 
             |  Value(Distance(0)) :: rest when tag = Some EQT ->  pennTags, Value(Distance(n)) :: rest
             | _ ->  pennTags, op :: acc
-        | Word op ->  pennTags, op :: acc
+        | Word (_,op) ->  pennTags, op :: acc
         | Node n ->  pennTags, acc
+        | Cont(_, cont) -> 
+            match acc with 
+            | [] -> pennTags, cont (Value NoValue) :: []
+            | item :: [] -> pennTags, cont item :: []
+            | _ :: _ -> pennTags, cont (Value(ParamArray(acc))) :: []
             // match penTags with 
             // | Some WordLevel ->  
             //     penTags, acc
@@ -364,18 +386,17 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
         tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]     
     foldBack fEmpty fNode fAssign tree (None, [])
 let tree =  
-    "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
+    //"At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
     //"Roll a D6 and count the results, then roll another D6 for each success."
-    //"roll a D6 within 1\""
+    "For each unit roll a d6, on a 4+ that unit suffers a mortal wound"
     |> getTree
-tree.pennPrint()
 tree
 |> scanWords 
 |> scanPhrases
 |> foldToOperation
 |> ignore
 
-
+<@ for x in [1;2;3] do x @>
 let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
 let children = head.children() |> Seq.map (fun c -> c.siblings(tree) |> Iterable.castToSeq<Tree> |> Seq.map getHeadText |> Seq.toList) |> Seq.toList
 
