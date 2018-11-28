@@ -675,8 +675,8 @@ let rec evalCall func v env : Operation =
                            | op -> Distribution.always (ParamArray [ op ]))
                     |> Dist
                     |> Value
-                | Str(_) -> failwith "Not Implemented"
-                | Float(_) -> failwith "Not Implemented"
+                | Str s -> failwith <| "Not Implemented: " + s
+                | Float f -> failwith <| "Not Implemented" + f.ToString()
                 | ParamArray(times) -> 
                     times
                     |> List.map (function 
@@ -699,7 +699,7 @@ let rec evalCall func v env : Operation =
             printfn "Times is not a value %A" op2
             noValue
     
-    let fold folder ops state =
+    let fold folder ops state = 
         ops |> List.fold (fun acc op -> 
                    match acc, op with
                    | Value(Dist reduced1), Value(Dist reduced2) -> 
@@ -799,7 +799,13 @@ let rec evalCall func v env : Operation =
         contains gp gp2 |> Value
     | And, Value(ParamArray([ Value(gp); Value(gp2) ])) -> andGp gp gp2 |> Value
     | Or, Value(ParamArray([ Value(gp); Value(gp2) ])) -> orGp gp gp2 |> Value
-    | Repeat, Value(ParamArray([ lam; op2 ])) -> repeat lam op2
+    | Repeat, Value(ParamArray([ lam; op2 ])) -> 
+        try 
+            repeat lam op2
+            
+        with e -> 
+            failwith <| sprintf "%s%A" (e.Message) lam
+            noValue
     | ToDist, Value(ParamArray opList) -> toDist opList |> Value
     | (Total | Division | Product | Count | Max | Min | Sub | Mean | Median | Mode | Least _ | Largest _), 
       Value(Check v) -> 

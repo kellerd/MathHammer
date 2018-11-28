@@ -1,6 +1,5 @@
 #r "../../../../../../.nuget\\packages\\fable.react\\4.0.0-alpha-001\\lib\\netstandard2.0\\Fable.React.dll" 
 #r "../../../../../../.nuget\\packages\\fable.import.browser\\1.3.0\\lib\\netstandard1.6\\Fable.Import.Browser.dll" 
-#r "../../../../../../.nuget\\packages\\fantomas\\2.8.1\\lib\\netstandard2.0\\Fantomas.dll" 
 #r "../../../../../../.nuget\\packages\\argu\\3.7.0\\lib\\netstandard1.6\\Argu.dll" 
 #r "../../../../../../.nuget\\packages\\dotnet.projinfo\\0.9.0\\lib\\netstandard2.0\\Dotnet.ProjInfo.Helpers.dll" 
 #r "../../../../../../.nuget\\packages\\fable.core\\2.0.0-beta-001\\lib\\netstandard2.0\\Fable.Core.dll" 

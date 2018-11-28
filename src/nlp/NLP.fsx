@@ -113,6 +113,7 @@ type Tree<'ITag, 'INodeData> =
     | Empty of 'ITag
     | BasicNode of 'ITag * 'INodeData * Tree<'ITag,'INodeData> list
     | Assignment of 'ITag * label:string * value:Tree<'ITag,'INodeData> list * inExpr:Tree<'ITag,'INodeData> list 
+    | IfThenElseBranch of 'ITag * test:Tree<'ITag,'INodeData> list * thenExpr:Tree<'ITag,'INodeData> list * elseExpr:Tree<'ITag,'INodeData> list option
 type NodeInfo<'a> = NodeInfo of 'a * int
 type Tag = PennTreebankIITags option
 type WordScanNode = 
@@ -146,15 +147,11 @@ let (|TryFloat|_|) n =
     match System.Double.TryParse(n) with 
     | true, n -> Some n 
     | false, _ -> None
-let anyContains (check:string list) (words:string list) = 
-    List.windowed (List.length check) words 
-    |> List.tryFindIndex (fun n -> n = check)
-    |> Option.map (fun i -> words.[0..i+1], words.[i+List.length check..words.Length-1])
-let (|AnyContains|_|) = anyContains
-let (|AllOperations|_|) children = 
-    let check =  List.choose (fun n -> match n with 
+let (|IsOperation|_|) = fun n -> match n with 
                                        | BasicNode(_, NodeInfo(Word (_, op), _), []) -> Some op 
-                                       | _ -> None) children            
+                                       | _ -> None
+let (|AllOperations|_|) children = 
+    let check =  List.choose (|IsOperation|_|) children            
     if List.length check = List.length children then Some check
     else None
 let (|Tagged|_|) t tree = 
@@ -163,12 +160,14 @@ let (|Tagged|_|) t tree =
         | Empty tag -> tag
         | BasicNode(tag, _, _) -> tag
         | Assignment(tag, _, _, _) -> tag
-    printfn "%A" tag    
+        | IfThenElseBranch(tag, _, _, _) -> tag
     if t = tag then Some tree else None 
-let (|Trio|_|) a b c nodes = 
-    match nodes with 
-    | Tagged (Some a) n :: Tagged (Some b) n2 :: Tagged (Some c) n3 :: [] -> Some (n,n2,n3)
-    | _ -> None
+let (|AllTagged|_|) tags nodes = 
+    let matched = 
+        Seq.zip tags nodes 
+        |> Seq.choose(fun (tag, n) -> match n with Tagged(Some tag) n -> Some n | _ -> None)
+    if Seq.isEmpty matched then None
+    else Seq.toList matched |> Some
 let scanWords (tree:Tree) =   
     let (|Siblings|_|) labels check (node:Tree) = 
         // let children = [tree]
@@ -202,8 +201,8 @@ let scanWords (tree:Tree) =
         let word op = Word(node, op) 
         match node with 
         | IsLabeled [EQT] _ -> Distance 0 |> Value |> word , 0        
-        | IsLabeled [NN] "D6" -> App(Call Dice, Value(Int 6)) |> word, 0
-        | IsLabeled [NN] "D3" -> App(Call Dice, Value(Int 3)) |> word, 0
+        | IsLabeled [NN] ("D6"|"d6") -> App(Call Dice, Value(Int 6)) |> word, 0
+        | IsLabeled [NN] ("D3"|"d3") -> App(Call Dice, Value(Int 3)) |> word, 0
         | IsLabeled [NN] ("enemy" | "unit") -> Var("Target") |> word, 0
         | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
         | Siblings [NN;NN]  [(=) "enemy";(=) "unit"] skip   -> Var("unit") |> word, skip
@@ -224,8 +223,8 @@ let scanWords (tree:Tree) =
         let nodeInfo = NodeInfo(wsn, skip)        
         BasicNode (getLabel node, nodeInfo, nodes)
     mapTree tree    
-let rec cata fEmpty fNode fAssign (tree:Tree<'ITag, 'INodeData>) = 
-    let recurse = cata fEmpty fNode fAssign 
+let rec cata fEmpty fNode fAssign ifte (tree:Tree<'ITag, 'INodeData>) = 
+    let recurse = cata fEmpty fNode fAssign ifte
     match tree with
     | Empty tag -> 
          fEmpty tag
@@ -233,8 +232,10 @@ let rec cata fEmpty fNode fAssign (tree:Tree<'ITag, 'INodeData>) =
         fNode tag nodeInfo (subtrees |> Seq.map recurse)
     | Assignment(tag, label, value, inExpr) -> 
         fAssign tag label (value |> Seq.map recurse) (inExpr |> Seq.map recurse)
-let rec fold fEmpty fNode fAssign acc (tree:Tree<'ITag, 'INodeData>) :'r = 
-    let recurse = fold fEmpty fNode fAssign 
+    | IfThenElseBranch(tag, test, thenExpr, elseExpr) -> 
+        ifte tag (test |> Seq.map recurse) (thenExpr |> Seq.map recurse) (elseExpr |> Option.map (Seq.map recurse))
+let rec fold fEmpty fNode fAssign ifte acc (tree:Tree<'ITag, 'INodeData>) :'r = 
+    let recurse = fold fEmpty fNode fAssign ifte
     match tree with
     | Empty tag -> 
         fEmpty tag acc 
@@ -250,8 +251,19 @@ let rec fold fEmpty fNode fAssign acc (tree:Tree<'ITag, 'INodeData>) :'r =
         let vAccum = value |> Seq.fold recurse localAccum
         let finalAccum = inExpr |> Seq.fold recurse vAccum 
         finalAccum
-let rec foldBack fEmpty fNode fAssign (tree:Tree<'ITag, 'INodeData>) acc : 'r = 
-    let recurse = foldBack fEmpty fNode fAssign 
+    | IfThenElseBranch(tag, test, thenExpr, elseExpr) -> 
+        let localAccum = ifte tag acc    
+        let tAccum = test |> Seq.fold recurse localAccum
+        let thenAccum = thenExpr |> Seq.fold recurse localAccum 
+        match elseExpr with 
+        | Some elseExpr -> 
+            elseExpr |> Seq.fold recurse thenAccum
+        | None -> 
+            thenAccum     
+
+
+let rec foldBack fEmpty fNode fAssign ifte (tree:Tree<'ITag, 'INodeData>) acc : 'r = 
+    let recurse = foldBack fEmpty fNode fAssign  ifte
     match tree with
     | Empty tag -> 
         fEmpty tag acc 
@@ -266,16 +278,29 @@ let rec foldBack fEmpty fNode fAssign (tree:Tree<'ITag, 'INodeData>) acc : 'r =
         let vAccum = Seq.foldBack recurse value acc
         let expr = Seq.foldBack recurse inExpr acc 
         fAssign tag label vAccum expr
+    | IfThenElseBranch(tag, test, thenExpr, elseExpr) -> 
+        let vAccum = Seq.foldBack recurse test acc
+        let expr = Seq.foldBack recurse thenExpr acc 
+        match elseExpr with 
+        | Some elseExpr -> 
+            let elseExpr = Seq.foldBack recurse thenExpr acc 
+            ifte tag vAccum expr (Some elseExpr)
+        | None -> 
+            ifte tag vAccum expr None        
+                
 let skipChildren children = 
     Seq.fold(fun (num,acc) t -> 
                 if num > 0 then num - 1, acc
                 else match t with 
                      | Empty _ -> num, acc
                      | BasicNode(_, NodeInfo(_, skip),_) -> skip, t::acc
-                     | Assignment(_, label, value, inExpr) -> num, t::acc) (0,[]) children |> snd |> Seq.rev |> Seq.toList 
+                     | Assignment _ -> (num, t::acc) 
+                     | IfThenElseBranch _ -> num, t::acc) (0,[]) children |> snd |> Seq.rev |> Seq.toList 
 
 let (|AsText|_|) t n = 
     match t, n with 
+    | None,              BasicNode (_, NodeInfo (Word (_, Value(Str label)),_),_) -> Some label
+    | None,              BasicNode (_, NodeInfo (Word (_, Var label),_),_) -> Some label
     | None,              BasicNode (_, NodeInfo (Word (label, _),_),_) 
     | Some _,  Tagged t (BasicNode (_, NodeInfo (Word (label, _),_),_))
     | None,              BasicNode(_, NodeInfo(Node label, _),_) 
@@ -288,6 +313,24 @@ let (|AllWords|_|) n =
         String.concat " " textOnly  |> Some
     else 
         None
+let (|IsD6Plus|_|) = function 
+    BasicNode(Some NP, 
+              NodeInfo(Word(_, App (Call Repeat, 
+                                    Value (ParamArray [Value (Int _);
+                                                       Lam ("roll",
+                                                            Let ("gt", App (Call GreaterThan, Value (ParamArray [Var "roll"; Value (Int _)])),
+                                                               Let ("eq", App (Call Equals, Value(ParamArray [Var "roll"; Value (Int _)])),
+                                                                   App (Call Or, Value (ParamArray [Var "eq"; Var "gt"])))))]))),_), []) as n -> Some n
+        
+
+    | _ -> None                     
+let (|IsDice|_|) n = 
+    match n with
+    | BasicNode(Some NP,  
+                NodeInfo(Word(_, App (Call Repeat, 
+                                      Value (ParamArray [Value (Int _); 
+                                                         App (Call Dice,Value (Int _))]))),_),_) as n  -> Some n
+    | _ -> None
 let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<WordScanNode>> =
     // let node = 
     //     ("""At the end of the Fight phase, roll a 
@@ -336,20 +379,29 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
                 | _ -> BasicNode(penTags, n, children')                 
             | Some VP -> 
                 match children' with 
-                | Trio VB S SBAR (AsText (Some VB) ("roll" as t), v, inExpr) -> 
+                | AllTagged [VB;S;SBAR] [AsText (Some VB) ("roll" as t); v; inExpr] -> 
                     Assignment(penTags, t, [v], [inExpr])
-                | _ -> 
+                | AllTagged [VBP;NP;PP;SBAR] [ AsText (Some VBP) ("roll" as t)
+                                               IsDice dieRoll
+                                               BasicNode (Some PP, _,  [AsText (Some IN) ("on"); IsD6Plus (dplus)])
+                                               thenExpr ] ->
+                    let ifThenOp = IfThenElseBranch(Some PP, [dplus], [thenExpr], None)
+                    Assignment(penTags, t, [dieRoll], [ifThenOp])
+                | xs ->  
+                    List.iter(function BasicNode(Some tag,_,_) -> tag |> printfn "%A"| _ -> printfn "Nothing") xs
                     BasicNode(penTags, n, children')  
             | None -> fEmpty penTags
             | _ -> BasicNode(penTags, n, children')
     let fAssign tag label child inExpr =
         Assignment(tag,label,Seq.toList child,Seq.toList inExpr)  
-    cata fEmpty fNode fAssign tree 
+    let ifte tag test thenExpr elseExpr =
+        IfThenElseBranch(tag,Seq.toList  test,Seq.toList  thenExpr,Option.map Seq.toList elseExpr)        
+    cata fEmpty fNode fAssign ifte tree 
 let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) = 
     let fEmpty tag acc = acc
     let (|EndOfPhase|_|) (tag,acc) node = 
         match node, acc with
-        | Word (_, Value(Str("At"))), App (Lam ("obj",Var "obj"),Value (Str "end")) :: Value (Str "of") :: App (Lam ("obj",Var "obj"), Value (ParamArray [Value (Str "Phase"); Value (Str phase)])) :: rest -> 
+        | Word (_, Value(Str("At"|"at"))), App (Call Repeat, Value (ParamArray [Lam ("obj",Var "obj"); Value (Str "end")])) :: Value (Str "of") :: App (Call Repeat, Value (ParamArray [Lam ("obj",Var "obj"); Value (ParamArray [Value (Str "Phase"); Value (Str phase)])])) :: rest -> 
             (phase,rest) |> Some 
         | _ -> None        
 
@@ -374,21 +426,24 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
         | Node n ->  pennTags, acc
         | Cont(_, cont) -> 
             match acc with 
-            | [] -> pennTags, cont (Value NoValue) :: []
-            | item :: [] -> pennTags, cont item :: []
-            | _ :: _ -> pennTags, cont (Value(ParamArray(acc))) :: []
+            | [] -> pennTags, [cont (Value NoValue)] 
+            | [item] -> pennTags, [cont item] 
+            | _ :: _ -> pennTags, [cont (Value(ParamArray(acc)))]
             // match penTags with 
             // | Some WordLevel ->  
             //     penTags, acc
             // | Some penTags -> Some penTags, acc
             // | None -> penTags, acc
     let fAssign tag label (_, vAccum) (_, inExpr) = 
-        tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]     
-    foldBack fEmpty fNode fAssign tree (None, [])
+        tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]    
+    let ifte tag (_, test) (_,thenExpr) elseExpr = 
+        tag, [IfThenElse(ParamArray test |> Value,ParamArray thenExpr  |> Value, elseExpr |> Option.map (snd >> ParamArray >> Value))]     
+    foldBack fEmpty fNode fAssign ifte tree (None, [])
 let tree =  
     //"At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
     //"Roll a D6 and count the results, then roll another D6 for each success."
     "For each unit roll a d6, on a 4+ that unit suffers a mortal wound"
+    //"If the hit result is 6, count the result as two hits, otherwise thr attack fails"
     |> getTree
 tree
 |> scanWords 
@@ -396,81 +451,11 @@ tree
 |> foldToOperation
 |> ignore
 
-<@ for x in [1;2;3] do x @>
 let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
 let children = head.children() |> Seq.map (fun c -> c.siblings(tree) |> Iterable.castToSeq<Tree> |> Seq.map getHeadText |> Seq.toList) |> Seq.toList
 
 tree.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag())
 tree.``yield``() |> Iterable.castToSeq<CoreLabel> |> Seq.iter(fun n -> printfn "%s" (n.word()))
-    
-let getKeyPhrases (tree:Tree) =
-    let rec foldTree acc (node:Tree) =
-        let acc =
-            if node.isLeaf() then acc
-            else node.getChildrenAsList()
-                 |> Iterable.castToSeq<Tree>
-                 |> Seq.fold foldTree acc
-        match node with 
-        | IsLabeledWith [NP] (text, ChildrenLabeled [NN;NNS;NNP;NNPS] childtext ) -> node :: acc
-        | _ -> acc      
-
-
-    let isNNx =  function
-        | Label NN | Label NNS
-        | Label NNP | Label NNPS -> true
-        | _ -> false
-    let isNPwithNNx = function
-        | Label NP as node ->
-            node.getChildrenAsList()
-            |> Iterable.castToSeq<Tree>
-            |> Seq.exists isNNx
-        | _ -> false
-    let rec foldTree acc (node:Tree) =
-        let acc =
-            if node.isLeaf() then acc
-            else node.getChildrenAsList()
-                 |> Iterable.castToSeq<Tree>
-                 |> Seq.fold foldTree acc
-        if isNPwithNNx node
-          then node :: acc
-          else acc
-    foldTree [] tree
-
-
-
-
-
-
-
-
-
-    tree.pennPrint()
-    foldTree [] tree    
-
-getKeyPhrases tree
-
-// let getKeyPhrases (tree:Tree) =
-//     tree.pennPrint()
-//     let isNNx =  function
-//         | Label NN | Label NNS
-//         | Label NNP | Label NNPS -> true
-//         | _ -> false
-//     let isNPwithNNx = function
-//         | Label NP as node ->
-//             node.getChildrenAsList()
-//             |> Iterable.castToSeq<Tree>
-//             |> Seq.exists isNNx
-//         | _ -> false
-//     let rec foldTree acc (node:Tree) =
-//         let acc =
-//             if node.isLeaf() then acc
-//             else node.getChildrenAsList()
-//                  |> Iterable.castToSeq<Tree>
-//                  |> Seq.fold foldTree acc
-//         if isNPwithNNx node
-//           then node :: acc
-//           else acc
-//     foldTree [] tree
 
 let escape_string (str : string) =
    let buf = System.Text.StringBuilder(str.Length)
@@ -488,25 +473,18 @@ let escape_string (str : string) =
 let nlpRule (s:string) = s |> escape_string     
 
 let questions =
-    [|" When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or
+    [ " When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or
 an additional 3 mortal wounds if it contains 6 Zoanthropes."
       "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain."
       "You can re-roll failed charge rolls for units with this adaptation."
       "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation."
       "Use this Stratagem at the end of the Fight phase. Select a TYRANIDS unit from your army – that unit can immediately fight again."
-      "If a rule requires you to roll a D3, roll a D6 and halve the result." |]
-// let doq question =     
-//     printfn "Question : %s" question
-//     question
-//     |> getTree
-//     |> 
-//     getKeyPhrases tree
-//     |> List.rev
-//     |> List.iter (fun p ->
-//         p.getLeaves()
-//         |> Iterable.castToArray<Tree>
-//         |> Array.map(fun x-> x.label().value())
-//         |> printfn "\t%A")
-// questions
-// |> Seq.skip 5
-// |> Seq.iter doq 
+      "If a rule requires you to roll a D3, roll a D6 and halve the result." ]
+
+questions 
+|> List.map (
+       getTree
+    >> scanWords 
+    >> scanPhrases
+    >> foldToOperation
+)
