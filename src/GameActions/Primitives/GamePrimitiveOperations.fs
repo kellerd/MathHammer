@@ -419,7 +419,11 @@ let checkGp f =
     
     checkGp'
 
-let rec andGp = checkGp Check.all
+let andGp = checkGp Check.all
 
-let rec orGp = checkGp Check.either
+let orGp = checkGp Check.either
 
+let fMap lam list = 
+    match list with 
+    | Value (ParamArray ops) -> List.map (fun op -> App(lam, op)) ops |> ParamArray |> Value 
+    | op -> App(lam, op)

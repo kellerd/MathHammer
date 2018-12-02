@@ -23,6 +23,20 @@ let showAttributes ((key : string), operation) dispatch =
           GameActions.Primitives.View.probabilities operation dispatch ]
 
 let rangeStops (dist : Distribution.Distribution<_>) =
+
+    let (|IntCheck|_|) =
+        function 
+        | Int(i) | Check(Check.Pass(Int(i))) -> Check.Pass i |> Some
+        | Check(Check.Fail(Int(i))) -> Check.Fail i |> Some
+        | Check(Check.Pass(Float(f))) -> Check.Pass(int f) |> Some
+        | Check(Check.Fail(Float(f))) -> Check.Fail(int f) |> Some
+        | Float(f) -> Check.Pass(int f) |> Some
+        | Str(_) -> None
+        | Check(_) -> None
+        | NoValue -> Check.Fail 0 |> Some
+        | Dist(_) -> None
+        | ParamArray(_) -> None
+        | Tuple(_) -> None
     let minRange, maxRange, _, _ =
         { dist with Probabilities = dist.Probabilities |> List.rev }
         |> Distribution.choose (function 

@@ -44,27 +44,33 @@ and Call =
     | Mode
     | Least
     | Largest
+    | FMap
 
 //| Reroll of (int list) * Die
 let rec (|IsDistribution|_|) =
     function 
     | Value(Dist(d)) | Let(_, IsDistribution(d), _) -> Some d
     | _ -> None
-
-let (|IntCheck|_|) =
+let rec (|AsElseIfs|_|) =
     function 
-    | Int(i) | Check(Check.Pass(Int(i))) -> Check.Pass i |> Some
-    | Check(Check.Fail(Int(i))) -> Check.Fail i |> Some
-    | Check(Check.Pass(Float(f))) -> Check.Pass(int f) |> Some
-    | Check(Check.Fail(Float(f))) -> Check.Fail(int f) |> Some
-    | Float(f) -> Check.Pass(int f) |> Some
-    | Str(_) -> None
-    | Check(_) -> None
-    | NoValue -> Check.Fail 0 |> Some
-    | Dist(_) -> None
-    | ParamArray(_) -> None
-    | Tuple(_) -> None
-
+    | IfThenElse(ifExpr, thenExpr, Some(AsElseIfs(ifThens))) -> 
+        Some((Some ifExpr, thenExpr) :: ifThens)
+    | IfThenElse(ifExpr, thenExpr, Some(elseEnd)) -> 
+        Some([ Some ifExpr, thenExpr
+               None, elseEnd ])
+    | IfThenElse(ifExpr, thenExpr, None) -> Some [ Some ifExpr, thenExpr ]
+    | _ -> None
+let applyManyIfs ifThens =
+    let rec halp ifThens =
+        match ifThens with
+        | [] -> None
+        | [ None, elseExpr ] -> Some elseExpr
+        | (Some ifExpr, thenExpr) :: xs -> 
+            IfThenElse(ifExpr, thenExpr, halp xs) |> Some
+        | _ -> None
+    match halp ifThens with
+    | Some v -> v
+    | None -> Value(NoValue)
 type GamePrimitive with
     static member Zero = NoValue
     

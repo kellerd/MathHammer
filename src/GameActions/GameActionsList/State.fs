@@ -76,16 +76,16 @@ let table ifThen =
     | Some o -> o
 
 let sVsT =
-    [ [ get "S"
-        getd "T" ]
+    [ [ get "S"  |> call Mode
+        getd "T" |> call Mode ]
       |> opList
       |> call GreaterThan, dPlus 6 3
-      [ get "S"
-        getd "T" ]
+      [ get "S"  |> call Mode
+        getd "T" |> call Mode]
       |> opList
       |> call LessThan, dPlus 6 5
-      [ get "S"
-        getd "T" ]
+      [ get "S"  |> call Mode
+        getd "T" |> call Mode ]
       |> opList
       |> call Equals, dPlus 6 4 ]
     |> table
@@ -99,23 +99,23 @@ let toWound =
     |> lam "Hit Results"
 
 let armourSave =
-    repeatOp (getd "Sv") (get "Wound Results")
+    repeatOp (getd "Sv" |> call Min) (get "Wound Results")
     |> total
     |> lam "Wound Results"
     |> lam "Defender"
 
 let allinOne =
     bindOp "Hit Results" (repeatOp (get "WS") (get "A") |> total) 
-        (bindOp "Wound Results" (repeatOp ([ [ get "S"
-                                               getd "T" ]
+        (bindOp "Wound Results" (repeatOp ([ [ get "S"  |> call Mode
+                                               getd "T" |> call Mode ]
                                              |> opList
                                              |> call GreaterThan, dPlus 6 3
-                                             [ get "S"
-                                               getd "T" ]
+                                             [ get "S"  |> call Mode
+                                               getd "T"  |> call Mode ]
                                              |> opList
                                              |> call LessThan, dPlus 6 5
-                                             [ get "S"
-                                               getd "T" ]
+                                             [ get "S"  |> call Mode
+                                               getd "T" |> call Mode ]
                                              |> opList
                                              |> call Equals, dPlus 6 4 ]
                                            |> table) (get "Hit Results")

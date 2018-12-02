@@ -109,8 +109,8 @@ let applyMany argList operationBody argValues =
 let choose name choiceList = Choice(name, choiceList)
 let defenderMap = "Defender"
 let attackerMap = "Attacker"
-let getd p = getp p (get "Defender")
-let geta p = getp p (get "Attacker")
+let getd p = [ Lam("Defender", getp p (get "Defender")); get "Defender" ] |> opList |> call FMap
+let geta p = [ Lam("Attacker", getp p (get "Attacker")); get "Attacker" ] |> opList |> call FMap
 
 let rec isInUse s =
     function 
@@ -840,6 +840,8 @@ let rec evalCall func v env : Operation =
         results
         |> Dist
         |> Value
+    | FMap, Value(ParamArray [lam;op])  -> 
+        fMap lam op |> evalOp env 
     | (f, x) -> App(Call f, x)
 
 and evalOp env (operation : Operation) : Operation =

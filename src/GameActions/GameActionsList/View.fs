@@ -77,29 +77,6 @@ let card dispatch name v foot =
                              |> ofOption ]
       br [] ]
     |> ofList
-
-let rec (|AsElseIfs|_|) =
-    function 
-    | IfThenElse(ifExpr, thenExpr, Some(AsElseIfs(ifThens))) -> 
-        Some((Some ifExpr, thenExpr) :: ifThens)
-    | IfThenElse(ifExpr, thenExpr, Some(elseEnd)) -> 
-        Some([ Some ifExpr, thenExpr
-               None, elseEnd ])
-    | IfThenElse(ifExpr, thenExpr, None) -> Some [ Some ifExpr, thenExpr ]
-    | _ -> None
-
-let applyManyIfs ifThens =
-    let rec halp ifThens =
-        match ifThens with
-        | [] -> None
-        | [ None, elseExpr ] -> Some elseExpr
-        | (Some ifExpr, thenExpr) :: xs -> 
-            IfThenElse(ifExpr, thenExpr, halp xs) |> Some
-        | _ -> None
-    match halp ifThens with
-    | Some v -> v
-    | None -> Value(NoValue)
-
 let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
     let unparseEquation dragging operation envIcons dispatch =
         let rec unparseV envIcons (dispatch : GamePrimitive -> unit) =
@@ -291,6 +268,7 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
             | Min -> "Min "
             | Sub -> "Sub "
             | Median -> "Median "
+            | FMap -> "Map "
             | Mean -> "Mean "
             | Mode -> "Mode "
             | Least -> "Least "

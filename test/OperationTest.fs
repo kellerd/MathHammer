@@ -5,7 +5,6 @@ open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open GameActions.GameActionsList.State
 open FsCheckGen
-open GameActions.GameActionsList.View
 open GameActions.Primitives.TypeChecker
 
 let (==?) x y = Expect.equal x y ""
