@@ -15,24 +15,74 @@ module Rule =
     let _ = ignore
     let ``KEYWORDS`` = 
         Value
-          (Str
-             "Throughout this section you will come across a keyword that is within angular specifically <HIVE FLEET> This is shorthand for a keyword of your own choosing as described below")
+          (ParamArray
+             [Value (Str "Throughout"); Lam ("obj",Var "obj");
+              Value (Str "section you will come across"); Value (Int 1);
+              Value (Str "keyword that is within angular specifically <HIVE FLEET>");
+              Lam ("obj",Var "obj"); Value (Str "is shorthand for"); Value (Int 1);
+              Value (Str "keyword of your own choosing as described below")])
     let ``<HIVE FLEET>`` = 
         Value
-          (Str
-             "All Tyranids belong to a hive fleet When you include a Tyranids unit in your army you must nominate which hive fleet that unit is from There are many different hive to choose from you can use any of the hive described in this book or make up your own if you prefer You then simply replace the <HIVE FLEET> keyword in every instance on that unit 's datasheet and in any psychic they know with the name of your chosen hive fleet For example if you were to include a Tervigon in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor ability would say You can re-roll hit of 1 in the Shooting phase for friendly KRAKEN Termagant within 6 of this model")
+          (ParamArray
+             [Lam ("obj",Var "obj"); Value (Str "Tyranids belong to"); Value (Int 1);
+              Value (Str "hive fleet When you include"); Value (Int 1);
+              Value (Str "Tyranids"); Var "Target";
+              Value (Str "in your army you must nominate which hive fleet that");
+              Var "Target";
+              Value
+                (Str "is from There are many different hive to choose from you can use");
+              Lam ("obj",Var "obj"); Value (Str "of"); Lam ("obj",Var "obj");
+              Value (Str "hive described in"); Lam ("obj",Var "obj");
+              Value
+                (Str "book or make up your own if you prefer You then simply replace");
+              Lam ("obj",Var "obj"); Value (Str "<HIVE FLEET> keyword in");
+              Lam ("obj",Var "obj"); Value (Str "instance on"); Lam ("obj",Var "obj");
+              Var "Target"; Value (Str "'s datasheet and in"); Lam ("obj",Var "obj");
+              Value (Str "psychic they know with"); Lam ("obj",Var "obj");
+              Value
+                (Str "name of your chosen hive fleet For example if you were to include");
+              Value (Int 1);
+              Value
+                (Str
+                   "Tervigon in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
+              Value (Distance 0); Value (Str "ability would say You can re-roll hit of");
+              Value (Int 1); Value (Str "in"); Lam ("obj",Var "obj");
+              Value (Str "Shooting phase for friendly KRAKEN Termagant within");
+              Value (Distance 6); Value (Str "of"); Lam ("obj",Var "obj");
+              Value (Str "model"); Value (Distance 0)])
     let ``SYNAPSE`` = 
         Value
-          (Str
-             "<HIVE FLEET> automatically pass Morale tests if they are within 12 of any friendly <HIVE FLEET> with this ability")
+          (ParamArray
+             [Value
+                (Str "<HIVE FLEET> automatically pass Morale tests if they are within");
+              Value (Distance 12); Value (Str "of"); Lam ("obj",Var "obj");
+              Value (Str "friendly <HIVE FLEET> with"); Lam ("obj",Var "obj");
+              Value (Str "ability")])
     let ``INSTINCTIVE BEHAVIOUR`` = 
         Value
-          (Str
-             "Unless a <HIVE FLEET> unit with this ability is within 24 of any friendly <HIVE FLEET> SYNAPSE unit you must subtract 1 from any hit made for it when shooting any target other than the nearest visible enemy unit and you must subtract 2 from its charge roll if it declares a charge against any unit other than the nearest enemy unit")
+          (ParamArray
+             [Value (Str "Unless"); Value (Int 1); Value (Str "<HIVE FLEET>");
+              Var "Target"; Value (Str "with"); Lam ("obj",Var "obj");
+              Value (Str "ability is within"); Value (Distance 24); Value (Str "of");
+              Lam ("obj",Var "obj"); Value (Str "friendly <HIVE FLEET> SYNAPSE");
+              Var "Target"; Value (Str "you must subtract"); Value (Int 1);
+              Value (Str "from"); Lam ("obj",Var "obj");
+              Value (Str "hit made for it when shooting"); Lam ("obj",Var "obj");
+              Value (Str "target other than"); Lam ("obj",Var "obj");
+              Value (Str "nearest visible"); Var "Target"; Var "Target";
+              Value (Str "and you must subtract"); Value (Int 2);
+              Value (Str "from its charge roll if it declares"); Value (Int 1);
+              Value (Str "charge against"); Lam ("obj",Var "obj"); Var "Target";
+              Value (Str "other than"); Lam ("obj",Var "obj"); Value (Str "nearest");
+              Var "Target"; Var "Target"])
     let ``SHADOW IN THE WARP`` = 
         Value
-          (Str
-             "Enemy must subtract 1 from any Psychic they make if they are within 18 of any with this ability TYRANID PSYKERS are not affected")
+          (ParamArray
+             [Value (Str "Enemy must subtract"); Value (Int 1); Value (Str "from");
+              Lam ("obj",Var "obj"); Value (Str "Psychic they make if they are within");
+              Value (Distance 18); Value (Str "of"); Lam ("obj",Var "obj");
+              Value (Str "with"); Lam ("obj",Var "obj");
+              Value (Str "ability TYRANID PSYKERS are not affected")])
     let _ = 
         Value (Str "TYRANIDS WARGEAR LISTS")
     let ``BASIC BIO-WEAPONS`` = 
@@ -45,8 +95,13 @@ module Rule =
         Value (Str "rending Monstrous boneswords Lash whip and monstrous bonesword")
     let ``MONSTROUS BIO-CANNONS`` = 
         Value
-          (Str
-             "Two with slimer Two with brainleech Stranglethorn cannon * Heavy venom cannon * * A model can not be armed with more than one of these")
+          (ParamArray
+             [Value
+                (Str
+                   "Two with slimer Two with brainleech Stranglethorn cannon * Heavy venom cannon * *");
+              Lam ("obj",Var "obj");
+              Value (Str "model can not be armed with more than one of");
+              Lam ("obj",Var "obj")])
     let ``Acid maw`` = 
         Value
           (ParamArray
@@ -67,8 +122,22 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "Each time the bearer fights it can make one and only one attack with this weapon This is in addition to the bearer 's If a unit suffers any unsaved from this weapon add 1 to any Morale they take until the end of the turn")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj"); Value (Str "time");
+                          Lam ("obj",Var "obj");
+                          Value
+                            (Str
+                               "bearer fights it can make one and only one attack with");
+                          Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",Var "obj"); Value (Str "is in addition to");
+                          Lam ("obj",Var "obj"); Value (Str "bearer 's If");
+                          Value (Int 1); Var "Target"; Call Suffer;
+                          Lam ("obj",Var "obj"); Value (Str "unsaved from");
+                          Lam ("obj",Var "obj"); Value (Str "weapon add"); Value (Int 1);
+                          Value (Str "to"); Lam ("obj",Var "obj");
+                          Value (Str "Morale they take until"); Lam ("obj",Var "obj");
+                          Value (Str "end of"); Lam ("obj",Var "obj");
+                          Value (Str "turn")])])])
     let ``Blinding venom`` = 
         Value
           (ParamArray
@@ -81,8 +150,15 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "If a unit suffers any unsaved from this weapon your opponent must subtract 1 from hit for that unit until the end of the turn")])])
+                      (ParamArray
+                         [Value (Str "If"); Value (Int 1); Var "Target"; Call Suffer;
+                          Lam ("obj",Var "obj"); Value (Str "unsaved from");
+                          Lam ("obj",Var "obj");
+                          Value (Str "weapon your opponent must subtract");
+                          Value (Int 1); Value (Str "from hit for");
+                          Lam ("obj",Var "obj"); Var "Target"; Value (Str "until");
+                          Lam ("obj",Var "obj"); Value (Str "end of");
+                          Lam ("obj",Var "obj"); Value (Str "turn")])])])
     let ``Bone mace`` = 
         Value
           (ParamArray
@@ -95,8 +171,15 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "Each time the bearer fights it can make one and only one attack with this weapon This is in addition to the bearer 's")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj"); Value (Str "time");
+                          Lam ("obj",Var "obj");
+                          Value
+                            (Str
+                               "bearer fights it can make one and only one attack with");
+                          Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",Var "obj"); Value (Str "is in addition to");
+                          Lam ("obj",Var "obj"); Value (Str "bearer 's")])])])
     let ``Bone sabres`` = 
         Value
           (ParamArray
@@ -109,8 +192,27 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "Each time you make a wound roll of 6 for this weapon the target unit suffers a mortal wound in addition to any other damage")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj"); Value (Str "time you make");
+                          Value (Int 1); Value (Str "wound roll of");
+                          Lam
+                            ("roll",
+                             Let
+                               ("gt",
+                                App
+                                  (Call GreaterThan,
+                                   Value (ParamArray [Var "roll"; Value (Int 6)])),
+                                Let
+                                  ("eq",
+                                   App
+                                     (Call Equals,
+                                      Value (ParamArray [Var "roll"; Value (Int 6)])),
+                                   App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                          Value (Str "for"); Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",Var "obj"); Value (Str "target"); Var "Target";
+                          Call Suffer; Value (Int 1);
+                          Value (Str "Mortal Wound in addition to");
+                          Lam ("obj",Var "obj"); Value (Str "other damage")])])])
     let ``Boneswords`` = 
         Value
           (ParamArray
@@ -123,8 +225,11 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "A model armed with can make 1 additional attack with them in the Fight phase")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj"); Value (Str "model armed with can make");
+                          Value (Int 1); Value (Str "additional attack with them in");
+                          Lam ("obj",Var "obj");
+                          Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")])])])])
     let ``Claws and teeth`` = 
         Value
           (ParamArray
@@ -145,8 +250,11 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "When attacking with this weapon you must subtract 1 from the hit roll")])])
+                      (ParamArray
+                         [Value (Str "When attacking with"); Lam ("obj",Var "obj");
+                          Value (Str "weapon you must subtract"); Value (Int 1);
+                          Value (Str "from"); Lam ("obj",Var "obj");
+                          Value (Str "hit roll")])])])
     let ``Distensible jaws`` = 
         Value
           (ParamArray
@@ -159,8 +267,13 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "Each time the bearer fights one and only one of its must be made with this weapon")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj"); Value (Str "time");
+                          Lam ("obj",Var "obj");
+                          Value
+                            (Str
+                               "bearer fights one and only one of its must be made with");
+                          Lam ("obj",Var "obj"); Value (Str "weapon")])])])
     let ``Grasping talons`` = 
         Value
           (ParamArray
@@ -181,8 +294,18 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "If the bearer is slain in the Fight phase before it has made its leave it where it is When its unit is chosen to fight in that phase the bearer can do so as normal before being removed from the battlefield")])])
+                      (ParamArray
+                         [Value (Str "If"); Lam ("obj",Var "obj");
+                          Value (Str "bearer is slain in"); Lam ("obj",Var "obj");
+                          Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                          Value
+                            (Str "before it has made its leave it where it is When its");
+                          Var "Target"; Value (Str "is chosen to fight in");
+                          Lam ("obj",Var "obj"); Value (Str "phase");
+                          Lam ("obj",Var "obj");
+                          Value
+                            (Str "bearer can do so as normal before being removed from");
+                          Lam ("obj",Var "obj"); Value (Str "battlefield")])])])
     let ``Lash whip and monstrous bonesword`` = 
         Value
           (ParamArray
@@ -195,8 +318,18 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "If the bearer is slain in the Fight phase before it has made its leave it where it is When its unit is chosen to fight in that phase the bearer can do so as normal before being removed from the battlefield")])])
+                      (ParamArray
+                         [Value (Str "If"); Lam ("obj",Var "obj");
+                          Value (Str "bearer is slain in"); Lam ("obj",Var "obj");
+                          Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                          Value
+                            (Str "before it has made its leave it where it is When its");
+                          Var "Target"; Value (Str "is chosen to fight in");
+                          Lam ("obj",Var "obj"); Value (Str "phase");
+                          Lam ("obj",Var "obj");
+                          Value
+                            (Str "bearer can do so as normal before being removed from");
+                          Lam ("obj",Var "obj"); Value (Str "battlefield")])])])
     let ``Massive crushing claws`` = 
         Value
           (ParamArray
@@ -209,8 +342,11 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "When attacking with this weapon you must subtract 1 from the hit roll")])])
+                      (ParamArray
+                         [Value (Str "When attacking with"); Lam ("obj",Var "obj");
+                          Value (Str "weapon you must subtract"); Value (Int 1);
+                          Value (Str "from"); Lam ("obj",Var "obj");
+                          Value (Str "hit roll")])])])
     let ``Massive scything talons`` = 
         Value
           (ParamArray
@@ -223,8 +359,17 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "You can re-roll hit of 1 for this weapon If the bearer has more than one pair of monstrous/massive scything it can make 1 additional attack with this weapon each time it fights")])])
+                      (ParamArray
+                         [Value (Str "You can re-roll hit of"); Value (Int 1);
+                          Value (Str "for"); Lam ("obj",Var "obj");
+                          Value (Str "weapon If"); Lam ("obj",Var "obj");
+                          Value
+                            (Str
+                               "bearer has more than one pair of monstrous/massive scything it can make");
+                          Value (Int 1); Value (Str "additional attack with");
+                          Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                          Value (Str "time it fights")])])])
     let ``Massive toxic lashes (melee)`` = 
         Value
           (ParamArray
@@ -237,8 +382,23 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "You can re-roll failed wound for this weapon A model armed with this weapon always fights first in the Fight phase even if it did n't charge If the enemy has that have charged or that have a similar ability then alternate choosing to fight with starting with the player whose turn is taking place")])])
+                      (ParamArray
+                         [Value (Str "You can re-roll failed wound for");
+                          Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",Var "obj"); Value (Str "model armed with");
+                          Lam ("obj",Var "obj");
+                          Value (Str "weapon always fights first in");
+                          Lam ("obj",Var "obj");
+                          Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                          Value (Str "even if it did n't charge If");
+                          Lam ("obj",Var "obj"); Var "Target";
+                          Value (Str "has that have charged or that have");
+                          Value (Int 1);
+                          Value
+                            (Str
+                               "similar ability then alternate choosing to fight with starting with");
+                          Lam ("obj",Var "obj");
+                          Value (Str "player whose turn is taking place")])])])
     let ``Monstrous acid maw`` = 
         Value
           (ParamArray
@@ -259,8 +419,12 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "A model armed with monstrous can make 1 additional attack with them in the Fight phase")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj");
+                          Value (Str "model armed with monstrous can make");
+                          Value (Int 1); Value (Str "additional attack with them in");
+                          Lam ("obj",Var "obj");
+                          Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")])])])])
     let ``Monstrous crushing claws`` = 
         Value
           (ParamArray
@@ -273,8 +437,11 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "When attacking with this weapon you must subtract 1 from the hit roll")])])
+                      (ParamArray
+                         [Value (Str "When attacking with"); Lam ("obj",Var "obj");
+                          Value (Str "weapon you must subtract"); Value (Int 1);
+                          Value (Str "from"); Lam ("obj",Var "obj");
+                          Value (Str "hit roll")])])])
     let ``Monstrous rending claws`` = 
         Value
           (ParamArray
@@ -287,8 +454,28 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "You can re-roll failed wound for this weapon In addition each time you make a wound roll of 6 that hit is resolved with an AP of -6 and Damage of 3")])])
+                      (ParamArray
+                         [Value (Str "You can re-roll failed wound for");
+                          Lam ("obj",Var "obj"); Value (Str "weapon In addition");
+                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                          Value (Str "time you make"); Value (Int 1);
+                          Value (Str "wound roll of");
+                          Lam
+                            ("roll",
+                             Let
+                               ("gt",
+                                App
+                                  (Call GreaterThan,
+                                   Value (ParamArray [Var "roll"; Value (Int 6)])),
+                                Let
+                                  ("eq",
+                                   App
+                                     (Call Equals,
+                                      Value (ParamArray [Var "roll"; Value (Int 6)])),
+                                   App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                          Value (Str "that hit is resolved with"); Lam ("obj",Var "obj");
+                          Value (Str "AP of"); Value (Int -6);
+                          Value (Str "and Damage of"); Value (Int 3)])])])
     let ``Monstrous scything talons`` = 
         Value
           (ParamArray
@@ -301,8 +488,17 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "You can re-roll hit of 1 for this weapon If the bearer has more than one pair of monstrous/massive scything it can make 1 additional attack with this weapon each time it fights")])])
+                      (ParamArray
+                         [Value (Str "You can re-roll hit of"); Value (Int 1);
+                          Value (Str "for"); Lam ("obj",Var "obj");
+                          Value (Str "weapon If"); Lam ("obj",Var "obj");
+                          Value
+                            (Str
+                               "bearer has more than one pair of monstrous/massive scything it can make");
+                          Value (Int 1); Value (Str "additional attack with");
+                          Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                          Value (Str "time it fights")])])])
     let ``Powerful limbs`` = 
         Value
           (ParamArray
@@ -323,8 +519,15 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "Each time the bearer fights it can make one and only one attack with this weapon This is in addition to the bearer 's")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj"); Value (Str "time");
+                          Lam ("obj",Var "obj");
+                          Value
+                            (Str
+                               "bearer fights it can make one and only one attack with");
+                          Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",Var "obj"); Value (Str "is in addition to");
+                          Lam ("obj",Var "obj"); Value (Str "bearer 's")])])])
     let ``Ravenous maw`` = 
         Value
           (ParamArray
@@ -337,8 +540,11 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "Make D3 hit for each attack made with this weapon instead of 1")])])
+                      (ParamArray
+                         [Value (Str "Make D3 hit for");
+                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                          Value (Str "attack made with"); Lam ("obj",Var "obj");
+                          Value (Str "weapon instead of"); Value (Int 1)])])])
     let ``Rending claws`` = 
         Value
           (ParamArray
@@ -351,8 +557,25 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "Each time you make a wound roll of 6 for this weapon that hit is resolved with an AP of -4")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj"); Value (Str "time you make");
+                          Value (Int 1); Value (Str "wound roll of");
+                          Lam
+                            ("roll",
+                             Let
+                               ("gt",
+                                App
+                                  (Call GreaterThan,
+                                   Value (ParamArray [Var "roll"; Value (Int 6)])),
+                                Let
+                                  ("eq",
+                                   App
+                                     (Call Equals,
+                                      Value (ParamArray [Var "roll"; Value (Int 6)])),
+                                   App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                          Value (Str "for"); Lam ("obj",Var "obj");
+                          Value (Str "weapon that hit is resolved with");
+                          Lam ("obj",Var "obj"); Value (Str "AP of"); Value (Int -4)])])])
     let ``Scything talons`` = 
         Value
           (ParamArray
@@ -365,8 +588,16 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "You can re-roll hit of 1 for this weapon If the bearer has more than one pair of scything it can make 1 additional attack with this weapon each time it fights")])])
+                      (ParamArray
+                         [Value (Str "You can re-roll hit of"); Value (Int 1);
+                          Value (Str "for"); Lam ("obj",Var "obj");
+                          Value (Str "weapon If"); Lam ("obj",Var "obj");
+                          Value
+                            (Str "bearer has more than one pair of scything it can make");
+                          Value (Int 1); Value (Str "additional attack with");
+                          Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                          Value (Str "time it fights")])])])
     let ``Scything wings`` = 
         Value
           (ParamArray
@@ -378,7 +609,10 @@ module Rule =
               Value
                 (ParamArray
                    [Value (Str "ABILITIES");
-                    Value (Str "You can re-roll hit of 1 for this weapon")])])
+                    Value
+                      (ParamArray
+                         [Value (Str "You can re-roll hit of"); Value (Int 1);
+                          Value (Str "for"); Lam ("obj",Var "obj"); Value (Str "weapon")])])])
     let ``Shovelling claws`` = 
         Value
           (ParamArray
@@ -399,8 +633,14 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "Each time the bearer it can make one and only one attack with this weapon Make D3 hit for this attack instead of one This is in addition to the bearer 's")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj"); Value (Str "time");
+                          Lam ("obj",Var "obj");
+                          Value (Str "bearer it can make one and only one attack with");
+                          Lam ("obj",Var "obj"); Value (Str "weapon Make D3 hit for");
+                          Lam ("obj",Var "obj"); Value (Str "attack instead of one");
+                          Lam ("obj",Var "obj"); Value (Str "is in addition to");
+                          Lam ("obj",Var "obj"); Value (Str "bearer 's")])])])
     let ``Toxic lashes (melee)`` = 
         Value
           (ParamArray
@@ -413,8 +653,23 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "You can re-roll failed wound for this weapon A model armed with this weapon always fights first in the Fight phase even if it did n't charge If the enemy has that have charged or that have a similar ability then alternate choosing to fight with starting with the player whose turn is taking place")])])
+                      (ParamArray
+                         [Value (Str "You can re-roll failed wound for");
+                          Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",Var "obj"); Value (Str "model armed with");
+                          Lam ("obj",Var "obj");
+                          Value (Str "weapon always fights first in");
+                          Lam ("obj",Var "obj");
+                          Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                          Value (Str "even if it did n't charge If");
+                          Lam ("obj",Var "obj"); Var "Target";
+                          Value (Str "has that have charged or that have");
+                          Value (Int 1);
+                          Value
+                            (Str
+                               "similar ability then alternate choosing to fight with starting with");
+                          Lam ("obj",Var "obj");
+                          Value (Str "player whose turn is taking place")])])])
     let ``Toxinspike`` = 
         Value
           (ParamArray
@@ -427,8 +682,29 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "Each time the bearer it can make one and only one attack with this weapon This is in addition to the bearer 's This weapon always wounds other than VEHICLES on a 2")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj"); Value (Str "time");
+                          Lam ("obj",Var "obj");
+                          Value (Str "bearer it can make one and only one attack with");
+                          Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",Var "obj"); Value (Str "is in addition to");
+                          Lam ("obj",Var "obj"); Value (Str "bearer 's");
+                          Lam ("obj",Var "obj");
+                          Value (Str "weapon always wounds other than VEHICLES on");
+                          Value (Int 1);
+                          Lam
+                            ("roll",
+                             Let
+                               ("gt",
+                                App
+                                  (Call GreaterThan,
+                                   Value (ParamArray [Var "roll"; Value (Int 2)])),
+                                Let
+                                  ("eq",
+                                   App
+                                     (Call Equals,
+                                      Value (ParamArray [Var "roll"; Value (Int 2)])),
+                                   App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))))])])])
     let ``Wicked spur`` = 
         Value
           (ParamArray
@@ -441,8 +717,15 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "Each time the bearer fights it can make one and only one attack with this weapon This is in addition to the bearer 's")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj"); Value (Str "time");
+                          Lam ("obj",Var "obj");
+                          Value
+                            (Str
+                               "bearer fights it can make one and only one attack with");
+                          Lam ("obj",Var "obj"); Value (Str "weapon");
+                          Lam ("obj",Var "obj"); Value (Str "is in addition to");
+                          Lam ("obj",Var "obj"); Value (Str "bearer 's")])])])
     let _ = 
         Value (Str "Spinefist")
     let ``Acid spray`` = 
@@ -456,7 +739,10 @@ module Rule =
               Value
                 (ParamArray
                    [Value (Str "ABILITIES");
-                    Value (Str "This weapon automatically hits its target")])])
+                    Value
+                      (ParamArray
+                         [Lam ("obj",Var "obj");
+                          Value (Str "weapon automatically hits its target")])])])
     let ``Barbed strangler`` = 
         Value
           (ParamArray
@@ -469,8 +755,12 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "You can add 1 to hit for this weapon when attacking a unit with 10 or more")])])
+                      (ParamArray
+                         [Value (Str "You can add"); Value (Int 1);
+                          Value (Str "to hit for"); Lam ("obj",Var "obj");
+                          Value (Str "weapon when attacking"); Value (Int 1);
+                          Var "Target"; Value (Str "with"); Value (Int 10);
+                          Value (Str "or more")])])])
     let ``Bio-electric pulse`` = 
         Value
           (ParamArray
@@ -523,8 +813,13 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "You can re-roll failed wound for this weapon In addition attacked by this weapon do not gain any bonus to their saving throws for being in cover")])])
+                      (ParamArray
+                         [Value (Str "You can re-roll failed wound for");
+                          Lam ("obj",Var "obj");
+                          Value (Str "weapon In addition attacked by");
+                          Lam ("obj",Var "obj"); Value (Str "weapon do not gain");
+                          Lam ("obj",Var "obj");
+                          Value (Str "bonus to their saving throws for being in cover")])])])
     let ``Deathspitter`` = 
         Value
           (ParamArray
@@ -568,7 +863,10 @@ module Rule =
               Value
                 (ParamArray
                    [Value (Str "ABILITIES");
-                    Value (Str "This weapon automatically hits its target")])])
+                    Value
+                      (ParamArray
+                         [Lam ("obj",Var "obj");
+                          Value (Str "weapon automatically hits its target")])])])
     let ``Flamespurt`` = 
         Value
           (ParamArray
@@ -580,7 +878,10 @@ module Rule =
               Value
                 (ParamArray
                    [Value (Str "ABILITIES");
-                    Value (Str "This weapon automatically hits its target")])])
+                    Value
+                      (ParamArray
+                         [Lam ("obj",Var "obj");
+                          Value (Str "weapon automatically hits its target")])])])
     let ``Flesh hooks`` = 
         Value
           (ParamArray
@@ -593,8 +894,13 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "This weapon can be fired within 1 of an enemy unit and can target enemy within 1 of friendly")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj");
+                          Value (Str "weapon can be fired within"); Value (Distance 1);
+                          Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                          Var "Target"; Value (Str "and can target"); Var "Target";
+                          Value (Str "within"); Value (Distance 1);
+                          Value (Str "of friendly")])])])
     let ``Fleshborer`` = 
         Value
           (ParamArray
@@ -623,8 +929,17 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "This weapon can be fired within 1 of an enemy unit and can target enemy within 1 of friendly In addition when a model is slain by this weapon the bearer regains 1 lost wound")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj");
+                          Value (Str "weapon can be fired within"); Value (Distance 1);
+                          Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                          Var "Target"; Value (Str "and can target"); Var "Target";
+                          Value (Str "within"); Value (Distance 1);
+                          Value (Str "of friendly In addition when"); Value (Int 1);
+                          Value (Str "model is slain by"); Lam ("obj",Var "obj");
+                          Value (Str "weapon"); Lam ("obj",Var "obj");
+                          Value (Str "bearer regains"); Value (Int 1);
+                          Value (Str "lost wound")])])])
     let ``Heavy venom cannon`` = 
         Value
           (ParamArray
@@ -645,14 +960,26 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "This weapon can target that are not visible to the bearer In addition attacked by this weapon do not gain any bonus to their saving throws for being in cover")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj");
+                          Value (Str "weapon can target that are not visible to");
+                          Lam ("obj",Var "obj");
+                          Value (Str "bearer In addition attacked by");
+                          Lam ("obj",Var "obj"); Value (Str "weapon do not gain");
+                          Lam ("obj",Var "obj");
+                          Value (Str "bonus to their saving throws for being in cover")])])])
     let ``Spore mine launcher`` = 
-        Value (Str "48 Heavy 1 See Biovore datasheet pg 101")
+        Value
+          (ParamArray
+             [Value (Str "48"); Value (Distance 0); Value (Str "Heavy"); Value (Int 1);
+              Value (Str "See Biovore datasheet pg"); Value (Int 101)])
     let _ = 
         Value
-          (Str
-             "Attacking from the and from beneath the earth the Tyranids tear apart their prey in a frenzy of slashing")
+          (ParamArray
+             [Value (Str "Attacking from"); Lam ("obj",Var "obj");
+              Value (Str "and from beneath"); Lam ("obj",Var "obj"); Value (Str "earth");
+              Lam ("obj",Var "obj"); Value (Str "Tyranids tear apart their prey in");
+              Value (Int 1); Value (Str "frenzy of slashing")])
     let ``Adrenal glands`` = 
         Value
           (ParamArray
@@ -683,8 +1010,15 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "This weapon can be fired within 1 of an enemy unit and can target enemy within 1 of friendly You can re-roll all failed wound for this weapon")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj");
+                          Value (Str "weapon can be fired within"); Value (Distance 1);
+                          Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                          Var "Target"; Value (Str "and can target"); Var "Target";
+                          Value (Str "within"); Value (Distance 1);
+                          Value (Str "of friendly You can re-roll");
+                          Lam ("obj",Var "obj"); Value (Str "failed wound for");
+                          Lam ("obj",Var "obj"); Value (Str "weapon")])])])
     let ``Rupture cannon`` = 
         Value
           (ParamArray
@@ -705,8 +1039,42 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "If the target is a VEHICLE and you make a wound roll of 4 the target suffers 1 mortal wound in addition to any other damage If you make a wound roll of 6 inflict D3 mortal instead")])])
+                      (ParamArray
+                         [Value (Str "If"); Lam ("obj",Var "obj");
+                          Value (Str "target is"); Value (Int 1);
+                          Value (Str "VEHICLE and you make"); Value (Int 1);
+                          Value (Str "wound roll of");
+                          Lam
+                            ("roll",
+                             Let
+                               ("gt",
+                                App
+                                  (Call GreaterThan,
+                                   Value (ParamArray [Var "roll"; Value (Int 4)])),
+                                Let
+                                  ("eq",
+                                   App
+                                     (Call Equals,
+                                      Value (ParamArray [Var "roll"; Value (Int 4)])),
+                                   App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                          Lam ("obj",Var "obj"); Value (Str "target"); Call Suffer;
+                          Value (Int 1); Value (Str "mortal wound in addition to");
+                          Lam ("obj",Var "obj"); Value (Str "other damage If you make");
+                          Value (Int 1); Value (Str "wound roll of");
+                          Lam
+                            ("roll",
+                             Let
+                               ("gt",
+                                App
+                                  (Call GreaterThan,
+                                   Value (ParamArray [Var "roll"; Value (Int 6)])),
+                                Let
+                                  ("eq",
+                                   App
+                                     (Call Equals,
+                                      Value (ParamArray [Var "roll"; Value (Int 6)])),
+                                   App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                          Value (Str "inflict D3 mortal instead")])])])
     let ``Spine banks`` = 
         Value
           (ParamArray
@@ -719,8 +1087,13 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "This weapon can be fired within 1 of an enemy unit and can target enemy within 1 of friendly")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj");
+                          Value (Str "weapon can be fired within"); Value (Distance 1);
+                          Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                          Var "Target"; Value (Str "and can target"); Var "Target";
+                          Value (Str "within"); Value (Distance 1);
+                          Value (Str "of friendly")])])])
     let ``Spinefists`` = 
         Value
           (ParamArray
@@ -733,8 +1106,11 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "When a model fires this weapon it makes a number of equal to its characteristic")])])
+                      (ParamArray
+                         [Value (Str "When"); Value (Int 1); Value (Str "model fires");
+                          Lam ("obj",Var "obj"); Value (Str "weapon it makes");
+                          Value (Int 1);
+                          Value (Str "number of equal to its characteristic")])])])
     let ``Spinemaws`` = 
         Value
           (ParamArray
@@ -763,8 +1139,12 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "You can add 1 to hit for this weapon when attacking a unit with 10 or more")])])
+                      (ParamArray
+                         [Value (Str "You can add"); Value (Int 1);
+                          Value (Str "to hit for"); Lam ("obj",Var "obj");
+                          Value (Str "weapon when attacking"); Value (Int 1);
+                          Var "Target"; Value (Str "with"); Value (Int 10);
+                          Value (Str "or more")])])])
     let ``Tentaclids`` = 
         Value
           (ParamArray
@@ -777,8 +1157,44 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "You may re-roll failed hit for this weapon against that can FLY In addition if the target is a VEHICLE and you make a wound roll of 4 it suffers 1 mortal wound in addition to any other damage If you make a wound roll of 6 inflict D3 mortal instead")])])
+                      (ParamArray
+                         [Value (Str "You may re-roll failed hit for");
+                          Lam ("obj",Var "obj");
+                          Value (Str "weapon against that can FLY In addition if");
+                          Lam ("obj",Var "obj"); Value (Str "target is"); Value (Int 1);
+                          Value (Str "VEHICLE and you make"); Value (Int 1);
+                          Value (Str "wound roll of");
+                          Lam
+                            ("roll",
+                             Let
+                               ("gt",
+                                App
+                                  (Call GreaterThan,
+                                   Value (ParamArray [Var "roll"; Value (Int 4)])),
+                                Let
+                                  ("eq",
+                                   App
+                                     (Call Equals,
+                                      Value (ParamArray [Var "roll"; Value (Int 4)])),
+                                   App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                          Value (Str "it"); Call Suffer; Value (Int 1);
+                          Value (Str "mortal wound in addition to");
+                          Lam ("obj",Var "obj"); Value (Str "other damage If you make");
+                          Value (Int 1); Value (Str "wound roll of");
+                          Lam
+                            ("roll",
+                             Let
+                               ("gt",
+                                App
+                                  (Call GreaterThan,
+                                   Value (ParamArray [Var "roll"; Value (Int 6)])),
+                                Let
+                                  ("eq",
+                                   App
+                                     (Call Equals,
+                                      Value (ParamArray [Var "roll"; Value (Int 6)])),
+                                   App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                          Value (Str "inflict D3 mortal instead")])])])
     let ``Toxic lashes (shooting)`` = 
         Value
           (ParamArray
@@ -791,8 +1207,16 @@ module Rule =
                 (ParamArray
                    [Value (Str "ABILITIES");
                     Value
-                      (Str
-                         "This weapon can be fired within 1 of an enemy unit and can target enemy within 1 of friendly In addition you can re-roll failed wound for this weapon")])])
+                      (ParamArray
+                         [Lam ("obj",Var "obj");
+                          Value (Str "weapon can be fired within"); Value (Distance 1);
+                          Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                          Var "Target"; Value (Str "and can target"); Var "Target";
+                          Value (Str "within"); Value (Distance 1);
+                          Value
+                            (Str
+                               "of friendly In addition you can re-roll failed wound for");
+                          Lam ("obj",Var "obj"); Value (Str "weapon")])])])
     let ``Venom cannon`` = 
         Value
           (ParamArray
@@ -803,92 +1227,294 @@ module Rule =
               Value (ParamArray [Value (Str "D"); Value (Str "D3")])])
     let ``ALIEN CUNNING`` = 
         Value
-          (Str
-             "At the start of the first battle round but before the first turn begins you can remove your Warlord from the battlefield and set them up again If both have that can do this roll off The player that wins the roll-off decides who sets up their unit s first")
+          (ParamArray
+             [Value (Str "At"); Lam ("obj",Var "obj"); Value (Str "start of");
+              Lam ("obj",Var "obj"); Value (Str "first battle round but before");
+              Lam ("obj",Var "obj");
+              Value (Str "first turn begins you can remove your Warlord from");
+              Lam ("obj",Var "obj"); Value (Str "battlefield and set them up again If");
+              Lam ("obj",Var "obj"); Value (Str "have that can do");
+              Lam ("obj",Var "obj"); Value (Str "roll off"); Lam ("obj",Var "obj");
+              Value (Str "player that wins"); Lam ("obj",Var "obj");
+              Value (Str "roll-off decides who sets up their"); Var "Target";
+              Value (Str "s first")])
     let ``HEIGHTENED SENSES`` = 
         Value
-          (Str
-             "Your Warlord never suffers any to their hit although they still only hit on of 6 when firing Overwatch")
+          (ParamArray
+             [Value (Str "Your Warlord never"); Call Suffer; Lam ("obj",Var "obj");
+              Value (Str "to their hit although they still only hit on of");
+              Value (Int 6); Value (Str "when firing Overwatch")])
     let ``SYNAPTIC LYNCHPIN`` = 
-        Value (Str "Add 6 to the range of the Warlord 's Synapse ability")
+        Value
+          (ParamArray
+             [Value (Str "Add"); Value (Distance 6); Value (Str "to");
+              Lam ("obj",Var "obj"); Value (Str "range of"); Lam ("obj",Var "obj");
+              Value (Str "Warlord 's Synapse ability")])
     let ``MIND EATER`` = 
         Value
-          (Str
-             "Each time the Warlord slays an enemy CHARACTER in the Fight phase choose a friendly <HIVE FLEET> unit within 3 At the end of the phase that unit can move and Advance if you wish as if it was your Movement phase")
+          (ParamArray
+             [Lam ("obj",Var "obj"); Value (Str "time"); Lam ("obj",Var "obj");
+              Value (Str "Warlord slays"); Lam ("obj",Var "obj"); Var "Target";
+              Value (Str "CHARACTER in"); Lam ("obj",Var "obj");
+              Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+              Value (Str "choose"); Value (Int 1); Value (Str "friendly <HIVE FLEET>");
+              Var "Target"; Value (Str "within"); Value (Distance 3); Value (Str "At");
+              Lam ("obj",Var "obj"); Value (Str "end of"); Lam ("obj",Var "obj");
+              Value (Str "phase"); Lam ("obj",Var "obj"); Var "Target";
+              Value
+                (Str "can move and Advance if you wish as if it was your Movement phase")])
     let ``INSTINCTIVE KILLER`` = 
         Value
-          (Str
-             "At the beginning of the battle but before the first turn begins choose an enemy unit You can re-roll failed hit for the Warlord for that target that unit or any unit that has the same datasheet for example all Intercessor Squads or all of Nobz etc.")
+          (ParamArray
+             [Value (Str "At"); Lam ("obj",Var "obj"); Value (Str "beginning of");
+              Lam ("obj",Var "obj"); Value (Str "battle but before");
+              Lam ("obj",Var "obj"); Value (Str "first turn begins choose");
+              Lam ("obj",Var "obj"); Var "Target"; Var "Target";
+              Value (Str "You can re-roll failed hit for"); Lam ("obj",Var "obj");
+              Value (Str "Warlord for that target"); Lam ("obj",Var "obj"); Var "Target";
+              Value (Str "or"); Lam ("obj",Var "obj"); Var "Target";
+              Value (Str "that has"); Lam ("obj",Var "obj");
+              Value (Str "same datasheet for example"); Lam ("obj",Var "obj");
+              Value (Str "Intercessor Squads or"); Lam ("obj",Var "obj");
+              Value (Str "of Nobz etc.")])
     let ``ADAPTIVE BIOLOGY`` = 
         Value
-          (Str
-             "From the end of the first phase in which this Warlord suffers any for the remainder of the battle when inflicting damage upon the Warlord reduce the damage of the attack by 1 to a minimum of 1")
+          (ParamArray
+             [Value (Str "From"); Lam ("obj",Var "obj"); Value (Str "end of");
+              Lam ("obj",Var "obj"); Value (Str "first phase in which");
+              Lam ("obj",Var "obj"); Value (Str "Warlord"); Call Suffer;
+              Lam ("obj",Var "obj"); Value (Str "for"); Lam ("obj",Var "obj");
+              Value (Str "remainder of"); Lam ("obj",Var "obj");
+              Value (Str "battle when inflicting damage upon"); Lam ("obj",Var "obj");
+              Value (Str "Warlord reduce"); Lam ("obj",Var "obj");
+              Value (Str "damage of"); Lam ("obj",Var "obj"); Value (Str "attack by");
+              Value (Int 1); Value (Str "to"); Value (Int 1); Value (Str "minimum of");
+              Value (Int 1)])
     let ``The mightiest creatures spawned by the Hive Mind have each been created with a specific purpose. If one of the following named characters is your Warlord, they must be given the associated Warlord Trait shown below.`` = 
         Value
-          (Str
-             "The Swarmlord Alien Cunning Old One Eye Adaptive Biology Deathleaper Mind Eater The Red Terror Heightened Senses")
+          (ParamArray
+             [Lam ("obj",Var "obj");
+              Value
+                (Str
+                   "Swarmlord Alien Cunning Old One Eye Adaptive Biology Deathleaper Mind Eater The Red Terror Heightened Senses")])
     let ``HIVE FLEET WARLORD TRAITS`` = 
         Value
-          (Str
-             "If you wish you can pick a Hive Fleet Warlord Trait from the list below instead of the Tyranid Warlord Traits to the left but only if your Warlord is from the relevant hive fleet")
+          (ParamArray
+             [Value (Str "If you wish you can pick"); Value (Int 1);
+              Value (Str "Hive Fleet Warlord Trait from"); Lam ("obj",Var "obj");
+              Value (Str "list below instead of"); Lam ("obj",Var "obj");
+              Value (Str "Tyranid Warlord Traits to"); Lam ("obj",Var "obj");
+              Value (Str "left but only if your Warlord is from"); Lam ("obj",Var "obj");
+              Value (Str "relevant hive fleet")])
     let ``BEHEMOTH: MONSTROUS HUNGER`` = 
         Value
-          (Str
-             "Each time you make a wound roll of 6 for the Warlord in the Fight phase that attack inflicts 1 additional damage")
+          (ParamArray
+             [Lam ("obj",Var "obj"); Value (Str "time you make"); Value (Int 1);
+              Value (Str "wound roll of");
+              Lam
+                ("roll",
+                 Let
+                   ("gt",
+                    App
+                      (Call GreaterThan,Value (ParamArray [Var "roll"; Value (Int 6)])),
+                    Let
+                      ("eq",
+                       App (Call Equals,Value (ParamArray [Var "roll"; Value (Int 6)])),
+                       App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+              Value (Str "for"); Lam ("obj",Var "obj"); Value (Str "Warlord in");
+              Lam ("obj",Var "obj");
+              Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+              Value (Str "that attack inflicts"); Value (Int 1);
+              Value (Str "additional damage")])
     let ``KRAKEN: ONE STEP AHEAD`` = 
         Value
-          (Str
-             "In each Fight phase you can pick one friendly KRAKEN unit within 6 of your Warlord That unit can fight first in the Fight phase even if it did n't charge If the enemy has that have charged or that have a similar ability then alternate choosing to fight with starting with the player whose turn is taking place")
+          (ParamArray
+             [Value (Str "In");
+              Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+              Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+              Value (Str "you can pick one friendly KRAKEN"); Var "Target";
+              Value (Str "within"); Value (Distance 6); Value (Str "of your Warlord");
+              Lam ("obj",Var "obj"); Var "Target"; Value (Str "can fight first in");
+              Lam ("obj",Var "obj");
+              Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+              Value (Str "even if it did n't charge If"); Lam ("obj",Var "obj");
+              Var "Target"; Value (Str "has that have charged or that have");
+              Value (Int 1);
+              Value
+                (Str
+                   "similar ability then alternate choosing to fight with starting with");
+              Lam ("obj",Var "obj"); Value (Str "player whose turn is taking place")])
     let ``LEVIATHAN: PERFECTLY ADAPTED`` = 
         Value
-          (Str
-             "Once per battle round you can re-roll a single hit roll wound roll damage roll Advance roll charge roll or saving throw made for your Warlord")
+          (ParamArray
+             [Value (Str "Once per battle round you can re-roll"); Value (Int 1);
+              Value
+                (Str
+                   "single hit roll wound roll damage roll Advance roll charge roll or saving throw made for your Warlord")])
     let ``GORGON: LETHAL MIASMA`` = 
         Value
-          (Str
-             "At the end of the Fight phase roll a D6 for each enemy unit within 1 of the Warlord On a 4 that unit suffers a mortal wound")
+          (ParamArray
+             [Value (Str "At"); Lam ("obj",Var "obj"); Value (Str "end of");
+              Lam ("obj",Var "obj");
+              Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+              Value (Str "roll"); Value (Int 1); App (Call Dice,Value (Int 6));
+              Value (Str "for");
+              Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"]))); Var "Target";
+              Var "Target"; Value (Str "within"); Value (Distance 1); Value (Str "of");
+              Lam ("obj",Var "obj"); Value (Str "Warlord On"); Value (Int 1);
+              Lam
+                ("roll",
+                 Let
+                   ("gt",
+                    App
+                      (Call GreaterThan,Value (ParamArray [Var "roll"; Value (Int 4)])),
+                    Let
+                      ("eq",
+                       App (Call Equals,Value (ParamArray [Var "roll"; Value (Int 4)])),
+                       App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+              Value (Str "that"); Var "Target"; Call Suffer; Value (Int 1);
+              Value (Str "Mortal Wound")])
     let ``JORMUNGANDR: INSIDIOUS THREAT`` = 
         Value
-          (Str
-             "Enemy never gain any bonus to their saving throws for being in cover for made by the Warlord or friendly JORMUNGANDR within 3 of the Warlord")
+          (ParamArray
+             [Value (Str "Enemy never gain"); Lam ("obj",Var "obj");
+              Value (Str "bonus to their saving throws for being in cover for made by");
+              Lam ("obj",Var "obj");
+              Value (Str "Warlord or friendly JORMUNGANDR within"); Value (Distance 3);
+              Value (Str "of"); Lam ("obj",Var "obj"); Value (Str "Warlord")])
     let ``HYDRA: ENDLESS REGENERATION`` = 
         Value
-          (Str
-             "At the beginning of each of your roll a for each wound that your Warlord has lost For each roll of 6 your Warlord regains a wound lost earlier in the battle")
+          (ParamArray
+             [Value (Str "At"); Lam ("obj",Var "obj"); Value (Str "beginning of");
+              Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+              Value (Str "of your roll"); Value (Int 1); Value (Str "for");
+              Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+              Value (Str "wound that your Warlord has lost For");
+              Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+              Value (Str "roll of"); Value (Int 6); Value (Str "your Warlord regains");
+              Value (Int 1); Value (Str "wound lost earlier in"); Lam ("obj",Var "obj");
+              Value (Str "battle")])
     let ``KRONOS: SOUL HUNGER`` = 
         Value
-          (Str
-             "Whenever an enemy PSYKER fails a psychic test within 18 of your Warlord they suffer D3 mortal")
+          (ParamArray
+             [Value (Str "Whenever"); Lam ("obj",Var "obj"); Var "Target";
+              Value (Str "PSYKER fails"); Value (Int 1);
+              Value (Str "psychic test within"); Value (Distance 18);
+              Value (Str "of your Warlord they suffer D3 mortal")])
     let ``EXTENSIONS OF THE HIVE MIND`` = 
         Value
-          (Str
-             "If your army is Battle-forged all Troops in Tyranids Detachments gain this ability a unit that is within range of an objective marker as specified in the mission controls the objective marker even if there are more enemy within range of that objective marker If an enemy unit within range of the same objective marker has a similar ability then the objective marker is controlled by the player who has the most within range of it as normal")
+          (ParamArray
+             [Value (Str "If your army is Battle-forged"); Lam ("obj",Var "obj");
+              Value (Str "Troops in Tyranids Detachments gain"); Lam ("obj",Var "obj");
+              Value (Str "ability"); Value (Int 1); Var "Target";
+              Value (Str "that is within range of"); Lam ("obj",Var "obj");
+              Value (Str "objective marker as specified in"); Lam ("obj",Var "obj");
+              Value (Str "mission controls"); Lam ("obj",Var "obj");
+              Value (Str "objective marker even if there are more"); Var "Target";
+              Value (Str "within range of"); Lam ("obj",Var "obj");
+              Value (Str "objective marker If"); Lam ("obj",Var "obj"); Var "Target";
+              Var "Target"; Value (Str "within range of"); Lam ("obj",Var "obj");
+              Value (Str "same objective marker has"); Value (Int 1);
+              Value (Str "similar ability then"); Lam ("obj",Var "obj");
+              Value (Str "objective marker is controlled by"); Lam ("obj",Var "obj");
+              Value (Str "player who has"); Lam ("obj",Var "obj");
+              Value (Str "most within range of it as normal")])
     let ``HIVE FLEET ADAPTATIONS`` = 
         Value
-          (Str
-             "If your army is Battle-forged all in Tyranids Detachments gain a Hive Fleet Adaptation so long as every unit in that Detachment is from the same hive fleet The Hive Fleet Adaptation gained depends upon the hive fleet they are from as shown in the table opposite For example a BEHEMOTH unit with the Hive Fleet Adaptation ability the Hyper-aggression adaptation If you are using a splinter fleet rather than a hive fleet use the Hive Fleet Adaptation of its parent hive fleet For example the Court of the Nephilim King is a splinter fleet of Hive Fleet Behemoth so should use the Behemoth Hive Fleet Adaptation If you are unsure of a splinter fleet 's parent hive fleet either consult the background of our or choose an adaptation from the table that best describes its character and fighting style")
+          (ParamArray
+             [Value (Str "If your army is Battle-forged"); Lam ("obj",Var "obj");
+              Value (Str "in Tyranids Detachments gain"); Value (Int 1);
+              Value (Str "Hive Fleet Adaptation so long as"); Lam ("obj",Var "obj");
+              Var "Target"; Value (Str "in that Detachment is from");
+              Lam ("obj",Var "obj"); Value (Str "same hive fleet");
+              Lam ("obj",Var "obj");
+              Value (Str "Hive Fleet Adaptation gained depends upon");
+              Lam ("obj",Var "obj"); Value (Str "hive fleet they are from as shown in");
+              Lam ("obj",Var "obj"); Value (Str "table opposite For example");
+              Value (Int 1); Value (Str "BEHEMOTH"); Var "Target"; Value (Str "with");
+              Lam ("obj",Var "obj"); Value (Str "Hive Fleet Adaptation ability");
+              Lam ("obj",Var "obj");
+              Value (Str "Hyper-aggression adaptation If you are using"); Value (Int 1);
+              Value (Str "splinter fleet rather than"); Value (Int 1);
+              Value (Str "hive fleet use"); Lam ("obj",Var "obj");
+              Value (Str "Hive Fleet Adaptation of its parent hive fleet For example");
+              Lam ("obj",Var "obj"); Value (Str "Court of"); Lam ("obj",Var "obj");
+              Value (Str "Nephilim King is"); Value (Int 1);
+              Value (Str "splinter fleet of Hive Fleet Behemoth so should use");
+              Lam ("obj",Var "obj");
+              Value (Str "Behemoth Hive Fleet Adaptation If you are unsure of");
+              Value (Int 1);
+              Value (Str "splinter fleet 's parent hive fleet either consult");
+              Lam ("obj",Var "obj"); Value (Str "background of our or choose");
+              Lam ("obj",Var "obj"); Value (Str "adaptation from");
+              Lam ("obj",Var "obj");
+              Value (Str "table that best describes its character and fighting style")])
     let ``BEHEMOTH: HYPER-AGGRESSION`` = 
-        Value (Str "You can re-roll failed charge for with this adaptation")
+        Value
+          (ParamArray
+             [Value (Str "You can re-roll failed charge for with");
+              Lam ("obj",Var "obj"); Value (Str "adaptation")])
     let ``KRAKEN: QUESTING TENDRILS`` = 
         Value
-          (Str
-             "When a unit with this adaptation Advances roll three instead of one and pick the highest to add to the Move characteristic of all in the unit for that Movement phase In addition such can Fall Back and charge in the same turn")
+          (ParamArray
+             [Value (Str "When"); Value (Int 1); Var "Target"; Value (Str "with");
+              Lam ("obj",Var "obj");
+              Value (Str "adaptation Advances roll three instead of one and pick");
+              Lam ("obj",Var "obj"); Value (Str "highest to add to");
+              Lam ("obj",Var "obj"); Value (Str "Move characteristic of");
+              Lam ("obj",Var "obj"); Value (Str "in"); Lam ("obj",Var "obj");
+              Var "Target";
+              Value
+                (Str
+                   "for that Movement phase In addition such can Fall Back and charge in");
+              Lam ("obj",Var "obj"); Value (Str "same turn")])
     let ``LEVIATHAN: SYNAPTIC IMPERATIVE`` = 
         Value
-          (Str
-             "Roll a D6 each time a unit with this adaptation loses a wound whilst it is within 6 of a friendly SYNAPSE unit from the same hive fleet On a 6 the damage is ignored and the unit does not lose a wound Ignore this adaptation on a unit that is currently affected by the Catalyst psychic power")
+          (ParamArray
+             [Value (Str "Roll"); Value (Int 1); App (Call Dice,Value (Int 6));
+              Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+              Value (Str "time"); Value (Int 1); Var "Target"; Value (Str "with");
+              Lam ("obj",Var "obj"); Value (Str "adaptation loses"); Value (Int 1);
+              Value (Str "wound whilst it is within"); Value (Distance 6);
+              Value (Str "of"); Value (Int 1); Value (Str "friendly SYNAPSE");
+              Var "Target"; Value (Str "from"); Lam ("obj",Var "obj");
+              Value (Str "same hive fleet On"); Value (Int 1); Value (Int 6);
+              Lam ("obj",Var "obj"); Value (Str "damage is ignored and");
+              Lam ("obj",Var "obj"); Var "Target"; Value (Str "does not lose");
+              Value (Int 1); Value (Str "wound Ignore"); Lam ("obj",Var "obj");
+              Value (Str "adaptation on"); Value (Int 1); Var "Target";
+              Value (Str "that is currently affected by"); Lam ("obj",Var "obj");
+              Value (Str "Catalyst psychic power")])
     let ``GORGON: ADAPTIVE TOXINS`` = 
         Value
-          (Str "You can re-roll wound of 1 in the Fight phase for with this adaptation")
+          (ParamArray
+             [Value (Str "You can re-roll wound of"); Value (Int 1); Value (Str "in");
+              Lam ("obj",Var "obj");
+              Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+              Value (Str "for with"); Lam ("obj",Var "obj"); Value (Str "adaptation")])
     let ``JORMUNGANDR: TUNNEL NETWORKS`` = 
         Value
-          (Str
-             "A unit with this adaptation other than that can FLY always has the benefit of cover for the of shooting If the unit Advances or charges however it loses the benefit of this adaptation until the start of your next Movement phase")
+          (ParamArray
+             [Lam ("obj",Var "obj"); Var "Target"; Value (Str "with");
+              Lam ("obj",Var "obj");
+              Value (Str "adaptation other than that can FLY always has");
+              Lam ("obj",Var "obj"); Value (Str "benefit of cover for");
+              Lam ("obj",Var "obj"); Value (Str "of shooting If"); Lam ("obj",Var "obj");
+              Var "Target"; Value (Str "Advances or charges however it loses");
+              Lam ("obj",Var "obj"); Value (Str "benefit of"); Lam ("obj",Var "obj");
+              Value (Str "adaptation until"); Lam ("obj",Var "obj");
+              Value (Str "start of your next Movement phase")])
     let ``HYDRA: SWARMING INSTINCTS`` = 
         Value
-          (Str
-             "You can re-roll hit in the Fight phase for with this adaptation that target containing fewer than their own")
+          (ParamArray
+             [Value (Str "You can re-roll hit in"); Lam ("obj",Var "obj");
+              Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+              Value (Str "for with"); Lam ("obj",Var "obj");
+              Value (Str "adaptation that target containing fewer than their own")])
     let ``KRONOS: BIO-BARRAGE`` = 
         Value
-          (Str
-             "You can re-roll hit of 1 for with this adaptation in your Shooting phase if they did not move in the preceding Movement phase")
+          (ParamArray
+             [Value (Str "You can re-roll hit of"); Value (Int 1);
+              Value (Str "for with"); Lam ("obj",Var "obj");
+              Value (Str "adaptation in your Shooting phase if they did not move in");
+              Lam ("obj",Var "obj"); Value (Str "preceding Movement phase")])

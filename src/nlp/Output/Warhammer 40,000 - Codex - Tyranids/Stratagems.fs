@@ -21,17 +21,93 @@ module Stratagem =
              ("PSYCHIC BARRAGE",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem in your Psychic phase if a Zoanthropes unit from your army consisting of at least 3 is within 6 of 2 other such If you do so the Zoanthropes can not take any Psychic this phase instead select a point on the battlefield within 18 of and visible to all three Roll a for each unit friend or foe within 3 of that point Add 1 to the result if the unit being rolled for has 10 or more but subtract 1 if the unit being rolled for is a CHARACTER On a 4 that unit suffers 3D3 mortal"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem in your Psychic phase if"); Value (Int 1);
+                      Value (Str "Zoanthropes"); Var "Target";
+                      Value (Str "from your army consisting of at least"); Value (Int 3);
+                      Value (Str "is within"); Value (Distance 6); Value (Str "of");
+                      Value (Int 2); Value (Str "other such If you do so");
+                      Lam ("obj",Var "obj"); Value (Str "Zoanthropes can not take");
+                      Lam ("obj",Var "obj"); Value (Str "Psychic");
+                      Lam ("obj",Var "obj"); Value (Str "phase instead select");
+                      Value (Int 1); Value (Str "point on"); Lam ("obj",Var "obj");
+                      Value (Str "battlefield within"); Value (Distance 18);
+                      Value (Str "of and visible to"); Lam ("obj",Var "obj");
+                      Value (Str "three Roll"); Value (Int 1); Value (Str "for");
+                      Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                      Var "Target"; Value (Str "friend or foe within");
+                      Value (Distance 3); Value (Str "of"); Lam ("obj",Var "obj");
+                      Value (Str "point Add"); Value (Int 1); Value (Str "to");
+                      Lam ("obj",Var "obj"); Value (Str "result if");
+                      Lam ("obj",Var "obj"); Var "Target";
+                      Value (Str "being rolled for has"); Value (Int 10);
+                      Value (Str "or more but subtract"); Value (Int 1);
+                      Value (Str "if"); Lam ("obj",Var "obj"); Var "Target";
+                      Value (Str "being rolled for is"); Value (Int 1);
+                      Value (Str "CHARACTER On"); Value (Int 1);
+                      Lam
+                        ("roll",
+                         Let
+                           ("gt",
+                            App
+                              (Call GreaterThan,
+                               Value (ParamArray [Var "roll"; Value (Int 4)])),
+                            Let
+                              ("eq",
+                               App
+                                 (Call Equals,
+                                  Value (ParamArray [Var "roll"; Value (Int 4)])),
+                               App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                      Value (Str "that"); Var "Target"; Call Suffer;
+                      Value (Str "3D3 mortal")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "PSYCHIC BARRAGE"])),
                    Value
-                     (Str
-                        "Use this Stratagem in your Psychic phase if a Zoanthropes unit from your army consisting of at least 3 is within 6 of 2 other such If you do so the Zoanthropes can not take any Psychic this phase instead select a point on the battlefield within 18 of and visible to all three Roll a for each unit friend or foe within 3 of that point Add 1 to the result if the unit being rolled for has 10 or more but subtract 1 if the unit being rolled for is a CHARACTER On a 4 that unit suffers 3D3 mortal"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem in your Psychic phase if"); Value (Int 1);
+                         Value (Str "Zoanthropes"); Var "Target";
+                         Value (Str "from your army consisting of at least");
+                         Value (Int 3); Value (Str "is within"); Value (Distance 6);
+                         Value (Str "of"); Value (Int 2);
+                         Value (Str "other such If you do so"); Lam ("obj",Var "obj");
+                         Value (Str "Zoanthropes can not take"); Lam ("obj",Var "obj");
+                         Value (Str "Psychic"); Lam ("obj",Var "obj");
+                         Value (Str "phase instead select"); Value (Int 1);
+                         Value (Str "point on"); Lam ("obj",Var "obj");
+                         Value (Str "battlefield within"); Value (Distance 18);
+                         Value (Str "of and visible to"); Lam ("obj",Var "obj");
+                         Value (Str "three Roll"); Value (Int 1); Value (Str "for");
+                         Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                         Var "Target"; Value (Str "friend or foe within");
+                         Value (Distance 3); Value (Str "of"); Lam ("obj",Var "obj");
+                         Value (Str "point Add"); Value (Int 1); Value (Str "to");
+                         Lam ("obj",Var "obj"); Value (Str "result if");
+                         Lam ("obj",Var "obj"); Var "Target";
+                         Value (Str "being rolled for has"); Value (Int 10);
+                         Value (Str "or more but subtract"); Value (Int 1);
+                         Value (Str "if"); Lam ("obj",Var "obj"); Var "Target";
+                         Value (Str "being rolled for is"); Value (Int 1);
+                         Value (Str "CHARACTER On"); Value (Int 1);
+                         Lam
+                           ("roll",
+                            Let
+                              ("gt",
+                               App
+                                 (Call GreaterThan,
+                                  Value (ParamArray [Var "roll"; Value (Int 4)])),
+                               Let
+                                 ("eq",
+                                  App
+                                    (Call Equals,
+                                     Value (ParamArray [Var "roll"; Value (Int 4)])),
+                                  App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                         Value (Str "that"); Var "Target"; Call Suffer;
+                         Value (Str "3D3 mortal")]),None))]),None)
     let ``RAPID REGENERATION`` = 
         IfThenElse
           (App
@@ -40,17 +116,26 @@ module Stratagem =
              ("RAPID REGENERATION",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem at the end of your Movement phase Select a TYRANIDS model from your army It regains D3 lost earlier in the battle"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                      Value
+                        (Str
+                           "end of your Movement phase Select a TYRANIDS model from your army It regains D3 lost earlier in");
+                      Lam ("obj",Var "obj"); Value (Str "battle")]));
                ("2",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "RAPID REGENERATION"])),
                    Value
-                     (Str
-                        "Use this Stratagem at the end of your Movement phase Select a TYRANIDS model from your army It regains D3 lost earlier in the battle"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                         Value
+                           (Str
+                              "end of your Movement phase Select a TYRANIDS model from your army It regains D3 lost earlier in");
+                         Lam ("obj",Var "obj"); Value (Str "battle")]),None))]),None)
     let ``CAUSTIC BLOOD`` = 
         IfThenElse
           (App
@@ -59,17 +144,48 @@ module Stratagem =
              ("CAUSTIC BLOOD",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem at the start of a Fight phase Select a TYRANIDS unit from your army a whenever a model in that unit is destroyed in this phase For each roll of 6 the enemy unit that inflicted the final wound on that model suffers a mortal wound after all of their have been resolved"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                      Value (Str "start of"); Value (Int 1);
+                      Value (Str "Fight phase Select"); Value (Int 1);
+                      Value (Str "TYRANIDS"); Var "Target"; Value (Str "from your army");
+                      Value (Int 1); Value (Str "whenever"); Value (Int 1);
+                      Value (Str "model in"); Lam ("obj",Var "obj"); Var "Target";
+                      Value (Str "is destroyed in"); Lam ("obj",Var "obj");
+                      Value (Str "phase For");
+                      Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                      Value (Str "roll of"); Value (Int 6); Lam ("obj",Var "obj");
+                      Var "Target"; Var "Target"; Value (Str "that inflicted");
+                      Lam ("obj",Var "obj"); Value (Str "final wound on");
+                      Lam ("obj",Var "obj"); Value (Str "model"); Call Suffer;
+                      Value (Int 1); Value (Str "mortal wound after");
+                      Lam ("obj",Var "obj"); Value (Str "of their have been resolved")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "CAUSTIC BLOOD"])),
                    Value
-                     (Str
-                        "Use this Stratagem at the start of a Fight phase Select a TYRANIDS unit from your army a whenever a model in that unit is destroyed in this phase For each roll of 6 the enemy unit that inflicted the final wound on that model suffers a mortal wound after all of their have been resolved"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                         Value (Str "start of"); Value (Int 1);
+                         Value (Str "Fight phase Select"); Value (Int 1);
+                         Value (Str "TYRANIDS"); Var "Target";
+                         Value (Str "from your army"); Value (Int 1);
+                         Value (Str "whenever"); Value (Int 1); Value (Str "model in");
+                         Lam ("obj",Var "obj"); Var "Target";
+                         Value (Str "is destroyed in"); Lam ("obj",Var "obj");
+                         Value (Str "phase For");
+                         Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                         Value (Str "roll of"); Value (Int 6); Lam ("obj",Var "obj");
+                         Var "Target"; Var "Target"; Value (Str "that inflicted");
+                         Lam ("obj",Var "obj"); Value (Str "final wound on");
+                         Lam ("obj",Var "obj"); Value (Str "model"); Call Suffer;
+                         Value (Int 1); Value (Str "mortal wound after");
+                         Lam ("obj",Var "obj");
+                         Value (Str "of their have been resolved")]),None))]),None)
     let ``SCORCH BUGS`` = 
         IfThenElse
           (App
@@ -78,17 +194,33 @@ module Stratagem =
              ("SCORCH BUGS",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem when a TYRANIDS unit from your army is selected to attack in the Shooting phase You can add 1 to all wound made for that unit 's fleshborer or fleshborer hive in that Shooting phase"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem when"); Value (Int 1);
+                      Value (Str "TYRANIDS"); Var "Target";
+                      Value (Str "from your army is selected to attack in");
+                      Lam ("obj",Var "obj"); Value (Str "Shooting phase You can add");
+                      Value (Int 1); Value (Str "to"); Lam ("obj",Var "obj");
+                      Value (Str "wound made for"); Lam ("obj",Var "obj"); Var "Target";
+                      Value (Str "'s fleshborer or fleshborer hive in");
+                      Lam ("obj",Var "obj"); Value (Str "Shooting phase")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "SCORCH BUGS"])),
                    Value
-                     (Str
-                        "Use this Stratagem when a TYRANIDS unit from your army is selected to attack in the Shooting phase You can add 1 to all wound made for that unit 's fleshborer or fleshborer hive in that Shooting phase"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem when"); Value (Int 1);
+                         Value (Str "TYRANIDS"); Var "Target";
+                         Value (Str "from your army is selected to attack in");
+                         Lam ("obj",Var "obj"); Value (Str "Shooting phase You can add");
+                         Value (Int 1); Value (Str "to"); Lam ("obj",Var "obj");
+                         Value (Str "wound made for"); Lam ("obj",Var "obj");
+                         Var "Target"; Value (Str "'s fleshborer or fleshborer hive in");
+                         Lam ("obj",Var "obj"); Value (Str "Shooting phase")]),None))]),
+           None)
     let ``IMPLANT ATTACK`` = 
         IfThenElse
           (App
@@ -97,17 +229,66 @@ module Stratagem =
              ("IMPLANT ATTACK",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem after a TYRANIDS unit from your army in the Fight phase a for each enemy model other than a VEHICLE that was wounded by any of this unit 's and not slain On a 2 the model suffers a mortal wound"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem after"); Value (Int 1);
+                      Value (Str "TYRANIDS"); Var "Target";
+                      Value (Str "from your army in"); Lam ("obj",Var "obj");
+                      Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                      Value (Int 1); Value (Str "for");
+                      Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                      Var "Target"; Value (Str "model other than"); Value (Int 1);
+                      Value (Str "VEHICLE that was wounded by"); Lam ("obj",Var "obj");
+                      Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                      Value (Str "'s and not slain On"); Value (Int 1);
+                      Lam
+                        ("roll",
+                         Let
+                           ("gt",
+                            App
+                              (Call GreaterThan,
+                               Value (ParamArray [Var "roll"; Value (Int 2)])),
+                            Let
+                              ("eq",
+                               App
+                                 (Call Equals,
+                                  Value (ParamArray [Var "roll"; Value (Int 2)])),
+                               App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                      Lam ("obj",Var "obj"); Value (Str "model"); Call Suffer;
+                      Value (Int 1); Value (Str "Mortal Wound")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "IMPLANT ATTACK"])),
                    Value
-                     (Str
-                        "Use this Stratagem after a TYRANIDS unit from your army in the Fight phase a for each enemy model other than a VEHICLE that was wounded by any of this unit 's and not slain On a 2 the model suffers a mortal wound"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem after"); Value (Int 1);
+                         Value (Str "TYRANIDS"); Var "Target";
+                         Value (Str "from your army in"); Lam ("obj",Var "obj");
+                         Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                         Value (Int 1); Value (Str "for");
+                         Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                         Var "Target"; Value (Str "model other than"); Value (Int 1);
+                         Value (Str "VEHICLE that was wounded by");
+                         Lam ("obj",Var "obj"); Value (Str "of"); Lam ("obj",Var "obj");
+                         Var "Target"; Value (Str "'s and not slain On"); Value (Int 1);
+                         Lam
+                           ("roll",
+                            Let
+                              ("gt",
+                               App
+                                 (Call GreaterThan,
+                                  Value (ParamArray [Var "roll"; Value (Int 2)])),
+                               Let
+                                 ("eq",
+                                  App
+                                    (Call Equals,
+                                     Value (ParamArray [Var "roll"; Value (Int 2)])),
+                                  App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                         Lam ("obj",Var "obj"); Value (Str "model"); Call Suffer;
+                         Value (Int 1); Value (Str "Mortal Wound")]),None))]),None)
     let ``BOUNTY OF THE HIVE FLEET`` = 
         IfThenElse
           (App
@@ -116,8 +297,16 @@ module Stratagem =
              ("BOUNTY OF THE HIVE FLEET",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem before the battle Your army can have one extra Bio-artefact for 1 CP or two extra for 3 CPs All of the Bio-artefacts that you include must be different and be given to different CHARACTERS You can only use this Stratagem once per battle"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem before"); Lam ("obj",Var "obj");
+                      Value (Str "battle Your army can have one extra Bio-artefact for");
+                      Value (Int 1); Value (Str "CP or two extra for 3 CPs All of");
+                      Lam ("obj",Var "obj");
+                      Value
+                        (Str
+                           "Bio-artefacts that you include must be different and be given to different CHARACTERS You can only use");
+                      Lam ("obj",Var "obj"); Value (Str "Stratagem once per battle")]));
                ("1",
                 IfThenElse
                   (App
@@ -125,8 +314,17 @@ module Stratagem =
                       Value
                         (ParamArray [Var "Available CP"; Var "BOUNTY OF THE HIVE FLEET"])),
                    Value
-                     (Str
-                        "Use this Stratagem before the battle Your army can have one extra Bio-artefact for 1 CP or two extra for 3 CPs All of the Bio-artefacts that you include must be different and be given to different CHARACTERS You can only use this Stratagem once per battle"),
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem before"); Lam ("obj",Var "obj");
+                         Value
+                           (Str "battle Your army can have one extra Bio-artefact for");
+                         Value (Int 1); Value (Str "CP or two extra for 3 CPs All of");
+                         Lam ("obj",Var "obj");
+                         Value
+                           (Str
+                              "Bio-artefacts that you include must be different and be given to different CHARACTERS You can only use");
+                         Lam ("obj",Var "obj"); Value (Str "Stratagem once per battle")]),
                    None));
                ("3",
                 IfThenElse
@@ -135,8 +333,17 @@ module Stratagem =
                       Value
                         (ParamArray [Var "Available CP"; Var "BOUNTY OF THE HIVE FLEET"])),
                    Value
-                     (Str
-                        "Use this Stratagem before the battle Your army can have one extra Bio-artefact for 1 CP or two extra for 3 CPs All of the Bio-artefacts that you include must be different and be given to different CHARACTERS You can only use this Stratagem once per battle"),
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem before"); Lam ("obj",Var "obj");
+                         Value
+                           (Str "battle Your army can have one extra Bio-artefact for");
+                         Value (Int 1); Value (Str "CP or two extra for 3 CPs All of");
+                         Lam ("obj",Var "obj");
+                         Value
+                           (Str
+                              "Bio-artefacts that you include must be different and be given to different CHARACTERS You can only use");
+                         Lam ("obj",Var "obj"); Value (Str "Stratagem once per battle")]),
                    None))]),None)
     let ``METABOLIC OVERDRIVE`` = 
         IfThenElse
@@ -146,17 +353,54 @@ module Stratagem =
              ("METABOLIC OVERDRIVE",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem in your Movement phase after moving a TYRANIDS unit from your army You can make a second move with that unit including Advancing if you wish but when you do so you must roll a for each model in the unit For each roll of 1 inflict a mortal wound on the unit The unit can not shoot or make a charge move this turn"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem in your Movement phase after moving");
+                      Value (Int 1); Value (Str "TYRANIDS"); Var "Target";
+                      Value (Str "from your army You can make"); Value (Int 1);
+                      Value (Str "second move with"); Lam ("obj",Var "obj");
+                      Var "Target";
+                      Value
+                        (Str
+                           "including Advancing if you wish but when you do so you must roll");
+                      Value (Int 1); Value (Str "for");
+                      Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                      Value (Str "model in"); Lam ("obj",Var "obj"); Var "Target";
+                      Value (Str "For");
+                      Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                      Value (Str "roll of"); Value (Int 1); Value (Str "inflict");
+                      Value (Int 1); Value (Str "Mortal Wound on");
+                      Lam ("obj",Var "obj"); Var "Target"; Lam ("obj",Var "obj");
+                      Var "Target"; Value (Str "can not shoot or make"); Value (Int 1);
+                      Value (Str "charge move"); Lam ("obj",Var "obj");
+                      Value (Str "turn")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "METABOLIC OVERDRIVE"])),
                    Value
-                     (Str
-                        "Use this Stratagem in your Movement phase after moving a TYRANIDS unit from your army You can make a second move with that unit including Advancing if you wish but when you do so you must roll a for each model in the unit For each roll of 1 inflict a mortal wound on the unit The unit can not shoot or make a charge move this turn"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem in your Movement phase after moving");
+                         Value (Int 1); Value (Str "TYRANIDS"); Var "Target";
+                         Value (Str "from your army You can make"); Value (Int 1);
+                         Value (Str "second move with"); Lam ("obj",Var "obj");
+                         Var "Target";
+                         Value
+                           (Str
+                              "including Advancing if you wish but when you do so you must roll");
+                         Value (Int 1); Value (Str "for");
+                         Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                         Value (Str "model in"); Lam ("obj",Var "obj"); Var "Target";
+                         Value (Str "For");
+                         Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                         Value (Str "roll of"); Value (Int 1); Value (Str "inflict");
+                         Value (Int 1); Value (Str "Mortal Wound on");
+                         Lam ("obj",Var "obj"); Var "Target"; Lam ("obj",Var "obj");
+                         Var "Target"; Value (Str "can not shoot or make");
+                         Value (Int 1); Value (Str "charge move"); Lam ("obj",Var "obj");
+                         Value (Str "turn")]),None))]),None)
     let ``FEEDER TENDRILS`` = 
         IfThenElse
           (App
@@ -165,17 +409,31 @@ module Stratagem =
              ("FEEDER TENDRILS",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem when a Genestealer LICTOR Toxicrene or Venomthrope from your army kills a CHARACTER in the Fight phase Gain D3 Command Points"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem when"); Value (Int 1);
+                      Value
+                        (Str
+                           "Genestealer LICTOR Toxicrene or Venomthrope from your army kills");
+                      Value (Int 1); Value (Str "CHARACTER in"); Lam ("obj",Var "obj");
+                      Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                      Value (Str "Gain D3 Command Points")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "FEEDER TENDRILS"])),
                    Value
-                     (Str
-                        "Use this Stratagem when a Genestealer LICTOR Toxicrene or Venomthrope from your army kills a CHARACTER in the Fight phase Gain D3 Command Points"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem when"); Value (Int 1);
+                         Value
+                           (Str
+                              "Genestealer LICTOR Toxicrene or Venomthrope from your army kills");
+                         Value (Int 1); Value (Str "CHARACTER in");
+                         Lam ("obj",Var "obj");
+                         Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                         Value (Str "Gain D3 Command Points")]),None))]),None)
     let ``PATHOGENIC SLIME`` = 
         IfThenElse
           (App
@@ -184,17 +442,26 @@ module Stratagem =
              ("PATHOGENIC SLIME",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem in your Shooting phase a TYRANIDS MONSTER from your army Increase the Damage of its by 1 for this phase"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem in your Shooting phase"); Value (Int 1);
+                      Value (Str "TYRANIDS MONSTER from your army Increase");
+                      Lam ("obj",Var "obj"); Value (Str "Damage of its by");
+                      Value (Int 1); Value (Str "for"); Lam ("obj",Var "obj");
+                      Value (Str "phase")]));
                ("2",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "PATHOGENIC SLIME"])),
                    Value
-                     (Str
-                        "Use this Stratagem in your Shooting phase a TYRANIDS MONSTER from your army Increase the Damage of its by 1 for this phase"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem in your Shooting phase"); Value (Int 1);
+                         Value (Str "TYRANIDS MONSTER from your army Increase");
+                         Lam ("obj",Var "obj"); Value (Str "Damage of its by");
+                         Value (Int 1); Value (Str "for"); Lam ("obj",Var "obj");
+                         Value (Str "phase")]),None))]),None)
     let ``VORACIOUS APPETITE`` = 
         IfThenElse
           (App
@@ -203,17 +470,36 @@ module Stratagem =
              ("VORACIOUS APPETITE",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem in the Fight phase when a TYRANIDS MONSTER or CHARACTER from your army is chosen to attack You can re-roll all failed wound for that model until the end of the phase"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem in"); Lam ("obj",Var "obj");
+                      Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                      Value (Str "when"); Value (Int 1);
+                      Value
+                        (Str
+                           "TYRANIDS MONSTER or CHARACTER from your army is chosen to attack You can re-roll");
+                      Lam ("obj",Var "obj"); Value (Str "failed wound for");
+                      Lam ("obj",Var "obj"); Value (Str "model until");
+                      Lam ("obj",Var "obj"); Value (Str "end of"); Lam ("obj",Var "obj");
+                      Value (Str "phase")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "VORACIOUS APPETITE"])),
                    Value
-                     (Str
-                        "Use this Stratagem in the Fight phase when a TYRANIDS MONSTER or CHARACTER from your army is chosen to attack You can re-roll all failed wound for that model until the end of the phase"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem in"); Lam ("obj",Var "obj");
+                         Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                         Value (Str "when"); Value (Int 1);
+                         Value
+                           (Str
+                              "TYRANIDS MONSTER or CHARACTER from your army is chosen to attack You can re-roll");
+                         Lam ("obj",Var "obj"); Value (Str "failed wound for");
+                         Lam ("obj",Var "obj"); Value (Str "model until");
+                         Lam ("obj",Var "obj"); Value (Str "end of");
+                         Lam ("obj",Var "obj"); Value (Str "phase")]),None))]),None)
     let ``PHEROMONE TRAIL`` = 
         IfThenElse
           (App
@@ -222,17 +508,43 @@ module Stratagem =
              ("PHEROMONE TRAIL",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem when a TYRANIDS INFANTRY unit from your army is set up on the battlefield as if there is already a LICTOR from your army on the battlefield You can set up the unit wholly within 6 of the LICTOR and more than 9 from any enemy rather than following the normal for setting up the unit"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem when"); Value (Int 1);
+                      Value (Str "TYRANIDS INFANTRY"); Var "Target";
+                      Value (Str "from your army is set up on"); Lam ("obj",Var "obj");
+                      Value (Str "battlefield as if there is already"); Value (Int 1);
+                      Value (Str "LICTOR from your army on"); Lam ("obj",Var "obj");
+                      Value (Str "battlefield You can set up"); Lam ("obj",Var "obj");
+                      Var "Target"; Value (Str "wholly within"); Value (Distance 6);
+                      Value (Str "of"); Lam ("obj",Var "obj");
+                      Value (Str "LICTOR and more than"); Value (Distance 9);
+                      Value (Str "from"); Lam ("obj",Var "obj"); Var "Target";
+                      Value (Str "rather than following"); Lam ("obj",Var "obj");
+                      Value (Str "normal for setting up"); Lam ("obj",Var "obj");
+                      Var "Target"]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "PHEROMONE TRAIL"])),
                    Value
-                     (Str
-                        "Use this Stratagem when a TYRANIDS INFANTRY unit from your army is set up on the battlefield as if there is already a LICTOR from your army on the battlefield You can set up the unit wholly within 6 of the LICTOR and more than 9 from any enemy rather than following the normal for setting up the unit"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem when"); Value (Int 1);
+                         Value (Str "TYRANIDS INFANTRY"); Var "Target";
+                         Value (Str "from your army is set up on");
+                         Lam ("obj",Var "obj");
+                         Value (Str "battlefield as if there is already"); Value (Int 1);
+                         Value (Str "LICTOR from your army on"); Lam ("obj",Var "obj");
+                         Value (Str "battlefield You can set up"); Lam ("obj",Var "obj");
+                         Var "Target"; Value (Str "wholly within"); Value (Distance 6);
+                         Value (Str "of"); Lam ("obj",Var "obj");
+                         Value (Str "LICTOR and more than"); Value (Distance 9);
+                         Value (Str "from"); Lam ("obj",Var "obj"); Var "Target";
+                         Value (Str "rather than following"); Lam ("obj",Var "obj");
+                         Value (Str "normal for setting up"); Lam ("obj",Var "obj");
+                         Var "Target"]),None))]),None)
     let ``SINGLE-MINDED ANNIHILATION`` = 
         IfThenElse
           (App
@@ -241,8 +553,13 @@ module Stratagem =
              ("SINGLE-MINDED ANNIHILATION",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem at the end of your Shooting phase Select a TYRANIDS INFANTRY unit from your army that unit can immediately shoot again"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                      Value (Str "end of your Shooting phase Select"); Value (Int 1);
+                      Value (Str "TYRANIDS INFANTRY"); Var "Target";
+                      Value (Str "from your army that"); Var "Target";
+                      Value (Str "can immediately shoot again")]));
                ("2",
                 IfThenElse
                   (App
@@ -251,9 +568,13 @@ module Stratagem =
                         (ParamArray
                            [Var "Available CP"; Var "SINGLE-MINDED ANNIHILATION"])),
                    Value
-                     (Str
-                        "Use this Stratagem at the end of your Shooting phase Select a TYRANIDS INFANTRY unit from your army that unit can immediately shoot again"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                         Value (Str "end of your Shooting phase Select"); Value (Int 1);
+                         Value (Str "TYRANIDS INFANTRY"); Var "Target";
+                         Value (Str "from your army that"); Var "Target";
+                         Value (Str "can immediately shoot again")]),None))]),None)
     let ``POWER OF THE HIVE MIND`` = 
         IfThenElse
           (App
@@ -262,8 +583,17 @@ module Stratagem =
              ("POWER OF THE HIVE MIND",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem at the end of your Psychic phase a TYRANIDS PSYKER unit from your army that manifested a psychic power this turn It can immediately attempt to manifest one additional psychic power this turn"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                      Value (Str "end of your Psychic phase"); Value (Int 1);
+                      Value (Str "TYRANIDS PSYKER"); Var "Target";
+                      Value (Str "from your army that manifested"); Value (Int 1);
+                      Value (Str "psychic power"); Lam ("obj",Var "obj");
+                      Value
+                        (Str
+                           "turn It can immediately attempt to manifest one additional psychic power");
+                      Lam ("obj",Var "obj"); Value (Str "turn")]));
                ("1",
                 IfThenElse
                   (App
@@ -271,9 +601,17 @@ module Stratagem =
                       Value
                         (ParamArray [Var "Available CP"; Var "POWER OF THE HIVE MIND"])),
                    Value
-                     (Str
-                        "Use this Stratagem at the end of your Psychic phase a TYRANIDS PSYKER unit from your army that manifested a psychic power this turn It can immediately attempt to manifest one additional psychic power this turn"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                         Value (Str "end of your Psychic phase"); Value (Int 1);
+                         Value (Str "TYRANIDS PSYKER"); Var "Target";
+                         Value (Str "from your army that manifested"); Value (Int 1);
+                         Value (Str "psychic power"); Lam ("obj",Var "obj");
+                         Value
+                           (Str
+                              "turn It can immediately attempt to manifest one additional psychic power");
+                         Lam ("obj",Var "obj"); Value (Str "turn")]),None))]),None)
     let ``DEATH FRENZY`` = 
         IfThenElse
           (App
@@ -282,17 +620,42 @@ module Stratagem =
              ("DEATH FRENZY",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem when a TYRANIDS CHARACTER from your army is slain the Hive Mind compels it to one final attack and it can immediately either shoot as if it were your Shooting phase or fight as if it were your Fight phase before it is removed from the battlefield"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem when"); Value (Int 1);
+                      Value (Str "TYRANIDS CHARACTER from your army is slain");
+                      Lam ("obj",Var "obj");
+                      Value
+                        (Str
+                           "Hive Mind compels it to one final attack and it can immediately");
+                      Lam ("obj",Var "obj");
+                      Value
+                        (Str
+                           "shoot as if it were your Shooting phase or fight as if it were your");
+                      Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                      Value (Str "before it is removed from"); Lam ("obj",Var "obj");
+                      Value (Str "battlefield")]));
                ("2",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "DEATH FRENZY"])),
                    Value
-                     (Str
-                        "Use this Stratagem when a TYRANIDS CHARACTER from your army is slain the Hive Mind compels it to one final attack and it can immediately either shoot as if it were your Shooting phase or fight as if it were your Fight phase before it is removed from the battlefield"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem when"); Value (Int 1);
+                         Value (Str "TYRANIDS CHARACTER from your army is slain");
+                         Lam ("obj",Var "obj");
+                         Value
+                           (Str
+                              "Hive Mind compels it to one final attack and it can immediately");
+                         Lam ("obj",Var "obj");
+                         Value
+                           (Str
+                              "shoot as if it were your Shooting phase or fight as if it were your");
+                         Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                         Value (Str "before it is removed from"); Lam ("obj",Var "obj");
+                         Value (Str "battlefield")]),None))]),None)
     let ``GRISLY FEAST`` = 
         IfThenElse
           (App
@@ -301,16 +664,36 @@ module Stratagem =
              ("GRISLY FEAST",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem in the Morale phase Select a unit of Ripper Swarms or Haruspex from your army Your opponent must add 1 to any Morale taken for enemy that are within 6 of that unit in this phase"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem in"); Lam ("obj",Var "obj");
+                      Value (Str "Morale phase Select"); Value (Int 1); Var "Target";
+                      Value
+                        (Str
+                           "of Ripper Swarms or Haruspex from your army Your opponent must add");
+                      Value (Int 1); Value (Str "to"); Lam ("obj",Var "obj");
+                      Value (Str "Morale taken for"); Var "Target";
+                      Value (Str "that are within"); Value (Distance 6);
+                      Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                      Value (Str "in"); Lam ("obj",Var "obj"); Value (Str "phase")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "GRISLY FEAST"])),
                    Value
-                     (Str
-                        "Use this Stratagem in the Morale phase Select a unit of Ripper Swarms or Haruspex from your army Your opponent must add 1 to any Morale taken for enemy that are within 6 of that unit in this phase"),
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem in"); Lam ("obj",Var "obj");
+                         Value (Str "Morale phase Select"); Value (Int 1); Var "Target";
+                         Value
+                           (Str
+                              "of Ripper Swarms or Haruspex from your army Your opponent must add");
+                         Value (Int 1); Value (Str "to"); Lam ("obj",Var "obj");
+                         Value (Str "Morale taken for"); Var "Target";
+                         Value (Str "that are within"); Value (Distance 6);
+                         Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                         Value (Str "in"); Lam ("obj",Var "obj"); Value (Str "phase")]),
                    None))]),None)
     let ``OVERRUN`` = 
         IfThenElse
@@ -320,17 +703,44 @@ module Stratagem =
              ("OVERRUN",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem when a TYRANIDS unit from your army destroys a unit in the Fight phase and is not within 3 of an enemy unit Instead of consolidating that unit can move and Advance as if it were your Movement phase it can not move within 1 of any enemy"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem when"); Value (Int 1);
+                      Value (Str "TYRANIDS"); Var "Target";
+                      Value (Str "from your army destroys"); Value (Int 1); Var "Target";
+                      Value (Str "in"); Lam ("obj",Var "obj");
+                      Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                      Value (Str "and is not within"); Value (Distance 3);
+                      Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                      Var "Target"; Value (Str "Instead of consolidating");
+                      Lam ("obj",Var "obj"); Var "Target";
+                      Value
+                        (Str
+                           "can move and Advance as if it were your Movement phase it can not move within");
+                      Value (Distance 1); Value (Str "of"); Lam ("obj",Var "obj");
+                      Var "Target"]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "OVERRUN"])),
                    Value
-                     (Str
-                        "Use this Stratagem when a TYRANIDS unit from your army destroys a unit in the Fight phase and is not within 3 of an enemy unit Instead of consolidating that unit can move and Advance as if it were your Movement phase it can not move within 1 of any enemy"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem when"); Value (Int 1);
+                         Value (Str "TYRANIDS"); Var "Target";
+                         Value (Str "from your army destroys"); Value (Int 1);
+                         Var "Target"; Value (Str "in"); Lam ("obj",Var "obj");
+                         Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                         Value (Str "and is not within"); Value (Distance 3);
+                         Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                         Var "Target"; Value (Str "Instead of consolidating");
+                         Lam ("obj",Var "obj"); Var "Target";
+                         Value
+                           (Str
+                              "can move and Advance as if it were your Movement phase it can not move within");
+                         Value (Distance 1); Value (Str "of"); Lam ("obj",Var "obj");
+                         Var "Target"]),None))]),None)
     let ``INVISIBLE HUNTER`` = 
         IfThenElse
           (App
@@ -339,17 +749,28 @@ module Stratagem =
              ("INVISIBLE HUNTER",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem in your Movement phase a LICTOR from your army that is within 1 of an enemy unit That model can Fall Back shoot and charge in this turn"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem in your Movement phase"); Value (Int 1);
+                      Value (Str "LICTOR from your army that is within");
+                      Value (Distance 1); Value (Str "of"); Lam ("obj",Var "obj");
+                      Var "Target"; Var "Target"; Lam ("obj",Var "obj");
+                      Value (Str "model can Fall Back shoot and charge in");
+                      Lam ("obj",Var "obj"); Value (Str "turn")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "INVISIBLE HUNTER"])),
                    Value
-                     (Str
-                        "Use this Stratagem in your Movement phase a LICTOR from your army that is within 1 of an enemy unit That model can Fall Back shoot and charge in this turn"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem in your Movement phase"); Value (Int 1);
+                         Value (Str "LICTOR from your army that is within");
+                         Value (Distance 1); Value (Str "of"); Lam ("obj",Var "obj");
+                         Var "Target"; Var "Target"; Lam ("obj",Var "obj");
+                         Value (Str "model can Fall Back shoot and charge in");
+                         Lam ("obj",Var "obj"); Value (Str "turn")]),None))]),None)
     let ``SPOREFIELD`` = 
         IfThenElse
           (App
@@ -358,17 +779,32 @@ module Stratagem =
              ("SPOREFIELD",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem after both have deployed but before the battle begins You can add up to two of Spore Mines to your army as and set them up anywhere on the battlefield that is more than 12 from enemy"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem after"); Lam ("obj",Var "obj");
+                      Value (Str "have deployed but before"); Lam ("obj",Var "obj");
+                      Value
+                        (Str
+                           "battle begins You can add up to two of Spore Mines to your army as and set them up anywhere on");
+                      Lam ("obj",Var "obj"); Value (Str "battlefield that is more than");
+                      Value (Distance 12); Value (Str "from"); Var "Target"]));
                ("3",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "SPOREFIELD"])),
                    Value
-                     (Str
-                        "Use this Stratagem after both have deployed but before the battle begins You can add up to two of Spore Mines to your army as and set them up anywhere on the battlefield that is more than 12 from enemy"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem after"); Lam ("obj",Var "obj");
+                         Value (Str "have deployed but before"); Lam ("obj",Var "obj");
+                         Value
+                           (Str
+                              "battle begins You can add up to two of Spore Mines to your army as and set them up anywhere on");
+                         Lam ("obj",Var "obj");
+                         Value (Str "battlefield that is more than");
+                         Value (Distance 12); Value (Str "from"); Var "Target"]),None))]),
+           None)
     let ``WAR ON ALL FRONTS`` = 
         IfThenElse
           (App
@@ -377,17 +813,39 @@ module Stratagem =
              ("WAR ON ALL FRONTS",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem in the Fight phase Select an enemy unit that is within 1 of at least one LEVIATHAN unit from your army that can FLY and at least one that can not You can re-roll hit and wound of 1 in this phase for for LEVIATHAN that target that enemy unit"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem in"); Lam ("obj",Var "obj");
+                      Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                      Value (Str "Select"); Lam ("obj",Var "obj"); Var "Target";
+                      Var "Target"; Value (Str "that is within"); Value (Distance 1);
+                      Value (Str "of at least one LEVIATHAN"); Var "Target";
+                      Value
+                        (Str
+                           "from your army that can FLY and at least one that can not You can re-roll hit and wound of");
+                      Value (Int 1); Value (Str "in"); Lam ("obj",Var "obj");
+                      Value (Str "phase for for LEVIATHAN that target");
+                      Lam ("obj",Var "obj"); Var "Target"; Var "Target"]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "WAR ON ALL FRONTS"])),
                    Value
-                     (Str
-                        "Use this Stratagem in the Fight phase Select an enemy unit that is within 1 of at least one LEVIATHAN unit from your army that can FLY and at least one that can not You can re-roll hit and wound of 1 in this phase for for LEVIATHAN that target that enemy unit"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem in"); Lam ("obj",Var "obj");
+                         Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                         Value (Str "Select"); Lam ("obj",Var "obj"); Var "Target";
+                         Var "Target"; Value (Str "that is within"); Value (Distance 1);
+                         Value (Str "of at least one LEVIATHAN"); Var "Target";
+                         Value
+                           (Str
+                              "from your army that can FLY and at least one that can not You can re-roll hit and wound of");
+                         Value (Int 1); Value (Str "in"); Lam ("obj",Var "obj");
+                         Value (Str "phase for for LEVIATHAN that target");
+                         Lam ("obj",Var "obj"); Var "Target"; Var "Target"]),None))]),
+           None)
     let ``HYPER-TOXICITY`` = 
         IfThenElse
           (App (Call Contains,Value (ParamArray [Var "Keywords"; Value (Str "GORGON")])),
@@ -395,17 +853,39 @@ module Stratagem =
              ("HYPER-TOXICITY",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem in the Fight phase a GORGON unit from your army that has the toxin biomorph For the duration of the phase the toxin biomorph causes 1 additional damage on wound of 5 + rather than 6 + for made by that unit"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem in"); Lam ("obj",Var "obj");
+                      Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                      Value (Int 1); Value (Str "GORGON"); Var "Target";
+                      Value (Str "from your army that has"); Lam ("obj",Var "obj");
+                      Value (Str "toxin biomorph For"); Lam ("obj",Var "obj");
+                      Value (Str "duration of"); Lam ("obj",Var "obj");
+                      Value (Str "phase"); Lam ("obj",Var "obj");
+                      Value (Str "toxin biomorph causes"); Value (Int 1);
+                      Value (Str "additional damage on wound of"); Value (Int 5);
+                      Value (Str "+ rather than"); Value (Int 6);
+                      Value (Str "+ for made by"); Lam ("obj",Var "obj"); Var "Target"]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "HYPER-TOXICITY"])),
                    Value
-                     (Str
-                        "Use this Stratagem in the Fight phase a GORGON unit from your army that has the toxin biomorph For the duration of the phase the toxin biomorph causes 1 additional damage on wound of 5 + rather than 6 + for made by that unit"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem in"); Lam ("obj",Var "obj");
+                         Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                         Value (Int 1); Value (Str "GORGON"); Var "Target";
+                         Value (Str "from your army that has"); Lam ("obj",Var "obj");
+                         Value (Str "toxin biomorph For"); Lam ("obj",Var "obj");
+                         Value (Str "duration of"); Lam ("obj",Var "obj");
+                         Value (Str "phase"); Lam ("obj",Var "obj");
+                         Value (Str "toxin biomorph causes"); Value (Int 1);
+                         Value (Str "additional damage on wound of"); Value (Int 5);
+                         Value (Str "+ rather than"); Value (Int 6);
+                         Value (Str "+ for made by"); Lam ("obj",Var "obj");
+                         Var "Target"]),None))]),None)
     let ``BRUTE FORCE`` = 
         IfThenElse
           (App
@@ -414,17 +894,48 @@ module Stratagem =
              ("BRUTE FORCE",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem when a BEHEMOTH unit from your army completes a charge move Roll a for each model in the charging unit that is within 1 of an enemy unit For each roll of 6 or 2 + for a MONSTER inflict one mortal wound on an enemy unit within 1"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem when"); Value (Int 1);
+                      Value (Str "BEHEMOTH"); Var "Target";
+                      Value (Str "from your army completes"); Value (Int 1);
+                      Value (Str "charge move Roll"); Value (Int 1); Value (Str "for");
+                      Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                      Value (Str "model in"); Lam ("obj",Var "obj");
+                      Value (Str "charging"); Var "Target"; Value (Str "that is within");
+                      Value (Distance 1); Value (Str "of"); Lam ("obj",Var "obj");
+                      Var "Target"; Var "Target"; Value (Str "For");
+                      Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                      Value (Str "roll of"); Value (Int 6); Value (Str "or");
+                      Value (Int 2); Value (Str "+ for"); Value (Int 1);
+                      Value (Str "MONSTER inflict one Mortal Wound on");
+                      Lam ("obj",Var "obj"); Var "Target"; Var "Target";
+                      Value (Str "within"); Value (Distance 1)]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "BRUTE FORCE"])),
                    Value
-                     (Str
-                        "Use this Stratagem when a BEHEMOTH unit from your army completes a charge move Roll a for each model in the charging unit that is within 1 of an enemy unit For each roll of 6 or 2 + for a MONSTER inflict one mortal wound on an enemy unit within 1"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem when"); Value (Int 1);
+                         Value (Str "BEHEMOTH"); Var "Target";
+                         Value (Str "from your army completes"); Value (Int 1);
+                         Value (Str "charge move Roll"); Value (Int 1);
+                         Value (Str "for");
+                         Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                         Value (Str "model in"); Lam ("obj",Var "obj");
+                         Value (Str "charging"); Var "Target";
+                         Value (Str "that is within"); Value (Distance 1);
+                         Value (Str "of"); Lam ("obj",Var "obj"); Var "Target";
+                         Var "Target"; Value (Str "For");
+                         Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                         Value (Str "roll of"); Value (Int 6); Value (Str "or");
+                         Value (Int 2); Value (Str "+ for"); Value (Int 1);
+                         Value (Str "MONSTER inflict one Mortal Wound on");
+                         Lam ("obj",Var "obj"); Var "Target"; Var "Target";
+                         Value (Str "within"); Value (Distance 1)]),None))]),None)
     let ``ENDLESS SWARM`` = 
         IfThenElse
           (App
@@ -433,17 +944,41 @@ module Stratagem =
              ("ENDLESS SWARM",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem at the end of your Movement phase a unit of Termagants Hormagaunts or Gargoyles or any HYDRA INFANTRY unit from your army that has been completely destroyed Add an identical unit to your army and set it up as wholly within 6 of any board edge more than 9 from enemy"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                      Value (Str "end of your Movement phase"); Value (Int 1);
+                      Var "Target";
+                      Value (Str "of Termagants Hormagaunts or Gargoyles or");
+                      Lam ("obj",Var "obj"); Value (Str "HYDRA INFANTRY"); Var "Target";
+                      Value
+                        (Str "from your army that has been completely destroyed Add");
+                      Lam ("obj",Var "obj"); Value (Str "identical"); Var "Target";
+                      Value (Str "to your army and set it up as wholly within");
+                      Value (Distance 6); Value (Str "of"); Lam ("obj",Var "obj");
+                      Value (Str "board edge more than"); Value (Distance 9);
+                      Value (Str "from"); Var "Target"]));
                ("2",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "ENDLESS SWARM"])),
                    Value
-                     (Str
-                        "Use this Stratagem at the end of your Movement phase a unit of Termagants Hormagaunts or Gargoyles or any HYDRA INFANTRY unit from your army that has been completely destroyed Add an identical unit to your army and set it up as wholly within 6 of any board edge more than 9 from enemy"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                         Value (Str "end of your Movement phase"); Value (Int 1);
+                         Var "Target";
+                         Value (Str "of Termagants Hormagaunts or Gargoyles or");
+                         Lam ("obj",Var "obj"); Value (Str "HYDRA INFANTRY");
+                         Var "Target";
+                         Value
+                           (Str "from your army that has been completely destroyed Add");
+                         Lam ("obj",Var "obj"); Value (Str "identical"); Var "Target";
+                         Value (Str "to your army and set it up as wholly within");
+                         Value (Distance 6); Value (Str "of"); Lam ("obj",Var "obj");
+                         Value (Str "board edge more than"); Value (Distance 9);
+                         Value (Str "from"); Var "Target"]),None))]),None)
     let ``OPPORTUNISTIC ADVANCE`` = 
         IfThenElse
           (App (Call Contains,Value (ParamArray [Var "Keywords"; Value (Str "KRAKEN")])),
@@ -451,8 +986,18 @@ module Stratagem =
              ("OPPORTUNISTIC ADVANCE",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem in your Movement phase when you roll the for an Advancing KRAKEN unit other than a unit that can FLY You can double the number you roll and add that total to their Move characteristic for that Movement phase rather than following the normal for Advancing"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem in your Movement phase when you roll");
+                      Lam ("obj",Var "obj"); Value (Str "for"); Lam ("obj",Var "obj");
+                      Value (Str "Advancing KRAKEN"); Var "Target";
+                      Value (Str "other than"); Value (Int 1); Var "Target";
+                      Value (Str "that can FLY You can double"); Lam ("obj",Var "obj");
+                      Value (Str "number you roll and add"); Lam ("obj",Var "obj");
+                      Value (Str "total to their Move characteristic for");
+                      Lam ("obj",Var "obj");
+                      Value (Str "Movement phase rather than following");
+                      Lam ("obj",Var "obj"); Value (Str "normal for Advancing")]));
                ("1",
                 IfThenElse
                   (App
@@ -460,8 +1005,19 @@ module Stratagem =
                       Value
                         (ParamArray [Var "Available CP"; Var "OPPORTUNISTIC ADVANCE"])),
                    Value
-                     (Str
-                        "Use this Stratagem in your Movement phase when you roll the for an Advancing KRAKEN unit other than a unit that can FLY You can double the number you roll and add that total to their Move characteristic for that Movement phase rather than following the normal for Advancing"),
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem in your Movement phase when you roll");
+                         Lam ("obj",Var "obj"); Value (Str "for"); Lam ("obj",Var "obj");
+                         Value (Str "Advancing KRAKEN"); Var "Target";
+                         Value (Str "other than"); Value (Int 1); Var "Target";
+                         Value (Str "that can FLY You can double");
+                         Lam ("obj",Var "obj"); Value (Str "number you roll and add");
+                         Lam ("obj",Var "obj");
+                         Value (Str "total to their Move characteristic for");
+                         Lam ("obj",Var "obj");
+                         Value (Str "Movement phase rather than following");
+                         Lam ("obj",Var "obj"); Value (Str "normal for Advancing")]),
                    None))]),None)
     let ``CALL THE BROOD`` = 
         IfThenElse
@@ -471,17 +1027,38 @@ module Stratagem =
              ("CALL THE BROOD",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem at the end of your Movement phase Add a new unit of up to 5 to your army and set them up as wholly within 6 of a Broodlord or infestation node from your army and more than 9 from any enemy"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                      Value (Str "end of your Movement phase Add"); Value (Int 1);
+                      Value (Str "new"); Var "Target"; Value (Str "of up to");
+                      Value (Int 5);
+                      Value (Str "to your army and set them up as wholly within");
+                      Value (Distance 6); Value (Str "of"); Value (Int 1);
+                      Value
+                        (Str
+                           "Broodlord or infestation node from your army and more than");
+                      Value (Distance 9); Value (Str "from"); Lam ("obj",Var "obj");
+                      Var "Target"]));
                ("3",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "CALL THE BROOD"])),
                    Value
-                     (Str
-                        "Use this Stratagem at the end of your Movement phase Add a new unit of up to 5 to your army and set them up as wholly within 6 of a Broodlord or infestation node from your army and more than 9 from any enemy"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                         Value (Str "end of your Movement phase Add"); Value (Int 1);
+                         Value (Str "new"); Var "Target"; Value (Str "of up to");
+                         Value (Int 5);
+                         Value (Str "to your army and set them up as wholly within");
+                         Value (Distance 6); Value (Str "of"); Value (Int 1);
+                         Value
+                           (Str
+                              "Broodlord or infestation node from your army and more than");
+                         Value (Distance 9); Value (Str "from"); Lam ("obj",Var "obj");
+                         Var "Target"]),None))]),None)
     let ``THE ENEMY BELOW`` = 
         IfThenElse
           (App
@@ -491,17 +1068,58 @@ module Stratagem =
              ("THE ENEMY BELOW",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem when you set up a JORMUNGANDR INFANTRY unit during deployment It is set up within bored before battle Whenever you set up a unit of Raveners a Mawloc Trygon or a Trygon Prime at the end of your Movement phase a burrowing unit you can also set up any number of you set up within the Set up the unit wholly within 3 of the burrowing unit and more than 9 from any enemy Any you can not set up in this way when you do so are destroyed"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem when you set up"); Value (Int 1);
+                      Value (Str "JORMUNGANDR INFANTRY"); Var "Target";
+                      Value
+                        (Str
+                           "during deployment It is set up within bored before battle Whenever you set up");
+                      Value (Int 1); Var "Target"; Value (Str "of Raveners");
+                      Value (Int 1); Value (Str "Mawloc Trygon or"); Value (Int 1);
+                      Value (Str "Trygon Prime at"); Lam ("obj",Var "obj");
+                      Value (Str "end of your Movement phase"); Value (Int 1);
+                      Value (Str "burrowing"); Var "Target";
+                      Value (Str "you can also set up"); Lam ("obj",Var "obj");
+                      Value (Str "number of you set up within"); Lam ("obj",Var "obj");
+                      Value (Str "Set up"); Lam ("obj",Var "obj"); Var "Target";
+                      Value (Str "wholly within"); Value (Distance 3); Value (Str "of");
+                      Lam ("obj",Var "obj"); Value (Str "burrowing"); Var "Target";
+                      Value (Str "and more than"); Value (Distance 9);
+                      Value (Str "from"); Lam ("obj",Var "obj"); Var "Target";
+                      Lam ("obj",Var "obj"); Value (Str "you can not set up in");
+                      Lam ("obj",Var "obj");
+                      Value (Str "way when you do so are destroyed")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "THE ENEMY BELOW"])),
                    Value
-                     (Str
-                        "Use this Stratagem when you set up a JORMUNGANDR INFANTRY unit during deployment It is set up within bored before battle Whenever you set up a unit of Raveners a Mawloc Trygon or a Trygon Prime at the end of your Movement phase a burrowing unit you can also set up any number of you set up within the Set up the unit wholly within 3 of the burrowing unit and more than 9 from any enemy Any you can not set up in this way when you do so are destroyed"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem when you set up"); Value (Int 1);
+                         Value (Str "JORMUNGANDR INFANTRY"); Var "Target";
+                         Value
+                           (Str
+                              "during deployment It is set up within bored before battle Whenever you set up");
+                         Value (Int 1); Var "Target"; Value (Str "of Raveners");
+                         Value (Int 1); Value (Str "Mawloc Trygon or"); Value (Int 1);
+                         Value (Str "Trygon Prime at"); Lam ("obj",Var "obj");
+                         Value (Str "end of your Movement phase"); Value (Int 1);
+                         Value (Str "burrowing"); Var "Target";
+                         Value (Str "you can also set up"); Lam ("obj",Var "obj");
+                         Value (Str "number of you set up within");
+                         Lam ("obj",Var "obj"); Value (Str "Set up");
+                         Lam ("obj",Var "obj"); Var "Target";
+                         Value (Str "wholly within"); Value (Distance 3);
+                         Value (Str "of"); Lam ("obj",Var "obj");
+                         Value (Str "burrowing"); Var "Target";
+                         Value (Str "and more than"); Value (Distance 9);
+                         Value (Str "from"); Lam ("obj",Var "obj"); Var "Target";
+                         Lam ("obj",Var "obj"); Value (Str "you can not set up in");
+                         Lam ("obj",Var "obj");
+                         Value (Str "way when you do so are destroyed")]),None))]),None)
     let ``THE DEEPEST SHADOW`` = 
         IfThenElse
           (App (Call Contains,Value (ParamArray [Var "Keywords"; Value (Str "KRONOS")])),
@@ -509,17 +1127,32 @@ module Stratagem =
              ("THE DEEPEST SHADOW",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem when an enemy PSYKER attempts to manifest a psychic power within 24 of a KRONOS unit from your army Your opponent can only roll a single for the Psychic test"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem when"); Lam ("obj",Var "obj"); Var "Target";
+                      Value (Str "PSYKER attempts to manifest"); Value (Int 1);
+                      Value (Str "psychic power within"); Value (Distance 24);
+                      Value (Str "of"); Value (Int 1); Value (Str "KRONOS");
+                      Var "Target";
+                      Value (Str "from your army Your opponent can only roll");
+                      Value (Int 1); Value (Str "single for"); Lam ("obj",Var "obj");
+                      Value (Str "Psychic test")]));
                ("1",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "THE DEEPEST SHADOW"])),
                    Value
-                     (Str
-                        "Use this Stratagem when an enemy PSYKER attempts to manifest a psychic power within 24 of a KRONOS unit from your army Your opponent can only roll a single for the Psychic test"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem when"); Lam ("obj",Var "obj");
+                         Var "Target"; Value (Str "PSYKER attempts to manifest");
+                         Value (Int 1); Value (Str "psychic power within");
+                         Value (Distance 24); Value (Str "of"); Value (Int 1);
+                         Value (Str "KRONOS"); Var "Target";
+                         Value (Str "from your army Your opponent can only roll");
+                         Value (Int 1); Value (Str "single for"); Lam ("obj",Var "obj");
+                         Value (Str "Psychic test")]),None))]),None)
     let ``DIGESTIVE DENIAL`` = 
         IfThenElse
           (App
@@ -528,16 +1161,33 @@ module Stratagem =
              ("DIGESTIVE DENIAL",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem after deployment but before the first battle round begins Choose a piece of terrain other than a Fortification Units fully within or on this piece of terrain do not gain any bonus to their saving throws for being in cover"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem after deployment but before");
+                      Lam ("obj",Var "obj");
+                      Value (Str "first battle round begins Choose"); Value (Int 1);
+                      Value (Str "piece of terrain other than"); Value (Int 1);
+                      Value (Str "Fortification Units fully within or on");
+                      Lam ("obj",Var "obj"); Value (Str "piece of terrain do not gain");
+                      Lam ("obj",Var "obj");
+                      Value (Str "bonus to their saving throws for being in cover")]));
                ("2",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "DIGESTIVE DENIAL"])),
                    Value
-                     (Str
-                        "Use this Stratagem after deployment but before the first battle round begins Choose a piece of terrain other than a Fortification Units fully within or on this piece of terrain do not gain any bonus to their saving throws for being in cover"),
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem after deployment but before");
+                         Lam ("obj",Var "obj");
+                         Value (Str "first battle round begins Choose"); Value (Int 1);
+                         Value (Str "piece of terrain other than"); Value (Int 1);
+                         Value (Str "Fortification Units fully within or on");
+                         Lam ("obj",Var "obj");
+                         Value (Str "piece of terrain do not gain");
+                         Lam ("obj",Var "obj");
+                         Value (Str "bonus to their saving throws for being in cover")]),
                    None))]),None)
     let ``ADRENALINE SURGE`` = 
         IfThenElse
@@ -547,14 +1197,26 @@ module Stratagem =
              ("ADRENALINE SURGE",
               [("<Not selected>",
                 Value
-                  (Str
-                     "Use this Stratagem at the end of the Fight phase Select a TYRANIDS unit from your army that unit can immediately fight again"));
+                  (ParamArray
+                     [Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                      Value (Str "end of"); Lam ("obj",Var "obj");
+                      Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                      Value (Str "Select"); Value (Int 1); Value (Str "TYRANIDS");
+                      Var "Target"; Value (Str "from your army"); Lam ("obj",Var "obj");
+                      Var "Target"; Value (Str "can immediately fight again")]));
                ("3",
                 IfThenElse
                   (App
                      (Call GreaterThan,
                       Value (ParamArray [Var "Available CP"; Var "ADRENALINE SURGE"])),
                    Value
-                     (Str
-                        "Use this Stratagem at the end of the Fight phase Select a TYRANIDS unit from your army that unit can immediately fight again"),
-                   None))]),None)
+                     (ParamArray
+                        [Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem at"); Lam ("obj",Var "obj");
+                         Value (Str "end of"); Lam ("obj",Var "obj");
+                         Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                         Value (Str "Select"); Value (Int 1); Value (Str "TYRANIDS");
+                         Var "Target"; Value (Str "from your army");
+                         Lam ("obj",Var "obj"); Var "Target";
+                         Value (Str "can immediately fight again")]),None))]),None)

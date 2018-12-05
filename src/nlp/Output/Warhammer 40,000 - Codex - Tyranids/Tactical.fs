@@ -15,25 +15,64 @@ module Tactical =
     let _ = ignore
     let ``Swarm`` = 
         Value
-          (Str
-             "Score 1 victory point if you control more objective markers than your opponent at the end of the turn")
+          (ParamArray
+             [Value (Str "Score"); Value (Int 1);
+              Value
+                (Str
+                   "victory point if you control more objective markers than your opponent at");
+              Lam ("obj",Var "obj"); Value (Str "end of"); Lam ("obj",Var "obj");
+              Value (Str "turn")])
     let ``Crush`` = 
         Value
-          (Str
-             "Score 1 victory point if at least one enemy unit was completely destroyed this turn and the last model in the enemy unit was slain by an attack made by a TYRANIDS MONSTER or a TYRANIDS unit of more than 10")
+          (ParamArray
+             [Value (Str "Score"); Value (Int 1);
+              Value (Str "victory point if at least one"); Var "Target"; Var "Target";
+              Value (Str "was completely destroyed"); Lam ("obj",Var "obj");
+              Value (Str "turn and"); Lam ("obj",Var "obj"); Value (Str "last model in");
+              Lam ("obj",Var "obj"); Var "Target"; Var "Target";
+              Value (Str "was slain by"); Lam ("obj",Var "obj");
+              Value (Str "attack made by"); Value (Int 1);
+              Value (Str "TYRANIDS MONSTER or"); Value (Int 1); Value (Str "TYRANIDS");
+              Var "Target"; Value (Str "of more than"); Value (Int 10)])
     let ``Dominate`` = 
         Value
-          (Str
-             "Score 1 victory point if at least three psychic were successfully manifested by friendly TYRANIDS in your Psychic phase")
+          (ParamArray
+             [Value (Str "Score"); Value (Int 1);
+              Value
+                (Str
+                   "victory point if at least three psychic were successfully manifested by friendly TYRANIDS in your Psychic phase")])
     let ``Decapitate`` = 
         Value
-          (Str
-             "Score 1 victory point if at least one enemy CHARACTER was destroyed this turn If two or more enemy were destroyed score D3 victory instead")
+          (ParamArray
+             [Value (Str "Score"); Value (Int 1);
+              Value (Str "victory point if at least one"); Var "Target";
+              Value (Str "CHARACTER was destroyed"); Lam ("obj",Var "obj");
+              Value (Str "turn If two or more"); Var "Target";
+              Value (Str "were destroyed score D3 victory instead")])
     let ``Terrify`` = 
         Value
-          (Str
-             "Score 1 victory point if at least one enemy unit failed a Morale test this turn If three or more enemy failed Morale tests this turn score D3 victory instead")
+          (ParamArray
+             [Value (Str "Score"); Value (Int 1);
+              Value (Str "victory point if at least one"); Var "Target"; Var "Target";
+              Value (Str "failed"); Value (Int 1); Value (Str "Morale test");
+              Lam ("obj",Var "obj"); Value (Str "turn If three or more"); Var "Target";
+              Value (Str "failed Morale tests"); Lam ("obj",Var "obj");
+              Value (Str "turn score D3 victory instead")])
     let ``Devour`` = 
         Value
-          (Str
-             "Score 1 victory point if an enemy unit was destroyed during the Fight phase this turn If 3 or more enemy were destroyed during the Fight phase this turn score D3 victory instead and if 6 or more enemy were destroyed during the Fight phase this turn score D3 +3 victory instead")
+          (ParamArray
+             [Value (Str "Score"); Value (Int 1); Value (Str "victory point if");
+              Lam ("obj",Var "obj"); Var "Target"; Var "Target";
+              Value (Str "was destroyed during"); Lam ("obj",Var "obj");
+              Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+              Lam ("obj",Var "obj"); Value (Str "turn If"); Value (Int 3);
+              Value (Str "or more"); Var "Target"; Value (Str "were destroyed during");
+              Lam ("obj",Var "obj");
+              Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+              Lam ("obj",Var "obj"); Value (Str "turn score");
+              App (Call Dice,Value (Int 3)); Value (Str "victory instead and if");
+              Value (Int 6); Value (Str "or more"); Var "Target";
+              Value (Str "were destroyed during"); Lam ("obj",Var "obj");
+              Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+              Lam ("obj",Var "obj"); Value (Str "turn score D3"); Value (Int 3);
+              Value (Str "victory instead")])

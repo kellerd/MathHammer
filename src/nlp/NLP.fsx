@@ -223,20 +223,20 @@ let scanWords (tree:Tree) =
     let convertNode node =     
         let word op = Word(node, op) 
         match node with 
-        // | IsLabeled [EQT] _ -> Distance 0 |> Value |> word , 0        
-        // | IsLabeled [NN] ("D6"|"d6") -> App(Call Dice, Value(Int 6)) |> word, 0
-        // | IsLabeled [NN] ("D3"|"d3") -> App(Call Dice, Value(Int 3)) |> word, 0
-        // | IsLabeled [NN] ("enemy" | "unit") -> Var("Target") |> word, 0
-        // | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
-        // | Siblings [NN;NN]  [(=) "enemy";(=) "unit"] skip   -> Var("unit") |> word, skip
-        // | Siblings [NN;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
-        // | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
-        // | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
-        // | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
-        // | IsLabeled [DT] "a"      -> Value(Int(1)) |> word,0
-        // | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
-        // | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0
-        // | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
+        | IsLabeled [EQT] _ -> Distance 0 |> Value |> word , 0        
+        | IsLabeled [NN] ("D6"|"d6") -> App(Call Dice, Value(Int 6)) |> word, 0
+        | IsLabeled [NN] ("D3"|"d3") -> App(Call Dice, Value(Int 3)) |> word, 0
+        | IsLabeled [NN] ("enemy" | "unit") -> Var("Target") |> word, 0
+        | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
+        | Siblings [NN;NN]  [(=) "enemy";(=) "unit"] skip   -> Var("unit") |> word, skip
+        | Siblings [NN;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
+        | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
+        | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
+        | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
+        | IsLabeled [DT] "a"      -> Value(Int(1)) |> word,0
+        | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
+        | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0
+        | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
         | _ -> Node node,0   
     let rec mapTree (node:Tree) = 
         let (wsn, skip) = convertNode node
@@ -369,8 +369,8 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
         // let skip = 0
         let children' = children |> skipChildren
         match node with 
-        // | Cont _ -> BasicNode(penTags, n, children')  
-        // | Word _ -> BasicNode(penTags, n, children')  
+        | Cont _ -> BasicNode(penTags, n, children')  
+        | Word _ -> BasicNode(penTags, n, children')  
         | Node op -> 
             match penTags with 
             | Some (SYM | NNS | Punctuation | EQT) -> 
@@ -465,10 +465,10 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
             | [] -> pennTags, [cont (Value NoValue)] 
             | [item] -> pennTags, [cont item] 
             | _ :: _ -> pennTags, [cont (Value(ParamArray(acc)))]
-    let fAssign tag label (_, vAccum) (_, inExpr) = tag, vAccum
-    //    tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]    
-    let ifte tag (_, test) (_,thenExpr) elseExpr = tag, test
-    //    tag, [IfThenElse(ParamArray test |> Value,ParamArray thenExpr  |> Value, elseExpr |> Option.map (snd >> ParamArray >> Value))]     
+    let fAssign tag label (_, vAccum) (_, inExpr) = 
+        tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]    
+    let ifte tag (_, test) (_,thenExpr) elseExpr = 
+        tag, [IfThenElse(ParamArray test |> Value,ParamArray thenExpr  |> Value, elseExpr |> Option.map (snd >> ParamArray >> Value))]     
     foldBack fEmpty fNode fAssign ifte tree (None, [])
 // let tree =  
 //     //"At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
