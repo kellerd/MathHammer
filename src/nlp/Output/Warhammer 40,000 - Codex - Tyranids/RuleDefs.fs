@@ -42,55 +42,155 @@ module Rule =
               Value (Str "When you include");
               App
                 (Value (Int 1),Value (ParamArray [Value (Str "Tyranids"); Var "Target"]));
-              Value (Str "in your army you must nominate which hive fleet that");
-              Var "Target";
-              Value
-                (Str "is from There are many different hive to choose from you can use");
-              App (Lam ("obj",Var "obj"),Value (ParamArray [])); Value (Str "of");
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "hive"); Lam ("obj",Var "obj")]));
-              Value (Str "described in");
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "book"); Lam ("obj",Var "obj")]));
-              Value (Str "or make up your own if you prefer You then simply replace");
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "<HIVE FLEET>"); Lam ("obj",Var "obj")]));
-              Value (Str "keyword in");
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "instance"); Lam ("obj",Var "obj")]));
-              Value (Str "on");
-              App
-                (Lam ("obj",Var "obj"),
-                 Value (ParamArray [Var "Target"; Value (Str "'s")]));
-              Value (Str "datasheet and in");
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "psychic"); Lam ("obj",Var "obj")]));
-              Value (Str "they know with");
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "name"); Lam ("obj",Var "obj")]));
-              Value (Str "of your chosen hive fleet For example if you were to include");
-              App
-                (Call Repeat,Value (ParamArray [Value (Str "Tervigon"); Value (Int 1)]));
-              Value
-                (Str
-                   "in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
-              Value (Distance 0); Value (Str "ability would say You can re-roll hit of");
-              Value (Int 1); Value (Str "in");
-              App
-                (Lam ("obj",Var "obj"),
-                 Value (ParamArray [Value (Str "Shooting"); Value (Str "phase")]));
-              Value (Str "for friendly KRAKEN Termagant within"); Value (Distance 6);
-              Value (Str "of");
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
-              Value (Distance 0)])
+              Value (Str "in your army you must nominate which hive fleet");
+              Let
+                ("ThatSubject",
+                 Value
+                   (ParamArray
+                      [Var "Target"; Value (Str "with");
+                       App
+                         (Call Repeat,
+                          Value (ParamArray [Value (Str "name"); Lam ("obj",Var "obj")]));
+                       Value
+                         (Str
+                            "of your chosen hive fleet For example if you were to include");
+                       App
+                         (Call Repeat,
+                          Value (ParamArray [Value (Str "Tervigon"); Value (Int 1)]));
+                       Value
+                         (Str
+                            "in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
+                       Value (Distance 0);
+                       Value (Str "ability would say You can re-roll hit of");
+                       Value (Int 1); Value (Str "in");
+                       App
+                         (Lam ("obj",Var "obj"),
+                          Value
+                            (ParamArray [Value (Str "Shooting"); Value (Str "phase")]));
+                       Value (Str "for friendly KRAKEN Termagant within");
+                       Value (Distance 6); Value (Str "of");
+                       App
+                         (Call Repeat,
+                          Value
+                            (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
+                       Value (Distance 0)]),
+                 Value
+                   (ParamArray
+                      [Let
+                         ("ThatObject",
+                          Value
+                            (ParamArray
+                               [Value
+                                  (Str
+                                     "from There are many different hive to choose from you can use");
+                                App (Lam ("obj",Var "obj"),Value (ParamArray []));
+                                Value (Str "of");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "hive"); Lam ("obj",Var "obj")]));
+                                Value (Str "described in");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "book"); Lam ("obj",Var "obj")]));
+                                Value
+                                  (Str
+                                     "or make up your own if you prefer You then simply replace");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "<HIVE FLEET>");
+                                         Lam ("obj",Var "obj")]));
+                                Value (Str "keyword in");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "instance"); Lam ("obj",Var "obj")]));
+                                Value (Str "on");
+                                App
+                                  (Lam ("obj",Var "obj"),
+                                   Value (ParamArray [Var "Target"; Value (Str "'s")]));
+                                Value (Str "datasheet and in");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "psychic"); Lam ("obj",Var "obj")]));
+                                Value (Str "they know with");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "name"); Lam ("obj",Var "obj")]));
+                                Value
+                                  (Str
+                                     "of your chosen hive fleet For example if you were to include");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray [Value (Str "Tervigon"); Value (Int 1)]));
+                                Value
+                                  (Str
+                                     "in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
+                                Value (Distance 0);
+                                Value (Str "ability would say You can re-roll hit of");
+                                Value (Int 1); Value (Str "in");
+                                App
+                                  (Lam ("obj",Var "obj"),
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "Shooting"); Value (Str "phase")]));
+                                Value (Str "for friendly KRAKEN Termagant within");
+                                Value (Distance 6); Value (Str "of");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "model"); Lam ("obj",Var "obj")]));
+                                Value (Distance 0)]),
+                          Value
+                            (ParamArray
+                               [App
+                                  (Value (Str "is"),
+                                   Value
+                                     (ParamArray [Var "ThatSubject"; Var "ThatObject"]));
+                                Value (Str "with");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "name"); Lam ("obj",Var "obj")]));
+                                Value
+                                  (Str
+                                     "of your chosen hive fleet For example if you were to include");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray [Value (Str "Tervigon"); Value (Int 1)]));
+                                Value
+                                  (Str
+                                     "in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
+                                Value (Distance 0);
+                                Value (Str "ability would say You can re-roll hit of");
+                                Value (Int 1); Value (Str "in");
+                                App
+                                  (Lam ("obj",Var "obj"),
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "Shooting"); Value (Str "phase")]));
+                                Value (Str "for friendly KRAKEN Termagant within");
+                                Value (Distance 6); Value (Str "of");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "model"); Lam ("obj",Var "obj")]));
+                                Value (Distance 0)]))]))])
     let ``SYNAPSE`` = 
         Value
           (ParamArray
@@ -2029,8 +2129,21 @@ module Rule =
                  Value
                    (ParamArray
                       [Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
-                       Lam ("obj",Var "obj")])); Value (Str "that attack inflicts");
-              Value (Int 1); Value (Str "additional damage")])
+                       Lam ("obj",Var "obj")]));
+              Let
+                ("ThatSubject",Value (ParamArray [Var "attack"]),
+                 Value
+                   (ParamArray
+                      [Let
+                         ("ThatObject",
+                          Value
+                            (ParamArray [Value (Int 1); Value (Str "additional damage")]),
+                          Value
+                            (ParamArray
+                               [App
+                                  (Value (Str "inflicts"),
+                                   Value
+                                     (ParamArray [Var "ThatSubject"; Var "ThatObject"]))]))]))])
     let ``KRAKEN: ONE STEP AHEAD`` = 
         Value
           (ParamArray
@@ -2124,10 +2237,27 @@ module Rule =
                                 Value (Int 1)]))]),
                  Value
                    (ParamArray
-                      [Value (Str "that"); Var "Target"; Call Suffer;
-                       App
-                         (Call Repeat,
-                          Value (ParamArray [Value (Str "Mortal Wound"); Value (Int 1)]))]))])
+                      [Let
+                         ("ThatSubject",Value (ParamArray [Var "Target"]),
+                          Value
+                            (ParamArray
+                               [Let
+                                  ("ThatObject",
+                                   Value
+                                     (ParamArray
+                                        [App
+                                           (Call Repeat,
+                                            Value
+                                              (ParamArray
+                                                 [Value (Str "Mortal Wound");
+                                                  Value (Int 1)]))]),
+                                   Value
+                                     (ParamArray
+                                        [App
+                                           (Call Suffer,
+                                            Value
+                                              (ParamArray
+                                                 [Var "ThatSubject"; Var "ThatObject"]))]))]))]))])
     let ``JORMUNGANDR: INSIDIOUS THREAT`` = 
         Value
           (ParamArray
@@ -2158,14 +2288,65 @@ module Rule =
               Value (Str "of your roll"); App (Value (Int 1),Value (ParamArray []));
               Value (Str "for");
               Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-              Value (Str "wound that your Warlord has lost For");
-              Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-              Value (Str "roll of"); Value (Int 6); Value (Str "your Warlord regains");
-              App (Call Repeat,Value (ParamArray [Value (Str "wound"); Value (Int 1)]));
-              Value (Str "lost earlier in");
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "battle"); Lam ("obj",Var "obj")]))])
+              Value (Str "wound");
+              Let
+                ("ThatSubject",
+                 Value
+                   (ParamArray
+                      [Var "your Warlord"; Value (Str "For");
+                       Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                       Value (Str "roll of"); Value (Int 6);
+                       Value (Str "your Warlord regains");
+                       App
+                         (Call Repeat,
+                          Value (ParamArray [Value (Str "wound"); Value (Int 1)]));
+                       Value (Str "lost earlier in");
+                       App
+                         (Call Repeat,
+                          Value
+                            (ParamArray [Value (Str "battle"); Lam ("obj",Var "obj")]))]),
+                 Value
+                   (ParamArray
+                      [Let
+                         ("ThatObject",
+                          Value
+                            (ParamArray
+                               [Value (Str "lost For");
+                                Lam
+                                  ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                                Value (Str "roll of"); Value (Int 6);
+                                Value (Str "your Warlord regains");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray [Value (Str "wound"); Value (Int 1)]));
+                                Value (Str "lost earlier in");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "battle"); Lam ("obj",Var "obj")]))]),
+                          Value
+                            (ParamArray
+                               [App
+                                  (Value (Str "has"),
+                                   Value
+                                     (ParamArray [Var "ThatSubject"; Var "ThatObject"]));
+                                Value (Str "For");
+                                Lam
+                                  ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                                Value (Str "roll of"); Value (Int 6);
+                                Value (Str "your Warlord regains");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray [Value (Str "wound"); Value (Int 1)]));
+                                Value (Str "lost earlier in");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "battle"); Lam ("obj",Var "obj")]))]))]))])
     let ``KRONOS: SOUL HUNGER`` = 
         Value
           (ParamArray
@@ -2331,7 +2512,20 @@ module Rule =
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "table"); Lam ("obj",Var "obj")]));
-              Value (Str "that best describes its character and fighting style")])
+              Let
+                ("ThatSubject",Value (ParamArray [Var "best"]),
+                 Value
+                   (ParamArray
+                      [Let
+                         ("ThatObject",
+                          Value
+                            (ParamArray [Value (Str "its character and fighting style")]),
+                          Value
+                            (ParamArray
+                               [App
+                                  (Value (Str "describes"),
+                                   Value
+                                     (ParamArray [Var "ThatSubject"; Var "ThatObject"]))]))]))])
     let ``BEHEMOTH: HYPER-AGGRESSION`` = 
         Value
           (ParamArray

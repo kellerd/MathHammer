@@ -108,8 +108,21 @@ module Stratagem =
                                         App
                                           (Call Or,
                                            Value (ParamArray [Var "eq"; Var "gt"])))));
-                               Value (Int 1)])); Value (Str "that"); Var "Target";
-                      Call Suffer; Value (Str "3D3 mortal")]));
+                               Value (Int 1)]));
+                      Let
+                        ("ThatSubject",Value (ParamArray [Var "Target"]),
+                         Value
+                           (ParamArray
+                              [Let
+                                 ("ThatObject",
+                                  Value (ParamArray [Value (Str "3D3 mortal")]),
+                                  Value
+                                    (ParamArray
+                                       [App
+                                          (Call Suffer,
+                                           Value
+                                             (ParamArray
+                                                [Var "ThatSubject"; Var "ThatObject"]))]))]))]));
                ("1",
                 IfThenElse
                   (App
@@ -209,8 +222,22 @@ module Stratagem =
                                            App
                                              (Call Or,
                                               Value (ParamArray [Var "eq"; Var "gt"])))));
-                                  Value (Int 1)])); Value (Str "that"); Var "Target";
-                         Call Suffer; Value (Str "3D3 mortal")]),None))]),None)
+                                  Value (Int 1)]));
+                         Let
+                           ("ThatSubject",Value (ParamArray [Var "Target"]),
+                            Value
+                              (ParamArray
+                                 [Let
+                                    ("ThatObject",
+                                     Value (ParamArray [Value (Str "3D3 mortal")]),
+                                     Value
+                                       (ParamArray
+                                          [App
+                                             (Call Suffer,
+                                              Value
+                                                (ParamArray
+                                                   [Var "ThatSubject"; Var "ThatObject"]))]))]))]),
+                   None))]),None)
     let ``RAPID REGENERATION`` = 
         IfThenElse
           (App
@@ -627,14 +654,31 @@ module Stratagem =
                          Value
                            (ParamArray
                               [Value (Str "Bio-artefacts"); Lam ("obj",Var "obj")]));
-                      Value
-                        (Str
-                           "that you include must be different and be given to different CHARACTERS You can only use");
-                      App
-                        (Call Repeat,
+                      Let
+                        ("ThatSubject",Value (ParamArray [Var "you"]),
                          Value
-                           (ParamArray [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
-                      Value (Str "once per battle")]));
+                           (ParamArray
+                              [Let
+                                 ("ThatObject",
+                                  Value
+                                    (ParamArray
+                                       [Value
+                                          (Str
+                                             "must be different and be given to different CHARACTERS You can only use");
+                                        App
+                                          (Call Repeat,
+                                           Value
+                                             (ParamArray
+                                                [Value (Str "Stratagem");
+                                                 Lam ("obj",Var "obj")]));
+                                        Value (Str "once per battle")]),
+                                  Value
+                                    (ParamArray
+                                       [App
+                                          (Value (Str "include"),
+                                           Value
+                                             (ParamArray
+                                                [Var "ThatSubject"; Var "ThatObject"]))]))]))]));
                ("1",
                 IfThenElse
                   (App
@@ -661,15 +705,32 @@ module Stratagem =
                             Value
                               (ParamArray
                                  [Value (Str "Bio-artefacts"); Lam ("obj",Var "obj")]));
-                         Value
-                           (Str
-                              "that you include must be different and be given to different CHARACTERS You can only use");
-                         App
-                           (Call Repeat,
+                         Let
+                           ("ThatSubject",Value (ParamArray [Var "you"]),
                             Value
                               (ParamArray
-                                 [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
-                         Value (Str "once per battle")]),None));
+                                 [Let
+                                    ("ThatObject",
+                                     Value
+                                       (ParamArray
+                                          [Value
+                                             (Str
+                                                "must be different and be given to different CHARACTERS You can only use");
+                                           App
+                                             (Call Repeat,
+                                              Value
+                                                (ParamArray
+                                                   [Value (Str "Stratagem");
+                                                    Lam ("obj",Var "obj")]));
+                                           Value (Str "once per battle")]),
+                                     Value
+                                       (ParamArray
+                                          [App
+                                             (Value (Str "include"),
+                                              Value
+                                                (ParamArray
+                                                   [Var "ThatSubject"; Var "ThatObject"]))]))]))]),
+                   None));
                ("3",
                 IfThenElse
                   (App
@@ -696,15 +757,32 @@ module Stratagem =
                             Value
                               (ParamArray
                                  [Value (Str "Bio-artefacts"); Lam ("obj",Var "obj")]));
-                         Value
-                           (Str
-                              "that you include must be different and be given to different CHARACTERS You can only use");
-                         App
-                           (Call Repeat,
+                         Let
+                           ("ThatSubject",Value (ParamArray [Var "you"]),
                             Value
                               (ParamArray
-                                 [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
-                         Value (Str "once per battle")]),None))]),None)
+                                 [Let
+                                    ("ThatObject",
+                                     Value
+                                       (ParamArray
+                                          [Value
+                                             (Str
+                                                "must be different and be given to different CHARACTERS You can only use");
+                                           App
+                                             (Call Repeat,
+                                              Value
+                                                (ParamArray
+                                                   [Value (Str "Stratagem");
+                                                    Lam ("obj",Var "obj")]));
+                                           Value (Str "once per battle")]),
+                                     Value
+                                       (ParamArray
+                                          [App
+                                             (Value (Str "include"),
+                                              Value
+                                                (ParamArray
+                                                   [Var "ThatSubject"; Var "ThatObject"]))]))]))]),
+                   None))]),None)
     let ``METABOLIC OVERDRIVE`` = 
         IfThenElse
           (App
@@ -1175,8 +1253,22 @@ module Stratagem =
                          Value
                            (ParamArray
                               [Value (Str "TYRANIDS"); Value (Str "INFANTRY");
-                               Var "Target"])); Value (Str "from your army that");
-                      Var "Target"; Value (Str "can immediately shoot again")]));
+                               Var "Target"])); Value (Str "from your army");
+                      Let
+                        ("ThatSubject",Value (ParamArray [Var "Target"]),
+                         Value
+                           (ParamArray
+                              [Let
+                                 ("ThatObject",
+                                  Value
+                                    (ParamArray [Value (Str "immediately shoot again")]),
+                                  Value
+                                    (ParamArray
+                                       [App
+                                          (Value (Str "can"),
+                                           Value
+                                             (ParamArray
+                                                [Var "ThatSubject"; Var "ThatObject"]))]))]))]));
                ("2",
                 IfThenElse
                   (App
@@ -1199,9 +1291,24 @@ module Stratagem =
                             Value
                               (ParamArray
                                  [Value (Str "TYRANIDS"); Value (Str "INFANTRY");
-                                  Var "Target"])); Value (Str "from your army that");
-                         Var "Target"; Value (Str "can immediately shoot again")]),None))]),
-           None)
+                                  Var "Target"])); Value (Str "from your army");
+                         Let
+                           ("ThatSubject",Value (ParamArray [Var "Target"]),
+                            Value
+                              (ParamArray
+                                 [Let
+                                    ("ThatObject",
+                                     Value
+                                       (ParamArray
+                                          [Value (Str "immediately shoot again")]),
+                                     Value
+                                       (ParamArray
+                                          [App
+                                             (Value (Str "can"),
+                                              Value
+                                                (ParamArray
+                                                   [Var "ThatSubject"; Var "ThatObject"]))]))]))]),
+                   None))]),None)
     let ``POWER OF THE HIVE MIND`` = 
         IfThenElse
           (App

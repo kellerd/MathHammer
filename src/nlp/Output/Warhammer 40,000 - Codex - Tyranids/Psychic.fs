@@ -72,40 +72,163 @@ module Psychic =
                  Value (ParamArray [Value (Str "start"); Lam ("obj",Var "obj")]));
               Value (Str "of your next Psychic phase");
               Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-              Value (Str "time that"); Var "Target"; Value (Str "loses");
-              App (Call Repeat,Value (ParamArray [Value (Str "wound"); Value (Int 1)]));
-              Value (Str "roll");
-              App
-                (Call Repeat,
-                 Value (ParamArray [App (Call Dice,Value (Int 6)); Value (Int 1)]));
-              Value (Str "on");
-              App
-                (Call Repeat,
+              Value (Str "time");
+              Let
+                ("ThatSubject",
                  Value
                    (ParamArray
-                      [Lam
-                         ("roll",
-                          Let
-                            ("gt",
-                             App
-                               (Call GreaterThan,
-                                Value (ParamArray [Var "roll"; Value (Int 5)])),
-                             Let
-                               ("eq",
+                      [Var "Target"; Value (Str "roll");
+                       App
+                         (Call Repeat,
+                          Value
+                            (ParamArray [App (Call Dice,Value (Int 6)); Value (Int 1)]));
+                       Value (Str "on");
+                       App
+                         (Call Repeat,
+                          Value
+                            (ParamArray
+                               [Lam
+                                  ("roll",
+                                   Let
+                                     ("gt",
+                                      App
+                                        (Call GreaterThan,
+                                         Value (ParamArray [Var "roll"; Value (Int 5)])),
+                                      Let
+                                        ("eq",
+                                         App
+                                           (Call Equals,
+                                            Value
+                                              (ParamArray [Var "roll"; Value (Int 5)])),
+                                         App
+                                           (Call Or,
+                                            Value (ParamArray [Var "eq"; Var "gt"])))));
+                                Value (Int 1)]));
+                       App
+                         (Call Repeat,
+                          Value
+                            (ParamArray [Value (Str "damage"); Lam ("obj",Var "obj")]));
+                       Value (Str "is ignored and");
+                       App
+                         (Call Repeat,
+                          Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+                       Value (Str "does not lose");
+                       App
+                         (Call Repeat,
+                          Value
+                            (ParamArray [Value (Str "wound"); Lam ("obj",Var "obj")]))]),
+                 Value
+                   (ParamArray
+                      [Let
+                         ("ThatObject",
+                          Value
+                            (ParamArray
+                               [App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray [Value (Str "wound"); Value (Int 1)]));
+                                Value (Str "roll");
                                 App
-                                  (Call Equals,
-                                   Value (ParamArray [Var "roll"; Value (Int 5)])),
-                                App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
-                       Value (Int 1)]));
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "damage"); Lam ("obj",Var "obj")]));
-              Value (Str "is ignored and");
-              App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-              Value (Str "does not lose");
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "wound"); Lam ("obj",Var "obj")]))])
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [App (Call Dice,Value (Int 6)); Value (Int 1)]));
+                                Value (Str "on");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Lam
+                                           ("roll",
+                                            Let
+                                              ("gt",
+                                               App
+                                                 (Call GreaterThan,
+                                                  Value
+                                                    (ParamArray
+                                                       [Var "roll"; Value (Int 5)])),
+                                               Let
+                                                 ("eq",
+                                                  App
+                                                    (Call Equals,
+                                                     Value
+                                                       (ParamArray
+                                                          [Var "roll"; Value (Int 5)])),
+                                                  App
+                                                    (Call Or,
+                                                     Value
+                                                       (ParamArray [Var "eq"; Var "gt"])))));
+                                         Value (Int 1)]));
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "damage"); Lam ("obj",Var "obj")]));
+                                Value (Str "is ignored and");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+                                Value (Str "does not lose");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "wound"); Lam ("obj",Var "obj")]))]),
+                          Value
+                            (ParamArray
+                               [App
+                                  (Value (Str "loses"),
+                                   Value
+                                     (ParamArray [Var "ThatSubject"; Var "ThatObject"]));
+                                Value (Str "roll");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [App (Call Dice,Value (Int 6)); Value (Int 1)]));
+                                Value (Str "on");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Lam
+                                           ("roll",
+                                            Let
+                                              ("gt",
+                                               App
+                                                 (Call GreaterThan,
+                                                  Value
+                                                    (ParamArray
+                                                       [Var "roll"; Value (Int 5)])),
+                                               Let
+                                                 ("eq",
+                                                  App
+                                                    (Call Equals,
+                                                     Value
+                                                       (ParamArray
+                                                          [Var "roll"; Value (Int 5)])),
+                                                  App
+                                                    (Call Or,
+                                                     Value
+                                                       (ParamArray [Var "eq"; Var "gt"])))));
+                                         Value (Int 1)]));
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "damage"); Lam ("obj",Var "obj")]));
+                                Value (Str "is ignored and");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+                                Value (Str "does not lose");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "wound"); Lam ("obj",Var "obj")]))]))]))])
     let ``THE HORROR`` = 
         Value
           (ParamArray
