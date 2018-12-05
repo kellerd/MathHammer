@@ -40,6 +40,8 @@ let (|IsLabeled|_|) labels node =
     |> List.tryFind(fun tag -> isLabel tag node)
     |> Option.map (fun _ -> getHeadText node)
 
+let headTag children = children |> Seq.collect(fun (n:Tree) -> n.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag())) |> Seq.truncate 1 |> Seq.head
+
 let rec (|ChildrenLabeled|_|) labels children = 
     //let children = [tree]
     //let labels = [NN;NP] 
@@ -105,6 +107,7 @@ and Call =
     | Least
     | Largest
     | Suffer
+    | FMap
 
 
 // [tree]
@@ -120,6 +123,10 @@ type WordScanNode =
     | Node of Tree
     | Word of original:Tree * Operation 
     | Cont of original:Tree * (Operation -> Operation)
+let findTree = function
+    | NodeInfo(Node t,_) -> t
+    | NodeInfo(Word (t,_),_) -> t
+    | NodeInfo(Cont (t, _),_) -> t
 
 let gt plusValue =
     App(Call GreaterThan, Value(ParamArray [ Var "roll"; Value(Int(plusValue))]))
@@ -148,7 +155,10 @@ let (|TryFloat|_|) n =
     | true, n -> Some n 
     | false, _ -> None
 let (|IsOperation|_|) = fun n -> match n with 
-                                       | BasicNode(_, NodeInfo(Word (_, op), _), []) -> Some op 
+                                       | BasicNode(_, NodeInfo(Word (t, op), _), []) -> Some (t,op) 
+                                       |  BasicNode
+                                            (Some VBZ,NodeInfo (Word (t,op),_),
+                                             [BasicNode (None,_,[])])  -> Some (t,op) 
                                        | _ -> None
 let (|AllOperations|_|) children = 
     let check =  List.choose (|IsOperation|_|) children            
@@ -316,11 +326,11 @@ let (|AllWords|_|) n =
 let (|IsD6Plus|_|) = function 
     BasicNode(Some NP, 
               NodeInfo(Word(_, App (Call Repeat, 
-                                    Value (ParamArray [Value (Int _);
-                                                       Lam ("roll",
+                                    Value (ParamArray [ Lam ("roll",
                                                             Let ("gt", App (Call GreaterThan, Value (ParamArray [Var "roll"; Value (Int _)])),
                                                                Let ("eq", App (Call Equals, Value(ParamArray [Var "roll"; Value (Int _)])),
-                                                                   App (Call Or, Value (ParamArray [Var "eq"; Var "gt"])))))]))),_), []) as n -> Some n
+                                                                   App (Call Or, Value (ParamArray [Var "eq"; Var "gt"]))))) 
+                                                        Value (Int _)]))),_), []) as n -> Some n
         
 
     | _ -> None                     
@@ -328,8 +338,8 @@ let (|IsDice|_|) n =
     match n with
     | BasicNode(Some NP,  
                 NodeInfo(Word(_, App (Call Repeat, 
-                                      Value (ParamArray [Value (Int _); 
-                                                         App (Call Dice,Value (Int _))]))),_),_) as n  -> Some n
+                                      Value (ParamArray [ App (Call Dice,Value (Int _))
+                                                          Value (Int _)]))),_),_) as n  -> Some n
     | _ -> None
 let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<WordScanNode>> =
     // let node = 
@@ -339,13 +349,11 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
     let fEmpty tag = Empty tag
     let fNode penTags (NodeInfo(node, skip) as n) children = 
         // let node' = 
-        //     ("""At the end of the Fight phase, roll a 
-        //       D6 for each enemy unit within 1" of the Warlord. 
-        //       On a 4+ that unit suffers a mortal wound."""  |> getTree ).children().[0].children().[2]
+        //     ("""For each unit roll a d6, on a 4+ that unit suffers a mortal wound"""  |> getTree ).children().[0].children().[1].children().[1].children().[4]
         // let node = Node node'      
         // let children = node'.children() |> Array.map scanWords |> Array.toSeq
         // let n = (NodeInfo(node, 0))
-        // let penTags = Some VP
+        // let penTags = Some SBAR
         // let skip = 0
         let children' = children |> skipChildren
         match node with 
@@ -364,18 +372,36 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
                 match children' with 
                 | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: _ when getHeadText original = "each" ->  BasicNode(penTags, n, children') 
                 | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: AllOperations(moreChildren) -> 
+                    let moreChildren = List.map snd moreChildren
                     if List.length moreChildren = 1 then 
-                        BasicNode(penTags, NodeInfo(Word(original, App(Call Repeat, Value(ParamArray[op; List.head moreChildren]))), skip), []) 
+                        BasicNode(penTags, NodeInfo(Word(original, App(Call Repeat, Value(ParamArray [List.head moreChildren;op]))), skip), []) 
                     else BasicNode(penTags, NodeInfo(Word(original, App(op, Value(ParamArray(moreChildren)))), skip), [])  
                 | _ -> BasicNode(penTags, n, children') 
             | Some SBAR ->
+                let (|LabelSubjectVerbObject|_|) determiner = 
+                    match determiner with 
+                    | Some determiner -> 
+                        function
+                        | BasicNode(Some S, n, (BasicNode(Some NP, _,  AsText (Some DT) dt :: AllWords label) ) :: action :: object) :: rest when determiner = dt -> 
+                            Some(label, n, action, object, rest)
+                        | _ -> None                   
+                    | None -> 
+                        function 
+                        | BasicNode(Some S, n, (BasicNode(Some NP, _, AllWords label) ) :: [BasicNode(Some VP, _, action :: object)]) :: rest -> 
+                            Some(label, n, action, object, rest)
+                        | _ -> None                        
+
                 match children' with 
-                | AsText (Some IN) "For" :: 
-                     BasicNode(Some S, n, (BasicNode(Some NP, np,  AsText (Some DT) "each" :: AllWords label) ) :: action) :: rest -> 
-                    let labelText =  label
-                    let for' = fun op -> App(Call Repeat, Value(ParamArray[Lam(labelText, op); Var labelText]))
-                    let children'' = BasicNode(Some S, n, action) :: rest
-                    BasicNode(penTags, NodeInfo(Cont (op, for'),skip), children'')                            
+                | AsText (Some IN) "for" :: LabelSubjectVerbObject (Some "each") (label, n, action, object, rest) -> 
+                    let for' = fun op -> App(Call FMap, Value(ParamArray[Lam(label, op); Var label]))
+                    let children'' = BasicNode(Some S, n, action :: object) :: rest
+                    BasicNode(penTags, NodeInfo(Cont (op, for'),skip), children'')   
+                | AsText (Some IN) "that" :: LabelSubjectVerbObject None (label, (subject), IsOperation (actionTree,action), object, rest) ->
+                    let callAction = App(action, Value(ParamArray[Var "ThatSubject"; Var "ThatObject"]))
+                    Assignment(Some SBAR, "ThatSubject", [BasicNode(Some NP, NodeInfo(Word(findTree subject, Var label),skip), [])], [
+                                    Assignment(Some NP, "ThatObject", object, [BasicNode(penTags, NodeInfo(Word (actionTree, callAction),skip), rest)])
+                    ])
+                    
                 | _ -> BasicNode(penTags, n, children')                 
             | Some VP -> 
                 match children' with 
@@ -451,6 +477,7 @@ tree
 |> foldToOperation
 |> ignore
 
+tree.pennPrint()
 let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
 let children = head.children() |> Seq.map (fun c -> c.siblings(tree) |> Iterable.castToSeq<Tree> |> Seq.map getHeadText |> Seq.toList) |> Seq.toList
 
