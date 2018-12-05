@@ -1357,23 +1357,32 @@ module Rule =
              [Value (Str "At"); Lam ("obj",Var "obj"); Value (Str "end of");
               Lam ("obj",Var "obj");
               Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
-              Value (Str "roll"); Value (Int 1); App (Call Dice,Value (Int 6));
-              Value (Str "for");
-              Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"]))); Var "Target";
-              Var "Target"; Value (Str "within"); Value (Distance 1); Value (Str "of");
-              Lam ("obj",Var "obj"); Value (Str "Warlord On"); Value (Int 1);
-              Lam
+              Let
                 ("roll",
-                 Let
-                   ("gt",
-                    App
-                      (Call GreaterThan,Value (ParamArray [Var "roll"; Value (Int 4)])),
-                    Let
-                      ("eq",
-                       App (Call Equals,Value (ParamArray [Var "roll"; Value (Int 4)])),
-                       App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
-              Value (Str "that"); Var "Target"; Call Suffer; Value (Int 1);
-              Value (Str "Mortal Wound")])
+                 Value
+                   (ParamArray
+                      [Value (Int 1); App (Call Dice,Value (Int 6)); Value (Str "for");
+                       Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                       Var "Target"; Var "Target"; Value (Str "within");
+                       Value (Distance 1); Value (Str "of"); Lam ("obj",Var "obj");
+                       Value (Str "Warlord On"); Value (Int 1);
+                       Lam
+                         ("roll",
+                          Let
+                            ("gt",
+                             App
+                               (Call GreaterThan,
+                                Value (ParamArray [Var "roll"; Value (Int 4)])),
+                             Let
+                               ("eq",
+                                App
+                                  (Call Equals,
+                                   Value (ParamArray [Var "roll"; Value (Int 4)])),
+                                App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))))]),
+                 Value
+                   (ParamArray
+                      [Value (Str "that"); Var "Target"; Call Suffer; Value (Int 1);
+                       Value (Str "Mortal Wound")]))])
     let ``JORMUNGANDR: INSIDIOUS THREAT`` = 
         Value
           (ParamArray

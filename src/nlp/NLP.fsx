@@ -413,19 +413,19 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
         //             ])
                     
         //         | _ -> BasicNode(penTags, n, children')                 
-        //     | Some VP -> 
-        //         match children' with 
-        //         | AllTagged [VB;S;SBAR] [AsText (Some VB) ("roll" as t); v; inExpr] -> 
-        //             Assignment(penTags, t, [v], [inExpr])
-        //         | AllTagged [VBP;NP;PP;SBAR] [ AsText (Some VBP) ("roll" as t)
-        //                                        IsDice dieRoll
-        //                                        BasicNode (Some PP, _,  [AsText (Some IN) ("on"); IsD6Plus (dplus)])
-        //                                        thenExpr ] ->
-        //             let ifThenOp = IfThenElseBranch(Some PP, [dplus], [thenExpr], None)
-        //             Assignment(penTags, t, [dieRoll], [ifThenOp])
-        //         | xs ->  
-        //             //List.iter(function BasicNode(Some tag,_,_) -> tag |> printfn "%A"| _ -> printfn "Nothing") xs
-        //             BasicNode(penTags, n, children')  
+            | Some VP -> 
+                match children' with 
+                | AllTagged [VB;S;SBAR] [AsText (Some VB) ("roll" as t); v; inExpr] -> 
+                    Assignment(penTags, t, [v], [inExpr])
+                | AllTagged [VBP;NP;PP;SBAR] [ AsText (Some VBP) ("roll" as t)
+                                               IsDice dieRoll
+                                               BasicNode (Some PP, _,  [AsText (Some IN) ("on"); IsD6Plus (dplus)])
+                                               thenExpr ] ->
+                    let ifThenOp = IfThenElseBranch(Some PP, [dplus], [thenExpr], None)
+                    Assignment(penTags, t, [dieRoll], [ifThenOp])
+                | xs ->  
+                    //List.iter(function BasicNode(Some tag,_,_) -> tag |> printfn "%A"| _ -> printfn "Nothing") xs
+                    BasicNode(penTags, n, children')  
             | None -> fEmpty penTags
             | _ -> BasicNode(penTags, n, children')
     let fAssign tag label child inExpr =
