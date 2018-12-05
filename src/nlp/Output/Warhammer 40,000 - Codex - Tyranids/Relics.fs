@@ -4,6 +4,8 @@ module Relic =
     #load @"..\..\..\Check\Check.fs"
     #load @"..\..\..\Probability\Distribution.fs"
     #load @"..\..\..\GameActions\Primitives\Types.fs"
+    #load @"..\..\..\GameActions\Primitives\GamePrimitiveOperations.fs"
+    #load @"..\..\..\GameActions\Primitives\TypeChecker.fs"
     #load @"..\..\..\Collections\Map.fs"
     #load @"..\..\..\Collections\List.fs"
     #load @"..\..\..\GameActions\Primitives\State.fs"
@@ -16,7 +18,7 @@ module Relic =
           (ParamArray
              [Value
                 (Str
-                   "LEVIATHAN model with monstrous boneswords only. The Slayer Sabres replace the model’s monstrous boneswords and have the following profile:");
+                   "LEVIATHAN model with monstrous only The Slayer Sabres replace the model 's monstrous and have the following profile");
               Value
                 (ParamArray
                    [Value
@@ -24,7 +26,7 @@ module Relic =
                          [Value (Str "ABILITIES");
                           Value
                             (Str
-                               "A model armed with the Slayer Sabres can make 1 additional attack with them in the Fight phase. In addition, if an INFANTRY or BIKER model suffers damage from this weapon but is not slain, roll a D3 at the end of the Fight phase. If the result is greater than that model’s remaining number of wounds, it is slain.")]);
+                               "A model armed with the Slayer Sabres can make 1 additional attack with them in the Fight phase In addition if an INFANTRY or BIKER model suffers damage from this weapon but is not slain roll a D3 at the end of the Fight phase If the result is greater than that model 's remaining number of it is slain")]);
                     Value (ParamArray [Value (Str "RANGE"); Value (Str "Melee")]);
                     Value (ParamArray [Value (Str "TYPE"); Value (Str "Melee")]);
                     Value (ParamArray [Value (Str "S"); Value (Str "User")]);
@@ -35,14 +37,13 @@ module Relic =
           (ParamArray
              [Value
                 (Str
-                   "HYDRA model with two deathspitters with slimer maggots only. The Slimer Maggot Infestation replaces the model’s two deathspitters with slimer maggots and has the following profile:");
+                   "HYDRA model with two with slimer only The Slimer Maggot Infestation replaces the model 's two with slimer and has the following profile");
               Value
                 (ParamArray
                    [Value
                       (ParamArray
                          [Value (Str "ABILITIES");
-                          Value
-                            (Str "You can re-roll failed wound rolls for this weapon.")]);
+                          Value (Str "You can re-roll failed wound for this weapon")]);
                     Value (ParamArray [Value (Str "RANGE"); Value (Str "24\"")]);
                     Value (ParamArray [Value (Str "TYPE"); Value (Str "Assault 6")]);
                     Value (ParamArray [Value (Str "S"); Value (Str "7")]);
@@ -53,7 +54,7 @@ module Relic =
           (ParamArray
              [Value
                 (Str
-                   "KRONOS model with stranglethorn cannon only. The Balethorn Cannon replaces the model’s stranglethorn cannon and has the following profile:");
+                   "model with stranglethorn cannon only The Balethorn Cannon replaces the model 's stranglethorn cannon and has the following profile");
               Value
                 (ParamArray
                    [Value
@@ -61,7 +62,7 @@ module Relic =
                          [Value (Str "ABILITIES");
                           Value
                             (Str
-                               "You can add 1 to hit rolls for this weapon when attacking a unit with 10 or more models. Invulnerable saves cannot be taken against this weapon.")]);
+                               "You can add 1 to hit for this weapon when attacking a unit with 10 or more Invulnerable saves can not be taken against this weapon")]);
                     Value (ParamArray [Value (Str "RANGE"); Value (Str "36\"")]);
                     Value (ParamArray [Value (Str "TYPE"); Value (Str "Assault D6")]);
                     Value (ParamArray [Value (Str "S"); Value (Str "7")]);
@@ -72,7 +73,7 @@ module Relic =
           (ParamArray
              [Value
                 (Str
-                   "Model with a heavy venom cannon only. The Miasma Cannon replaces the model’s heavy venom cannon and has the following profile:");
+                   "Model with a heavy venom cannon only The Miasma Cannon replaces the model 's heavy venom cannon and has the following profile");
               Value
                 (ParamArray
                    [Value
@@ -80,7 +81,7 @@ module Relic =
                          [Value (Str "ABILITIES");
                           Value
                             (Str
-                               "This weapon hits automatically if the target unit is within 8\", and it always wounds targets (other than VEHICLES ) on a 2+.")]);
+                               "This weapon hits automatically if the target unit is within 8 and it always other than VEHICLES on a 2")]);
                     Value (ParamArray [Value (Str "RANGE"); Value (Str "36\"")]);
                     Value (ParamArray [Value (Str "TYPE"); Value (Str "Assault D3")]);
                     Value (ParamArray [Value (Str "S"); Value (Str "9")]);
@@ -91,7 +92,7 @@ module Relic =
           (ParamArray
              [Value
                 (Str
-                   "BEHEMOTH model with monstrous scything talons only. The Scythes of Tyran replaces the model’s monstrous scything talons and has the following profile:");
+                   "BEHEMOTH model with monstrous scything only The Scythes of Tyran replaces the model 's monstrous scything and has the following profile");
               Value
                 (ParamArray
                    [Value
@@ -99,7 +100,7 @@ module Relic =
                          [Value (Str "ABILITIES");
                           Value
                             (Str
-                               "This model can make 1 additional attack with this weapon each time it fights. In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls.")]);
+                               "This model can make 1 additional attack with this weapon each time it In addition each time you make a hit roll of 6 for this weapon you can make an additional hit roll These additional hit can not generate further additional hit")]);
                     Value (ParamArray [Value (Str "RANGE"); Value (Str "Melee")]);
                     Value (ParamArray [Value (Str "TYPE"); Value (Str "Melee")]);
                     Value (ParamArray [Value (Str "S"); Value (Str "+1")]);
