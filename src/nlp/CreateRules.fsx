@@ -178,6 +178,8 @@ module %s =
     #load @"..\..\..\Check\Check.fs"
     #load @"..\..\..\Probability\Distribution.fs"
     #load @"..\..\..\GameActions\Primitives\Types.fs"
+    #load @"..\..\..\GameActions\Primitives\GamePrimitiveOperations.fs"
+    #load @"..\..\..\GameActions\Primitives\TypeChecker.fs"
     #load @"..\..\..\Collections\Map.fs"
     #load @"..\..\..\Collections\List.fs"
     #load @"..\..\..\GameActions\Primitives\State.fs"

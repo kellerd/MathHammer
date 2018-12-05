@@ -210,22 +210,21 @@ let scanWords (tree:Tree) =
     let convertNode node =     
         let word op = Word(node, op) 
         match node with 
-        | IsLabeled [EQT] _ -> Distance 0 |> Value |> word , 0        
-        | IsLabeled [NN] ("D6"|"d6") -> App(Call Dice, Value(Int 6)) |> word, 0
-        | IsLabeled [NN] ("D3"|"d3") -> App(Call Dice, Value(Int 3)) |> word, 0
-        | IsLabeled [NN] ("enemy" | "unit") -> Var("Target") |> word, 0
-        | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
-        | Siblings [NN;NN]  [(=) "enemy";(=) "unit"] skip   -> Var("unit") |> word, skip
-        | Siblings [NN;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
-        | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
-        | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
-        | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
-        | IsLabeled [DT] "a"      -> Value(Int(1)) |> word,0
-        | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
-        | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0
-        | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
+        // | IsLabeled [EQT] _ -> Distance 0 |> Value |> word , 0        
+        // | IsLabeled [NN] ("D6"|"d6") -> App(Call Dice, Value(Int 6)) |> word, 0
+        // | IsLabeled [NN] ("D3"|"d3") -> App(Call Dice, Value(Int 3)) |> word, 0
+        // | IsLabeled [NN] ("enemy" | "unit") -> Var("Target") |> word, 0
+        // | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
+        // | Siblings [NN;NN]  [(=) "enemy";(=) "unit"] skip   -> Var("unit") |> word, skip
+        // | Siblings [NN;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
+        // | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
+        // | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
+        // | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
+        // | IsLabeled [DT] "a"      -> Value(Int(1)) |> word,0
+        // | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
+        // | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0
+        // | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
         | _ -> Node node,0   
-    tree.pennPrint();
     let rec mapTree (node:Tree) = 
         let (wsn, skip) = convertNode node
         let nodes = 
@@ -392,11 +391,11 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
                         | _ -> None                        
 
                 match children' with 
-                | AsText (Some IN) "for" :: LabelSubjectVerbObject (Some "each") (label, n, action, object, rest) -> 
+                | AsText (Some IN) ("For"|"for") :: LabelSubjectVerbObject (Some "each") (label, n, action, object, rest) -> 
                     let for' = fun op -> App(Call FMap, Value(ParamArray[Lam(label, op); Var label]))
                     let children'' = BasicNode(Some S, n, action :: object) :: rest
                     BasicNode(penTags, NodeInfo(Cont (op, for'),skip), children'')   
-                | AsText (Some IN) "that" :: LabelSubjectVerbObject None (label, (subject), IsOperation (actionTree,action), object, rest) ->
+                | AsText (Some IN) ("That"|"that") :: LabelSubjectVerbObject None (label, (subject), IsOperation (actionTree,action), object, rest) ->
                     let callAction = App(action, Value(ParamArray[Var "ThatSubject"; Var "ThatObject"]))
                     Assignment(Some SBAR, "ThatSubject", [BasicNode(Some NP, NodeInfo(Word(findTree subject, Var label),skip), [])], [
                                     Assignment(Some NP, "ThatObject", object, [BasicNode(penTags, NodeInfo(Word (actionTree, callAction),skip), rest)])
@@ -414,7 +413,7 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
                     let ifThenOp = IfThenElseBranch(Some PP, [dplus], [thenExpr], None)
                     Assignment(penTags, t, [dieRoll], [ifThenOp])
                 | xs ->  
-                    List.iter(function BasicNode(Some tag,_,_) -> tag |> printfn "%A"| _ -> printfn "Nothing") xs
+                    //List.iter(function BasicNode(Some tag,_,_) -> tag |> printfn "%A"| _ -> printfn "Nothing") xs
                     BasicNode(penTags, n, children')  
             | None -> fEmpty penTags
             | _ -> BasicNode(penTags, n, children')
@@ -455,63 +454,58 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
             | [] -> pennTags, [cont (Value NoValue)] 
             | [item] -> pennTags, [cont item] 
             | _ :: _ -> pennTags, [cont (Value(ParamArray(acc)))]
-            // match penTags with 
-            // | Some WordLevel ->  
-            //     penTags, acc
-            // | Some penTags -> Some penTags, acc
-            // | None -> penTags, acc
     let fAssign tag label (_, vAccum) (_, inExpr) = 
         tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]    
     let ifte tag (_, test) (_,thenExpr) elseExpr = 
         tag, [IfThenElse(ParamArray test |> Value,ParamArray thenExpr  |> Value, elseExpr |> Option.map (snd >> ParamArray >> Value))]     
     foldBack fEmpty fNode fAssign ifte tree (None, [])
-let tree =  
-    //"At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
-    //"Roll a D6 and count the results, then roll another D6 for each success."
-    "For each unit roll a d6, on a 4+ that unit suffers a mortal wound"
-    //"If the hit result is 6, count the result as two hits, otherwise thr attack fails"
-    |> getTree
-tree
-|> scanWords 
-|> scanPhrases
-|> foldToOperation
-|> ignore
+// let tree =  
+//     //"At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
+//     //"Roll a D6 and count the results, then roll another D6 for each success."
+//     "For each unit roll a d6, on a 4+ that unit suffers a mortal wound"
+//     //"If the hit result is 6, count the result as two hits, otherwise thr attack fails"
+//     |> getTree
+// tree
+// |> scanWords 
+// |> scanPhrases
+// |> foldToOperation
+// |> ignore
 
-tree.pennPrint()
-let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
-let children = head.children() |> Seq.map (fun c -> c.siblings(tree) |> Iterable.castToSeq<Tree> |> Seq.map getHeadText |> Seq.toList) |> Seq.toList
+// tree.pennPrint()
+// let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
+// let children = head.children() |> Seq.map (fun c -> c.siblings(tree) |> Iterable.castToSeq<Tree> |> Seq.map getHeadText |> Seq.toList) |> Seq.toList
 
-tree.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag())
-tree.``yield``() |> Iterable.castToSeq<CoreLabel> |> Seq.iter(fun n -> printfn "%s" (n.word()))
+// tree.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag())
+// tree.``yield``() |> Iterable.castToSeq<CoreLabel> |> Seq.iter(fun n -> printfn "%s" (n.word()))
 
-let escape_string (str : string) =
-   let buf = System.Text.StringBuilder(str.Length)
-   let replaceOrLeave c =
-      match c with
-      | '\r' -> buf.Append "\\r"
-      | '\n' -> buf.Append "\\n"
-      | '\t' -> buf.Append "\\t"
-      | '\\' -> buf.Append "\\\\"
-      | '"' -> buf.Append "\\\""
-      | _ -> buf.Append c
-   str.ToCharArray() |> Array.iter (replaceOrLeave >> ignore)
-   buf.ToString()
+// let escape_string (str : string) =
+//    let buf = System.Text.StringBuilder(str.Length)
+//    let replaceOrLeave c =
+//       match c with
+//       | '\r' -> buf.Append "\\r"
+//       | '\n' -> buf.Append "\\n"
+//       | '\t' -> buf.Append "\\t"
+//       | '\\' -> buf.Append "\\\\"
+//       | '"' -> buf.Append "\\\""
+//       | _ -> buf.Append c
+//    str.ToCharArray() |> Array.iter (replaceOrLeave >> ignore)
+//    buf.ToString()
    
-let nlpRule (s:string) = s |> escape_string     
+let nlpRule (s:string) = s |> getTree |> scanWords |> foldToOperation |> snd |> ParamArray |> Value   
 
-let questions =
-    [ " When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or
-an additional 3 mortal wounds if it contains 6 Zoanthropes."
-      "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain."
-      "You can re-roll failed charge rolls for units with this adaptation."
-      "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation."
-      "Use this Stratagem at the end of the Fight phase. Select a TYRANIDS unit from your army – that unit can immediately fight again."
-      "If a rule requires you to roll a D3, roll a D6 and halve the result." ]
+// let questions =
+//     [ " When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or
+// an additional 3 mortal wounds if it contains 6 Zoanthropes."
+//       "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain."
+//       "You can re-roll failed charge rolls for units with this adaptation."
+//       "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation."
+//       "Use this Stratagem at the end of the Fight phase. Select a TYRANIDS unit from your army – that unit can immediately fight again."
+//       "If a rule requires you to roll a D3, roll a D6 and halve the result." ]
 
-questions 
-|> List.map (
-       getTree
-    >> scanWords 
-    >> scanPhrases
-    >> foldToOperation
-)
+// questions 
+// |> List.map (
+//        getTree
+//     >> scanWords 
+//     >> scanPhrases
+//     >> foldToOperation
+// )
