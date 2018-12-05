@@ -22,6 +22,19 @@ let getTree question =
     let tokenizer = tlp.getTokenizerFactory().getTokenizer(new java.io.StringReader(question))
     let sentence = tokenizer.tokenize()
     parser.apply(sentence)
+let escape_string (str : string) =
+   let buf = System.Text.StringBuilder(str.Length)
+   let replaceOrLeave c =
+      match c with
+      | '\r' -> buf.Append "\\r"
+      | '\n' -> buf.Append "\\n"
+      | '\t' -> buf.Append "\\t"
+      | '\\' -> buf.Append "\\\\"
+      | '"' -> buf.Append "\\\""
+      | _ -> buf.Append c
+   str.ToCharArray() |> Array.iter (replaceOrLeave >> ignore)
+   buf.ToString()
+   
 let mapToWords (words:seq<Word>) = 
     words |> Seq.map (fun n -> n.word()) |> String.concat " "
 let getHeadText (node:Tree) = 
@@ -356,65 +369,63 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
         // let skip = 0
         let children' = children |> skipChildren
         match node with 
-        | Cont _ -> BasicNode(penTags, n, children')  
-        | Word _ -> BasicNode(penTags, n, children')  
+        // | Cont _ -> BasicNode(penTags, n, children')  
+        // | Word _ -> BasicNode(penTags, n, children')  
         | Node op -> 
             match penTags with 
             | Some (SYM | NNS | Punctuation | EQT) -> 
-                // let word = (getHeadText op) |> Str |> Value |> Word
-                // BasicNode(NodeInfo(penTags, word, skip), children')
                 fEmpty penTags
             | Some WordLevel -> 
-                let word = Word(op, (getHeadText op) |> Str |> Value)
+                let word = Word(op, (getHeadText op) |> escape_string |> Str |> Value)
                 BasicNode(penTags, NodeInfo(word, skip), children')
-            | Some NP -> 
-                match children' with 
-                | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: _ when getHeadText original = "each" ->  BasicNode(penTags, n, children') 
-                | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: AllOperations(moreChildren) -> 
-                    let moreChildren = List.map snd moreChildren
-                    if List.length moreChildren = 1 then 
-                        BasicNode(penTags, NodeInfo(Word(original, App(Call Repeat, Value(ParamArray [List.head moreChildren;op]))), skip), []) 
-                    else BasicNode(penTags, NodeInfo(Word(original, App(op, Value(ParamArray(moreChildren)))), skip), [])  
-                | _ -> BasicNode(penTags, n, children') 
-            | Some SBAR ->
-                let (|LabelSubjectVerbObject|_|) determiner = 
-                    match determiner with 
-                    | Some determiner -> 
-                        function
-                        | BasicNode(Some S, n, (BasicNode(Some NP, _,  AsText (Some DT) dt :: AllWords label) ) :: action :: object) :: rest when determiner = dt -> 
-                            Some(label, n, action, object, rest)
-                        | _ -> None                   
-                    | None -> 
-                        function 
-                        | BasicNode(Some S, n, (BasicNode(Some NP, _, AllWords label) ) :: [BasicNode(Some VP, _, action :: object)]) :: rest -> 
-                            Some(label, n, action, object, rest)
-                        | _ -> None                        
+        //     | Some NP -> 
+        //         match children' with 
+        //         | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: _ when getHeadText original = "each" ->  BasicNode(penTags, n, children') 
+        //         | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: AllOperations(moreChildren) -> 
+        //             let moreChildren = List.map snd moreChildren
+        //             if List.length moreChildren = 1 then 
+        //                 BasicNode(penTags, NodeInfo(Word(original, App(Call Repeat, Value(ParamArray [List.head moreChildren;op]))), skip), []) 
+        //             else BasicNode(penTags, NodeInfo(Word(original, App(op, Value(ParamArray(moreChildren)))), skip), [])  
+        //         | _ -> BasicNode(penTags, n, children') 
+        //     | Some SBAR ->
+        //         let (|LabelSubjectVerbObject|_|) determiner = 
+        //             match determiner with 
+        //             | Some determiner -> 
+        //                 function
+        //                 | BasicNode(Some S, n, (BasicNode(Some NP, _,  AsText (Some DT) dt :: AllWords label) ) :: action :: object) :: rest when determiner = dt -> 
+        //                     Some(label, n, action, object, rest)
+        //                 | _ -> None                   
+        //             | None -> 
+        //                 function 
+        //                 | BasicNode(Some S, n, (BasicNode(Some NP, _, AllWords label) ) :: [BasicNode(Some VP, _, action :: object)]) :: rest -> 
+        //                     Some(label, n, action, object, rest)
+        //                 | _ -> None                        
 
-                match children' with 
-                | AsText (Some IN) ("For"|"for") :: LabelSubjectVerbObject (Some "each") (label, n, action, object, rest) -> 
-                    let for' = fun op -> App(Call FMap, Value(ParamArray[Lam(label, op); Var label]))
-                    let children'' = BasicNode(Some S, n, action :: object) :: rest
-                    BasicNode(penTags, NodeInfo(Cont (op, for'),skip), children'')   
-                | AsText (Some IN) ("That"|"that") :: LabelSubjectVerbObject None (label, (subject), IsOperation (actionTree,action), object, rest) ->
-                    let callAction = App(action, Value(ParamArray[Var "ThatSubject"; Var "ThatObject"]))
-                    Assignment(Some SBAR, "ThatSubject", [BasicNode(Some NP, NodeInfo(Word(findTree subject, Var label),skip), [])], [
-                                    Assignment(Some NP, "ThatObject", object, [BasicNode(penTags, NodeInfo(Word (actionTree, callAction),skip), rest)])
-                    ])
+        //         match children' with 
+        //         | AsText (Some IN) ("For"|"for") :: LabelSubjectVerbObject (Some "each") (label, n, action, object, rest) -> 
+        //             let for' = fun op -> App(Call FMap, Value(ParamArray[Lam(label, op); Var label]))
+        //             let children'' = BasicNode(Some S, n, action :: object) :: rest
+        //             BasicNode(penTags, NodeInfo(Cont (op, for'),skip), children'')   
+        //         | AsText (Some IN) ("That"|"that") :: LabelSubjectVerbObject None (label, (subject), IsOperation (actionTree,action), object, rest) ->
+        //             let callAction = App(action, Value(ParamArray[Var "ThatSubject"; Var "ThatObject"]))
+        //             Assignment(Some SBAR, "ThatSubject", [BasicNode(Some NP, NodeInfo(Word(findTree subject, Var label),skip), [])], [
+        //                             Assignment(Some NP, "ThatObject", object, [BasicNode(penTags, NodeInfo(Word (actionTree, callAction),skip), rest)])
+        //             ])
                     
-                | _ -> BasicNode(penTags, n, children')                 
-            | Some VP -> 
-                match children' with 
-                | AllTagged [VB;S;SBAR] [AsText (Some VB) ("roll" as t); v; inExpr] -> 
-                    Assignment(penTags, t, [v], [inExpr])
-                | AllTagged [VBP;NP;PP;SBAR] [ AsText (Some VBP) ("roll" as t)
-                                               IsDice dieRoll
-                                               BasicNode (Some PP, _,  [AsText (Some IN) ("on"); IsD6Plus (dplus)])
-                                               thenExpr ] ->
-                    let ifThenOp = IfThenElseBranch(Some PP, [dplus], [thenExpr], None)
-                    Assignment(penTags, t, [dieRoll], [ifThenOp])
-                | xs ->  
-                    //List.iter(function BasicNode(Some tag,_,_) -> tag |> printfn "%A"| _ -> printfn "Nothing") xs
-                    BasicNode(penTags, n, children')  
+        //         | _ -> BasicNode(penTags, n, children')                 
+        //     | Some VP -> 
+        //         match children' with 
+        //         | AllTagged [VB;S;SBAR] [AsText (Some VB) ("roll" as t); v; inExpr] -> 
+        //             Assignment(penTags, t, [v], [inExpr])
+        //         | AllTagged [VBP;NP;PP;SBAR] [ AsText (Some VBP) ("roll" as t)
+        //                                        IsDice dieRoll
+        //                                        BasicNode (Some PP, _,  [AsText (Some IN) ("on"); IsD6Plus (dplus)])
+        //                                        thenExpr ] ->
+        //             let ifThenOp = IfThenElseBranch(Some PP, [dplus], [thenExpr], None)
+        //             Assignment(penTags, t, [dieRoll], [ifThenOp])
+        //         | xs ->  
+        //             //List.iter(function BasicNode(Some tag,_,_) -> tag |> printfn "%A"| _ -> printfn "Nothing") xs
+        //             BasicNode(penTags, n, children')  
             | None -> fEmpty penTags
             | _ -> BasicNode(penTags, n, children')
     let fAssign tag label child inExpr =
@@ -432,8 +443,8 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
 
     let fNode pennTags (tag,acc) (NodeInfo(node, skip) as n)  = 
         match node with
-        | EndOfPhase (tag, acc) (phase,rest) -> 
-            pennTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
+        // | EndOfPhase (tag, acc) (phase,rest) -> 
+        //     pennTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
         | Word (_, (Value(Str(s)) as op) ) ->
             match tag, acc with 
             | (Some SentenceCloser | Some Comma | Some EQT | Some Punctuation), Value(Str(acc))::rest -> 
@@ -454,10 +465,10 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
             | [] -> pennTags, [cont (Value NoValue)] 
             | [item] -> pennTags, [cont item] 
             | _ :: _ -> pennTags, [cont (Value(ParamArray(acc)))]
-    let fAssign tag label (_, vAccum) (_, inExpr) = 
-        tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]    
-    let ifte tag (_, test) (_,thenExpr) elseExpr = 
-        tag, [IfThenElse(ParamArray test |> Value,ParamArray thenExpr  |> Value, elseExpr |> Option.map (snd >> ParamArray >> Value))]     
+    let fAssign tag label (_, vAccum) (_, inExpr) = tag, vAccum
+    //    tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]    
+    let ifte tag (_, test) (_,thenExpr) elseExpr = tag, test
+    //    tag, [IfThenElse(ParamArray test |> Value,ParamArray thenExpr  |> Value, elseExpr |> Option.map (snd >> ParamArray >> Value))]     
     foldBack fEmpty fNode fAssign ifte tree (None, [])
 // let tree =  
 //     //"At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
@@ -478,21 +489,12 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
 // tree.taggedYield() |> Iterable.castToSeq<TaggedWord> |> Seq.map(fun tw -> tw.tag())
 // tree.``yield``() |> Iterable.castToSeq<CoreLabel> |> Seq.iter(fun n -> printfn "%s" (n.word()))
 
-// let escape_string (str : string) =
-//    let buf = System.Text.StringBuilder(str.Length)
-//    let replaceOrLeave c =
-//       match c with
-//       | '\r' -> buf.Append "\\r"
-//       | '\n' -> buf.Append "\\n"
-//       | '\t' -> buf.Append "\\t"
-//       | '\\' -> buf.Append "\\\\"
-//       | '"' -> buf.Append "\\\""
-//       | _ -> buf.Append c
-//    str.ToCharArray() |> Array.iter (replaceOrLeave >> ignore)
-//    buf.ToString()
-   
-let nlpRule (s:string) = s |> getTree |> scanWords |> foldToOperation |> snd |> ParamArray |> Value   
+let nlpRule (s:string) = 
+    match s |> getTree |> scanWords |> scanPhrases |> foldToOperation |> snd with 
+    | [x] -> x
+    | xs -> xs |> ParamArray |> Value   
 
+"Whenever an enemy PSYKER fails a psychic test within 18\" of your Warlord, they suffer D3 mortal wounds." |> nlpRule
 // let questions =
 //     [ " When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or
 // an additional 3 mortal wounds if it contains 6 Zoanthropes."

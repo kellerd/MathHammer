@@ -26,18 +26,19 @@ let options = [|"-maxLength"; "500";
                 "-outputFormat"; "penn,typedDependenciesCollapsed"|]
 
 //let gsf = tlp.grammaticalStructureFactory()
-#load @"..\GameActions\Primitives\Types.fs"
-#load @"..\GameActions\Primitives\State.fs"
+// #load @"..\GameActions\Primitives\Types.fs"
+// #load @"..\GameActions\Primitives\State.fs"
 open ParseCodexes
-open GameActions.Primitives.Types
-open GameActions.Primitives.State    
-let nlpRule s = nlpRule s |> Str |> Value
+// open GameActions.Primitives.Types
+// open GameActions.Primitives.State    
 let parseRule = 
     function 
     | LabelledRule(n,s) -> Some n, (nlpRule s)
     | RuleOnly s -> None, nlpRule s
     | LabelOnly n -> Some n, nlpRule ""
-let vStr s = s |> escape_string |> vStr
+let vStr s = s |> escape_string |> Str |> Value
+let opList ops = ParamArray(ops) |> Value
+let pair x y = opList [ x; y ]
 let parseWeapon (weapon:Weapon) = 
     List.map (fun (label,characteristic) -> 
         if label = "ABILITIES" then 
@@ -66,7 +67,7 @@ let parseRules (path,page) =
             let cpCheck = 
                 let name' = Option.defaultValue "" name
                 let cpChoice cpList = 
-                    let cpChoices = List.map (fun cp -> string cp, IfThenElse(App(Call GreaterThan, opList [get "Available CP"; get name']), ruleText, None)) cpList
+                    let cpChoices = List.map (fun cp -> string cp, IfThenElse(App(Call GreaterThan, opList [Var "Available CP"; Var name']), ruleText, None)) cpList
                     ("<Not selected>", ruleText) :: cpChoices
 
                 match cp with
@@ -74,7 +75,7 @@ let parseRules (path,page) =
                 | Cp (cp)            -> Choice(name', cpChoice [cp])
             let rule =               
                 match condition with 
-                | Some condition -> IfThenElse(App(Call Contains, opList [get "Keywords"; vStr condition]), cpCheck, None)   
+                | Some condition -> IfThenElse(App(Call Contains, opList [Var "Keywords"; vStr condition]), cpCheck, None)   
                 | None -> cpCheck
             name, rule ) g
     | Page.Relics g -> 
