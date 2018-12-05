@@ -378,15 +378,15 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
             | Some WordLevel -> 
                 let word = Word(op, (getHeadText op) |> escape_string |> Str |> Value)
                 BasicNode(penTags, NodeInfo(word, skip), children')
-        //     | Some NP -> 
-        //         match children' with 
-        //         | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: _ when getHeadText original = "each" ->  BasicNode(penTags, n, children') 
-        //         | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: AllOperations(moreChildren) -> 
-        //             let moreChildren = List.map snd moreChildren
-        //             if List.length moreChildren = 1 then 
-        //                 BasicNode(penTags, NodeInfo(Word(original, App(Call Repeat, Value(ParamArray [List.head moreChildren;op]))), skip), []) 
-        //             else BasicNode(penTags, NodeInfo(Word(original, App(op, Value(ParamArray(moreChildren)))), skip), [])  
-        //         | _ -> BasicNode(penTags, n, children') 
+            | Some NP -> 
+                match children' with 
+                | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: _ when getHeadText original = "each" ->  BasicNode(penTags, n, children') 
+                | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: AllOperations(moreChildren) -> 
+                    let moreChildren = List.map snd moreChildren
+                    if List.length moreChildren = 1 then 
+                        BasicNode(penTags, NodeInfo(Word(original, App(Call Repeat, Value(ParamArray [List.head moreChildren;op]))), skip), []) 
+                    else BasicNode(penTags, NodeInfo(Word(original, App(op, Value(ParamArray(moreChildren)))), skip), [])  
+                | _ -> BasicNode(penTags, n, children') 
         //     | Some SBAR ->
         //         let (|LabelSubjectVerbObject|_|) determiner = 
         //             match determiner with 
