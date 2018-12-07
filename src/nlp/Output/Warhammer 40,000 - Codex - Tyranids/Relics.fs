@@ -18,7 +18,10 @@ module Relic =
           (ParamArray
              [Value
                 (ParamArray
-                   [Value (Str "LEVIATHAN model with monstrous only");
+                   [Value
+                      (Str
+                         "LEVIATHAN model with monstrous boneswords only. The Slayer Sabres replace the model’s monstrous boneswords and have the following profile:");
+                    Value (Str "LEVIATHAN model with monstrous only");
                     App
                       (Lam ("obj",Var "obj"),
                        Value (ParamArray [Value (Str "Slayer"); Value (Str "Sabres")]));
@@ -38,7 +41,10 @@ module Relic =
                          [Value (Str "ABILITIES");
                           Value
                             (ParamArray
-                               [App
+                               [Value
+                                  (Str
+                                     "A model armed with the Slayer Sabres can make 1 additional attack with them in the Fight phase. In addition, if an INFANTRY or BIKER model suffers damage from this weapon but is not slain, roll a D3 at the end of the Fight phase. If the result is greater than that model’s remaining number of wounds, it is slain.");
+                                App
                                   (Call Repeat,
                                    Value
                                      (ParamArray
@@ -114,7 +120,10 @@ module Relic =
           (ParamArray
              [Value
                 (ParamArray
-                   [Value (Str "HYDRA model with two with slimer only");
+                   [Value
+                      (Str
+                         "HYDRA model with two deathspitters with slimer maggots only. The Slimer Maggot Infestation replaces the model’s two deathspitters with slimer maggots and has the following profile:");
+                    Value (Str "HYDRA model with two with slimer only");
                     App
                       (Lam ("obj",Var "obj"),
                        Value
@@ -136,7 +145,10 @@ module Relic =
                          [Value (Str "ABILITIES");
                           Value
                             (ParamArray
-                               [Value (Str "You can re-roll failed wound for");
+                               [Value
+                                  (Str
+                                     "You can re-roll failed wound rolls for this weapon.");
+                                Value (Str "You can re-roll failed wound for");
                                 App
                                   (Call Repeat,
                                    Value
@@ -152,7 +164,10 @@ module Relic =
           (ParamArray
              [Value
                 (ParamArray
-                   [Value (Str "model with stranglethorn cannon only");
+                   [Value
+                      (Str
+                         "KRONOS model with stranglethorn cannon only. The Balethorn Cannon replaces the model’s stranglethorn cannon and has the following profile:");
+                    Value (Str "model with stranglethorn cannon only");
                     App
                       (Lam ("obj",Var "obj"),
                        Value
@@ -173,7 +188,10 @@ module Relic =
                          [Value (Str "ABILITIES");
                           Value
                             (ParamArray
-                               [Value (Str "You can add"); Value (Int 1);
+                               [Value
+                                  (Str
+                                     "You can add 1 to hit rolls for this weapon when attacking a unit with 10 or more models. Invulnerable saves cannot be taken against this weapon.");
+                                Value (Str "You can add"); Value (Int 1);
                                 Value (Str "to hit for");
                                 App
                                   (Call Repeat,
@@ -203,7 +221,10 @@ module Relic =
           (ParamArray
              [Value
                 (ParamArray
-                   [Value (Str "Model with");
+                   [Value
+                      (Str
+                         "Model with a heavy venom cannon only. The Miasma Cannon replaces the model’s heavy venom cannon and has the following profile:");
+                    Value (Str "Model with");
                     App
                       (Value (Int 1),
                        Value (ParamArray [Value (Str "heavy"); Value (Str "venom")]));
@@ -227,7 +248,10 @@ module Relic =
                          [Value (Str "ABILITIES");
                           Value
                             (ParamArray
-                               [App
+                               [Value
+                                  (Str
+                                     "This weapon hits automatically if the target unit is within 8\", and it always wounds targets (other than VEHICLES ) on a 2+.");
+                                App
                                   (Call Repeat,
                                    Value
                                      (ParamArray
@@ -274,7 +298,10 @@ module Relic =
           (ParamArray
              [Value
                 (ParamArray
-                   [Value (Str "BEHEMOTH model with monstrous scything only");
+                   [Value
+                      (Str
+                         "BEHEMOTH model with monstrous scything talons only. The Scythes of Tyran replaces the model’s monstrous scything talons and has the following profile:");
+                    Value (Str "BEHEMOTH model with monstrous scything only");
                     App
                       (Call Repeat,
                        Value (ParamArray [Value (Str "Scythes"); Lam ("obj",Var "obj")]));
@@ -294,7 +321,10 @@ module Relic =
                          [Value (Str "ABILITIES");
                           Value
                             (ParamArray
-                               [App
+                               [Value
+                                  (Str
+                                     "This model can make 1 additional attack with this weapon each time it fights. In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls.");
+                                App
                                   (Call Repeat,
                                    Value
                                      (ParamArray

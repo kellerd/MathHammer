@@ -491,8 +491,8 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
 
 let nlpRule (s:string) = 
     match s |> getTree |> scanWords |> scanPhrases |> foldToOperation |> snd with 
-    | [x] -> x
-    | xs -> xs |> ParamArray |> Value   
+    | [x] -> [Value(Str (escape_string s)); x]  |> ParamArray |> Value   
+    | xs -> (Value(Str (escape_string s)) :: xs) |> ParamArray |> Value   
 
 // let questions =
 //     [ " When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or

@@ -16,7 +16,10 @@ module Tactical =
     let ``Swarm`` = 
         Value
           (ParamArray
-             [Value (Str "Score"); Value (Int 1);
+             [Value
+                (Str
+                   "Score 1 victory point if you control more objective markers than your opponent at the end of the turn.");
+              Value (Str "Score"); Value (Int 1);
               Value
                 (Str
                    "victory point if you control more objective markers than your opponent at");
@@ -30,7 +33,10 @@ module Tactical =
     let ``Crush`` = 
         Value
           (ParamArray
-             [Value (Str "Score"); Value (Int 1);
+             [Value
+                (Str
+                   "Score 1 victory point if at least one enemy unit was completely destroyed this turn, and the last model in the enemy unit was slain by an attack made by a TYRANIDS MONSTER or a TYRANIDS unit of more than 10 models.");
+              Value (Str "Score"); Value (Int 1);
               Value (Str "victory point if at least one"); Var "Target"; Var "Target";
               Value (Str "was completely destroyed");
               App
@@ -58,14 +64,20 @@ module Tactical =
     let ``Dominate`` = 
         Value
           (ParamArray
-             [Value (Str "Score"); Value (Int 1);
+             [Value
+                (Str
+                   "Score 1 victory point if at least three psychic powers were successfully manifested by friendly TYRANIDS units in your Psychic phase.");
+              Value (Str "Score"); Value (Int 1);
               Value
                 (Str
                    "victory point if at least three psychic were successfully manifested by friendly TYRANIDS in your Psychic phase")])
     let ``Decapitate`` = 
         Value
           (ParamArray
-             [Value (Str "Score"); Value (Int 1);
+             [Value
+                (Str
+                   "Score 1 victory point if at least one enemy CHARACTER was destroyed this turn. If two or more enemy CHARACTERS were destroyed, score D3 victory points instead.");
+              Value (Str "Score"); Value (Int 1);
               Value (Str "victory point if at least one"); Var "Target";
               Value (Str "CHARACTER was destroyed");
               App
@@ -76,7 +88,10 @@ module Tactical =
     let ``Terrify`` = 
         Value
           (ParamArray
-             [Value (Str "Score"); Value (Int 1);
+             [Value
+                (Str
+                   "Score 1 victory point if at least one enemy unit failed a Morale test this turn. If three or more enemy units failed Morale tests this turn, score D3 victory points instead.");
+              Value (Str "Score"); Value (Int 1);
               Value (Str "victory point if at least one"); Var "Target"; Var "Target";
               Value (Str "failed");
               App
@@ -94,7 +109,10 @@ module Tactical =
     let ``Devour`` = 
         Value
           (ParamArray
-             [Value (Str "Score"); Value (Int 1); Value (Str "victory point if");
+             [Value
+                (Str
+                   "Score 1 victory point if an enemy unit was destroyed during the Fight phase this turn. If 3 or more enemy units were destroyed during the Fight phase this turn, score D3 victory points instead, and if 6 or more enemy units were destroyed during the Fight phase this turn, score D3+3 victory points instead.");
+              Value (Str "Score"); Value (Int 1); Value (Str "victory point if");
               App
                 (Lam ("obj",Var "obj"),Value (ParamArray [Var "Target"; Var "Target"]));
               Value (Str "was destroyed during");

@@ -16,7 +16,10 @@ module Rule =
     let ``KEYWORDS`` = 
         Value
           (ParamArray
-             [Value (Str "Throughout");
+             [Value
+                (Str
+                   "Throughout this section you will come across a keyword that is within angular brackets, specifically <HIVE FLEET> . This is shorthand for a keyword of your own choosing, as described below.");
+              Value (Str "Throughout");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "section"); Lam ("obj",Var "obj")]));
@@ -32,7 +35,10 @@ module Rule =
     let ``<HIVE FLEET>`` = 
         Value
           (ParamArray
-             [App
+             [Value
+                (Str
+                   "All Tyranids belong to a hive fleet. When you include a Tyranids unit in your army, you must nominate which hive fleet that unit is from. There are many different hive fleets to choose from; you can use any of the hive fleets described in this book, or make up your own if you prefer. You then simply replace the <HIVE FLEET> keyword in every instance on that unit’s datasheet, and in any psychic powers they know, with the name of your chosen hive fleet. For example, if you were to include a Tervigon in your army, and you decided it was from Hive Fleet Kraken, then its <HIVE FLEET> keyword is changed to KRAKEN , and its ‘Brood Progenitor’ ability would say ‘You can re-roll hit rolls of 1 in the Shooting phase for friendly KRAKEN Termagant units within 6\" of this model.’");
+              App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "Tyranids"); Lam ("obj",Var "obj")]));
               Value (Str "belong to");
@@ -195,6 +201,9 @@ module Rule =
         Value
           (ParamArray
              [Value
+                (Str
+                   "<HIVE FLEET> units automatically pass Morale tests if they are within 12\" of any friendly <HIVE FLEET> units with this ability.");
+              Value
                 (Str "<HIVE FLEET> automatically pass Morale tests if they are within");
               Value (Distance 12); Value (Str "of");
               App
@@ -207,7 +216,10 @@ module Rule =
     let ``INSTINCTIVE BEHAVIOUR`` = 
         Value
           (ParamArray
-             [Value (Str "Unless");
+             [Value
+                (Str
+                   "Unless a <HIVE FLEET> unit with this ability is within 24\" of any friendly <HIVE FLEET> SYNAPSE unit, you must subtract 1 from any hit rolls made for it when shooting any target other than the nearest visible enemy unit, and you must subtract 2 from its charge roll if it declares a charge against any unit other than the nearest enemy unit.");
+              Value (Str "Unless");
               App
                 (Value (Int 1),
                  Value (ParamArray [Value (Str "<HIVE FLEET>"); Var "Target"]));
@@ -245,7 +257,10 @@ module Rule =
     let ``SHADOW IN THE WARP`` = 
         Value
           (ParamArray
-             [Value (Str "Enemy must subtract"); Value (Int 1); Value (Str "from");
+             [Value
+                (Str
+                   "Enemy PSYKERS must subtract 1 from any Psychic tests they make if they are within 18\" of any units with this ability. TYRANID PSYKERS are not affected.");
+              Value (Str "Enemy must subtract"); Value (Int 1); Value (Str "from");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "Psychic"); Lam ("obj",Var "obj")]));
@@ -257,19 +272,39 @@ module Rule =
                  Value (ParamArray [Value (Str "ability"); Lam ("obj",Var "obj")]));
               Value (Str "TYRANID PSYKERS are not affected")])
     let _ = 
-        Value (Str "TYRANIDS WARGEAR LISTS")
+        Value
+          (ParamArray
+             [Value (Str "TYRANIDS WARGEAR LISTS"); Value (Str "TYRANIDS WARGEAR LISTS")])
     let ``BASIC BIO-WEAPONS`` = 
-        Value (Str "Scything talons Spinefists Deathspitter")
+        Value
+          (ParamArray
+             [Value (Str "Scything talons Spinefists Deathspitter");
+              Value (Str "Scything talons Spinefists Deathspitter")])
     let ``BASIC BIO-CANNONS`` = 
-        Value (Str "Barbed strangler Venom cannon")
+        Value
+          (ParamArray
+             [Value (Str "Barbed strangler Venom cannon");
+              Value (Str "Barbed strangler Venom cannon")])
     let ``MELEE BIO-WEAPONS`` = 
-        Value (Str "Rending claws Boneswords Lash whip and bonesword")
+        Value
+          (ParamArray
+             [Value (Str "Rending claws Boneswords Lash whip and bonesword");
+              Value (Str "Rending claws Boneswords Lash whip and bonesword")])
     let ``MONSTROUS BIO-WEAPONS`` = 
-        Value (Str "rending Monstrous boneswords Lash whip and monstrous bonesword")
+        Value
+          (ParamArray
+             [Value
+                (Str
+                   "Monstrous rending claws Monstrous boneswords Lash whip and monstrous bonesword");
+              Value
+                (Str "rending Monstrous boneswords Lash whip and monstrous bonesword")])
     let ``MONSTROUS BIO-CANNONS`` = 
         Value
           (ParamArray
              [Value
+                (Str
+                   "Two deathspitters with slimer maggots Two devourers with brainleech worms Stranglethorn cannon* Heavy venom cannon* *A model cannot be armed with more than one of these weapons.");
+              Value
                 (Str
                    "Two with slimer Two with brainleech Stranglethorn cannon * Heavy venom cannon * *");
               App
@@ -298,7 +333,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "Each time the bearer fights, it can make one (and only one) attack with this weapon. This is in addition to the bearer’s attacks. If a unit suffers any unsaved wounds from this weapon, add 1 to any Morale tests they take until the end of the turn.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
@@ -359,7 +397,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "If");
+                         [Value
+                            (Str
+                               "If a unit suffers any unsaved wounds from this weapon, your opponent must subtract 1 from hit rolls for that unit until the end of the turn.");
+                          Value (Str "If");
                           App
                             (Call Repeat,
                              Value (ParamArray [Var "Target"; Value (Int 1)]));
@@ -402,7 +443,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "Each time the bearer fights, it can make one (and only one) attack with this weapon. This is in addition to the bearer’s attacks.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
@@ -433,7 +477,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "Each time you make a wound roll of 6+ for this weapon, the target unit suffers a mortal wound in addition to any other damage.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
@@ -487,7 +534,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "A model armed with boneswords can make 1 additional attack with them in the Fight phase.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
@@ -522,7 +572,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "When attacking with");
+                         [Value
+                            (Str
+                               "When attacking with this weapon, you must subtract 1 from the hit roll.");
+                          Value (Str "When attacking with");
                           App
                             (Call Repeat,
                              Value
@@ -545,7 +598,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "Each time the bearer fights, one (and only one) of its attacks must be made with this weapon.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
@@ -579,7 +635,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "If");
+                         [Value
+                            (Str
+                               "If the bearer is slain in the Fight phase before it has made its attacks, leave it where it is. When its unit is chosen to fight in that phase, the bearer can do so as normal before being removed from the battlefield.");
+                          Value (Str "If");
                           App
                             (Call Repeat,
                              Value
@@ -623,7 +682,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "If");
+                         [Value
+                            (Str
+                               "If the bearer is slain in the Fight phase before it has made its attacks, leave it where it is. When its unit is chosen to fight in that phase, the bearer can do so as normal before being removed from the battlefield.");
+                          Value (Str "If");
                           App
                             (Call Repeat,
                              Value
@@ -667,7 +729,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "When attacking with");
+                         [Value
+                            (Str
+                               "When attacking with this weapon, you must subtract 1 from the hit roll.");
+                          Value (Str "When attacking with");
                           App
                             (Call Repeat,
                              Value
@@ -690,7 +755,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You can re-roll hit of"); Value (Int 1);
+                         [Value
+                            (Str
+                               "You can re-roll hit rolls of 1 for this weapon. If the bearer has more than one pair of monstrous/massive scything talons, it can make 1 additional attack with this weapon each time it fights.");
+                          Value (Str "You can re-roll hit of"); Value (Int 1);
                           Value (Str "for");
                           App
                             (Call Repeat,
@@ -724,7 +792,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You can re-roll failed wound for");
+                         [Value
+                            (Str
+                               "You can re-roll failed wound rolls for this weapon. A model armed with this weapon always fights first in the Fight phase, even if it didn’t charge. If the enemy has units that have charged, or that have a similar ability, then alternate choosing units to fight with, starting with the player whose turn is taking place.");
+                          Value (Str "You can re-roll failed wound for");
                           App
                             (Call Repeat,
                              Value
@@ -785,7 +856,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "A model armed with monstrous boneswords can make 1 additional attack with them in the Fight phase.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
@@ -812,7 +886,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "When attacking with");
+                         [Value
+                            (Str
+                               "When attacking with this weapon, you must subtract 1 from the hit roll.");
+                          Value (Str "When attacking with");
                           App
                             (Call Repeat,
                              Value
@@ -835,7 +912,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You can re-roll failed wound for");
+                         [Value
+                            (Str
+                               "You can re-roll failed wound rolls for this weapon. In addition, each time you make a wound roll of 6+, that hit is resolved with an AP of -6 and Damage of 3.");
+                          Value (Str "You can re-roll failed wound for");
                           App
                             (Call Repeat,
                              Value
@@ -881,7 +961,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You can re-roll hit of"); Value (Int 1);
+                         [Value
+                            (Str
+                               "You can re-roll hit rolls of 1 for this weapon. If the bearer has more than one pair of monstrous/massive scything talons, it can make 1 additional attack with this weapon each time it fights.");
+                          Value (Str "You can re-roll hit of"); Value (Int 1);
                           Value (Str "for");
                           App
                             (Call Repeat,
@@ -923,7 +1006,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "Each time the bearer fights, it can make one (and only one) attack with this weapon. This is in addition to the bearer’s attacks.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
@@ -954,7 +1040,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "Make D3 hit for");
+                         [Value
+                            (Str
+                               "Make D3 hit rolls for each attack made with this weapon, instead of 1.");
+                          Value (Str "Make D3 hit for");
                           Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
                           Value (Str "attack made with");
                           App
@@ -975,7 +1064,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "Each time you make a wound roll of 6+ for this weapon, that hit is resolved with an AP of -4.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
@@ -1022,7 +1114,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You can re-roll hit of"); Value (Int 1);
+                         [Value
+                            (Str
+                               "You can re-roll hit rolls of 1 for this weapon. If the bearer has more than one pair of scything talons, it can make 1 additional attack with this weapon each time it fights.");
+                          Value (Str "You can re-roll hit of"); Value (Int 1);
                           Value (Str "for");
                           App
                             (Call Repeat,
@@ -1054,7 +1149,8 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You can re-roll hit of"); Value (Int 1);
+                         [Value (Str "You can re-roll hit rolls of 1 for this weapon.");
+                          Value (Str "You can re-roll hit of"); Value (Int 1);
                           Value (Str "for");
                           App
                             (Call Repeat,
@@ -1081,7 +1177,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
@@ -1118,7 +1217,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You can re-roll failed wound for");
+                         [Value
+                            (Str
+                               "You can re-roll failed wound rolls for this weapon. A model armed with this weapon always fights first in the Fight phase, even if it didn’t charge. If the enemy has units that have charged, or that have a similar ability, then alternate choosing units to fight with, starting with the player whose turn is taking place.");
+                          Value (Str "You can re-roll failed wound for");
                           App
                             (Call Repeat,
                              Value
@@ -1171,7 +1273,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "Each time the bearer fights, it can make one (and only one) attack with this weapon. This is in addition to the bearer’s attacks. This weapon always wounds targets (other than VEHICLES) on a 2+.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
@@ -1229,7 +1334,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "Each time the bearer fights, it can make one (and only one) attack with this weapon. This is in addition to the bearer’s attacks.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
@@ -1248,7 +1356,7 @@ module Rule =
                             (Lam ("obj",Var "obj"),
                              Value (ParamArray [Value (Str "bearer"); Value (Str "'s")]))])])])
     let _ = 
-        Value (Str "Spinefist")
+        Value (ParamArray [Value (Str "Spinefist"); Value (Str "Spinefist")])
     let ``Acid spray`` = 
         Value
           (ParamArray
@@ -1262,7 +1370,8 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value (Str "This weapon automatically hits its target.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
@@ -1280,7 +1389,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You can add"); Value (Int 1);
+                         [Value
+                            (Str
+                               "You can add 1 to hit rolls for this weapon when attacking a unit with 10 or more models.");
+                          Value (Str "You can add"); Value (Int 1);
                           Value (Str "to hit for");
                           App
                             (Call Repeat,
@@ -1344,7 +1456,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You can re-roll failed wound for");
+                         [Value
+                            (Str
+                               "You can re-roll failed wound rolls for this weapon. In addition, units attacked by this weapon do not gain any bonus to their saving throws for being in cover.");
+                          Value (Str "You can re-roll failed wound for");
                           App
                             (Call Repeat,
                              Value
@@ -1405,7 +1520,8 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value (Str "This weapon automatically hits its target.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
@@ -1423,7 +1539,8 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value (Str "This weapon automatically hits its target.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
@@ -1441,7 +1558,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "This weapon can be fired within 1\" of an enemy unit, and can target enemy units within 1\" of friendly units.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
@@ -1482,7 +1602,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "This weapon can be fired within 1\" of an enemy unit, and can target enemy units within 1\" of friendly units. In addition, when a model is slain by this weapon, the bearer regains 1 lost wound.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
@@ -1528,7 +1651,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "This weapon can target units that are not visible to the bearer. In addition, units attacked by this weapon do not gain any bonus to their saving throws for being in cover.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
@@ -1551,12 +1677,16 @@ module Rule =
     let ``Spore mine launcher`` = 
         Value
           (ParamArray
-             [Value (Str "48"); Value (Distance 0); Value (Str "Heavy"); Value (Int 1);
+             [Value (Str "48\" Heavy 1 See Biovore datasheet (pg 101)");
+              Value (Str "48"); Value (Distance 0); Value (Str "Heavy"); Value (Int 1);
               Value (Str "See Biovore datasheet pg"); Value (Int 101)])
     let _ = 
         Value
           (ParamArray
-             [Value (Str "Attacking from");
+             [Value
+                (Str
+                   "Attacking from the skies and from beneath the earth, the Tyranids tear apart their prey in a frenzy of slashing claws.");
+              Value (Str "Attacking from");
               App (Lam ("obj",Var "obj"),Value (ParamArray []));
               Value (Str "and from beneath");
               App
@@ -1599,7 +1729,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "This weapon can be fired within 1\" of an enemy unit, and can target enemy units within 1\" of friendly units. You can re-roll all failed wound rolls for this weapon.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
@@ -1641,7 +1774,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "If");
+                         [Value
+                            (Str
+                               "If the target is a VEHICLE and you make a wound roll of 4+, the target suffers 1 mortal wound in addition to any other damage. If you make a wound roll of 6+, inflict D3 mortal wounds instead.");
+                          Value (Str "If");
                           App
                             (Call Repeat,
                              Value
@@ -1712,7 +1848,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "This weapon can be fired within 1\" of an enemy unit, and can target enemy units within 1\" of friendly units.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
@@ -1737,7 +1876,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "When");
+                         [Value
+                            (Str
+                               "When a model fires this weapon, it makes a number of shots equal to its Attacks characteristic.");
+                          Value (Str "When");
                           App
                             (Call Repeat,
                              Value (ParamArray [Value (Str "model"); Value (Int 1)]));
@@ -1780,7 +1922,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You can add"); Value (Int 1);
+                         [Value
+                            (Str
+                               "You can add 1 to hit rolls for this weapon when attacking a unit with 10 or more models.");
+                          Value (Str "You can add"); Value (Int 1);
                           Value (Str "to hit for");
                           App
                             (Call Repeat,
@@ -1804,7 +1949,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [Value (Str "You may re-roll failed hit for");
+                         [Value
+                            (Str
+                               "You may re-roll failed hit rolls for this weapon against units that can FLY . In addition, if the target is a VEHICLE and you make a wound roll of 4+, it suffers 1 mortal wound in addition to any other damage. If you make a wound roll of 6+, inflict D3 mortal wounds instead.");
+                          Value (Str "You may re-roll failed hit for");
                           App
                             (Call Repeat,
                              Value
@@ -1876,7 +2024,10 @@ module Rule =
                    [Value (Str "ABILITIES");
                     Value
                       (ParamArray
-                         [App
+                         [Value
+                            (Str
+                               "This weapon can be fired within 1\" of an enemy unit, and can target enemy units within 1\" of friendly units. In addition, you can re-roll failed wound rolls for this weapon.");
+                          App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
@@ -1905,7 +2056,10 @@ module Rule =
     let ``ALIEN CUNNING`` = 
         Value
           (ParamArray
-             [Value (Str "At");
+             [Value
+                (Str
+                   "At the start of the first battle round but before the first turn begins, you can remove your Warlord from the battlefield and set them up again. If both players have units that can do this, roll off. The player that wins the roll-off decides who sets up their unit(s) first.");
+              Value (Str "At");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "start"); Lam ("obj",Var "obj")]));
@@ -1934,14 +2088,18 @@ module Rule =
     let ``HEIGHTENED SENSES`` = 
         Value
           (ParamArray
-             [Value (Str "Your Warlord never"); Call Suffer;
+             [Value
+                (Str
+                   "Your Warlord never suffers any penalties to their hit rolls (although they still only hit on rolls of 6 when firing Overwatch).");
+              Value (Str "Your Warlord never"); Call Suffer;
               App (Lam ("obj",Var "obj"),Value (ParamArray []));
               Value (Str "to their hit although they still only hit on of");
               Value (Int 6); Value (Str "when firing Overwatch")])
     let ``SYNAPTIC LYNCHPIN`` = 
         Value
           (ParamArray
-             [Value (Str "Add"); Value (Distance 6); Value (Str "to");
+             [Value (Str "Add 6\" to the range of the Warlord’s Synapse ability.");
+              Value (Str "Add"); Value (Distance 6); Value (Str "to");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "range"); Lam ("obj",Var "obj")]));
@@ -1953,7 +2111,10 @@ module Rule =
     let ``MIND EATER`` = 
         Value
           (ParamArray
-             [App
+             [Value
+                (Str
+                   "Each time the Warlord slays an enemy CHARACTER in the Fight phase, choose a friendly <HIVE FLEET> unit within 3\". At the end of the phase, that unit can move (and Advance if you wish) as if it was your Movement phase.");
+              App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
               App
@@ -1989,7 +2150,10 @@ module Rule =
     let ``INSTINCTIVE KILLER`` = 
         Value
           (ParamArray
-             [Value (Str "At");
+             [Value
+                (Str
+                   "At the beginning of the battle but before the first turn begins, choose an enemy unit. You can re-roll failed hit rolls for the Warlord for attacks that target that unit or any unit that has the same datasheet (for example, all Intercessor Squads or all units of Nobz etc.).");
+              Value (Str "At");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "beginning"); Lam ("obj",Var "obj")]));
@@ -2025,7 +2189,10 @@ module Rule =
     let ``ADAPTIVE BIOLOGY`` = 
         Value
           (ParamArray
-             [Value (Str "From");
+             [Value
+                (Str
+                   "From the end of the first phase in which this Warlord suffers any wounds, for the remainder of the battle when inflicting damage upon the Warlord, reduce the damage of the attack by 1 to a minimum of 1.");
+              Value (Str "From");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));
@@ -2065,14 +2232,20 @@ module Rule =
     let ``The mightiest creatures spawned by the Hive Mind have each been created with a specific purpose. If one of the following named characters is your Warlord, they must be given the associated Warlord Trait shown below.`` = 
         Value
           (ParamArray
-             [Lam ("obj",Var "obj");
+             [Value
+                (Str
+                   "The Swarmlord Alien Cunning Old One Eye Adaptive Biology Deathleaper Mind Eater The Red Terror Heightened Senses");
+              Lam ("obj",Var "obj");
               Value
                 (Str
                    "Swarmlord Alien Cunning Old One Eye Adaptive Biology Deathleaper Mind Eater The Red Terror Heightened Senses")])
     let ``HIVE FLEET WARLORD TRAITS`` = 
         Value
           (ParamArray
-             [Value (Str "If you wish you can pick");
+             [Value
+                (Str
+                   "If you wish, you can pick a Hive Fleet Warlord Trait from the list below instead of the Tyranid Warlord Traits to the left, but only if your Warlord is from the relevant hive fleet.");
+              Value (Str "If you wish you can pick");
               App
                 (Value (Int 1),
                  Value
@@ -2101,7 +2274,10 @@ module Rule =
     let ``BEHEMOTH: MONSTROUS HUNGER`` = 
         Value
           (ParamArray
-             [App
+             [Value
+                (Str
+                   "Each time you make a wound roll of 6+ for the Warlord in the Fight phase, that attack inflicts 1 additional damage.");
+              App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
               Value (Str "you make");
@@ -2147,7 +2323,10 @@ module Rule =
     let ``KRAKEN: ONE STEP AHEAD`` = 
         Value
           (ParamArray
-             [Value (Str "In");
+             [Value
+                (Str
+                   "In each Fight phase, you can pick one friendly KRAKEN unit within 6\" of your Warlord. That unit can fight first in the Fight phase, even if it didn’t charge. If the enemy has units that have charged, or that have a similar ability, then alternate choosing units to fight with, starting with the player whose turn is taking place.");
+              Value (Str "In");
               Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
               Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
               Value (Str "you can pick one friendly KRAKEN"); Var "Target";
@@ -2174,7 +2353,10 @@ module Rule =
     let ``LEVIATHAN: PERFECTLY ADAPTED`` = 
         Value
           (ParamArray
-             [Value (Str "Once per battle round you can re-roll");
+             [Value
+                (Str
+                   "Once per battle round, you can re-roll a single hit roll, wound roll, damage roll, Advance roll, charge roll or saving throw made for your Warlord.");
+              Value (Str "Once per battle round you can re-roll");
               App
                 (Value (Int 1),
                  Value
@@ -2186,7 +2368,10 @@ module Rule =
     let ``GORGON: LETHAL MIASMA`` = 
         Value
           (ParamArray
-             [Value (Str "At");
+             [Value
+                (Str
+                   "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound.");
+              Value (Str "At");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));
@@ -2261,7 +2446,10 @@ module Rule =
     let ``JORMUNGANDR: INSIDIOUS THREAT`` = 
         Value
           (ParamArray
-             [Value (Str "Enemy never gain");
+             [Value
+                (Str
+                   "Enemy units never gain any bonus to their saving throws for being in cover for attacks made by the Warlord or friendly JORMUNGANDR units within 3\" of the Warlord.");
+              Value (Str "Enemy never gain");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "bonus"); Lam ("obj",Var "obj")]));
@@ -2279,7 +2467,10 @@ module Rule =
     let ``HYDRA: ENDLESS REGENERATION`` = 
         Value
           (ParamArray
-             [Value (Str "At");
+             [Value
+                (Str
+                   "At the beginning of each of your turns, roll a dice for each wound that your Warlord has lost. For each roll of 6, your Warlord regains a wound lost earlier in the battle.");
+              Value (Str "At");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "beginning"); Lam ("obj",Var "obj")]));
@@ -2350,7 +2541,10 @@ module Rule =
     let ``KRONOS: SOUL HUNGER`` = 
         Value
           (ParamArray
-             [Value (Str "Whenever");
+             [Value
+                (Str
+                   "Whenever an enemy PSYKER fails a psychic test within 18\" of your Warlord, they suffer D3 mortal wounds.");
+              Value (Str "Whenever");
               App
                 (Lam ("obj",Var "obj"),
                  Value (ParamArray [Var "Target"; Value (Str "PSYKER")]));
@@ -2363,7 +2557,10 @@ module Rule =
     let ``EXTENSIONS OF THE HIVE MIND`` = 
         Value
           (ParamArray
-             [Value (Str "If your army is Battle-forged");
+             [Value
+                (Str
+                   "If your army is Battle-forged, all Troops units in Tyranids Detachments gain this ability. Such a unit that is within range of an objective marker (as specified in the mission) controls the objective marker even if there are more enemy models within range of that objective marker. If an enemy unit within range of the same objective marker has a similar ability, then the objective marker is controlled by the player who has the most models within range of it as normal.");
+              Value (Str "If your army is Battle-forged");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "Troops"); Lam ("obj",Var "obj")]));
@@ -2418,7 +2615,10 @@ module Rule =
     let ``HIVE FLEET ADAPTATIONS`` = 
         Value
           (ParamArray
-             [Value (Str "If your army is Battle-forged");
+             [Value
+                (Str
+                   "If your army is Battle-forged, all units in Tyranids Detachments gain a Hive Fleet Adaptation, so long as every unit in that Detachment is from the same hive fleet. The Hive Fleet Adaptation gained depends upon the hive fleet they are from, as shown in the table opposite. For example, a BEHEMOTH unit with the Hive Fleet Adaptation ability gains the Hyper-aggression adaptation. If you are using a splinter fleet rather than a hive fleet, use the Hive Fleet Adaptation of its parent hive fleet. For example, the Court of the Nephilim King is a splinter fleet of Hive Fleet Behemoth, so should use the Behemoth Hive Fleet Adaptation. If you are unsure of a splinter fleet’s parent hive fleet, either consult the background sections of our books or choose an adaptation from the table that best describes its character and fighting style.");
+              Value (Str "If your army is Battle-forged");
               App (Lam ("obj",Var "obj"),Value (ParamArray []));
               Value (Str "in Tyranids Detachments gain");
               App
@@ -2529,14 +2729,20 @@ module Rule =
     let ``BEHEMOTH: HYPER-AGGRESSION`` = 
         Value
           (ParamArray
-             [Value (Str "You can re-roll failed charge for with");
+             [Value
+                (Str
+                   "You can re-roll failed charge rolls for units with this adaptation.");
+              Value (Str "You can re-roll failed charge for with");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "adaptation"); Lam ("obj",Var "obj")]))])
     let ``KRAKEN: QUESTING TENDRILS`` = 
         Value
           (ParamArray
-             [Value (Str "When");
+             [Value
+                (Str
+                   "When a unit with this adaptation Advances, roll three dice instead of one and pick the highest to add to the Move characteristic of all models in the unit for that Movement phase. In addition, such units can Fall Back and charge in the same turn.");
+              Value (Str "When");
               App (Call Repeat,Value (ParamArray [Var "Target"; Value (Int 1)]));
               Value (Str "with");
               App
@@ -2559,7 +2765,10 @@ module Rule =
     let ``LEVIATHAN: SYNAPTIC IMPERATIVE`` = 
         Value
           (ParamArray
-             [Value (Str "Roll");
+             [Value
+                (Str
+                   "Roll a D6 each time a unit with this adaptation loses a wound whilst it is within 6\" of a friendly SYNAPSE unit from the same hive fleet. On a 6, the damage is ignored and the unit does not lose a wound. Ignore this adaptation on a unit that is currently affected by the Catalyst psychic power.");
+              Value (Str "Roll");
               App
                 (Call Repeat,
                  Value (ParamArray [App (Call Dice,Value (Int 6)); Value (Int 1)]));
@@ -2609,7 +2818,10 @@ module Rule =
     let ``GORGON: ADAPTIVE TOXINS`` = 
         Value
           (ParamArray
-             [Value (Str "You can re-roll wound of"); Value (Int 1); Value (Str "in");
+             [Value
+                (Str
+                   "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation.");
+              Value (Str "You can re-roll wound of"); Value (Int 1); Value (Str "in");
               App
                 (Call Repeat,
                  Value
@@ -2622,7 +2834,10 @@ module Rule =
     let ``JORMUNGANDR: TUNNEL NETWORKS`` = 
         Value
           (ParamArray
-             [App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+             [Value
+                (Str
+                   "A unit with this adaptation (other than units that can FLY ) always has the benefit of cover for the purposes of shooting attacks. If the unit Advances or charges, however, it loses the benefit of this adaptation until the start of your next Movement phase.");
+              App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
               Value (Str "with");
               App
                 (Call Repeat,
@@ -2651,7 +2866,10 @@ module Rule =
     let ``HYDRA: SWARMING INSTINCTS`` = 
         Value
           (ParamArray
-             [Value (Str "You can re-roll hit in");
+             [Value
+                (Str
+                   "You can re-roll hit rolls in the Fight phase for units with this adaptation that target units containing fewer models than their own.");
+              Value (Str "You can re-roll hit in");
               App
                 (Call Repeat,
                  Value
@@ -2665,7 +2883,10 @@ module Rule =
     let ``KRONOS: BIO-BARRAGE`` = 
         Value
           (ParamArray
-             [Value (Str "You can re-roll hit of"); Value (Int 1);
+             [Value
+                (Str
+                   "You can re-roll hit rolls of 1 for units with this adaptation in your Shooting phase if they did not move in the preceding Movement phase.");
+              Value (Str "You can re-roll hit of"); Value (Int 1);
               Value (Str "for with");
               App
                 (Call Repeat,
