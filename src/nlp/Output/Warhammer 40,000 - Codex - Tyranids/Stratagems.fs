@@ -32,12 +32,11 @@ module Stratagem =
                            (ParamArray [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
                       Value (Str "in your Psychic phase if");
                       App
-                        (Call Repeat,
-                         Value (ParamArray [Value (Str "Zoanthropes"); Value (Int 1)]));
-                      Var "Target"; Value (Str "from your army consisting of at least");
-                      Value (Int 3); Value (Str "is within"); Value (Distance 6);
-                      Value (Str "of"); Value (Int 2);
-                      Value (Str "other such If you do so");
+                        (Value (Int 1),
+                         Value (ParamArray [Value (Str "Zoanthropes"); Var "Target"]));
+                      Value (Str "from your army consisting of at least"); Value (Int 3);
+                      Value (Str "is within"); Value (Distance 6); Value (Str "of");
+                      Value (Int 2); Value (Str "other such If you do so");
                       App
                         (Call Repeat,
                          Value
@@ -62,8 +61,7 @@ module Stratagem =
                            (ParamArray
                               [Value (Str "battlefield"); Lam ("obj",Var "obj")]));
                       Value (Str "within"); Value (Distance 18);
-                      Value (Str "of and visible to"); Lam ("obj",Var "obj");
-                      Value (Str "three Roll");
+                      Value (Str "of and visible to all three Roll");
                       App (Value (Int 1),Value (ParamArray [])); Value (Str "for");
                       Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
                       Var "Target"; Value (Str "friend or foe within");
@@ -112,20 +110,10 @@ module Stratagem =
                                           (Call Or,
                                            Value (ParamArray [Var "eq"; Var "gt"])))));
                                Value (Int 1)]));
-                      Let
-                        ("ThatSubject",Value (ParamArray [Var "Target"]),
-                         Value
-                           (ParamArray
-                              [Let
-                                 ("ThatObject",
-                                  Value (ParamArray [Value (Str "3D3 mortal")]),
-                                  Value
-                                    (ParamArray
-                                       [App
-                                          (Call Suffer,
-                                           Value
-                                             (ParamArray
-                                                [Var "ThatSubject"; Var "ThatObject"]))]))]))]));
+                      App
+                        (Call Repeat,
+                         Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+                      Call Suffer; Value (Str "3D3 mortal")]));
                ("1",
                 IfThenElse
                   (App
@@ -144,10 +132,8 @@ module Stratagem =
                                  [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
                          Value (Str "in your Psychic phase if");
                          App
-                           (Call Repeat,
-                            Value
-                              (ParamArray [Value (Str "Zoanthropes"); Value (Int 1)]));
-                         Var "Target";
+                           (Value (Int 1),
+                            Value (ParamArray [Value (Str "Zoanthropes"); Var "Target"]));
                          Value (Str "from your army consisting of at least");
                          Value (Int 3); Value (Str "is within"); Value (Distance 6);
                          Value (Str "of"); Value (Int 2);
@@ -177,8 +163,7 @@ module Stratagem =
                               (ParamArray
                                  [Value (Str "battlefield"); Lam ("obj",Var "obj")]));
                          Value (Str "within"); Value (Distance 18);
-                         Value (Str "of and visible to"); Lam ("obj",Var "obj");
-                         Value (Str "three Roll");
+                         Value (Str "of and visible to all three Roll");
                          App (Value (Int 1),Value (ParamArray [])); Value (Str "for");
                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
                          Var "Target"; Value (Str "friend or foe within");
@@ -229,21 +214,10 @@ module Stratagem =
                                              (Call Or,
                                               Value (ParamArray [Var "eq"; Var "gt"])))));
                                   Value (Int 1)]));
-                         Let
-                           ("ThatSubject",Value (ParamArray [Var "Target"]),
-                            Value
-                              (ParamArray
-                                 [Let
-                                    ("ThatObject",
-                                     Value (ParamArray [Value (Str "3D3 mortal")]),
-                                     Value
-                                       (ParamArray
-                                          [App
-                                             (Call Suffer,
-                                              Value
-                                                (ParamArray
-                                                   [Var "ThatSubject"; Var "ThatObject"]))]))]))]),
-                   None))]),None)
+                         App
+                           (Call Repeat,
+                            Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+                         Call Suffer; Value (Str "3D3 mortal")]),None))]),None)
     let ``RAPID REGENERATION`` = 
         IfThenElse
           (App
@@ -265,9 +239,13 @@ module Stratagem =
                       App
                         (Call Repeat,
                          Value (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));
-                      Value
-                        (Str
-                           "of your Movement phase Select a TYRANIDS model from your army It regains D3 lost earlier in");
+                      Value (Str "of your Movement phase Select");
+                      App
+                        (Value (Int 1),
+                         Value
+                           (ParamArray [Value (Str "TYRANIDS"); Value (Str "model")]));
+                      Value (Str "from your army It regains");
+                      App (Call Dice,Value (Int 3)); Value (Str "lost earlier in");
                       App
                         (Call Repeat,
                          Value
@@ -293,9 +271,13 @@ module Stratagem =
                            (Call Repeat,
                             Value
                               (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));
-                         Value
-                           (Str
-                              "of your Movement phase Select a TYRANIDS model from your army It regains D3 lost earlier in");
+                         Value (Str "of your Movement phase Select");
+                         App
+                           (Value (Int 1),
+                            Value
+                              (ParamArray [Value (Str "TYRANIDS"); Value (Str "model")]));
+                         Value (Str "from your army It regains");
+                         App (Call Dice,Value (Int 3)); Value (Str "lost earlier in");
                          App
                            (Call Repeat,
                             Value
@@ -324,15 +306,16 @@ module Stratagem =
                          Value (ParamArray [Value (Str "start"); Lam ("obj",Var "obj")]));
                       Value (Str "of");
                       App
-                        (Value (Int 1),
+                        (Call Repeat,
                          Value
                            (ParamArray
-                              [Value (Str "Fight"); Value (Str "phase");
-                               Value (Str "Select")]));
+                              [Value
+                                 (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
+                               Value (Int 1)])); Value (Str "Select");
                       App
                         (Value (Int 1),
                          Value (ParamArray [Value (Str "TYRANIDS"); Var "Target"]));
-                      Value (Str "from your army");
+                      Value (Str "from your army Roll");
                       App (Value (Int 1),Value (ParamArray [])); Value (Str "whenever");
                       App
                         (Call Repeat,
@@ -389,15 +372,17 @@ module Stratagem =
                               (ParamArray [Value (Str "start"); Lam ("obj",Var "obj")]));
                          Value (Str "of");
                          App
-                           (Value (Int 1),
+                           (Call Repeat,
                             Value
                               (ParamArray
-                                 [Value (Str "Fight"); Value (Str "phase");
-                                  Value (Str "Select")]));
+                                 [Value
+                                    (ParamArray
+                                       [Value (Str "Phase"); Value (Str "Fight")]);
+                                  Value (Int 1)])); Value (Str "Select");
                          App
                            (Value (Int 1),
                             Value (ParamArray [Value (Str "TYRANIDS"); Var "Target"]));
-                         Value (Str "from your army");
+                         Value (Str "from your army Roll");
                          App (Value (Int 1),Value (ParamArray []));
                          Value (Str "whenever");
                          App
@@ -542,7 +527,7 @@ module Stratagem =
                            (ParamArray
                               [Value
                                  (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
-                               Lam ("obj",Var "obj")]));
+                               Lam ("obj",Var "obj")])); Value (Str "Roll");
                       App (Value (Int 1),Value (ParamArray [])); Value (Str "for");
                       Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
                       Var "Target"; Value (Str "model other than");
@@ -612,7 +597,7 @@ module Stratagem =
                                  [Value
                                     (ParamArray
                                        [Value (Str "Phase"); Value (Str "Fight")]);
-                                  Lam ("obj",Var "obj")]));
+                                  Lam ("obj",Var "obj")])); Value (Str "Roll");
                          App (Value (Int 1),Value (ParamArray [])); Value (Str "for");
                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
                          Var "Target"; Value (Str "model other than");
@@ -681,14 +666,28 @@ module Stratagem =
                          Value
                            (ParamArray [Value (Str "battle"); Lam ("obj",Var "obj")]));
                       Value (Str "Your army can have one extra Bio-artefact for");
-                      Value (Int 1); Value (Str "CP or two extra for 3 CPs All of");
+                      Value (Int 1); Value (Str "CP or two extra for"); Value (Int 3);
+                      App (Lam ("obj",Var "obj"),Value (ParamArray []));
+                      Value (Str "of");
                       App
                         (Call Repeat,
                          Value
                            (ParamArray
                               [Value (Str "Bio-artefacts"); Lam ("obj",Var "obj")]));
                       Let
-                        ("ThatSubject",Value (ParamArray [Var "you"]),
+                        ("ThatSubject",
+                         Value
+                           (ParamArray
+                              [Var "you";
+                               Value
+                                 (Str
+                                    "must be different and be given to different TYRANIDS You can only use");
+                               App
+                                 (Call Repeat,
+                                  Value
+                                    (ParamArray
+                                       [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
+                               Value (Str "once per battle")]),
                          Value
                            (ParamArray
                               [Let
@@ -697,7 +696,7 @@ module Stratagem =
                                     (ParamArray
                                        [Value
                                           (Str
-                                             "must be different and be given to different CHARACTERS You can only use");
+                                             "must be different and be given to different TYRANIDS You can only use");
                                         App
                                           (Call Repeat,
                                            Value
@@ -711,7 +710,17 @@ module Stratagem =
                                           (Value (Str "include"),
                                            Value
                                              (ParamArray
-                                                [Var "ThatSubject"; Var "ThatObject"]))]))]))]));
+                                                [Var "ThatSubject"; Var "ThatObject"]));
+                                        Value
+                                          (Str
+                                             "must be different and be given to different TYRANIDS You can only use");
+                                        App
+                                          (Call Repeat,
+                                           Value
+                                             (ParamArray
+                                                [Value (Str "Stratagem");
+                                                 Lam ("obj",Var "obj")]));
+                                        Value (Str "once per battle")]))]))]));
                ("1",
                 IfThenElse
                   (App
@@ -735,14 +744,29 @@ module Stratagem =
                             Value
                               (ParamArray [Value (Str "battle"); Lam ("obj",Var "obj")]));
                          Value (Str "Your army can have one extra Bio-artefact for");
-                         Value (Int 1); Value (Str "CP or two extra for 3 CPs All of");
+                         Value (Int 1); Value (Str "CP or two extra for"); Value (Int 3);
+                         App (Lam ("obj",Var "obj"),Value (ParamArray []));
+                         Value (Str "of");
                          App
                            (Call Repeat,
                             Value
                               (ParamArray
                                  [Value (Str "Bio-artefacts"); Lam ("obj",Var "obj")]));
                          Let
-                           ("ThatSubject",Value (ParamArray [Var "you"]),
+                           ("ThatSubject",
+                            Value
+                              (ParamArray
+                                 [Var "you";
+                                  Value
+                                    (Str
+                                       "must be different and be given to different TYRANIDS You can only use");
+                                  App
+                                    (Call Repeat,
+                                     Value
+                                       (ParamArray
+                                          [Value (Str "Stratagem");
+                                           Lam ("obj",Var "obj")]));
+                                  Value (Str "once per battle")]),
                             Value
                               (ParamArray
                                  [Let
@@ -751,7 +775,7 @@ module Stratagem =
                                        (ParamArray
                                           [Value
                                              (Str
-                                                "must be different and be given to different CHARACTERS You can only use");
+                                                "must be different and be given to different TYRANIDS You can only use");
                                            App
                                              (Call Repeat,
                                               Value
@@ -765,8 +789,17 @@ module Stratagem =
                                              (Value (Str "include"),
                                               Value
                                                 (ParamArray
-                                                   [Var "ThatSubject"; Var "ThatObject"]))]))]))]),
-                   None));
+                                                   [Var "ThatSubject"; Var "ThatObject"]));
+                                           Value
+                                             (Str
+                                                "must be different and be given to different TYRANIDS You can only use");
+                                           App
+                                             (Call Repeat,
+                                              Value
+                                                (ParamArray
+                                                   [Value (Str "Stratagem");
+                                                    Lam ("obj",Var "obj")]));
+                                           Value (Str "once per battle")]))]))]),None));
                ("3",
                 IfThenElse
                   (App
@@ -790,14 +823,29 @@ module Stratagem =
                             Value
                               (ParamArray [Value (Str "battle"); Lam ("obj",Var "obj")]));
                          Value (Str "Your army can have one extra Bio-artefact for");
-                         Value (Int 1); Value (Str "CP or two extra for 3 CPs All of");
+                         Value (Int 1); Value (Str "CP or two extra for"); Value (Int 3);
+                         App (Lam ("obj",Var "obj"),Value (ParamArray []));
+                         Value (Str "of");
                          App
                            (Call Repeat,
                             Value
                               (ParamArray
                                  [Value (Str "Bio-artefacts"); Lam ("obj",Var "obj")]));
                          Let
-                           ("ThatSubject",Value (ParamArray [Var "you"]),
+                           ("ThatSubject",
+                            Value
+                              (ParamArray
+                                 [Var "you";
+                                  Value
+                                    (Str
+                                       "must be different and be given to different TYRANIDS You can only use");
+                                  App
+                                    (Call Repeat,
+                                     Value
+                                       (ParamArray
+                                          [Value (Str "Stratagem");
+                                           Lam ("obj",Var "obj")]));
+                                  Value (Str "once per battle")]),
                             Value
                               (ParamArray
                                  [Let
@@ -806,7 +854,7 @@ module Stratagem =
                                        (ParamArray
                                           [Value
                                              (Str
-                                                "must be different and be given to different CHARACTERS You can only use");
+                                                "must be different and be given to different TYRANIDS You can only use");
                                            App
                                              (Call Repeat,
                                               Value
@@ -820,8 +868,18 @@ module Stratagem =
                                              (Value (Str "include"),
                                               Value
                                                 (ParamArray
-                                                   [Var "ThatSubject"; Var "ThatObject"]))]))]))]),
-                   None))]),None)
+                                                   [Var "ThatSubject"; Var "ThatObject"]));
+                                           Value
+                                             (Str
+                                                "must be different and be given to different TYRANIDS You can only use");
+                                           App
+                                             (Call Repeat,
+                                              Value
+                                                (ParamArray
+                                                   [Value (Str "Stratagem");
+                                                    Lam ("obj",Var "obj")]));
+                                           Value (Str "once per battle")]))]))]),None))]),
+           None)
     let ``METABOLIC OVERDRIVE`` = 
         IfThenElse
           (App
@@ -979,8 +1037,8 @@ module Stratagem =
                            (ParamArray
                               [Value
                                  (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
-                               Lam ("obj",Var "obj")]));
-                      Value (Str "Gain D3 Command Points")]));
+                               Lam ("obj",Var "obj")])); Value (Str "Gain");
+                      App (Call Dice,Value (Int 3)); Value (Str "Command Points")]));
                ("1",
                 IfThenElse
                   (App
@@ -1017,8 +1075,9 @@ module Stratagem =
                                  [Value
                                     (ParamArray
                                        [Value (Str "Phase"); Value (Str "Fight")]);
-                                  Lam ("obj",Var "obj")]));
-                         Value (Str "Gain D3 Command Points")]),None))]),None)
+                                  Lam ("obj",Var "obj")])); Value (Str "Gain");
+                         App (Call Dice,Value (Int 3)); Value (Str "Command Points")]),
+                   None))]),None)
     let ``PATHOGENIC SLIME`` = 
         IfThenElse
           (App
@@ -1031,8 +1090,12 @@ module Stratagem =
                      [Value
                         (Str
                            "Use this Stratagem in your Shooting phase. Select a TYRANIDS MONSTER from your army. Increase the Damage of its attacks by 1 for this phase.");
-                      Value (Str "Use"); Lam ("obj",Var "obj");
-                      Value (Str "Stratagem in your Shooting phase");
+                      Value (Str "Use");
+                      App
+                        (Call Repeat,
+                         Value
+                           (ParamArray [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
+                      Value (Str "in your Shooting phase Select");
                       App
                         (Value (Int 1),
                          Value
@@ -1056,8 +1119,13 @@ module Stratagem =
                         [Value
                            (Str
                               "Use this Stratagem in your Shooting phase. Select a TYRANIDS MONSTER from your army. Increase the Damage of its attacks by 1 for this phase.");
-                         Value (Str "Use"); Lam ("obj",Var "obj");
-                         Value (Str "Stratagem in your Shooting phase");
+                         Value (Str "Use");
+                         App
+                           (Call Repeat,
+                            Value
+                              (ParamArray
+                                 [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
+                         Value (Str "in your Shooting phase Select");
                          App
                            (Value (Int 1),
                             Value
@@ -1318,29 +1386,21 @@ module Stratagem =
                         (Call Repeat,
                          Value
                            (ParamArray [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
-                      Value (Str "at"); Lam ("obj",Var "obj");
-                      Value (Str "end of your Shooting phase Select");
+                      Value (Str "at");
+                      App
+                        (Call Repeat,
+                         Value (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));
+                      Value (Str "of your Shooting phase Select");
                       App
                         (Value (Int 1),
                          Value
                            (ParamArray
                               [Value (Str "TYRANIDS"); Value (Str "INFANTRY");
                                Var "Target"])); Value (Str "from your army");
-                      Let
-                        ("ThatSubject",Value (ParamArray [Var "Target"]),
-                         Value
-                           (ParamArray
-                              [Let
-                                 ("ThatObject",
-                                  Value
-                                    (ParamArray [Value (Str "immediately shoot again")]),
-                                  Value
-                                    (ParamArray
-                                       [App
-                                          (Value (Str "can"),
-                                           Value
-                                             (ParamArray
-                                                [Var "ThatSubject"; Var "ThatObject"]))]))]))]));
+                      App
+                        (Call Repeat,
+                         Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+                      Value (Str "can immediately shoot again")]));
                ("2",
                 IfThenElse
                   (App
@@ -1359,31 +1419,22 @@ module Stratagem =
                             Value
                               (ParamArray
                                  [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
-                         Value (Str "at"); Lam ("obj",Var "obj");
-                         Value (Str "end of your Shooting phase Select");
+                         Value (Str "at");
+                         App
+                           (Call Repeat,
+                            Value
+                              (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));
+                         Value (Str "of your Shooting phase Select");
                          App
                            (Value (Int 1),
                             Value
                               (ParamArray
                                  [Value (Str "TYRANIDS"); Value (Str "INFANTRY");
                                   Var "Target"])); Value (Str "from your army");
-                         Let
-                           ("ThatSubject",Value (ParamArray [Var "Target"]),
-                            Value
-                              (ParamArray
-                                 [Let
-                                    ("ThatObject",
-                                     Value
-                                       (ParamArray
-                                          [Value (Str "immediately shoot again")]),
-                                     Value
-                                       (ParamArray
-                                          [App
-                                             (Value (Str "can"),
-                                              Value
-                                                (ParamArray
-                                                   [Var "ThatSubject"; Var "ThatObject"]))]))]))]),
-                   None))]),None)
+                         App
+                           (Call Repeat,
+                            Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+                         Value (Str "can immediately shoot again")]),None))]),None)
     let ``POWER OF THE HIVE MIND`` = 
         IfThenElse
           (App
@@ -1405,7 +1456,7 @@ module Stratagem =
                       App
                         (Call Repeat,
                          Value (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));
-                      Value (Str "of your Psychic phase");
+                      Value (Str "of your Psychic phase Select");
                       App
                         (Value (Int 1),
                          Value
@@ -1416,12 +1467,10 @@ module Stratagem =
                       App
                         (Value (Int 1),
                          Value (ParamArray [Value (Str "psychic"); Value (Str "power")]));
-                      App
-                        (Call Repeat,
-                         Value (ParamArray [Value (Str "turn"); Lam ("obj",Var "obj")]));
+                      App (Lam ("obj",Var "obj"),Value (ParamArray []));
                       Value
                         (Str
-                           "It can immediately attempt to manifest one additional psychic power");
+                           "turn It can immediately attempt to manifest one additional psychic power");
                       App
                         (Call Repeat,
                          Value (ParamArray [Value (Str "turn"); Lam ("obj",Var "obj")]))]));
@@ -1447,7 +1496,7 @@ module Stratagem =
                            (Call Repeat,
                             Value
                               (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));
-                         Value (Str "of your Psychic phase");
+                         Value (Str "of your Psychic phase Select");
                          App
                            (Value (Int 1),
                             Value
@@ -1459,13 +1508,10 @@ module Stratagem =
                            (Value (Int 1),
                             Value
                               (ParamArray [Value (Str "psychic"); Value (Str "power")]));
-                         App
-                           (Call Repeat,
-                            Value
-                              (ParamArray [Value (Str "turn"); Lam ("obj",Var "obj")]));
+                         App (Lam ("obj",Var "obj"),Value (ParamArray []));
                          Value
                            (Str
-                              "It can immediately attempt to manifest one additional psychic power");
+                              "turn It can immediately attempt to manifest one additional psychic power");
                          App
                            (Call Repeat,
                             Value
@@ -1570,10 +1616,8 @@ module Stratagem =
                       Value (Str "in");
                       App
                         (Lam ("obj",Var "obj"),
-                         Value
-                           (ParamArray
-                              [Value (Str "Morale"); Value (Str "phase");
-                               Value (Str "Select")]));
+                         Value (ParamArray [Value (Str "Morale"); Value (Str "phase")]));
+                      Value (Str "Select");
                       App (Call Repeat,Value (ParamArray [Var "Target"; Value (Int 1)]));
                       Value
                         (Str
@@ -1613,9 +1657,8 @@ module Stratagem =
                          App
                            (Lam ("obj",Var "obj"),
                             Value
-                              (ParamArray
-                                 [Value (Str "Morale"); Value (Str "phase");
-                                  Value (Str "Select")]));
+                              (ParamArray [Value (Str "Morale"); Value (Str "phase")]));
+                         Value (Str "Select");
                          App
                            (Call Repeat,Value (ParamArray [Var "Target"; Value (Int 1)]));
                          Value
@@ -1750,7 +1793,7 @@ module Stratagem =
                         (Call Repeat,
                          Value
                            (ParamArray [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
-                      Value (Str "in your Movement phase");
+                      Value (Str "in your Movement phase Select");
                       App
                         (Call Repeat,
                          Value (ParamArray [Value (Str "LICTOR"); Value (Int 1)]));
@@ -1782,7 +1825,7 @@ module Stratagem =
                             Value
                               (ParamArray
                                  [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
-                         Value (Str "in your Movement phase");
+                         Value (Str "in your Movement phase Select");
                          App
                            (Call Repeat,
                             Value (ParamArray [Value (Str "LICTOR"); Value (Int 1)]));
@@ -1880,8 +1923,12 @@ module Stratagem =
                      [Value
                         (Str
                            "Use this Stratagem in the Fight phase. Select an enemy unit that is within 1\" of at least one LEVIATHAN unit from your army that can FLY and at least one that cannot. You can re-roll hit and wound rolls of 1 in this phase for attacks for LEVIATHAN units that target that enemy unit.");
-                      Value (Str "Use"); Lam ("obj",Var "obj");
-                      Value (Str "Stratagem in");
+                      Value (Str "Use");
+                      App
+                        (Call Repeat,
+                         Value
+                           (ParamArray [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
+                      Value (Str "in");
                       App
                         (Call Repeat,
                          Value
@@ -1915,8 +1962,13 @@ module Stratagem =
                         [Value
                            (Str
                               "Use this Stratagem in the Fight phase. Select an enemy unit that is within 1\" of at least one LEVIATHAN unit from your army that can FLY and at least one that cannot. You can re-roll hit and wound rolls of 1 in this phase for attacks for LEVIATHAN units that target that enemy unit.");
-                         Value (Str "Use"); Lam ("obj",Var "obj");
-                         Value (Str "Stratagem in");
+                         Value (Str "Use");
+                         App
+                           (Call Repeat,
+                            Value
+                              (ParamArray
+                                 [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
+                         Value (Str "in");
                          App
                            (Call Repeat,
                             Value
@@ -1966,7 +2018,7 @@ module Stratagem =
                            (ParamArray
                               [Value
                                  (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
-                               Lam ("obj",Var "obj")]));
+                               Lam ("obj",Var "obj")])); Value (Str "Choose");
                       App
                         (Value (Int 1),
                          Value (ParamArray [Value (Str "GORGON"); Var "Target"]));
@@ -2019,7 +2071,7 @@ module Stratagem =
                                  [Value
                                     (ParamArray
                                        [Value (Str "Phase"); Value (Str "Fight")]);
-                                  Lam ("obj",Var "obj")]));
+                                  Lam ("obj",Var "obj")])); Value (Str "Choose");
                          App
                            (Value (Int 1),
                             Value (ParamArray [Value (Str "GORGON"); Var "Target"]));
@@ -2064,8 +2116,11 @@ module Stratagem =
                         (Str
                            "Use this Stratagem when a BEHEMOTH unit from your army completes a charge move. Roll a dice for each model in the charging unit that is within 1\" of an enemy unit. For each roll of 6 (or 2+ for a MONSTER ), inflict one mortal wound on an enemy unit within 1\".");
                       Value (Str "Use");
-                      App (Lam ("obj",Var "obj"),Value (ParamArray []));
-                      Value (Str "Stratagem when");
+                      App
+                        (Call Repeat,
+                         Value
+                           (ParamArray [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
+                      Value (Str "when");
                       App
                         (Value (Int 1),
                          Value (ParamArray [Value (Str "BEHEMOTH"); Var "Target"]));
@@ -2091,7 +2146,7 @@ module Stratagem =
                       App
                         (Call Repeat,
                          Value (ParamArray [Value (Str "MONSTER"); Value (Int 1)]));
-                      Value (Str "inflict one Mortal Wound on");
+                      Value (Str "inflict one mortal wound on");
                       App
                         (Lam ("obj",Var "obj"),
                          Value (ParamArray [Var "Target"; Var "Target"]));
@@ -2107,8 +2162,12 @@ module Stratagem =
                            (Str
                               "Use this Stratagem when a BEHEMOTH unit from your army completes a charge move. Roll a dice for each model in the charging unit that is within 1\" of an enemy unit. For each roll of 6 (or 2+ for a MONSTER ), inflict one mortal wound on an enemy unit within 1\".");
                          Value (Str "Use");
-                         App (Lam ("obj",Var "obj"),Value (ParamArray []));
-                         Value (Str "Stratagem when");
+                         App
+                           (Call Repeat,
+                            Value
+                              (ParamArray
+                                 [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
+                         Value (Str "when");
                          App
                            (Value (Int 1),
                             Value (ParamArray [Value (Str "BEHEMOTH"); Var "Target"]));
@@ -2136,7 +2195,7 @@ module Stratagem =
                          App
                            (Call Repeat,
                             Value (ParamArray [Value (Str "MONSTER"); Value (Int 1)]));
-                         Value (Str "inflict one Mortal Wound on");
+                         Value (Str "inflict one mortal wound on");
                          App
                            (Lam ("obj",Var "obj"),
                             Value (ParamArray [Var "Target"; Var "Target"]));
@@ -2162,7 +2221,7 @@ module Stratagem =
                       App
                         (Call Repeat,
                          Value (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));
-                      Value (Str "of your Movement phase");
+                      Value (Str "of your Movement phase Select");
                       App (Call Repeat,Value (ParamArray [Var "Target"; Value (Int 1)]));
                       Value (Str "of Termagants Hormagaunts or Gargoyles or");
                       App
@@ -2203,7 +2262,7 @@ module Stratagem =
                            (Call Repeat,
                             Value
                               (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));
-                         Value (Str "of your Movement phase");
+                         Value (Str "of your Movement phase Select");
                          App
                            (Call Repeat,Value (ParamArray [Var "Target"; Value (Int 1)]));
                          Value (Str "of Termagants Hormagaunts or Gargoyles or");
@@ -2455,9 +2514,7 @@ module Stratagem =
                         (Call Repeat,
                          Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
                       Value (Str "wholly within"); Value (Distance 3); Value (Str "of");
-                      App
-                        (Lam ("obj",Var "obj"),
-                         Value (ParamArray [Value (Str "burrowing"); Var "Target"]));
+                      Lam ("obj",Var "obj"); Value (Str "burrowing"); Var "Target";
                       Value (Str "and more than"); Value (Distance 9);
                       Value (Str "from");
                       App
@@ -2527,10 +2584,8 @@ module Stratagem =
                            (Call Repeat,
                             Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
                          Value (Str "wholly within"); Value (Distance 3);
-                         Value (Str "of");
-                         App
-                           (Lam ("obj",Var "obj"),
-                            Value (ParamArray [Value (Str "burrowing"); Var "Target"]));
+                         Value (Str "of"); Lam ("obj",Var "obj");
+                         Value (Str "burrowing"); Var "Target";
                          Value (Str "and more than"); Value (Distance 9);
                          Value (Str "from");
                          App
@@ -2630,12 +2685,8 @@ module Stratagem =
                      [Value
                         (Str
                            "Use this Stratagem after deployment but before the first battle round begins. Choose a piece of terrain (other than a Fortification). Units fully within or on this piece of terrain do not gain any bonus to their saving throws for being in cover.");
-                      Value (Str "Use");
-                      App
-                        (Call Repeat,
-                         Value
-                           (ParamArray [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
-                      Value (Str "after deployment but before");
+                      Value (Str "Use"); Lam ("obj",Var "obj");
+                      Value (Str "Stratagem after deployment but before");
                       App
                         (Lam ("obj",Var "obj"),
                          Value
@@ -2649,7 +2700,7 @@ module Stratagem =
                       App
                         (Call Repeat,
                          Value (ParamArray [Value (Str "Fortification"); Value (Int 1)]));
-                      Value (Str "Units fully within or on");
+                      Value (Str "fully within or on");
                       App
                         (Call Repeat,
                          Value (ParamArray [Value (Str "piece"); Lam ("obj",Var "obj")]));
@@ -2668,13 +2719,8 @@ module Stratagem =
                         [Value
                            (Str
                               "Use this Stratagem after deployment but before the first battle round begins. Choose a piece of terrain (other than a Fortification). Units fully within or on this piece of terrain do not gain any bonus to their saving throws for being in cover.");
-                         Value (Str "Use");
-                         App
-                           (Call Repeat,
-                            Value
-                              (ParamArray
-                                 [Value (Str "Stratagem"); Lam ("obj",Var "obj")]));
-                         Value (Str "after deployment but before");
+                         Value (Str "Use"); Lam ("obj",Var "obj");
+                         Value (Str "Stratagem after deployment but before");
                          App
                            (Lam ("obj",Var "obj"),
                             Value
@@ -2689,7 +2735,7 @@ module Stratagem =
                            (Call Repeat,
                             Value
                               (ParamArray [Value (Str "Fortification"); Value (Int 1)]));
-                         Value (Str "Units fully within or on");
+                         Value (Str "fully within or on");
                          App
                            (Call Repeat,
                             Value

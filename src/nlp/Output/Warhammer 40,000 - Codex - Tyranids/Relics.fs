@@ -123,7 +123,7 @@ module Relic =
                    [Value
                       (Str
                          "HYDRA model with two deathspitters with slimer maggots only. The Slimer Maggot Infestation replaces the model’s two deathspitters with slimer maggots and has the following profile:");
-                    Value (Str "HYDRA model with two with slimer only");
+                    Value (Str "HYDRA model with two deathspitters with slimer only");
                     App
                       (Lam ("obj",Var "obj"),
                        Value
@@ -167,7 +167,7 @@ module Relic =
                    [Value
                       (Str
                          "KRONOS model with stranglethorn cannon only. The Balethorn Cannon replaces the model’s stranglethorn cannon and has the following profile:");
-                    Value (Str "model with stranglethorn cannon only");
+                    Value (Str "KRONOS model with stranglethorn cannon only");
                     App
                       (Lam ("obj",Var "obj"),
                        Value
@@ -227,8 +227,10 @@ module Relic =
                     Value (Str "Model with");
                     App
                       (Value (Int 1),
-                       Value (ParamArray [Value (Str "heavy"); Value (Str "venom")]));
-                    Value (Str "cannon only");
+                       Value
+                         (ParamArray
+                            [Value (Str "heavy"); Value (Str "venom");
+                             Value (Str "cannon")])); Value (Str "only");
                     App
                       (Lam ("obj",Var "obj"),
                        Value (ParamArray [Value (Str "Miasma"); Value (Str "Cannon")]));
@@ -301,7 +303,7 @@ module Relic =
                    [Value
                       (Str
                          "BEHEMOTH model with monstrous scything talons only. The Scythes of Tyran replaces the model’s monstrous scything talons and has the following profile:");
-                    Value (Str "BEHEMOTH model with monstrous scything only");
+                    Value (Str "BEHEMOTH model with monstrous scything talons only");
                     App
                       (Call Repeat,
                        Value (ParamArray [Value (Str "Scythes"); Lam ("obj",Var "obj")]));
@@ -338,7 +340,7 @@ module Relic =
                                         [Value (Str "weapon"); Lam ("obj",Var "obj")]));
                                 Lam
                                   ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-                                Value (Str "time it In addition");
+                                Value (Str "time it fights In addition");
                                 Lam
                                   ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
                                 Value (Str "time you make");

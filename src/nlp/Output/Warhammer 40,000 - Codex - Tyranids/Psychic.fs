@@ -25,7 +25,7 @@ module Psychic =
                  Value
                    (ParamArray
                       [Value (Str "warp"); Value (Str "charge"); Value (Str "value")]));
-              Value (Str "of"); Value (Int 5); Value (Str "If manifested");
+              Value (Str "of"); Value (Int 5); Value (Str "If manifested select");
               App
                 (Value (Int 1),
                  Value
@@ -79,162 +79,41 @@ module Psychic =
               Value (Str "of your next Psychic phase");
               Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
               Value (Str "time");
-              Let
-                ("ThatSubject",
+              App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+              Value (Str "loses");
+              App (Call Repeat,Value (ParamArray [Value (Str "wound"); Value (Int 1)]));
+              Value (Str "roll");
+              App
+                (Call Repeat,
+                 Value (ParamArray [App (Call Dice,Value (Int 6)); Value (Int 1)]));
+              Value (Str "on");
+              App
+                (Call Repeat,
                  Value
                    (ParamArray
-                      [Var "Target"; Value (Str "roll");
-                       App
-                         (Call Repeat,
-                          Value
-                            (ParamArray [App (Call Dice,Value (Int 6)); Value (Int 1)]));
-                       Value (Str "on");
-                       App
-                         (Call Repeat,
-                          Value
-                            (ParamArray
-                               [Lam
-                                  ("roll",
-                                   Let
-                                     ("gt",
-                                      App
-                                        (Call GreaterThan,
-                                         Value (ParamArray [Var "roll"; Value (Int 5)])),
-                                      Let
-                                        ("eq",
-                                         App
-                                           (Call Equals,
-                                            Value
-                                              (ParamArray [Var "roll"; Value (Int 5)])),
-                                         App
-                                           (Call Or,
-                                            Value (ParamArray [Var "eq"; Var "gt"])))));
-                                Value (Int 1)]));
-                       App
-                         (Call Repeat,
-                          Value
-                            (ParamArray [Value (Str "damage"); Lam ("obj",Var "obj")]));
-                       Value (Str "is ignored and");
-                       App
-                         (Call Repeat,
-                          Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-                       Value (Str "does not lose");
-                       App
-                         (Call Repeat,
-                          Value
-                            (ParamArray [Value (Str "wound"); Lam ("obj",Var "obj")]))]),
-                 Value
-                   (ParamArray
-                      [Let
-                         ("ThatObject",
-                          Value
-                            (ParamArray
-                               [App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray [Value (Str "wound"); Value (Int 1)]));
-                                Value (Str "roll");
+                      [Lam
+                         ("roll",
+                          Let
+                            ("gt",
+                             App
+                               (Call GreaterThan,
+                                Value (ParamArray [Var "roll"; Value (Int 5)])),
+                             Let
+                               ("eq",
                                 App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray
-                                        [App (Call Dice,Value (Int 6)); Value (Int 1)]));
-                                Value (Str "on");
-                                App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray
-                                        [Lam
-                                           ("roll",
-                                            Let
-                                              ("gt",
-                                               App
-                                                 (Call GreaterThan,
-                                                  Value
-                                                    (ParamArray
-                                                       [Var "roll"; Value (Int 5)])),
-                                               Let
-                                                 ("eq",
-                                                  App
-                                                    (Call Equals,
-                                                     Value
-                                                       (ParamArray
-                                                          [Var "roll"; Value (Int 5)])),
-                                                  App
-                                                    (Call Or,
-                                                     Value
-                                                       (ParamArray [Var "eq"; Var "gt"])))));
-                                         Value (Int 1)]));
-                                App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray
-                                        [Value (Str "damage"); Lam ("obj",Var "obj")]));
-                                Value (Str "is ignored and");
-                                App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-                                Value (Str "does not lose");
-                                App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray
-                                        [Value (Str "wound"); Lam ("obj",Var "obj")]))]),
-                          Value
-                            (ParamArray
-                               [App
-                                  (Value (Str "loses"),
-                                   Value
-                                     (ParamArray [Var "ThatSubject"; Var "ThatObject"]));
-                                Value (Str "roll");
-                                App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray
-                                        [App (Call Dice,Value (Int 6)); Value (Int 1)]));
-                                Value (Str "on");
-                                App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray
-                                        [Lam
-                                           ("roll",
-                                            Let
-                                              ("gt",
-                                               App
-                                                 (Call GreaterThan,
-                                                  Value
-                                                    (ParamArray
-                                                       [Var "roll"; Value (Int 5)])),
-                                               Let
-                                                 ("eq",
-                                                  App
-                                                    (Call Equals,
-                                                     Value
-                                                       (ParamArray
-                                                          [Var "roll"; Value (Int 5)])),
-                                                  App
-                                                    (Call Or,
-                                                     Value
-                                                       (ParamArray [Var "eq"; Var "gt"])))));
-                                         Value (Int 1)]));
-                                App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray
-                                        [Value (Str "damage"); Lam ("obj",Var "obj")]));
-                                Value (Str "is ignored and");
-                                App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-                                Value (Str "does not lose");
-                                App
-                                  (Call Repeat,
-                                   Value
-                                     (ParamArray
-                                        [Value (Str "wound"); Lam ("obj",Var "obj")]))]))]))])
+                                  (Call Equals,
+                                   Value (ParamArray [Var "roll"; Value (Int 5)])),
+                                App (Call Or,Value (ParamArray [Var "eq"; Var "gt"])))));
+                       Value (Int 1)]));
+              App
+                (Call Repeat,
+                 Value (ParamArray [Value (Str "damage"); Lam ("obj",Var "obj")]));
+              Value (Str "is ignored and");
+              App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+              Value (Str "does not lose");
+              App
+                (Call Repeat,
+                 Value (ParamArray [Value (Str "wound"); Lam ("obj",Var "obj")]))])
     let ``THE HORROR`` = 
         Value
           (ParamArray
@@ -279,8 +158,11 @@ module Psychic =
                       [Value (Str "warp"); Value (Str "charge"); Value (Str "value")]));
               Value (Str "of"); Value (Int 6); Value (Str "If manifested select");
               App
-                (Call Repeat,Value (ParamArray [Value (Str "friendly"); Value (Int 1)]));
-              Var "Target"; Value (Str "within"); Value (Distance 18); Value (Str "of");
+                (Value (Int 1),
+                 Value
+                   (ParamArray
+                      [Value (Str "friendly"); Value (Str "TYRANIDS"); Var "Target"]));
+              Value (Str "within"); Value (Distance 18); Value (Str "of");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "psyker"); Lam ("obj",Var "obj")]));
@@ -293,7 +175,7 @@ module Psychic =
               App (Lam ("obj",Var "obj"),Value (ParamArray []));
               Value
                 (Str
-                   "to its hit for moving and shooting Heavy or Advancing and shooting Assault weapons In addition");
+                   "to its hit for moving and shooting Heavy or Advancing and shooting Assault In addition");
               App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
               Value (Str "can charge");
               App
@@ -307,9 +189,12 @@ module Psychic =
                 (Str
                    "Paroxysm has a warp charge value of 5. If manifested, choose an enemy unit within 18\" of the psyker. Until your next Psychic phase, that unit cannot fight in the Fight phase until all other units that are able to have done so. If the target unit has an ability that allows it to fight first in the Fight phase, it instead fights as if it didn’t have this ability. If both players have units that cannot fight until all other units have done so, then alternate choosing which of those units to fight with, starting with the player whose turn is taking place.");
               Value (Str "Paroxysm has");
-              App (Call Repeat,Value (ParamArray [Value (Str "warp"); Value (Int 1)]));
-              Value (Str "charge value of"); Value (Int 5);
-              Value (Str "If manifested choose");
+              App
+                (Value (Int 1),
+                 Value
+                   (ParamArray
+                      [Value (Str "warp"); Value (Str "charge"); Value (Str "value")]));
+              Value (Str "of"); Value (Int 5); Value (Str "If manifested choose");
               App
                 (Lam ("obj",Var "obj"),Value (ParamArray [Var "Target"; Var "Target"]));
               Value (Str "within"); Value (Distance 18); Value (Str "of");
@@ -376,11 +261,11 @@ module Psychic =
                 (Lam ("obj",Var "obj"),
                  Value (ParamArray [Value (Str "nearest"); Var "Target"; Var "Target"]));
               Value (Str "within"); Value (Distance 18); Call Suffer;
-              Value (Str "D3 mortal wounds In addition if");
+              Value (Str "D3 mortal In addition if");
               App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
               Value (Str "is");
               App (Call Repeat,Value (ParamArray [Value (Str "PSYKER"); Value (Int 1)]));
-              Value (Str "roll two dice If");
+              Value (Str "roll two If");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "result"); Lam ("obj",Var "obj")]));

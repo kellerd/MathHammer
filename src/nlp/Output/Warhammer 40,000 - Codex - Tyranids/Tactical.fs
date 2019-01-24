@@ -84,7 +84,8 @@ module Tactical =
                 (Call Repeat,
                  Value (ParamArray [Value (Str "turn"); Lam ("obj",Var "obj")]));
               Value (Str "If two or more"); Var "Target";
-              Value (Str "were destroyed score D3 victory instead")])
+              Value (Str "were destroyed score"); App (Call Dice,Value (Int 3));
+              Value (Str "victory points instead")])
     let ``Terrify`` = 
         Value
           (ParamArray
@@ -94,9 +95,8 @@ module Tactical =
               Value (Str "Score"); Value (Int 1);
               Value (Str "victory point if at least one"); Var "Target"; Var "Target";
               Value (Str "failed");
-              App
-                (Value (Int 1),
-                 Value (ParamArray [Value (Str "Morale"); Value (Str "test")]));
+              App (Call Repeat,Value (ParamArray [Value (Str "Morale"); Value (Int 1)]));
+              Value (Str "test");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "turn"); Lam ("obj",Var "obj")]));
@@ -105,7 +105,8 @@ module Tactical =
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "turn"); Lam ("obj",Var "obj")]));
-              Value (Str "score D3 victory instead")])
+              Value (Str "score"); App (Call Dice,Value (Int 3));
+              Value (Str "victory points instead")])
     let ``Devour`` = 
         Value
           (ParamArray
@@ -118,10 +119,8 @@ module Tactical =
               Value (Str "was destroyed during");
               App
                 (Call Repeat,
-                 Value
-                   (ParamArray
-                      [Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
-                       Lam ("obj",Var "obj")]));
+                 Value (ParamArray [Value (Str "Fight"); Lam ("obj",Var "obj")]));
+              Value (Str "phase");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "turn"); Lam ("obj",Var "obj")]));
@@ -139,7 +138,7 @@ module Tactical =
                    (ParamArray
                       [Value (Str "turn"); Value (Str "score");
                        App (Call Dice,Value (Int 3)); Value (Str "victory")]));
-              Value (Str "instead and if"); Value (Int 6); Value (Str "or more");
+              Value (Str "points instead and if"); Value (Int 6); Value (Str "or more");
               Var "Target"; Value (Str "were destroyed during");
               App
                 (Call Repeat,
@@ -148,6 +147,9 @@ module Tactical =
                       [Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
                        Lam ("obj",Var "obj")]));
               App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "turn"); Lam ("obj",Var "obj")]));
-              Value (Str "score D3"); Value (Int 3); Value (Str "victory instead")])
+                (Lam ("obj",Var "obj"),
+                 Value
+                   (ParamArray
+                      [Value (Str "turn"); Value (Str "score");
+                       App (Call Dice,Value (Int 3)); Value (Int 3);
+                       Value (Str "victory")])); Value (Str "points instead")])

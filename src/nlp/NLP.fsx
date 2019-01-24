@@ -5,7 +5,9 @@
 #r "../../../../../.nuget/packages/stanford.nlp.parser/3.8.0/lib/slf4j-api.dll"
 #r "../../../../../.nuget/packages/stanford.nlp.parser/3.8.0/lib/stanford-parser.dll"
 #r "../../../../../.nuget/packages/stanford.nlp.parser.fsharp/0.0.14/lib/Stanford.NLP.Parser.Fsharp.dll"
+open edu.stanford.nlp.``process``
 open edu.stanford.nlp.parser.lexparser
+open java.io
 open edu.stanford.nlp.ling
 open edu.stanford.nlp.trees
 open java.util
@@ -18,10 +20,17 @@ let options = [|"-maxLength"; "500";
                 "-outputFormat"; "penn,typedDependenciesCollapsed"|]
 let parser = LexicalizedParser.loadModel(model, options)
 let tlp = PennTreebankLanguagePack()
+let w2sent = new WordToSentenceProcessor()
 let getTree question =
+
     let tokenizer = tlp.getTokenizerFactory().getTokenizer(new java.io.StringReader(question))
+
     let sentence = tokenizer.tokenize()
-    parser.apply(sentence)
+
+    w2sent.``process``(sentence)
+    |> Iterable.castToSeq<ArrayList>
+    |> Seq.map (parser.apply)
+
 let escape_string (str : string) =
    let buf = System.Text.StringBuilder(str.Length)
    let replaceOrLeave c =
@@ -191,6 +200,17 @@ let (|AllTagged|_|) tags nodes =
         |> Seq.choose(fun (tag, n) -> match n with Tagged(Some tag) n -> Some n | _ -> None)
     if Seq.isEmpty matched then None
     else Seq.toList matched |> Some
+let rec debugList = function 
+   | BasicNode (_, ni,_) ->
+        let t = 
+            match ni with 
+            | NodeInfo(Node op, _) -> op
+            | NodeInfo(Cont (op,_), _) -> op
+            | NodeInfo(Word (op,_), _) -> op
+        t.pennPrint()
+   | Empty(_) -> ()
+   | Assignment(_, label, value, inExpr) -> printf "Assignment %s = " label; Seq.iter debugList value; Seq.iter debugList inExpr
+   | IfThenElseBranch(_, test, thenExpr, elseExpr) -> printf "IfThenElse = " ;Seq.iter debugList test; Seq.iter debugList thenExpr
 let scanWords (tree:Tree) =   
     let (|Siblings|_|) labels check (node:Tree) = 
         // let children = [tree]
@@ -224,7 +244,9 @@ let scanWords (tree:Tree) =
         let word op = Word(node, op) 
         match node with 
         | IsLabeled [EQT] _ -> Distance 0 |> Value |> word , 0        
+        | IsLabeled [NNP] ("D6"|"d6") 
         | IsLabeled [NN] ("D6"|"d6") -> App(Call Dice, Value(Int 6)) |> word, 0
+        | IsLabeled [NNP] ("D3"|"d3") 
         | IsLabeled [NN] ("D3"|"d3") -> App(Call Dice, Value(Int 3)) |> word, 0
         | IsLabeled [NN] ("enemy" | "unit") -> Var("Target") |> word, 0
         | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
@@ -353,20 +375,75 @@ let (|IsDice|_|) n =
                                       Value (ParamArray [ App (Call Dice,Value (Int _))
                                                           Value (Int _)]))),_),_) as n  -> Some n
     | _ -> None
+
+let foldToOperation (accl) (tree:Tree<Tag, NodeInfo<WordScanNode>>) = 
+    let fEmpty tag acc = acc
+    let (|EndOfPhase|_|) (tag,acc) node = 
+        match node, acc with
+        | Word (_, Value(Str("At"|"at"))), App (Call Repeat, Value (ParamArray [Lam ("obj",Var "obj"); Value (Str "end")])) :: Value (Str "of") :: App (Call Repeat, Value (ParamArray [Lam ("obj",Var "obj"); Value (ParamArray [Value (Str "Phase"); Value (Str phase)])])) :: rest -> 
+            (phase,rest) |> Some 
+        | _ -> None        
+
+    let fNode pennTags (tag,acc) (NodeInfo(node, skip) as n)  = 
+        match node with
+        | EndOfPhase (tag, acc) (phase,rest) -> 
+            pennTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
+        | Word (_, (Value(Str(s)) as op) ) ->
+            match tag, acc with 
+            | (Some SentenceCloser | Some Comma | Some EQT | Some Punctuation), Value(Str(acc))::rest -> 
+                let s' = sprintf "%s%s" s acc
+                pennTags, Value(Str(s')) :: rest
+            | _, Value(Str(acc))::rest -> 
+                let s' = sprintf "%s %s" s acc
+                pennTags, Value(Str(s')) :: rest
+            | _ -> pennTags, op:: acc
+        | Word (_, (Value(Int(n)) as op)) when tag = Some EQT -> //EQT 
+            match acc with 
+            |  Value(Distance(0)) :: rest when tag = Some EQT ->  pennTags, Value(Distance(n)) :: rest
+            | _ ->  pennTags, op :: acc
+        | Word (_,op) ->  pennTags, op :: acc
+        | Node n ->  pennTags, acc
+        | Cont(_, cont) -> 
+            match acc with 
+            | [] -> pennTags, [cont (Value NoValue)] 
+            | [item] -> pennTags, [cont item] 
+            | _ :: _ -> pennTags, [cont (Value(ParamArray(acc)))]
+    let fAssign tag label (_, vAccum) (_, inExpr) = 
+        tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]    
+    let ifte tag (_, test) (_,thenExpr) elseExpr = 
+        tag, [IfThenElse(ParamArray test |> Value,ParamArray thenExpr  |> Value, elseExpr |> Option.map (snd >> ParamArray >> Value))]     
+    foldBack fEmpty fNode fAssign ifte tree accl
+
+let (|ThisAttack|_|) = function
+    | BasicNode(Some NP, _, [AsText (Some DT) _; AsText (Some NN) "attack"]) -> Some ()
+    | BasicNode(Some NP, NodeInfo (Word (_, App (Call Repeat, Value (ParamArray [Value (Str "attack"); Lam ("obj",Var "obj")]))),0), []) -> Some ()
+    | _ -> None
+    
+
 let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<WordScanNode>> =
     // let node = 
     //     ("""At the end of the Fight phase, roll a 
     //       D6 for each enemy unit within 1\" of the Warlord. 
     //       On a 4+ that unit suffers a mortal wound."""  |> getTree ).children().[0].children().[2] |> Node
     let fEmpty tag = Empty tag
-    let fNode penTags (NodeInfo(node, skip) as n) children = 
-        // let node' = 
-        //     ("""For each unit roll a d6, on a 4+ that unit suffers a mortal wound"""  |> getTree ).children().[0].children().[1].children().[1].children().[4]
+    let fNode (penTags:Tag) (NodeInfo(node, skip) as n) children = 
+        // let node' = ("""Make D3 hit rolls for this attack instead of one."""  |> getTree |> Seq.item 0 ).children().[0]
         // let node = Node node'      
+        // node'.pennPrint()
         // let children = node'.children() |> Array.map scanWords |> Array.toSeq
         // let n = (NodeInfo(node, 0))
-        // let penTags = Some SBAR
+        // let penTags = getLabel node'
         // let skip = 0
+        // let op = node'
+
+        // let tree = ("""Make D3 hit rolls for this attack instead of one."""  |> getTree |> Seq.item 0 |> scanWords)
+        // let (BasicNode (tag, nodeInfo,subtrees)) = tree 
+        // let child = subtrees.[0]
+        // let (BasicNode (tag, nodeInfo,subtrees)) = child
+        // let (NodeInfo(node, skip) as n) = nodeInfo
+        // let children = subtrees
+        // let penTags = tag
+
         let children' = children |> skipChildren
         match node with 
         | Cont _ -> BasicNode(penTags, n, children')  
@@ -387,6 +464,17 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
                         BasicNode(penTags, NodeInfo(Word(original, App(Call Repeat, Value(ParamArray [List.head moreChildren;op]))), skip), []) 
                     else BasicNode(penTags, NodeInfo(Word(original, App(op, Value(ParamArray(moreChildren)))), skip), [])  
                 | _ -> BasicNode(penTags, n, children') 
+            | Some S -> 
+                match children' with 
+                | AllTagged [NP;VP] [BasicNode(_, _, AllTagged [NNP;NNP] [AsText (Some NNP) "Make"; nHits])//)
+                                     BasicNode(_, _, AllTagged [VBD;NP;PP] [AsText (Some VBD) "hit"; AsText (Some NP) "rolls"; 
+                                            BasicNode(_,_, AllTagged [IN;NP] [AsText (Some IN) "for"; 
+                                                    BasicNode(_,_, ThisAttack :: rest) ])])] -> 
+                    let product' = fun d3hits -> 
+                        Lam("next", Let("Hit Rolls", App(Call Product, Value(ParamArray[Var "A"; d3hits])), Var "next"))
+                    let children'' = BasicNode(Some S, n, [nHits] )
+                    BasicNode(penTags, NodeInfo(Cont (op, product'),skip), [children''])  
+                | _ -> BasicNode(penTags, n, children')  
             | Some SBAR ->
                 let (|LabelSubjectVerbObject|_|) determiner = 
                     match determiner with 
@@ -433,56 +521,22 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
     let ifte tag test thenExpr elseExpr =
         IfThenElseBranch(tag,Seq.toList  test,Seq.toList  thenExpr,Option.map Seq.toList elseExpr)        
     cata fEmpty fNode fAssign ifte tree 
-let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) = 
-    let fEmpty tag acc = acc
-    let (|EndOfPhase|_|) (tag,acc) node = 
-        match node, acc with
-        | Word (_, Value(Str("At"|"at"))), App (Call Repeat, Value (ParamArray [Lam ("obj",Var "obj"); Value (Str "end")])) :: Value (Str "of") :: App (Call Repeat, Value (ParamArray [Lam ("obj",Var "obj"); Value (ParamArray [Value (Str "Phase"); Value (Str phase)])])) :: rest -> 
-            (phase,rest) |> Some 
-        | _ -> None        
 
-    let fNode pennTags (tag,acc) (NodeInfo(node, skip) as n)  = 
-        match node with
-        | EndOfPhase (tag, acc) (phase,rest) -> 
-            pennTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
-        | Word (_, (Value(Str(s)) as op) ) ->
-            match tag, acc with 
-            | (Some SentenceCloser | Some Comma | Some EQT | Some Punctuation), Value(Str(acc))::rest -> 
-                let s' = sprintf "%s%s" s acc
-                pennTags, Value(Str(s')) :: rest
-            | _, Value(Str(acc))::rest -> 
-                let s' = sprintf "%s %s" s acc
-                pennTags, Value(Str(s')) :: rest
-            | _ -> pennTags, op:: acc
-        | Word (_, (Value(Int(n)) as op)) when tag = Some EQT -> //EQT 
-            match acc with 
-            |  Value(Distance(0)) :: rest when tag = Some EQT ->  pennTags, Value(Distance(n)) :: rest
-            | _ ->  pennTags, op :: acc
-        | Word (_,op) ->  pennTags, op :: acc
-        | Node n ->  pennTags, acc
-        | Cont(_, cont) -> 
-            match acc with 
-            | [] -> pennTags, [cont (Value NoValue)] 
-            | [item] -> pennTags, [cont item] 
-            | _ :: _ -> pennTags, [cont (Value(ParamArray(acc)))]
-    let fAssign tag label (_, vAccum) (_, inExpr) = 
-        tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]    
-    let ifte tag (_, test) (_,thenExpr) elseExpr = 
-        tag, [IfThenElse(ParamArray test |> Value,ParamArray thenExpr  |> Value, elseExpr |> Option.map (snd >> ParamArray >> Value))]     
-    foldBack fEmpty fNode fAssign ifte tree (None, [])
-// let tree =  
-//     //"At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
-//     //"Roll a D6 and count the results, then roll another D6 for each success."
-//     "For each unit roll a d6, on a 4+ that unit suffers a mortal wound"
-//     //"If the hit result is 6, count the result as two hits, otherwise thr attack fails"
-//     |> getTree
-// tree
-// |> scanWords 
-// |> scanPhrases
-// |> foldToOperation
-// |> ignore
+let tree =  
+    //"At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
+    //"Roll a D6 and count the results, then roll another D6 for each success."
+    "Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks."
+    //"If the hit result is 6, count the result as two hits, otherwise thr attack fails"
+    |> getTree
+tree
+|> Seq.toList
+|> Seq.map (scanWords)
+|> Seq.map (scanPhrases)
+|> Seq.rev
+|> Seq.fold foldToOperation (None, [])
+|> ignore
 
-// tree.pennPrint()
+// tree |> Seq.iter (fun tree -> tree.pennPrint())
 // let head = tree.children() |> Seq.collect(fun tree -> tree.children()) |> Seq.head
 // let children = head.children() |> Seq.map (fun c -> c.siblings(tree) |> Iterable.castToSeq<Tree> |> Seq.map getHeadText |> Seq.toList) |> Seq.toList
 
@@ -490,7 +544,7 @@ let foldToOperation (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
 // tree.``yield``() |> Iterable.castToSeq<CoreLabel> |> Seq.iter(fun n -> printfn "%s" (n.word()))
 
 let nlpRule (s:string) = 
-    match s |> getTree |> scanWords |> scanPhrases |> foldToOperation |> snd with 
+    match s |> getTree |> Seq.map(scanWords >> scanPhrases) |> Seq.rev |> Seq.fold foldToOperation (None, []) |> snd with 
     | [x] -> [Value(Str (escape_string s)); x]  |> ParamArray |> Value   
     | xs -> (Value(Str (escape_string s)) :: xs) |> ParamArray |> Value   
 
