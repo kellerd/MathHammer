@@ -263,3 +263,14 @@ module Example =
                        else 1)
             return sprintf "%d:%d" (2 - defensivLosses) defensivLosses
         }
+
+    <@ dist {
+        let f() = uniformDistribution [1..6]         
+        let! x = f()
+        let! y = f() 
+        let z = 
+            if x = 1 then x
+            else y
+        return z
+    } @>
+

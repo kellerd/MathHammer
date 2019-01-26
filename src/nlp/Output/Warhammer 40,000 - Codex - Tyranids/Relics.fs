@@ -148,7 +148,7 @@ module Relic =
                                [Value
                                   (Str
                                      "You can re-roll failed wound rolls for this weapon.");
-                                Value (Str "You can re-roll failed wound for");
+                                Value (Str "You can re-roll failed Wound Roll for");
                                 App
                                   (Call Repeat,
                                    Value
@@ -382,8 +382,10 @@ module Relic =
                                   (Lam ("obj",Var "obj"),
                                    Value
                                      (ParamArray
-                                        [Value (Str "additional"); Value (Str "hit")]));
-                                Value (Str "can not generate further additional hit")])]);
+                                        [Value (Str "additional");
+                                         Value (Str "Hit Roll")]));
+                                Value
+                                  (Str "can not generate further additional Hit Roll")])]);
                     Value (ParamArray [Value (Str "RANGE"); Value (Str "Melee")]);
                     Value (ParamArray [Value (Str "TYPE"); Value (Str "Melee")]);
                     Value (ParamArray [Value (Str "S"); Value (Str "+1")]);

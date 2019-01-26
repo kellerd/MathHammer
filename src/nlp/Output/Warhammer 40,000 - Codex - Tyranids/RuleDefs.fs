@@ -100,20 +100,41 @@ module Rule =
                        Value
                          (Str
                             "in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
-                       Value (Distance 0);
-                       Value (Str "ability would say You can re-roll hit of");
-                       Value (Int 1); Value (Str "in");
-                       App
-                         (Lam ("obj",Var "obj"),
+                       Value (Distance 0); Value (Str "ability would say You can");
+                       Let
+                         ("Hit Roll",
                           Value
-                            (ParamArray [Value (Str "Shooting"); Value (Str "phase")]));
-                       Value (Str "for friendly KRAKEN Termagant within");
-                       Value (Distance 6); Value (Str "of");
-                       App
-                         (Call Repeat,
+                            (ParamArray
+                               [Lam
+                                  ("rollTarget",
+                                   Let
+                                     ("f",Var "Hit Roll",
+                                      Let
+                                        ("x",App (Var "f",Var "rollTarget"),
+                                         IfThenElse
+                                           (App
+                                              (Call NotEquals,
+                                               Value
+                                                 (ParamArray [Var "x"; Value (Int 1)])),
+                                            Var "x",
+                                            Some (App (Var "f",Var "rollTarget"))))));
+                                Value (Distance 0)]),
                           Value
-                            (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
-                       Value (Distance 0)]),
+                            (ParamArray
+                               [Value (Str "in");
+                                App
+                                  (Lam ("obj",Var "obj"),
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "Shooting"); Value (Str "phase")]));
+                                Value (Str "for friendly KRAKEN Termagant within");
+                                Value (Distance 6); Value (Str "of");
+                                App
+                                  (Call Repeat,
+                                   Value
+                                     (ParamArray
+                                        [Value (Str "model"); Lam ("obj",Var "obj")]));
+                                Value (Distance 0)]))]),
                  Value
                    (ParamArray
                       [Let
@@ -178,21 +199,46 @@ module Rule =
                                   (Str
                                      "in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
                                 Value (Distance 0);
-                                Value (Str "ability would say You can re-roll hit of");
-                                Value (Int 1); Value (Str "in");
-                                App
-                                  (Lam ("obj",Var "obj"),
+                                Value (Str "ability would say You can");
+                                Let
+                                  ("Hit Roll",
                                    Value
                                      (ParamArray
-                                        [Value (Str "Shooting"); Value (Str "phase")]));
-                                Value (Str "for friendly KRAKEN Termagant within");
-                                Value (Distance 6); Value (Str "of");
-                                App
-                                  (Call Repeat,
+                                        [Lam
+                                           ("rollTarget",
+                                            Let
+                                              ("f",Var "Hit Roll",
+                                               Let
+                                                 ("x",App (Var "f",Var "rollTarget"),
+                                                  IfThenElse
+                                                    (App
+                                                       (Call NotEquals,
+                                                        Value
+                                                          (ParamArray
+                                                             [Var "x"; Value (Int 1)])),
+                                                     Var "x",
+                                                     Some
+                                                       (App (Var "f",Var "rollTarget"))))));
+                                         Value (Distance 0)]),
                                    Value
                                      (ParamArray
-                                        [Value (Str "model"); Lam ("obj",Var "obj")]));
-                                Value (Distance 0)]),
+                                        [Value (Str "in");
+                                         App
+                                           (Lam ("obj",Var "obj"),
+                                            Value
+                                              (ParamArray
+                                                 [Value (Str "Shooting");
+                                                  Value (Str "phase")]));
+                                         Value
+                                           (Str "for friendly KRAKEN Termagant within");
+                                         Value (Distance 6); Value (Str "of");
+                                         App
+                                           (Call Repeat,
+                                            Value
+                                              (ParamArray
+                                                 [Value (Str "model");
+                                                  Lam ("obj",Var "obj")]));
+                                         Value (Distance 0)]))]),
                           Value
                             (ParamArray
                                [App
@@ -257,21 +303,46 @@ module Rule =
                                   (Str
                                      "in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
                                 Value (Distance 0);
-                                Value (Str "ability would say You can re-roll hit of");
-                                Value (Int 1); Value (Str "in");
-                                App
-                                  (Lam ("obj",Var "obj"),
+                                Value (Str "ability would say You can");
+                                Let
+                                  ("Hit Roll",
                                    Value
                                      (ParamArray
-                                        [Value (Str "Shooting"); Value (Str "phase")]));
-                                Value (Str "for friendly KRAKEN Termagant within");
-                                Value (Distance 6); Value (Str "of");
-                                App
-                                  (Call Repeat,
+                                        [Lam
+                                           ("rollTarget",
+                                            Let
+                                              ("f",Var "Hit Roll",
+                                               Let
+                                                 ("x",App (Var "f",Var "rollTarget"),
+                                                  IfThenElse
+                                                    (App
+                                                       (Call NotEquals,
+                                                        Value
+                                                          (ParamArray
+                                                             [Var "x"; Value (Int 1)])),
+                                                     Var "x",
+                                                     Some
+                                                       (App (Var "f",Var "rollTarget"))))));
+                                         Value (Distance 0)]),
                                    Value
                                      (ParamArray
-                                        [Value (Str "model"); Lam ("obj",Var "obj")]));
-                                Value (Distance 0)]))]))])
+                                        [Value (Str "in");
+                                         App
+                                           (Lam ("obj",Var "obj"),
+                                            Value
+                                              (ParamArray
+                                                 [Value (Str "Shooting");
+                                                  Value (Str "phase")]));
+                                         Value
+                                           (Str "for friendly KRAKEN Termagant within");
+                                         Value (Distance 6); Value (Str "of");
+                                         App
+                                           (Call Repeat,
+                                            Value
+                                              (ParamArray
+                                                 [Value (Str "model");
+                                                  Lam ("obj",Var "obj")]));
+                                         Value (Distance 0)]))]))]))])
     let ``SYNAPSE`` = 
         Value
           (ParamArray
@@ -312,7 +383,7 @@ module Rule =
               Value (Str "you must subtract"); Value (Int 1); Value (Str "from");
               App
                 (Call Repeat,
-                 Value (ParamArray [Value (Str "hit"); Lam ("obj",Var "obj")]));
+                 Value (ParamArray [Value (Str "Hit Roll"); Lam ("obj",Var "obj")]));
               Value (Str "made for it when shooting");
               App
                 (Lam ("obj",Var "obj"),
@@ -491,7 +562,7 @@ module Rule =
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
                           Value (Str "your opponent must subtract"); Value (Int 1);
-                          Value (Str "from hit for");
+                          Value (Str "from Hit Roll for");
                           App
                             (Call Repeat,
                              Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
@@ -833,27 +904,70 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll hit rolls of 1 for this weapon. If the bearer has more than one pair of monstrous/massive scything talons, it can make 1 additional attack with this weapon each time it fights.");
-                          Value (Str "You can re-roll hit of"); Value (Int 1);
-                          Value (Str "for");
-                          App
-                            (Call Repeat,
+                          Value (Str "You can");
+                          Let
+                            ("Hit Roll",
                              Value
-                               (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "If");
-                          App
-                            (Call Repeat,
+                               (ParamArray
+                                  [Lam
+                                     ("rollTarget",
+                                      Let
+                                        ("f",Var "Hit Roll",
+                                         Let
+                                           ("x",App (Var "f",Var "rollTarget"),
+                                            IfThenElse
+                                              (App
+                                                 (Call NotEquals,
+                                                  Value
+                                                    (ParamArray [Var "x"; Value (Int 1)])),
+                                               Var "x",
+                                               Some (App (Var "f",Var "rollTarget"))))));
+                                   Value (Str "If");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "bearer"); Lam ("obj",Var "obj")]));
+                                   Value
+                                     (Str
+                                        "has more than one pair of monstrous/massive scything it can make");
+                                   Value (Int 1); Value (Str "additional attack with");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "weapon"); Lam ("obj",Var "obj")]));
+                                   Lam
+                                     ("obj",
+                                      App (Call Count,Value (ParamArray [Var "obj"])));
+                                   Value (Str "time it fights")]),
                              Value
-                               (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value
-                            (Str
-                               "has more than one pair of monstrous/massive scything it can make");
-                          Value (Int 1); Value (Str "additional attack with");
-                          App
-                            (Call Repeat,
-                             Value
-                               (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-                          Value (Str "time it fights")])])])
+                               (ParamArray
+                                  [Value (Str "for");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "weapon"); Lam ("obj",Var "obj")]));
+                                   Value (Str "If");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "bearer"); Lam ("obj",Var "obj")]));
+                                   Value
+                                     (Str
+                                        "has more than one pair of monstrous/massive scything it can make");
+                                   Value (Int 1); Value (Str "additional attack with");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "weapon"); Lam ("obj",Var "obj")]));
+                                   Lam
+                                     ("obj",
+                                      App (Call Count,Value (ParamArray [Var "obj"])));
+                                   Value (Str "time it fights")]))])])])
     let ``Massive toxic lashes (melee)`` = 
         Value
           (ParamArray
@@ -870,7 +984,7 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll failed wound rolls for this weapon. A model armed with this weapon always fights first in the Fight phase, even if it didn’t charge. If the enemy has units that have charged, or that have a similar ability, then alternate choosing units to fight with, starting with the player whose turn is taking place.");
-                          Value (Str "You can re-roll failed wound for");
+                          Value (Str "You can re-roll failed Wound Roll for");
                           App
                             (Call Repeat,
                              Value
@@ -990,7 +1104,7 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll failed wound rolls for this weapon. In addition, each time you make a wound roll of 6+, that hit is resolved with an AP of -6 and Damage of 3.");
-                          Value (Str "You can re-roll failed wound for");
+                          Value (Str "You can re-roll failed Wound Roll for");
                           App
                             (Call Repeat,
                              Value
@@ -1039,27 +1153,70 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll hit rolls of 1 for this weapon. If the bearer has more than one pair of monstrous/massive scything talons, it can make 1 additional attack with this weapon each time it fights.");
-                          Value (Str "You can re-roll hit of"); Value (Int 1);
-                          Value (Str "for");
-                          App
-                            (Call Repeat,
+                          Value (Str "You can");
+                          Let
+                            ("Hit Roll",
                              Value
-                               (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "If");
-                          App
-                            (Call Repeat,
+                               (ParamArray
+                                  [Lam
+                                     ("rollTarget",
+                                      Let
+                                        ("f",Var "Hit Roll",
+                                         Let
+                                           ("x",App (Var "f",Var "rollTarget"),
+                                            IfThenElse
+                                              (App
+                                                 (Call NotEquals,
+                                                  Value
+                                                    (ParamArray [Var "x"; Value (Int 1)])),
+                                               Var "x",
+                                               Some (App (Var "f",Var "rollTarget"))))));
+                                   Value (Str "If");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "bearer"); Lam ("obj",Var "obj")]));
+                                   Value
+                                     (Str
+                                        "has more than one pair of monstrous/massive scything it can make");
+                                   Value (Int 1); Value (Str "additional attack with");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "weapon"); Lam ("obj",Var "obj")]));
+                                   Lam
+                                     ("obj",
+                                      App (Call Count,Value (ParamArray [Var "obj"])));
+                                   Value (Str "time it fights")]),
                              Value
-                               (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value
-                            (Str
-                               "has more than one pair of monstrous/massive scything it can make");
-                          Value (Int 1); Value (Str "additional attack with");
-                          App
-                            (Call Repeat,
-                             Value
-                               (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-                          Value (Str "time it fights")])])])
+                               (ParamArray
+                                  [Value (Str "for");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "weapon"); Lam ("obj",Var "obj")]));
+                                   Value (Str "If");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "bearer"); Lam ("obj",Var "obj")]));
+                                   Value
+                                     (Str
+                                        "has more than one pair of monstrous/massive scything it can make");
+                                   Value (Int 1); Value (Str "additional attack with");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "weapon"); Lam ("obj",Var "obj")]));
+                                   Lam
+                                     ("obj",
+                                      App (Call Count,Value (ParamArray [Var "obj"])));
+                                   Value (Str "time it fights")]))])])])
     let ``Powerful limbs`` = 
         Value
           (ParamArray
@@ -1194,25 +1351,70 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll hit rolls of 1 for this weapon. If the bearer has more than one pair of scything talons, it can make 1 additional attack with this weapon each time it fights.");
-                          Value (Str "You can re-roll hit of"); Value (Int 1);
-                          Value (Str "for");
-                          App
-                            (Call Repeat,
+                          Value (Str "You can");
+                          Let
+                            ("Hit Roll",
                              Value
-                               (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "If");
-                          App
-                            (Call Repeat,
+                               (ParamArray
+                                  [Lam
+                                     ("rollTarget",
+                                      Let
+                                        ("f",Var "Hit Roll",
+                                         Let
+                                           ("x",App (Var "f",Var "rollTarget"),
+                                            IfThenElse
+                                              (App
+                                                 (Call NotEquals,
+                                                  Value
+                                                    (ParamArray [Var "x"; Value (Int 1)])),
+                                               Var "x",
+                                               Some (App (Var "f",Var "rollTarget"))))));
+                                   Value (Str "If");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "bearer"); Lam ("obj",Var "obj")]));
+                                   Value
+                                     (Str
+                                        "has more than one pair of scything it can make");
+                                   Value (Int 1); Value (Str "additional attack with");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "weapon"); Lam ("obj",Var "obj")]));
+                                   Lam
+                                     ("obj",
+                                      App (Call Count,Value (ParamArray [Var "obj"])));
+                                   Value (Str "time it fights")]),
                              Value
-                               (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value (Str "has more than one pair of scything it can make");
-                          Value (Int 1); Value (Str "additional attack with");
-                          App
-                            (Call Repeat,
-                             Value
-                               (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-                          Value (Str "time it fights")])])])
+                               (ParamArray
+                                  [Value (Str "for");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "weapon"); Lam ("obj",Var "obj")]));
+                                   Value (Str "If");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "bearer"); Lam ("obj",Var "obj")]));
+                                   Value
+                                     (Str
+                                        "has more than one pair of scything it can make");
+                                   Value (Int 1); Value (Str "additional attack with");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "weapon"); Lam ("obj",Var "obj")]));
+                                   Lam
+                                     ("obj",
+                                      App (Call Count,Value (ParamArray [Var "obj"])));
+                                   Value (Str "time it fights")]))])])])
     let ``Scything wings`` = 
         Value
           (ParamArray
@@ -1227,12 +1429,32 @@ module Rule =
                     Value
                       (ParamArray
                          [Value (Str "You can re-roll hit rolls of 1 for this weapon.");
-                          Value (Str "You can re-roll hit of"); Value (Int 1);
-                          Value (Str "for");
-                          App
-                            (Call Repeat,
+                          Value (Str "You can");
+                          Let
+                            ("Hit Roll",
                              Value
-                               (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]))])])])
+                               (ParamArray
+                                  [Lam
+                                     ("rollTarget",
+                                      Let
+                                        ("f",Var "Hit Roll",
+                                         Let
+                                           ("x",App (Var "f",Var "rollTarget"),
+                                            IfThenElse
+                                              (App
+                                                 (Call NotEquals,
+                                                  Value
+                                                    (ParamArray [Var "x"; Value (Int 1)])),
+                                               Var "x",
+                                               Some (App (Var "f",Var "rollTarget"))))))]),
+                             Value
+                               (ParamArray
+                                  [Value (Str "for");
+                                   App
+                                     (Call Repeat,
+                                      Value
+                                        (ParamArray
+                                           [Value (Str "weapon"); Lam ("obj",Var "obj")]))]))])])])
     let ``Shovelling claws`` = 
         Value
           (ParamArray
@@ -1309,7 +1531,7 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll failed wound rolls for this weapon. A model armed with this weapon always fights first in the Fight phase, even if it didn’t charge. If the enemy has units that have charged, or that have a similar ability, then alternate choosing units to fight with, starting with the player whose turn is taking place.");
-                          Value (Str "You can re-roll failed wound for");
+                          Value (Str "You can re-roll failed Wound Roll for");
                           App
                             (Call Repeat,
                              Value
@@ -1548,7 +1770,7 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll failed wound rolls for this weapon. In addition, units attacked by this weapon do not gain any bonus to their saving throws for being in cover.");
-                          Value (Str "You can re-roll failed wound for");
+                          Value (Str "You can re-roll failed Wound Roll for");
                           App
                             (Call Repeat,
                              Value
@@ -2041,7 +2263,7 @@ module Rule =
                          [Value
                             (Str
                                "You may re-roll failed hit rolls for this weapon against units that can FLY . In addition, if the target is a VEHICLE and you make a wound roll of 4+, it suffers 1 mortal wound in addition to any other damage. If you make a wound roll of 6+, inflict D3 mortal wounds instead.");
-                          Value (Str "You may re-roll failed hit for");
+                          Value (Str "You may re-roll failed Hit Roll for");
                           App
                             (Call Repeat,
                              Value
@@ -2129,7 +2351,7 @@ module Rule =
                           Value (Str "within"); Value (Distance 1);
                           Value
                             (Str
-                               "of friendly In addition you can re-roll failed wound for");
+                               "of friendly In addition you can re-roll failed Wound Roll for");
                           App
                             (Call Repeat,
                              Value
@@ -2187,7 +2409,7 @@ module Rule =
                    "Your Warlord never suffers any penalties to their hit rolls (although they still only hit on rolls of 6 when firing Overwatch).");
               Value (Str "Your Warlord never"); Call Suffer;
               App (Lam ("obj",Var "obj"),Value (ParamArray []));
-              Value (Str "to their hit although they still only hit on of");
+              Value (Str "to their Hit Roll although they still only hit on of");
               Value (Int 6); Value (Str "when firing Overwatch")])
     let ``SYNAPTIC LYNCHPIN`` = 
         Value
@@ -2262,7 +2484,7 @@ module Rule =
               Value (Str "begins choose");
               App
                 (Lam ("obj",Var "obj"),Value (ParamArray [Var "Target"; Var "Target"]));
-              Value (Str "You can re-roll failed hit for");
+              Value (Str "You can re-roll failed Hit Roll for");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "Warlord"); Lam ("obj",Var "obj")]));
@@ -2932,7 +3154,7 @@ module Rule =
              [Value
                 (Str
                    "You can re-roll hit rolls in the Fight phase for units with this adaptation that target units containing fewer models than their own.");
-              Value (Str "You can re-roll hit in");
+              Value (Str "You can re-roll Hit Roll in");
               App
                 (Call Repeat,
                  Value
@@ -2949,15 +3171,28 @@ module Rule =
              [Value
                 (Str
                    "You can re-roll hit rolls of 1 for units with this adaptation in your Shooting phase if they did not move in the preceding Movement phase.");
-              Value (Str "You can re-roll hit of"); Value (Int 1);
-              Value (Str "for with");
-              App
-                (Call Repeat,
-                 Value (ParamArray [Value (Str "adaptation"); Lam ("obj",Var "obj")]));
-              Value (Str "in your Shooting phase if they did not move in");
-              App
-                (Lam ("obj",Var "obj"),
+              Value (Str "You can");
+              Let
+                ("Hit Roll",
                  Value
                    (ParamArray
-                      [Value (Str "preceding"); Value (Str "Movement");
-                       Value (Str "phase")]))])
+                      [Lam
+                         ("rollTarget",
+                          Let
+                            ("f",Var "Hit Roll",
+                             Let
+                               ("x",App (Var "f",Var "rollTarget"),
+                                IfThenElse
+                                  (App
+                                     (Call NotEquals,
+                                      Value (ParamArray [Var "x"; Value (Int 1)])),
+                                   Var "x",Some (App (Var "f",Var "rollTarget"))))))]),
+                 Value
+                   (ParamArray
+                      [Value (Str "for with");
+                       App
+                         (Call Repeat,
+                          Value
+                            (ParamArray
+                               [Value (Str "adaptation"); Lam ("obj",Var "obj")]));
+                       Value (Str "in your Shooting phase")]))])

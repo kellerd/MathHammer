@@ -143,7 +143,7 @@ module Psychic =
               Value (Str "of your next Psychic phase");
               App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
               Value (Str "must subtract"); Value (Int 1);
-              Value (Str "from their hit and Leadership characteristic")])
+              Value (Str "from their Hit Roll and Leadership characteristic")])
     let ``ONSLAUGHT`` = 
         Value
           (ParamArray
@@ -175,7 +175,7 @@ module Psychic =
               App (Lam ("obj",Var "obj"),Value (ParamArray []));
               Value
                 (Str
-                   "to its hit for moving and shooting Heavy or Advancing and shooting Assault In addition");
+                   "to its Hit Roll for moving and shooting Heavy or Advancing and shooting Assault In addition");
               App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
               Value (Str "can charge");
               App

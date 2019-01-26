@@ -250,6 +250,10 @@ let scanWords (tree:Tree) =
         | IsLabeled [NN] ("D3"|"d3") -> App(Call Dice, Value(Int 3)) |> word, 0
         | IsLabeled [NN] ("enemy" | "unit") -> Var("Target") |> word, 0
         | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
+        | Siblings [NN;NNS]  [(=) "hit";(=) "rolls"] skip
+        | Siblings [NN;NNS]  [(=) "hit";(=) "roll"] skip -> "Hit Roll" |> Str |> Value |> word, skip
+        | Siblings [NN;NNS]  [(=) "wound";(=) "rolls"] skip
+        | Siblings [NN;NNS]  [(=) "wound";(=) "roll"] skip -> "Wound Roll" |> Str |> Value |> word, skip
         | Siblings [NN;NN]  [(=) "enemy";(=) "unit"] skip   -> Var("unit") |> word, skip
         | Siblings [NN;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
         | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
@@ -343,6 +347,8 @@ let skipChildren children =
 
 let (|AsText|_|) t n = 
     match t, n with 
+    | Some _,  Tagged t (BasicNode (_, NodeInfo (Word (_, Value(Str label)),_),_)) -> Some label
+    | Some _,  Tagged t (BasicNode (_, NodeInfo (Word (_, Var label),_),_)) -> Some label
     | None,              BasicNode (_, NodeInfo (Word (_, Value(Str label)),_),_) -> Some label
     | None,              BasicNode (_, NodeInfo (Word (_, Var label),_),_) -> Some label
     | None,              BasicNode (_, NodeInfo (Word (label, _),_),_) 
@@ -503,6 +509,25 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
                 | _ -> BasicNode(penTags, n, children')                 
             | Some VP -> 
                 match children' with 
+                | AllTagged [VB;NP;PP] [ AsText (Some VB) ("re-roll" as t); 
+                                         BasicNode (_, _, 
+                                            AllTagged [NP;PP] [ BasicNode (_, _, [ AsText (Some NN) typeOfRoll]);
+                                                                BasicNode (_, _, [ AsText (Some IN) "of";
+                                                                                   BasicNode (_, _,
+                                                                                        [BasicNode (Some CD, NodeInfo (Word (_,rerollWith),_),[])])])]
+                                                        ); inExpr] ->
+                    printfn "Reroll %A" rerollWith
+                    let reroll = 
+                        Lam("rollTarget",
+                            Let("f", Var(typeOfRoll), 
+                                Let("x", App(Var "f", Var "rollTarget"), 
+                                    IfThenElse( 
+                                            App(Call NotEquals, Value(ParamArray[Var "x"; rerollWith])), 
+                                            Var("x"), 
+                                            Some(App(Var "f", Var "rollTarget"))))))
+                    let rerollWord = [BasicNode (Some VB, NodeInfo(Word(op, reroll),0),[])]      
+
+                    Assignment(penTags, typeOfRoll, rerollWord, [inExpr])
                 | AllTagged [VB;S;SBAR] [AsText (Some VB) ("roll" as t); v; inExpr] -> 
                     Assignment(penTags, t, [v], [inExpr])
                 | AllTagged [VBP;NP;PP;SBAR] [ AsText (Some VBP) ("roll" as t)
@@ -525,8 +550,9 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
 let tree =  
     //"At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound." 
     //"Roll a D6 and count the results, then roll another D6 for each success."
-    "Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks."
+    //"Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks."
     //"If the hit result is 6, count the result as two hits, otherwise thr attack fails"
+    "You can re-roll hit rolls of 1 for this weapon."
     |> getTree
 tree
 |> Seq.toList
