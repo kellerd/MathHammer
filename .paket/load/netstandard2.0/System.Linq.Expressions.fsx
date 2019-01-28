@@ -5,4 +5,4 @@
 #load @"System.Reflection.Emit.Lightweight.fsx" 
 #load @"System.Reflection.TypeExtensions.fsx" 
 #load @"System.Threading.fsx" 
-#r "../../../../../../.nuget/packages/system.linq.expressions/4.3.0/lib/netstandard1.6/System.Linq.Expressions.dll" 
+#r "../../../../../../.nuget\\packages\\system.linq.expressions\\4.3.0\\lib\\netstandard1.6\\System.Linq.Expressions.dll" 

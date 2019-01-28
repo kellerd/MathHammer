@@ -1,1 +1,1 @@
-#r "../../../../../../.nuget/packages/fscheck/3.0.0-alpha3/lib/netstandard1.6/FsCheck.dll" 
+#r "../../../../../../.nuget\\packages\\fscheck\\3.0.0-alpha3\\lib\\netstandard1.6\\FsCheck.dll" 

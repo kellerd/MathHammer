@@ -4,6 +4,7 @@ open GameActions.Primitives.Types
 open GameActions.Primitives.State
 open MathHammer.State
 open GameActions.GameActionsList.State
+open GameActions.Primitives.Units
 open Expecto
 
 let (==?) x y = 
@@ -99,6 +100,9 @@ let defApplied =
     |> normalize
     |> snd
     |> evalOp newEnv
+    |> List.singleton
+    |> ParamArray
+    |> Value
 let passRangeMap = 
     let alwaysPassRange = (Value(Float (0.<inch> |> float)))
     newEnv
@@ -110,7 +114,6 @@ let failRangeMap =
     |> Map.add "Range" alwaysFailRange
     |> Map.add "Defender" defApplied 
 let (chc, attApplied) =  applyArgs attacker seargent |> normalize
-
 let eval x op = getp x op |> evalOp passRangeMap
 
 [<Tests>]
@@ -186,6 +189,11 @@ let tests =
                                     let expected =
                                         Distribution.takeN (Distribution.uniformDistribution [ 1..6 ]) 2 |> Distribution.map (List.sum >> Int)
                                     result ==? (Value(Dist(expected)))
+                                }
+                                test "Check Suffers" { 
+                                    let result = getp "Suffers" attApplied |> evalOp (Map.add "Phase" (Value(Str "Assault")) passRangeMap)
+                                    let expected = Value (ParamArray [Value (ParamArray [Value (ParamArray [Value (Int -6)])])])
+                                    result ==? expected
                                 }
                                 expectedStd
                                 |> List.map (fun (key, expected) -> test (sprintf "Check %s" key) { eval key attApplied ==? expected })

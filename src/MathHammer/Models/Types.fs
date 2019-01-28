@@ -1,5 +1,6 @@
 module MathHammer.Models.Types
 
+open GameActions.Primitives.Units
 open GameActions.Primitives.Types
 
 type Environment = Map<string, Operation>

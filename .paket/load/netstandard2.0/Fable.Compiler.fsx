@@ -4,4 +4,4 @@
 #load @"System.Collections.Immutable.fsx" 
 #load @"System.Reflection.Metadata.fsx" 
 #load @"System.Runtime.Loader.fsx" 
-#r "../../../../../../.nuget/packages/fable.compiler/1.3.17/lib/netstandard1.6/Fable.Compiler.dll" 
+#r "../../../../../../.nuget\\packages\\fable.compiler\\1.3.18\\lib\\netstandard1.6\\Fable.Compiler.dll" 

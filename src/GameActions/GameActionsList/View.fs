@@ -4,6 +4,7 @@ open Fable.Core.JsInterop
 open Fable.Helpers.React
 open Props
 open GameActions.Primitives.Types
+open GameActions.Primitives.TypeChecker
 open GameActions.Primitives.View
 open Types
 
@@ -28,20 +29,6 @@ let d3icon =
                 D 
                     "M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10M7,5A2,2 0 0,0 5,7A2,2 0 0,0 7,9A2,2 0 0,0 9,7A2,2 0 0,0 7,5M17,15A2,2 0 0,0 15,17A2,2 0 0,0 17,19A2,2 0 0,0 19,17A2,2 0 0,0 17,15Z" ] 
               [] ]
-
-open Microsoft.FSharp.Reflection
-
-let inline toString (x : 'a) =
-    let a = typeof<'a>
-    match FSharpValue.GetUnionFields(x, a) with
-    | case, _ -> case.Name
-
-let inline fromString<'a> (s : string) =
-    match FSharpType.GetUnionCases typeof<'a> 
-          |> Array.filter (fun case -> case.Name = s) with
-    | [| case |] -> Some(FSharpValue.MakeUnion(case, [||]) :?> 'a)
-    | _ -> None
-
 let (|HasIcon|_|) =
     function 
     | Special "D6" -> d6icon |> Some
@@ -90,29 +77,6 @@ let card dispatch name v foot =
                              |> ofOption ]
       br [] ]
     |> ofList
-
-let rec (|AsElseIfs|_|) =
-    function 
-    | IfThenElse(ifExpr, thenExpr, Some(AsElseIfs(ifThens))) -> 
-        Some((Some ifExpr, thenExpr) :: ifThens)
-    | IfThenElse(ifExpr, thenExpr, Some(elseEnd)) -> 
-        Some([ Some ifExpr, thenExpr
-               None, elseEnd ])
-    | IfThenElse(ifExpr, thenExpr, None) -> Some [ Some ifExpr, thenExpr ]
-    | _ -> None
-
-let applyManyIfs ifThens =
-    let rec halp ifThens =
-        match ifThens with
-        | [] -> None
-        | [ None, elseExpr ] -> Some elseExpr
-        | (Some ifExpr, thenExpr) :: xs -> 
-            IfThenElse(ifExpr, thenExpr, halp xs) |> Some
-        | _ -> None
-    match halp ifThens with
-    | Some v -> v
-    | None -> Value(NoValue)
-
 let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
     let unparseEquation dragging operation envIcons dispatch =
         let rec unparseV envIcons (dispatch : GamePrimitive -> unit) =
@@ -284,8 +248,31 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
                              |> dispatch) ])
             |> ofList
         
-        and unparseC func envIcons dispatch =
-            toString func + " "
+        and unparseC (func:Call) envIcons dispatch =
+            match func with 
+            | Product -> "Product "
+            | Division -> "Division "
+            | Total -> "Total "
+            | Count -> "Count "
+            | Repeat -> "Repeat "
+            | Dice -> "Dice "
+            | GreaterThan -> "GreaterThan "
+            | Contains -> "Contains "
+            | Equals -> "Equals "
+            | NotEquals -> "NotEquals "
+            | LessThan -> "LessThan "
+            | ToDist -> "ToDist "
+            | And -> "And "
+            | Or -> "Or "
+            | Max -> "Max "
+            | Min -> "Min "
+            | Sub -> "Sub "
+            | Median -> "Median "
+            | FMap -> "Map "
+            | Mean -> "Mean "
+            | Mode -> "Mode "
+            | Least -> "Least "
+            | Largest -> "Largest "
             |> string
             |> str
         
@@ -522,7 +509,7 @@ let mkRows dragging hideAddButton (coreDispatch : Msg -> unit) icons row =
                         OnClick(fun _ -> SaveOp(name) |> coreDispatch) ] 
                         [ str "Close" ] ]
               
-              td [ ColSpan 3. ] 
+              td [ ColSpan 3 ] 
                   [ div [ ClassName "field" ] [ label [ ClassName "label" ] 
                                                     [ str "Icon" ]
                                                 input [ ClassName "input"

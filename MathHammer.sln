@@ -7,7 +7,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MathHammer.Tests", "test\Ma
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DCE42903-3E23-4FBD-B6E0-477D44CF87F8}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "nlp", "src\nlp\nlp.fsproj", "{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Processing", "src\nlp\nlp.fsproj", "{0F1DB446-9106-4211-BB14-FBD0E2FAF6BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

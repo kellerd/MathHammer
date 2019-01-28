@@ -33,7 +33,7 @@ open Expecto
 
 #load "TypeChecker.fs"
 
-Tests.runTests defaultConfig TypeChecker.tests
+Tests.runTests defaultConfig TypeCheckerTest.tests
 
 #load "DistTest.fs"
 

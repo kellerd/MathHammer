@@ -8,82 +8,6 @@ open System
 open FSharp.Data
 open System.IO
 open System.IO.Compression
-let modelsFolder = __SOURCE_DIRECTORY__ + @"\..\..\paket-files\nlp.stanford.edu\stanford-parser-full-2013-06-20\stanford-parser-3.2.0-models"
-if Directory.Exists(modelsFolder) |> not then
-    ZipFile.ExtractToDirectory(modelsFolder + ".jar", modelsFolder)
-
-#r "../../../../../.nuget/packages/ikvm/8.1.5717/lib/IKVM.Runtime.dll"
-#r "../../../../../.nuget/packages/ikvm/8.1.5717/lib/IKVM.OpenJDK.Core.dll"
-#r "../../../../../.nuget/packages/ikvm/8.1.5717/lib/IKVM.OpenJDK.Text.dll"
-#r "../../../../../.nuget/packages/stanford.nlp.parser/3.8.0/lib/ejml-0.23.dll"
-#r "../../../../../.nuget/packages/stanford.nlp.parser/3.8.0/lib/slf4j-api.dll"
-#r "../../../../../.nuget/packages/stanford.nlp.parser/3.8.0/lib/stanford-parser.dll"
-#r "../../../../../.nuget/packages/stanford.nlp.parser.fsharp/0.0.14/lib/Stanford.NLP.Parser.Fsharp.dll"
-
-open edu.stanford.nlp.parser.lexparser
-open edu.stanford.nlp.trees
-
-
-open java.util
-open Stanford.NLP.FSharp.Parser
-let model = modelsFolder + @"\edu\stanford\nlp\models\lexparser\englishPCFG.ser.gz"
-let options = [|"-maxLength"; "500";
-                "-retainTmpSubcategories";
-                "-MAX_ITEMS"; "500000";
-                "-outputFormat"; "penn,typedDependenciesCollapsed"|]
-let parser = LexicalizedParser.loadModel(model, options)
-
-let tlp = PennTreebankLanguagePack()
-let gsf = tlp.grammaticalStructureFactory()
-let getTree question =
-    let tokenizer = tlp.getTokenizerFactory().getTokenizer(new java.io.StringReader(question))
-    let sentence = tokenizer.tokenize()
-    parser.apply(sentence)
-let getKeyPhrases (tree:Tree) =
-    tree.pennPrint()
-    let isNNx =  function
-        | Label NN | Label NNS
-        | Label NNP | Label NNPS -> true
-        | _ -> false
-    let isNPwithNNx = function
-        | Label NP as node ->
-            node.getChildrenAsList()
-            |> Iterable.castToSeq<Tree>
-            |> Seq.exists isNNx
-        | _ -> false
-    let rec foldTree acc (node:Tree) =
-        let acc =
-            if node.isLeaf() then acc
-            else node.getChildrenAsList()
-                 |> Iterable.castToSeq<Tree>
-                 |> Seq.fold foldTree acc
-        if isNPwithNNx node
-          then node :: acc
-          else acc
-    foldTree [] tree
-
-let questions =
-    [|" When this unit manifests the Smite psychic power, it affects the closest visible enemy unit within 24\", instead of within 18\". In addition, it inflicts an additional D3 mortal wounds on that enemy unit if this unit contains 4 or 5 Zoanthropes, or
-an additional 3 mortal wounds if it contains 6 Zoanthropes."
-      "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain."
-      "You can re-roll failed charge rolls for units with this adaptation."
-      "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation."
-      "Use this Stratagem at the end of the Fight phase. Select a TYRANIDS unit from your army – that unit can immediately fight again."
-      "If a rule requires you to roll a D3, roll a D6 and halve the result." |]
-questions
-|> Seq.skip 5
-|> Seq.iter (fun question ->
-    printfn "Question : %s" question
-    question
-    |> getTree
-    |> getKeyPhrases
-    |> List.rev
-    |> List.iter (fun p ->
-        p.getLeaves()
-        |> Iterable.castToArray<Tree>
-        |> Array.map(fun x-> x.label().value())
-        |> printfn "\t%A")
-)
 
 let codexFolder = __SOURCE_DIRECTORY__ + @"\..\..\paket-files\codexes"
 if Directory.Exists(codexFolder) |> not then
@@ -93,12 +17,6 @@ if Directory.Exists(codexFolder) |> not then
 
 let filter8thCodex (file:string) = file.Contains("Army_Rules") || file.Contains("Army_List")
 
-// #load @"C:\Users\diese\Source\Repos\MathHammer\src\Check\Check.fs"
-// #load @"C:\Users\diese\Source\Repos\MathHammer\src\Probability\Distribution.fs"
-// #load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\Types.fs"
-// #load @"C:\Users\diese\Source\Repos\MathHammer\src\Collections\Map.fs"
-// #load @"C:\Users\diese\Source\Repos\MathHammer\src\Collections\List.fs"
-// #load @"C:\Users\diese\Source\Repos\MathHammer\src\GameActions\Primitives\State.fs"
 type Label = string 
 type Characteristic = string 
 type UnitName = string
@@ -108,7 +26,10 @@ type Rule =
     | LabelOnly of string 
     | RuleOnly of string 
     | LabelledRule of string * string
-type Stratagem = Stratagem of cp:string * condition:string option * Rule    
+type Cost = 
+    | Cp of int
+    | CpChoice of int * int
+type Stratagem = Stratagem of cp:Cost * condition:string option * Rule    
 type Weapon =  (Label * Characteristic) list   
 type Category = string
 type Weapons = Category option * Map<WeaponName, Weapon>
@@ -231,9 +152,10 @@ let (|RuleDefinitions|) (file:string) =
     let body = HtmlDocument.Load(file).Body()
     body
 let (|PointsValues|_|) (file:string) =
+    //let file = @"c:\Users\diese\Source\Repos\MathHammer\src\nlp\..\..\paket-files\codexes\Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-13.xhtml"
     let (RuleDefinitions body) = file
-    body.CssSelect(".Background-Styles-40k8Codex_1--Headers-40k8Codex_1-3-Header-3-Sava---Sub-Section-40K8Codex")
-    |> List.tryFind (fun node -> HtmlNode.innerText node = "POINTS VALUES")
+    body.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-Header-40K8")
+    |> List.tryFind (fun node -> (HtmlNode.innerText node).Contains "POINTS")
     |> Option.map (fun _ -> body)
 let (|Datasheets|_|) (file:string) =
     let (RuleDefinitions body) = file
@@ -252,7 +174,7 @@ let (|WarlordTraits|_|) (file:string) =
     @ body.CssSelect("._0K8---Rule-Styles_5--Warlord-Traits_5-1-Warlord-Trait-40K8Codex")
     |> List.tryFind (fun n -> n.InnerText().ToUpper().Contains("WARLORD TRAITS"))
     |> Option.map(fun _ -> body)
-let (|Stratagems|_|) (file:string) =
+let (|IsStratagem|_|) (file:string) =
     let (RuleDefinitions body) = file
     body.CssSelect("._0K8---Rule-Styles_4--Stratagems-40k8Codex_4-1-Stratagem-Name-40K8Codex")
     |> List.tryHead
@@ -394,6 +316,7 @@ let matchUnitType str =
     System.Text.RegularExpressions.Regex("image/[^_]+_([^_]+)_(Icon_)?Cutout.png").Replace(str, "$1")
 let datasheets (body:HtmlNode) = 
     let extractStats (node:HtmlNode, (powerLevel, unitType)) = 
+        //let node = sheet.[0]
         let keywords = 
             node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-9-Datasheet-Keywords-Caps-408Codex")
             |> List.collect(fun kw -> kw.InnerText().Split(',') |> List.ofArray)
@@ -401,12 +324,12 @@ let datasheets (body:HtmlNode) =
         let (_, weapons, extraRules) = 
             getTable 
                 node 
-                "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex > span"
+                "._0K8---Rule-Styles_3--Datasheet-Styles_3-7-Datasheet-Weapon-Stat-Header-Table-408Codex"
                 "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex"
         let (_, characteristics, extraRules') = 
             getTable 
                 node 
-                "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex > span"
+                "._0K8---Rule-Styles_3--Datasheet-Styles_3-4-Datasheet-Stat-Header-Table-408Codex"
                 "._0K8---Rule-Styles_3--Datasheet-Styles_3-5-Datasheet-Stat-body-Bold-Table-408Codex"                
         let rules = 
             node.CssSelect("._0K8---Rule-Styles_3--Datasheet-Styles_3-6-Datasheet-body-text-Table-408Codex") 
@@ -545,13 +468,19 @@ let stratagems (body:HtmlNode) =
                                  n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-2-Strategem-Type-Style-40K8Codex" ||
                                  n.HasClass "_0K8---Rule-Styles_4--Stratagems-40k8Codex_4-3-Strategem-Body-Text-40K8Codex")
         |> List.chunkBySize 3  
+        
+    let mapCp (cost:string) = 
+        match cost with 
+        | cp when cp.Contains("/") -> CpChoice (cp.Substring(0,cp.IndexOf("/")).Replace("CP", "") |> int, cp.Substring(cp.IndexOf("/") + 1).Replace("CP", "") |> int)
+        | cp -> cp.Replace("CP", "") |> int |> Cp
+
     let costs = 
         body.CssSelect("._0K8---Rule-Styles_4--Stratagems-40k8Codex_4-4-Stratagem-Cost-40K8Codex") 
-        |> List.map (HtmlNode.innerText)    
+        |> List.map (HtmlNode.innerText >> mapCp)    
     List.zip text costs        
     |> List.map(function 
         | [ label; condition; text ], cost -> 
-            Stratagem(cost, getText [condition] |> Some, LabelledRule(getText [label], getText [text]))
+            Stratagem(cost, (getText [condition]).Replace(" Stratagem", "").ToUpper() |> Some, LabelledRule(getText [label], getText [text]))
         | [ label; text ], cost -> 
             Stratagem(cost, None, LabelledRule(getText [label], getText [text]))
         | rule, cost ->
@@ -650,20 +579,20 @@ let map8thCodex (file:Path) =
     | Datasheets body          -> datasheets body
     | Chapters body            -> chapters body 
     | WarlordTraits body       -> warlordTraits body
-    | Stratagems body          -> stratagems body
+    | IsStratagem body          -> stratagems body
     | PointsValues body        -> pointsValues body
     | Relics body              -> relics body
     | TacticalObjectives body  -> tactical body
     | Psychic body             -> psychic body
     | RuleDefinitions body     -> rules body 
 
-let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\114-128_40K8_Tyranids_Army_Rules-3.xhtml")
-let (RuleDefinitions body) = file
-let proc = System.Diagnostics.Process.Start("iexplore", file)
+// let file = Path.Combine(codexFolder, @"Warhammer 40,000 - Codex - Tyranids\OEBPS\082-097_40K8_Tyranids_Army_List_01-13.xhtml")
+// let (RuleDefinitions body) = file
+// let proc = System.Diagnostics.Process.Start("iexplore", file)
 // rules body |> printfn " %A"
-let sheet = body.CssSelect(".Basic-Text-Frame")
-sheet.Length
-let node = sheet.[0]
+// let sheet = body.CssSelect(".Basic-Text-Frame")
+// sheet.Length
+// let node = sheet.[0]
 //let node = sheet.[1]
 //let node = sheet.[2]
 
@@ -676,7 +605,7 @@ let failGracefully f file  =
     try 
         f file
     with ex -> 
-        printfn "Failed parsing file %s" file
+        printfn "Mapping codex page to rules - Failed parsing file %s" file
         printfn "Error: %A" ex.Message
         Errors file
 let EigthEdition = {
@@ -687,39 +616,15 @@ let EigthEdition = {
 let codexes = enumerateCodexes EigthEdition
 let nidCodex = codexes |> List.head 
 let pages = 
-    nidCodex.Pages 
-    |> Seq.filter (function 
-        | (Stratagems _, _) -> false
-        | (Chapters _, _) -> false
-        | (PointsValues _, _) -> false
-        | (Relics _, _) -> false
-        | (WarlordTraits _, _) -> false
-        | (Datasheets _, _) -> false
-        |(RuleDefinitions _, _) -> true ) 
-    |> Seq.toList
-    |> Seq.iter (printf "%A")
+    nidCodex.Pages
 
-nidCodex.Pages 
-|> Seq.filter (function 
-        | (Stratagems _, _) -> false
-        | (Chapters _, _) -> false
-        | (PointsValues _, _) -> false
-        | (Relics _, _) -> false
-        | (WarlordTraits _, _) -> false
-        | (Datasheets _, _) -> false
-        |(RuleDefinitions _, _) -> true ) 
-|> Seq.iter(fst >> printfn "%s")
-let sheets = 
-    nidCodex.Pages 
-    |> Seq.filter (function 
-        | (Stratagems _, _) -> false
-        | (Chapters _, _) -> false
-        | (PointsValues _, _) -> false
-        | (Relics _, _) -> false
-        | (WarlordTraits _, _) -> false
-        | (Datasheets _, _) -> false
-        |(RuleDefinitions _, _) -> true ) 
-    |> Seq.map(fun (file,_) -> (|RuleDefinitions|) file)
-    |> Seq.toList
-
+// let points = 
+//     pages 
+//     |> Seq.filter (fun(path:Path,_) ->     
+//         match path with 
+//         | PointsValues _        -> true | _ -> false )
+//     |> Seq.toList
+//     |> Seq.length
+//     |> fst
+//     |> printfn "%s"
 // let body = stratagems sheets.[0]    

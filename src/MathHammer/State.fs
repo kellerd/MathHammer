@@ -3,12 +3,64 @@ module MathHammer.State
 open Elmish
 open Types
 open GameActions.Primitives.Types
+open GameActions.Primitives.Units
 open GameActions.Primitives.State
 open MathHammer.Models.State
 open MathHammer.UnitList.State
 open Fable
 
 let range = vInt
+
+let lam = Lam
+               ("Target",
+                Let
+                  ("roll",
+                   Value
+                     (ParamArray
+                        [App
+                           (Call Repeat,
+                            Value
+                              (ParamArray
+                                 [ App (Call Dice,Value (Int 6));Value(Int 1)]))]),
+                   Value
+                     (ParamArray
+                        [IfThenElse
+                           (Value
+                              (ParamArray
+                                 [App
+                                    (Call Repeat,
+                                     Value
+                                       (ParamArray
+                                          [Lam
+                                             ("roll",
+                                              Let
+                                                ("gt",
+                                                 App
+                                                   (Call GreaterThan,
+                                                    Value
+                                                      (ParamArray
+                                                         [Var "roll";
+                                                          Value (Int 4)])),
+                                                 Let
+                                                   ("eq",
+                                                    App
+                                                      (Call Equals,
+                                                       Value
+                                                         (ParamArray
+                                                            [Var "roll";
+                                                             Value (Int 4)])),
+                                                    App
+                                                      (Call Or,
+                                                       Value
+                                                         (ParamArray
+                                                            [Var "eq";
+                                                             Var "gt"])))));Value (Int 1)]))]),
+                            Value
+                              (ParamArray
+                                 [ Let("W", PropertyGet("W", Var "Target"), App(Call Total, Value(ParamArray [Var "W"; Value(Int(-7))])))]),
+                            None)])));
+let op = Var "Defender"                            
+let suffers = App (Call FMap, Value (ParamArray [lam; Var "Defender"]))
 
 let phaseActions =
     choose "Phase" [ "Assault", 
@@ -30,14 +82,18 @@ let phaseActions =
                            get "App 2 Test" >>= "App2"
                            
                            get "Armour Save" <*> get "Defender" 
-                           <*> get "Wound Results" >>= "Unsaved Wounds" ]
+                           <*> get "Wound Results" >>= "Unsaved Wounds"
+                        
+                           suffers >>= "Suffers" 
+                           ]
                      <| opList [ labelVar "Charge Range"
                                  labelVar "Assault Range"
                                  labelVar "Can Hit"
                                  labelVar "Hit Results"
                                  labelVar "Wound Results"
                                  labelVar "App2"
-                                 labelVar "Unsaved Wounds" ]
+                                 labelVar "Unsaved Wounds"
+                                 labelVar "Suffers" ]
                      "Shooting", labelVar "Shooting Range"
                      "Psychic", labelVar "Psychic Test" ]
     >>= "Actions"
@@ -62,6 +118,7 @@ let allPropsa =
              labelProp "Actions" "Assault Range"
              labelProp "Actions" "Psychic Test"
              labelProp "Actions" "Shooting Range"
+             labelProp "Actions" "Suffers"
              labelVar "M"
              labelVar "WS"
              labelVar "BS"
@@ -200,7 +257,7 @@ let performMatchup def (attacker : Models.Types.Model) env =
     let initial =
         env
         |> Map.add "Range" defRange
-        |> Map.add defenderMap defRules
+        |> Map.add defenderMap (Value(ParamArray[defRules])) //Make it a unit
     
     let evaluatedRule = attacker.Rules |> evalOp initial
     ({ Defender = defName

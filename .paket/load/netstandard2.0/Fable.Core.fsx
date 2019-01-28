@@ -1,1 +1,1 @@
-#r "../../../../../../.nuget/packages/fable.core/2.0.0-beta-001/lib/netstandard2.0/Fable.Core.dll" 
+#r "../../../../../../.nuget\\packages\\fable.core\\2.0.0-beta-001\\lib\\netstandard2.0\\Fable.Core.dll" 
