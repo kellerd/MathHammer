@@ -22,6 +22,8 @@ if Directory.Exists(modelsFolder) |> not then
 
 open edu.stanford.nlp.parser.lexparser
 open edu.stanford.nlp.trees
+
+
 open java.util
 open Stanford.NLP.FSharp.Parser
 let model = modelsFolder + @"\edu\stanford\nlp\models\lexparser\englishPCFG.ser.gz"
