@@ -22,7 +22,7 @@ module Tactical =
               Value (Str "Score"); Value (Int 1);
               Value
                 (Str
-                   "victory point if you control more objective markers than your opponent at");
+                   "victory point if control more objective markers than your opponent at");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "end"); Lam ("obj",Var "obj")]));

@@ -23,7 +23,7 @@ module Rule =
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "section"); Lam ("obj",Var "obj")]));
-              Value (Str "you will come across");
+              Value (Str "will come across");
               App
                 (Call Repeat,Value (ParamArray [Value (Str "keyword"); Value (Int 1)]));
               Value (Str "that is within angular specifically <HIVE FLEET>");
@@ -45,17 +45,16 @@ module Rule =
               App
                 (Value (Int 1),
                  Value (ParamArray [Value (Str "hive"); Value (Str "fleet")]));
-              Value (Str "When you include");
+              Value (Str "When include");
               App
                 (Value (Int 1),Value (ParamArray [Value (Str "Tyranids"); Var "Target"]));
-              Value (Str "in your army you must nominate which hive fleet");
+              Value (Str "in your army must nominate which hive fleet");
               Let
                 ("ThatSubject",
                  Value
                    (ParamArray
                       [Var "Target";
-                       Value
-                         (Str "There are many different hive to choose from you can use");
+                       Value (Str "There are many different hive to choose from use");
                        App (Lam ("obj",Var "obj"),Value (ParamArray []));
                        Value (Str "of");
                        App
@@ -65,9 +64,7 @@ module Rule =
                        App
                          (Call Repeat,
                           Value (ParamArray [Value (Str "book"); Lam ("obj",Var "obj")]));
-                       Value
-                         (Str
-                            "or make up your own if you prefer You then simply replace");
+                       Value (Str "or make up your own if prefer then simply replace");
                        App
                          (Call Repeat,
                           Value
@@ -92,15 +89,14 @@ module Rule =
                          (Call Repeat,
                           Value (ParamArray [Value (Str "name"); Lam ("obj",Var "obj")]));
                        Value
-                         (Str
-                            "of your chosen hive fleet For example if you were to include");
+                         (Str "of your chosen hive fleet For example if were to include");
                        App
                          (Call Repeat,
                           Value (ParamArray [Value (Str "Tervigon"); Value (Int 1)]));
                        Value
                          (Str
-                            "in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
-                       Value (Distance 0); Value (Str "ability would say You can");
+                            "in your army and decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
+                       Value (Distance 0); Value (Str "ability would say");
                        Let
                          ("Hit Roll",
                           Value
@@ -143,7 +139,7 @@ module Rule =
                             (ParamArray
                                [Value
                                   (Str
-                                     "from There are many different hive to choose from you can use");
+                                     "from There are many different hive to choose from use");
                                 App (Lam ("obj",Var "obj"),Value (ParamArray []));
                                 Value (Str "of");
                                 App
@@ -159,7 +155,7 @@ module Rule =
                                         [Value (Str "book"); Lam ("obj",Var "obj")]));
                                 Value
                                   (Str
-                                     "or make up your own if you prefer You then simply replace");
+                                     "or make up your own if prefer then simply replace");
                                 App
                                   (Call Repeat,
                                    Value
@@ -190,16 +186,15 @@ module Rule =
                                         [Value (Str "name"); Lam ("obj",Var "obj")]));
                                 Value
                                   (Str
-                                     "of your chosen hive fleet For example if you were to include");
+                                     "of your chosen hive fleet For example if were to include");
                                 App
                                   (Call Repeat,
                                    Value
                                      (ParamArray [Value (Str "Tervigon"); Value (Int 1)]));
                                 Value
                                   (Str
-                                     "in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
-                                Value (Distance 0);
-                                Value (Str "ability would say You can");
+                                     "in your army and decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
+                                Value (Distance 0); Value (Str "ability would say");
                                 Let
                                   ("Hit Roll",
                                    Value
@@ -247,7 +242,7 @@ module Rule =
                                      (ParamArray [Var "ThatSubject"; Var "ThatObject"]));
                                 Value
                                   (Str
-                                     "There are many different hive to choose from you can use");
+                                     "There are many different hive to choose from use");
                                 App (Lam ("obj",Var "obj"),Value (ParamArray []));
                                 Value (Str "of");
                                 App
@@ -263,7 +258,7 @@ module Rule =
                                         [Value (Str "book"); Lam ("obj",Var "obj")]));
                                 Value
                                   (Str
-                                     "or make up your own if you prefer You then simply replace");
+                                     "or make up your own if prefer then simply replace");
                                 App
                                   (Call Repeat,
                                    Value
@@ -294,16 +289,15 @@ module Rule =
                                         [Value (Str "name"); Lam ("obj",Var "obj")]));
                                 Value
                                   (Str
-                                     "of your chosen hive fleet For example if you were to include");
+                                     "of your chosen hive fleet For example if were to include");
                                 App
                                   (Call Repeat,
                                    Value
                                      (ParamArray [Value (Str "Tervigon"); Value (Int 1)]));
                                 Value
                                   (Str
-                                     "in your army and you decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
-                                Value (Distance 0);
-                                Value (Str "ability would say You can");
+                                     "in your army and decided it was from Hive Fleet Kraken then its <HIVE FLEET> keyword is changed to KRAKEN and its Brood Progenitor");
+                                Value (Distance 0); Value (Str "ability would say");
                                 Let
                                   ("Hit Roll",
                                    Value
@@ -380,7 +374,7 @@ module Rule =
                    (ParamArray
                       [Value (Str "friendly"); Value (Str "<HIVE FLEET>");
                        Value (Str "SYNAPSE"); Var "Target"]));
-              Value (Str "you must subtract"); Value (Int 1); Value (Str "from");
+              Value (Str "must subtract"); Value (Int 1); Value (Str "from");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "Hit Roll"); Lam ("obj",Var "obj")]));
@@ -389,8 +383,8 @@ module Rule =
                 (Lam ("obj",Var "obj"),
                  Value (ParamArray [Value (Str "target"); Value (Str "other")]));
               Value (Str "than"); Lam ("obj",Var "obj"); Value (Str "nearest visible");
-              Var "Target"; Var "Target"; Value (Str "and you must subtract");
-              Value (Int 2); Value (Str "from its charge roll if it declares");
+              Var "Target"; Var "Target"; Value (Str "and must subtract"); Value (Int 2);
+              Value (Str "from its charge roll if it declares");
               App (Call Repeat,Value (ParamArray [Value (Str "charge"); Value (Int 1)]));
               Value (Str "against");
               App
@@ -456,7 +450,7 @@ module Rule =
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
-              Value (Str "can not be armed with more than one of");
+              Value (Str "not be armed with more than one of");
               App (Lam ("obj",Var "obj"),Value (ParamArray []))])
     let ``Acid maw`` = 
         Value
@@ -490,7 +484,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value (Str "fights it can make one and only one attack with");
+                          Value (Str "fights it make one and only one attack with");
                           App
                             (Call Repeat,
                              Value
@@ -600,7 +594,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value (Str "fights it can make one and only one attack with");
+                          Value (Str "fights it make one and only one attack with");
                           App
                             (Call Repeat,
                              Value
@@ -630,7 +624,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
-                          Value (Str "you make");
+                          Value (Str "make");
                           App
                             (Value (Int 1),
                              Value
@@ -687,7 +681,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
-                          Value (Str "armed with can make"); Value (Int 1);
+                          Value (Str "armed with make"); Value (Int 1);
                           Value (Str "additional attack with them in");
                           App
                             (Call Repeat,
@@ -726,8 +720,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "you must subtract"); Value (Int 1);
-                          Value (Str "from");
+                          Value (Str "must subtract"); Value (Int 1); Value (Str "from");
                           App
                             (Lam ("obj",Var "obj"),
                              Value (ParamArray [Value (Str "hit"); Value (Str "roll")]))])])])
@@ -809,7 +802,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value (Str "can do so as normal before being removed from");
+                          Value (Str "do so as normal before being removed from");
                           App
                             (Call Repeat,
                              Value
@@ -856,7 +849,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value (Str "can do so as normal before being removed from");
+                          Value (Str "do so as normal before being removed from");
                           App
                             (Call Repeat,
                              Value
@@ -883,8 +876,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "you must subtract"); Value (Int 1);
-                          Value (Str "from");
+                          Value (Str "must subtract"); Value (Int 1); Value (Str "from");
                           App
                             (Lam ("obj",Var "obj"),
                              Value (ParamArray [Value (Str "hit"); Value (Str "roll")]))])])])
@@ -904,7 +896,6 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll hit rolls of 1 for this weapon. If the bearer has more than one pair of monstrous/massive scything talons, it can make 1 additional attack with this weapon each time it fights.");
-                          Value (Str "You can");
                           Let
                             ("Hit Roll",
                              Value
@@ -930,7 +921,7 @@ module Rule =
                                            [Value (Str "bearer"); Lam ("obj",Var "obj")]));
                                    Value
                                      (Str
-                                        "has more than one pair of monstrous/massive scything it can make");
+                                        "has more than one pair of monstrous/massive scything it make");
                                    Value (Int 1); Value (Str "additional attack with");
                                    App
                                      (Call Repeat,
@@ -957,7 +948,7 @@ module Rule =
                                            [Value (Str "bearer"); Lam ("obj",Var "obj")]));
                                    Value
                                      (Str
-                                        "has more than one pair of monstrous/massive scything it can make");
+                                        "has more than one pair of monstrous/massive scything it make");
                                    Value (Int 1); Value (Str "additional attack with");
                                    App
                                      (Call Repeat,
@@ -984,7 +975,6 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll failed wound rolls for this weapon. A model armed with this weapon always fights first in the Fight phase, even if it didn’t charge. If the enemy has units that have charged, or that have a similar ability, then alternate choosing units to fight with, starting with the player whose turn is taking place.");
-                          Value (Str "You can");
                           Let
                             ("Wound Roll",
                              Value
@@ -1112,7 +1102,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
-                          Value (Str "armed with monstrous can make"); Value (Int 1);
+                          Value (Str "armed with monstrous make"); Value (Int 1);
                           Value (Str "additional attack with them in");
                           App
                             (Call Repeat,
@@ -1143,8 +1133,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "you must subtract"); Value (Int 1);
-                          Value (Str "from");
+                          Value (Str "must subtract"); Value (Int 1); Value (Str "from");
                           App
                             (Lam ("obj",Var "obj"),
                              Value (ParamArray [Value (Str "hit"); Value (Str "roll")]))])])])
@@ -1164,7 +1153,6 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll failed wound rolls for this weapon. In addition, each time you make a wound roll of 6+, that hit is resolved with an AP of -6 and Damage of 3.");
-                          Value (Str "You can");
                           Let
                             ("Wound Roll",
                              Value
@@ -1182,7 +1170,7 @@ module Rule =
                                    Lam
                                      ("obj",
                                       App (Call Count,Value (ParamArray [Var "obj"])));
-                                   Value (Str "time you make");
+                                   Value (Str "time make");
                                    App
                                      (Value (Int 1),
                                       Value
@@ -1220,7 +1208,7 @@ module Rule =
                                    Lam
                                      ("obj",
                                       App (Call Count,Value (ParamArray [Var "obj"])));
-                                   Value (Str "time you make");
+                                   Value (Str "time make");
                                    App
                                      (Value (Int 1),
                                       Value
@@ -1268,7 +1256,6 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll hit rolls of 1 for this weapon. If the bearer has more than one pair of monstrous/massive scything talons, it can make 1 additional attack with this weapon each time it fights.");
-                          Value (Str "You can");
                           Let
                             ("Hit Roll",
                              Value
@@ -1294,7 +1281,7 @@ module Rule =
                                            [Value (Str "bearer"); Lam ("obj",Var "obj")]));
                                    Value
                                      (Str
-                                        "has more than one pair of monstrous/massive scything it can make");
+                                        "has more than one pair of monstrous/massive scything it make");
                                    Value (Int 1); Value (Str "additional attack with");
                                    App
                                      (Call Repeat,
@@ -1321,7 +1308,7 @@ module Rule =
                                            [Value (Str "bearer"); Lam ("obj",Var "obj")]));
                                    Value
                                      (Str
-                                        "has more than one pair of monstrous/massive scything it can make");
+                                        "has more than one pair of monstrous/massive scything it make");
                                    Value (Int 1); Value (Str "additional attack with");
                                    App
                                      (Call Repeat,
@@ -1364,7 +1351,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value (Str "fights it can make one and only one attack with");
+                          Value (Str "fights it make one and only one attack with");
                           App
                             (Call Repeat,
                              Value
@@ -1420,7 +1407,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
-                          Value (Str "you make");
+                          Value (Str "make");
                           App
                             (Value (Int 1),
                              Value
@@ -1466,7 +1453,6 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll hit rolls of 1 for this weapon. If the bearer has more than one pair of scything talons, it can make 1 additional attack with this weapon each time it fights.");
-                          Value (Str "You can");
                           Let
                             ("Hit Roll",
                              Value
@@ -1491,8 +1477,7 @@ module Rule =
                                         (ParamArray
                                            [Value (Str "bearer"); Lam ("obj",Var "obj")]));
                                    Value
-                                     (Str
-                                        "has more than one pair of scything it can make");
+                                     (Str "has more than one pair of scything it make");
                                    Value (Int 1); Value (Str "additional attack with");
                                    App
                                      (Call Repeat,
@@ -1518,8 +1503,7 @@ module Rule =
                                         (ParamArray
                                            [Value (Str "bearer"); Lam ("obj",Var "obj")]));
                                    Value
-                                     (Str
-                                        "has more than one pair of scything it can make");
+                                     (Str "has more than one pair of scything it make");
                                    Value (Int 1); Value (Str "additional attack with");
                                    App
                                      (Call Repeat,
@@ -1544,7 +1528,6 @@ module Rule =
                     Value
                       (ParamArray
                          [Value (Str "You can re-roll hit rolls of 1 for this weapon.");
-                          Value (Str "You can");
                           Let
                             ("Hit Roll",
                              Value
@@ -1602,7 +1585,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value (Str "fights it can make one and only one attack with");
+                          Value (Str "fights it make one and only one attack with");
                           App
                             (Call Repeat,
                              Value
@@ -1646,7 +1629,6 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll failed wound rolls for this weapon. A model armed with this weapon always fights first in the Fight phase, even if it didn’t charge. If the enemy has units that have charged, or that have a similar ability, then alternate choosing units to fight with, starting with the player whose turn is taking place.");
-                          Value (Str "You can");
                           Let
                             ("Wound Roll",
                              Value
@@ -1770,7 +1752,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value (Str "fights it can make one and only one attack with");
+                          Value (Str "fights it make one and only one attack with");
                           App
                             (Call Repeat,
                              Value
@@ -1831,7 +1813,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "bearer"); Lam ("obj",Var "obj")]));
-                          Value (Str "fights it can make one and only one attack with");
+                          Value (Str "fights it make one and only one attack with");
                           App
                             (Call Repeat,
                              Value
@@ -1878,8 +1860,7 @@ module Rule =
                          [Value
                             (Str
                                "You can add 1 to hit rolls for this weapon when attacking a unit with 10 or more models.");
-                          Value (Str "You can add"); Value (Int 1);
-                          Value (Str "to hit for");
+                          Value (Str "add"); Value (Int 1); Value (Str "to hit for");
                           App
                             (Call Repeat,
                              Value
@@ -1945,7 +1926,6 @@ module Rule =
                          [Value
                             (Str
                                "You can re-roll failed wound rolls for this weapon. In addition, units attacked by this weapon do not gain any bonus to their saving throws for being in cover.");
-                          Value (Str "You can");
                           Let
                             ("Wound Roll",
                              Value
@@ -2079,14 +2059,13 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "can be fired within"); Value (Distance 1);
+                          Value (Str "be fired within"); Value (Distance 1);
                           Value (Str "of");
                           App
                             (Lam ("obj",Var "obj"),
                              Value (ParamArray [Var "Target"; Var "Target"]));
-                          Value (Str "and can target"); Var "Target";
-                          Value (Str "within"); Value (Distance 1);
-                          Value (Str "of friendly")])])])
+                          Value (Str "and target"); Var "Target"; Value (Str "within");
+                          Value (Distance 1); Value (Str "of friendly")])])])
     let ``Fleshborer`` = 
         Value
           (ParamArray
@@ -2123,14 +2102,13 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "can be fired within"); Value (Distance 1);
+                          Value (Str "be fired within"); Value (Distance 1);
                           Value (Str "of");
                           App
                             (Lam ("obj",Var "obj"),
                              Value (ParamArray [Var "Target"; Var "Target"]));
-                          Value (Str "and can target"); Var "Target";
-                          Value (Str "within"); Value (Distance 1);
-                          Value (Str "of friendly In addition when");
+                          Value (Str "and target"); Var "Target"; Value (Str "within");
+                          Value (Distance 1); Value (Str "of friendly In addition when");
                           App
                             (Call Repeat,
                              Value (ParamArray [Value (Str "model"); Value (Int 1)]));
@@ -2172,7 +2150,7 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "can target that are not visible to");
+                          Value (Str "target that are not visible to");
                           App
                             (Call Repeat,
                              Value
@@ -2250,14 +2228,13 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "can be fired within"); Value (Distance 1);
+                          Value (Str "be fired within"); Value (Distance 1);
                           Value (Str "of");
                           App
                             (Lam ("obj",Var "obj"),
                              Value (ParamArray [Var "Target"; Var "Target"]));
-                          Value (Str "and can target"); Var "Target";
-                          Value (Str "within"); Value (Distance 1);
-                          Value (Str "of friendly You can re-roll");
+                          Value (Str "and target"); Var "Target"; Value (Str "within");
+                          Value (Distance 1); Value (Str "of friendly re-roll");
                           App
                             (Lam ("obj",Var "obj"),
                              Value
@@ -2300,7 +2277,7 @@ module Rule =
                           App
                             (Call Repeat,
                              Value (ParamArray [Value (Str "VEHICLE"); Value (Int 1)]));
-                          Value (Str "and you make");
+                          Value (Str "and make");
                           App
                             (Value (Int 1),
                              Value
@@ -2329,7 +2306,7 @@ module Rule =
                             (Lam ("obj",Var "obj"),
                              Value
                                (ParamArray [Value (Str "other"); Value (Str "damage")]));
-                          Value (Str "If you make");
+                          Value (Str "If make");
                           App
                             (Value (Int 1),
                              Value
@@ -2369,14 +2346,13 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "can be fired within"); Value (Distance 1);
+                          Value (Str "be fired within"); Value (Distance 1);
                           Value (Str "of");
                           App
                             (Lam ("obj",Var "obj"),
                              Value (ParamArray [Var "Target"; Var "Target"]));
-                          Value (Str "and can target"); Var "Target";
-                          Value (Str "within"); Value (Distance 1);
-                          Value (Str "of friendly")])])])
+                          Value (Str "and target"); Var "Target"; Value (Str "within");
+                          Value (Distance 1); Value (Str "of friendly")])])])
     let ``Spinefists`` = 
         Value
           (ParamArray
@@ -2439,8 +2415,7 @@ module Rule =
                          [Value
                             (Str
                                "You can add 1 to hit rolls for this weapon when attacking a unit with 10 or more models.");
-                          Value (Str "You can add"); Value (Int 1);
-                          Value (Str "to hit for");
+                          Value (Str "add"); Value (Int 1); Value (Str "to hit for");
                           App
                             (Call Repeat,
                              Value
@@ -2466,12 +2441,12 @@ module Rule =
                          [Value
                             (Str
                                "You may re-roll failed hit rolls for this weapon against units that can FLY . In addition, if the target is a VEHICLE and you make a wound roll of 4+, it suffers 1 mortal wound in addition to any other damage. If you make a wound roll of 6+, inflict D3 mortal wounds instead.");
-                          Value (Str "You may re-roll failed Hit Roll for");
+                          Value (Str "may re-roll failed Hit Roll for");
                           App
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "against that can FLY In addition if");
+                          Value (Str "against that FLY In addition if");
                           App
                             (Call Repeat,
                              Value
@@ -2480,7 +2455,7 @@ module Rule =
                           App
                             (Call Repeat,
                              Value (ParamArray [Value (Str "VEHICLE"); Value (Int 1)]));
-                          Value (Str "and you make");
+                          Value (Str "and make");
                           App
                             (Value (Int 1),
                              Value
@@ -2505,7 +2480,7 @@ module Rule =
                             (Lam ("obj",Var "obj"),
                              Value
                                (ParamArray [Value (Str "other"); Value (Str "damage")]));
-                          Value (Str "If you make");
+                          Value (Str "If make");
                           App
                             (Value (Int 1),
                              Value
@@ -2545,14 +2520,13 @@ module Rule =
                             (Call Repeat,
                              Value
                                (ParamArray [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                          Value (Str "can be fired within"); Value (Distance 1);
+                          Value (Str "be fired within"); Value (Distance 1);
                           Value (Str "of");
                           App
                             (Lam ("obj",Var "obj"),
                              Value (ParamArray [Var "Target"; Var "Target"]));
-                          Value (Str "and can target"); Var "Target";
-                          Value (Str "within"); Value (Distance 1);
-                          Value (Str "of friendly In addition you can");
+                          Value (Str "and target"); Var "Target"; Value (Str "within");
+                          Value (Distance 1); Value (Str "of friendly In addition");
                           Let
                             ("Wound Roll",
                              Value
@@ -2595,13 +2569,13 @@ module Rule =
               App
                 (Lam ("obj",Var "obj"),
                  Value (ParamArray [Value (Str "first"); Value (Str "turn")]));
-              Value (Str "begins you can remove your Warlord from");
+              Value (Str "begins remove your Warlord from");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "battlefield"); Lam ("obj",Var "obj")]));
               Value (Str "and set them up again If");
               App (Lam ("obj",Var "obj"),Value (ParamArray []));
-              Value (Str "have that can do");
+              Value (Str "have that do");
               App (Lam ("obj",Var "obj"),Value (ParamArray [])); Value (Str "roll off");
               App
                 (Call Repeat,
@@ -2672,8 +2646,7 @@ module Rule =
                 (Call Repeat,
                  Value (ParamArray [Value (Str "phase"); Lam ("obj",Var "obj")]));
               App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-              Value
-                (Str "can move and Advance if you wish as if it was your Movement phase")])
+              Value (Str "move and Advance if wish as if it was your Movement phase")])
     let ``INSTINCTIVE KILLER`` = 
         Value
           (ParamArray
@@ -2695,7 +2668,7 @@ module Rule =
               Value (Str "begins choose");
               App
                 (Lam ("obj",Var "obj"),Value (ParamArray [Var "Target"; Var "Target"]));
-              Value (Str "You can re-roll failed Hit Roll for");
+              Value (Str "re-roll failed Hit Roll for");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "Warlord"); Lam ("obj",Var "obj")]));
@@ -2772,7 +2745,7 @@ module Rule =
              [Value
                 (Str
                    "If you wish, you can pick a Hive Fleet Warlord Trait from the list below instead of the Tyranid Warlord Traits to the left, but only if your Warlord is from the relevant hive fleet.");
-              Value (Str "If you wish you can pick");
+              Value (Str "If wish pick");
               App
                 (Value (Int 1),
                  Value
@@ -2807,7 +2780,7 @@ module Rule =
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "time"); Lam ("obj",Var "obj")]));
-              Value (Str "you make");
+              Value (Str "make");
               App
                 (Value (Int 1),
                  Value (ParamArray [Value (Str "wound"); Value (Str "roll")]));
@@ -2856,10 +2829,10 @@ module Rule =
               Value (Str "In");
               Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
               Value (ParamArray [Value (Str "Phase"); Value (Str "Fight")]);
-              Value (Str "you can pick one friendly KRAKEN"); Var "Target";
-              Value (Str "within"); Value (Distance 6); Value (Str "of your Warlord");
+              Value (Str "pick one friendly KRAKEN"); Var "Target"; Value (Str "within");
+              Value (Distance 6); Value (Str "of your Warlord");
               App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-              Value (Str "can fight first in");
+              Value (Str "fight first in");
               App
                 (Call Repeat,
                  Value
@@ -2883,7 +2856,7 @@ module Rule =
              [Value
                 (Str
                    "Once per battle round, you can re-roll a single hit roll, wound roll, damage roll, Advance roll, charge roll or saving throw made for your Warlord.");
-              Value (Str "Once per battle round you can re-roll");
+              Value (Str "Once per battle round re-roll");
               App
                 (Value (Int 1),
                  Value
@@ -3156,7 +3129,7 @@ module Rule =
                  Value
                    (ParamArray
                       [Value (Str "Hyper-aggression"); Value (Str "adaptation")]));
-              Value (Str "If you are using");
+              Value (Str "If are using");
               App
                 (Value (Int 1),
                  Value (ParamArray [Value (Str "splinter"); Value (Str "fleet")]));
@@ -3188,7 +3161,7 @@ module Rule =
                  Value
                    (ParamArray
                       [Value (Str "Behemoth"); Value (Str "Hive"); Value (Str "Fleet");
-                       Value (Str "Adaptation")])); Value (Str "If you are unsure of");
+                       Value (Str "Adaptation")])); Value (Str "If are unsure of");
               App
                 (Value (Int 1),
                  Value
@@ -3226,7 +3199,6 @@ module Rule =
              [Value
                 (Str
                    "You can re-roll failed charge rolls for units with this adaptation.");
-              Value (Str "You can");
               Let
                 ("charge",
                  Value
@@ -3271,7 +3243,7 @@ module Rule =
               App
                 (Lam ("obj",Var "obj"),
                  Value (ParamArray [Value (Str "Movement"); Value (Str "phase")]));
-              Value (Str "In addition such can Fall Back and charge in");
+              Value (Str "In addition such Fall Back and charge in");
               App
                 (Lam ("obj",Var "obj"),
                  Value (ParamArray [Value (Str "same"); Value (Str "turn")]))])
@@ -3334,7 +3306,7 @@ module Rule =
              [Value
                 (Str
                    "You can re-roll wound rolls of 1 in the Fight phase for units with this adaptation.");
-              Value (Str "You can re-roll wound of"); Value (Int 1); Value (Str "in");
+              Value (Str "re-roll wound of"); Value (Int 1); Value (Str "in");
               App
                 (Call Repeat,
                  Value
@@ -3355,7 +3327,7 @@ module Rule =
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "adaptation"); Lam ("obj",Var "obj")]));
-              Value (Str "other than that can FLY always has");
+              Value (Str "other than that FLY always has");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "benefit"); Lam ("obj",Var "obj")]));
@@ -3382,7 +3354,7 @@ module Rule =
              [Value
                 (Str
                    "You can re-roll hit rolls in the Fight phase for units with this adaptation that target units containing fewer models than their own.");
-              Value (Str "You can re-roll Hit Roll in");
+              Value (Str "re-roll Hit Roll in");
               App
                 (Call Repeat,
                  Value
@@ -3399,7 +3371,6 @@ module Rule =
              [Value
                 (Str
                    "You can re-roll hit rolls of 1 for units with this adaptation in your Shooting phase if they did not move in the preceding Movement phase.");
-              Value (Str "You can");
               Let
                 ("Hit Roll",
                  Value

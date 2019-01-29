@@ -167,7 +167,7 @@ module Psychic =
                 (Call Repeat,
                  Value (ParamArray [Value (Str "psyker"); Lam ("obj",Var "obj")]));
               App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-              Value (Str "can shoot");
+              Value (Str "shoot");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "turn"); Lam ("obj",Var "obj")]));
@@ -177,7 +177,7 @@ module Psychic =
                 (Str
                    "to its Hit Roll for moving and shooting Heavy or Advancing and shooting Assault In addition");
               App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-              Value (Str "can charge");
+              Value (Str "charge");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "turn"); Lam ("obj",Var "obj")]));
@@ -203,7 +203,7 @@ module Psychic =
                  Value (ParamArray [Value (Str "psyker"); Lam ("obj",Var "obj")]));
               Value (Str "Until your next Psychic phase");
               App (Call Repeat,Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-              Value (Str "can not fight in");
+              Value (Str "not fight in");
               App
                 (Call Repeat,
                  Value
@@ -233,7 +233,7 @@ module Psychic =
                 (Call Repeat,
                  Value (ParamArray [Value (Str "ability"); Lam ("obj",Var "obj")]));
               Value (Str "If"); App (Lam ("obj",Var "obj"),Value (ParamArray []));
-              Value (Str "have that can not fight until");
+              Value (Str "have that not fight until");
               App
                 (Call Repeat,
                  Value (ParamArray [Value (Str "other"); Lam ("obj",Var "obj")]));
@@ -271,7 +271,7 @@ module Psychic =
                  Value (ParamArray [Value (Str "result"); Lam ("obj",Var "obj")]));
               Value
                 (Str
-                   "is higher than their Leadership characteristic randomly select one of their psychic They can no longer use");
+                   "is higher than their Leadership characteristic randomly select one of their psychic They no longer use");
               App
                 (Lam ("obj",Var "obj"),
                  Value (ParamArray [Value (Str "psychic"); Value (Str "power")]))])

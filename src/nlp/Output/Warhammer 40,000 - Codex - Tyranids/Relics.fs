@@ -55,7 +55,7 @@ module Relic =
                                    Value
                                      (ParamArray
                                         [Value (Str "Slayer"); Value (Str "Sabres")]));
-                                Value (Str "can make"); Value (Int 1);
+                                Value (Str "make"); Value (Int 1);
                                 Value (Str "additional attack with them in");
                                 App
                                   (Call Repeat,
@@ -148,7 +148,6 @@ module Relic =
                                [Value
                                   (Str
                                      "You can re-roll failed wound rolls for this weapon.");
-                                Value (Str "You can");
                                 Let
                                   ("Wound Roll",
                                    Value
@@ -201,7 +200,7 @@ module Relic =
                                [Value
                                   (Str
                                      "You can add 1 to hit rolls for this weapon when attacking a unit with 10 or more models. Invulnerable saves cannot be taken against this weapon.");
-                                Value (Str "You can add"); Value (Int 1);
+                                Value (Str "add"); Value (Int 1);
                                 Value (Str "to hit for");
                                 App
                                   (Call Repeat,
@@ -214,8 +213,7 @@ module Relic =
                                    Value (ParamArray [Var "Target"; Value (Int 1)]));
                                 Value (Str "with"); Value (Int 10);
                                 Value
-                                  (Str
-                                     "or more Invulnerable saves can not be taken against");
+                                  (Str "or more Invulnerable saves not be taken against");
                                 App
                                   (Call Repeat,
                                    Value
@@ -341,7 +339,7 @@ module Relic =
                                    Value
                                      (ParamArray
                                         [Value (Str "model"); Lam ("obj",Var "obj")]));
-                                Value (Str "can make"); Value (Int 1);
+                                Value (Str "make"); Value (Int 1);
                                 Value (Str "additional attack with");
                                 App
                                   (Call Repeat,
@@ -353,7 +351,7 @@ module Relic =
                                 Value (Str "time it fights In addition");
                                 Lam
                                   ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-                                Value (Str "time you make");
+                                Value (Str "time make");
                                 App
                                   (Value (Int 1),
                                    Value
@@ -381,7 +379,7 @@ module Relic =
                                    Value
                                      (ParamArray
                                         [Value (Str "weapon"); Lam ("obj",Var "obj")]));
-                                Value (Str "you can make");
+                                Value (Str "make");
                                 App
                                   (Lam ("obj",Var "obj"),
                                    Value
@@ -394,8 +392,7 @@ module Relic =
                                      (ParamArray
                                         [Value (Str "additional");
                                          Value (Str "Hit Roll")]));
-                                Value
-                                  (Str "can not generate further additional Hit Roll")])]);
+                                Value (Str "not generate further additional Hit Roll")])]);
                     Value (ParamArray [Value (Str "RANGE"); Value (Str "Melee")]);
                     Value (ParamArray [Value (Str "TYPE"); Value (Str "Melee")]);
                     Value (ParamArray [Value (Str "S"); Value (Str "+1")]);

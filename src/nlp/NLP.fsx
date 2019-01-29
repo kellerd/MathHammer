@@ -145,11 +145,13 @@ type Tag = PennTreebankIITags option
 type WordScanNode = 
     | Node of Tree
     | Word of original:Tree * Operation 
+    | Ignore  of Tree
     | Cont of original:Tree * (Operation -> Operation)
 let findTree = function
     | NodeInfo(Node t,_) -> t
     | NodeInfo(Word (t,_),_) -> t
     | NodeInfo(Cont (t, _),_) -> t
+    | NodeInfo(Ignore t, _) -> t
 
 let gt plusValue =
     App(Call GreaterThan, Value(ParamArray [ Var "roll"; Value(Int(plusValue))]))
@@ -208,21 +210,23 @@ let rec debugList = function
             | NodeInfo(Node op, _) -> op
             | NodeInfo(Cont (op,_), _) -> op
             | NodeInfo(Word (op,_), _) -> op
+            | NodeInfo(Ignore(op),_) -> op
         t.pennPrint()
    | Empty(_) -> ()
    | Assignment(_, label, value, inExpr) -> printf "Assignment %s = " label; Seq.iter debugList value; Seq.iter debugList inExpr
    | IfThenElseBranch(_, test, thenExpr, elseExpr) -> printf "IfThenElse = " ;Seq.iter debugList test; Seq.iter debugList thenExpr
-let scanWords (tree:Tree) =   
+let scanWords (treeN:Tree) =   
+    //let treeN = Seq.item 0 tree
     let (|Siblings|_|) labels check (node:Tree) = 
-        // let children = [tree]
-        // //let labels = [NN;NN] 
-        // let check =  [(=) "Fight";(=) "phase"]
+        // let children = treeN.children()
+        // //let labels = [PRP; MD] 
+        // let check =  [(=) "You";(=) "can"]
         // let chillins = children |> Seq.collect(fun n -> n.children()) |> Seq.collect(fun n -> n.children()) |> Seq.toList
         // let parent = chillins.[0].children().[1].children().[1].children().[1]
         // let node = parent.children().[1]
         // getHeadText node
         // getAllText parent
-        match node.parent tree with
+        match node.parent treeN with
         | null -> None 
         | parent -> 
             let rightSiblings = parent.children() |> Seq.skipWhile(fun n -> n.equals(node) |> not) |> Seq.toList
@@ -264,14 +268,17 @@ let scanWords (tree:Tree) =
         | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
         | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0
         | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
+        | IsLabeled [PRP] ("You" | "you") -> Ignore(node),  0
+        | IsLabeled [MD] "can" -> Ignore(node),  0
         | _ -> Node node,0   
     let rec mapTree (node:Tree) = 
+        //let node = treeN
         let (wsn, skip) = convertNode node
         let nodes = 
             node.getChildrenAsList() |> Iterable.castToSeq<Tree> |> Seq.map mapTree |> Seq.toList
         let nodeInfo = NodeInfo(wsn, skip)        
         BasicNode (getLabel node, nodeInfo, nodes)
-    mapTree tree    
+    mapTree treeN    
 let rec cata fEmpty fNode fAssign ifte (tree:Tree<'ITag, 'INodeData>) = 
     let recurse = cata fEmpty fNode fAssign ifte
     match tree with
@@ -409,7 +416,8 @@ let foldToOperation (accl) (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
             |  Value(Distance(0)) :: rest when tag = Some EQT ->  pennTags, Value(Distance(n)) :: rest
             | _ ->  pennTags, op :: acc
         | Word (_,op) ->  pennTags, op :: acc
-        | Node n ->  pennTags, acc
+        | Node n ->  tag, acc
+        | Ignore _ -> tag, acc
         | Cont(_, cont) -> 
             match acc with 
             | [] -> pennTags, [cont (Value NoValue)] 
@@ -455,6 +463,7 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
         match node with 
         | Cont _ -> BasicNode(penTags, n, children')  
         | Word _ -> BasicNode(penTags, n, children')  
+        | Ignore _ -> BasicNode(penTags, n, children')  
         | Node op -> 
             match penTags with 
             | Some (SYM | NNS | Punctuation | EQT) -> 
@@ -569,7 +578,7 @@ let tree =
     //"Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks."
     //"If the hit result is 6, count the result as two hits, otherwise thr attack fails"
     //"You can re-roll hit rolls of 1 for this weapon."
-     "You can re-roll failed wound rolls for this weapon"
+     "In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls."
     |> getTree
 tree
 |> Seq.toList

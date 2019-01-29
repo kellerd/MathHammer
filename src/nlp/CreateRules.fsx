@@ -206,7 +206,8 @@ let outputToDirectory codexName (file, rules)=
 let exportCodexes codex = 
     let codexName = Path.GetFileName(codex.Folder)
     codex.Pages
-    |> Seq.map parseRules
+    |> Array.ofSeq
+    |> Array.Parallel.map parseRules
     |> Seq.iter (outputToDirectory codexName)
 
 open System.IO
