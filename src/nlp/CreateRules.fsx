@@ -51,7 +51,9 @@ let parseRules (path,page) =
     match page with 
     | Datasheet g ->         
         page, List.map(fun (name,datasheet) -> 
-            Some name, Value(NoValue)
+            let abilities = datasheet.Abilities |> List.map (parseRule >> function | Some label, op -> pair (vStr label) op | None, op -> op)
+
+            Some name, Value(ParamArray[Value (Str "ABILITIES"); Value (ParamArray abilities)])
         ) g 
     | RuleDefs (wl,rl) -> 
         let rules = List.map parseRule rl 
