@@ -148,12 +148,22 @@ module Relic =
                                [Value
                                   (Str
                                      "You can re-roll failed wound rolls for this weapon.");
-                                Value (Str "You can re-roll failed Wound Roll for");
-                                App
-                                  (Call Repeat,
+                                Value (Str "You can");
+                                Let
+                                  ("Wound Roll",
                                    Value
                                      (ParamArray
-                                        [Value (Str "weapon"); Lam ("obj",Var "obj")]))])]);
+                                        [Lam
+                                           ("rollTarget",
+                                            Let
+                                              ("f",Var "Wound Roll",
+                                               Let
+                                                 ("x",App (Var "f",Var "rollTarget"),
+                                                  IfThenElse
+                                                    (Var "x",Var "x",
+                                                     Some
+                                                       (App (Var "f",Var "rollTarget"))))))]),
+                                   Value (ParamArray []))])]);
                     Value (ParamArray [Value (Str "RANGE"); Value (Str "24\"")]);
                     Value (ParamArray [Value (Str "TYPE"); Value (Str "Assault 6")]);
                     Value (ParamArray [Value (Str "S"); Value (Str "7")]);

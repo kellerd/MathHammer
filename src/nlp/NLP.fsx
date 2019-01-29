@@ -120,6 +120,7 @@ and Call =
     | ToDist
     | And
     | Or
+    | Not
     | Max
     | Min
     | Sub
@@ -516,7 +517,6 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
                                                                                    BasicNode (_, _,
                                                                                         [BasicNode (Some CD, NodeInfo (Word (_,rerollWith),_),[])])])]
                                                         ); inExpr] ->
-                    printfn "Reroll %A" rerollWith
                     let reroll = 
                         Lam("rollTarget",
                             Let("f", Var(typeOfRoll), 
@@ -528,6 +528,22 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
                     let rerollWord = [BasicNode (Some VB, NodeInfo(Word(op, reroll),0),[])]      
 
                     Assignment(penTags, typeOfRoll, rerollWord, [inExpr])
+                | AllTagged [VB;NP] [ AsText (Some VB) ("re-roll" as t); 
+                                      BasicNode (_, _, 
+                                            AllTagged [NP;PP] [ BasicNode (_, _, [ AsText (Some VBN) "failed"; AsText (Some NN) typeOfRoll]);
+                                                                BasicNode (_, _, [ AsText (Some IN) "for";
+                                                                                   BasicNode (_, _, thisWeapon)])]
+                                                        )] ->
+                    let reroll = 
+                        Lam("rollTarget",
+                            Let("f", Var(typeOfRoll), 
+                                Let("x", App(Var "f", Var "rollTarget"), 
+                                    IfThenElse(Var "x", Var "x", 
+                                            Some(App(Var "f", Var "rollTarget"))))))
+                    let rerollWord = [BasicNode (Some VB, NodeInfo(Word(op, reroll),0),[])]      
+
+                    Assignment(penTags, typeOfRoll, rerollWord, thisWeapon)
+                                                
                 | AllTagged [VB;S;SBAR] [AsText (Some VB) ("roll" as t); v; inExpr] -> 
                     Assignment(penTags, t, [v], [inExpr])
                 | AllTagged [VBP;NP;PP;SBAR] [ AsText (Some VBP) ("roll" as t)
@@ -552,7 +568,8 @@ let tree =
     //"Roll a D6 and count the results, then roll another D6 for each success."
     //"Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks."
     //"If the hit result is 6, count the result as two hits, otherwise thr attack fails"
-    "You can re-roll hit rolls of 1 for this weapon."
+    //"You can re-roll hit rolls of 1 for this weapon."
+     "You can re-roll failed wound rolls for this weapon"
     |> getTree
 tree
 |> Seq.toList
