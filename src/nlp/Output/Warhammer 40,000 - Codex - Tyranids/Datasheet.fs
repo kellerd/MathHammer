@@ -119,10 +119,6 @@ module Datasheet =
                                (ParamArray [Value (Str "impaler"); Value (Str "cannon")]))]);
                     Value
                       (ParamArray
-                         [Value (Str "Instinctive Behaviour (pg 82)");
-                          Value (ParamArray [Value (Str "")])]);
-                    Value
-                      (ParamArray
                          [Value
                             (Str
                                "Any model may replace its impaler cannon with a shockcannon.");
@@ -146,7 +142,11 @@ module Datasheet =
                             (Call Repeat,
                              Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
                           Value (Str "may have toxin and/or adrenal pg");
-                          Value (Int 113)])])])
+                          Value (Int 113)]);
+                    Value
+                      (ParamArray
+                         [Value (Str "Instinctive Behaviour (pg 82)");
+                          Value (ParamArray [Value (Str "")])])])])
     let ``TYRANT GUARD`` = 
         Value
           (ParamArray
@@ -358,23 +358,6 @@ module Datasheet =
                 (ParamArray
                    [Value
                       (ParamArray
-                         [Value
-                            (Str
-                               "Deathleaper is a single model armed with flesh hooks, grasping talons and rending claws. Only one of this model can be included in your army.");
-                          Value (Str "Deathleaper is");
-                          App
-                            (Value (Int 1),
-                             Value
-                               (ParamArray [Value (Str "single"); Value (Str "model")]));
-                          Value
-                            (Str "armed with flesh grasping and rending Only one of");
-                          App
-                            (Call Repeat,
-                             Value
-                               (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
-                          Value (Str "be included in your army")]);
-                    Value
-                      (ParamArray
                          [Value (Str "Superior Chameleonic Skin:");
                           Value
                             (ParamArray
@@ -496,7 +479,24 @@ module Datasheet =
                                    Value
                                      (ParamArray
                                         [Value (Str "battlefield");
-                                         Lam ("obj",Var "obj")]))])])])])
+                                         Lam ("obj",Var "obj")]))])]);
+                    Value
+                      (ParamArray
+                         [Value
+                            (Str
+                               "Deathleaper is a single model armed with flesh hooks, grasping talons and rending claws. Only one of this model can be included in your army.");
+                          Value (Str "Deathleaper is");
+                          App
+                            (Value (Int 1),
+                             Value
+                               (ParamArray [Value (Str "single"); Value (Str "model")]));
+                          Value
+                            (Str "armed with flesh grasping and rending Only one of");
+                          App
+                            (Call Repeat,
+                             Value
+                               (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
+                          Value (Str "be included in your army")])])])
     let ``LICTOR`` = 
         Value
           (ParamArray
@@ -504,21 +504,6 @@ module Datasheet =
               Value
                 (ParamArray
                    [Value
-                      (ParamArray
-                         [Value
-                            (Str
-                               "A Lictor is a single model  armed with flesh hooks, grasping talons and rending claws.");
-                          App
-                            (Call Repeat,
-                             Value
-                               (ParamArray [Value (Str "Lictor"); Lam ("obj",Var "obj")]));
-                          Value (Str "is");
-                          App
-                            (Value (Int 1),
-                             Value
-                               (ParamArray [Value (Str "single"); Value (Str "model")]));
-                          Value (Str "armed with flesh grasping and rending")]);
-                    Value
                       (ParamArray
                          [Value (Str "Chameleonic Skin:");
                           Value
@@ -609,7 +594,22 @@ module Datasheet =
                                    Value
                                      (ParamArray
                                         [Value (Str "battlefield");
-                                         Lam ("obj",Var "obj")]))])])])])
+                                         Lam ("obj",Var "obj")]))])]);
+                    Value
+                      (ParamArray
+                         [Value
+                            (Str
+                               "A Lictor is a single model  armed with flesh hooks, grasping talons and rending claws.");
+                          App
+                            (Call Repeat,
+                             Value
+                               (ParamArray [Value (Str "Lictor"); Lam ("obj",Var "obj")]));
+                          Value (Str "is");
+                          App
+                            (Value (Int 1),
+                             Value
+                               (ParamArray [Value (Str "single"); Value (Str "model")]));
+                          Value (Str "armed with flesh grasping and rending")])])])
     let ``MALECEPTOR`` = 
         Value
           (ParamArray
@@ -792,23 +792,6 @@ module Datasheet =
                 (ParamArray
                    [Value
                       (ParamArray
-                         [Value
-                            (Str
-                               "This unit contains 3 Zoanthropes. It can include up to 3 additional Zoanthropes (Power Rating +2 per model) . Each model is armed with claws and teeth.");
-                          App
-                            (Call Repeat,
-                             Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-                          Value (Str "contains"); Value (Int 3);
-                          Value (Str "It include up to"); Value (Int 3);
-                          Value (Str "additional Power Rating"); Value (Int 2);
-                          Value (Str "per model");
-                          App
-                            (Call Repeat,
-                             Value
-                               (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
-                          Value (Str "is armed with and")]);
-                    Value
-                      (ParamArray
                          [Value (Str "Shadow in the Warp");
                           Value (ParamArray [Value (Str "")])]);
                     Value
@@ -882,54 +865,6 @@ module Datasheet =
                       (ParamArray
                          [Value
                             (Str
-                               "A unit of Zoanthropes can attempt to manifest one psychic power in each friendly Psychic phase, and attempt to deny one psychic power in each enemy Psychic phase. A Zoanthrope unit of 4 or more models can instead attempt to manifest two psychic powers in each friendly Psychic phase, and attempt to deny one psychic power in each enemy Psychic phase. A Zoanthrope unit knows the Smite  psychic power and one psychic power from the Hive Mind discipline (pg 121).");
-                          App
-                            (Call Repeat,
-                             Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
-                          Value
-                            (Str
-                               "of Zoanthropes attempt to manifest one psychic power in");
-                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-                          Value
-                            (Str
-                               "friendly Psychic phase and attempt to deny one psychic power in");
-                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-                          Var "Target"; Value (Str "Psychic phase");
-                          App
-                            (Lam ("obj",Var "obj"),
-                             Value (ParamArray [Value (Str "Zoanthrope"); Var "Target"]));
-                          Value (Str "of"); Value (Int 4);
-                          Value
-                            (Str "or more instead attempt to manifest two psychic in");
-                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-                          Value
-                            (Str
-                               "friendly Psychic phase and attempt to deny one psychic power in");
-                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
-                          Var "Target"; Value (Str "Psychic phase");
-                          App
-                            (Lam ("obj",Var "obj"),
-                             Value (ParamArray [Value (Str "Zoanthrope"); Var "Target"]));
-                          Value (Str "knows");
-                          App
-                            (Lam ("obj",Var "obj"),
-                             Value
-                               (ParamArray
-                                  [Value (Str "Smite"); Value (Str "psychic");
-                                   Value (Str "power"); Value (Str "and");
-                                   Value (Str "one"); Value (Str "psychic");
-                                   Value (Str "power")])); Value (Str "from");
-                          App
-                            (Lam ("obj",Var "obj"),
-                             Value
-                               (ParamArray
-                                  [Value (Str "Hive"); Value (Str "Mind");
-                                   Value (Str "discipline")])); Value (Str "pg");
-                          Value (Int 121)]);
-                    Value
-                      (ParamArray
-                         [Value
-                            (Str
                                "When manifesting or denying a psychic power with a Zoanthrope unit, first select a model in the unit – measure range, visibility etc. from this model. If this unit suffers Perils of the Warp, it suffers D3 mortal wounds as described in the core rules, but units within 6\" will only suffer damage if the Perils of the Warp causes the last model in the Zoanthrope unit to be slain.");
                           Value (Str "When manifesting or denying");
                           App
@@ -988,7 +923,72 @@ module Datasheet =
                           App
                             (Lam ("obj",Var "obj"),
                              Value (ParamArray [Value (Str "Zoanthrope"); Var "Target"]));
-                          Value (Str "to be slain")])])])
+                          Value (Str "to be slain")]);
+                    Value
+                      (ParamArray
+                         [Value
+                            (Str
+                               "A unit of Zoanthropes can attempt to manifest one psychic power in each friendly Psychic phase, and attempt to deny one psychic power in each enemy Psychic phase. A Zoanthrope unit of 4 or more models can instead attempt to manifest two psychic powers in each friendly Psychic phase, and attempt to deny one psychic power in each enemy Psychic phase. A Zoanthrope unit knows the Smite  psychic power and one psychic power from the Hive Mind discipline (pg 121).");
+                          App
+                            (Call Repeat,
+                             Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+                          Value
+                            (Str
+                               "of Zoanthropes attempt to manifest one psychic power in");
+                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                          Value
+                            (Str
+                               "friendly Psychic phase and attempt to deny one psychic power in");
+                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                          Var "Target"; Value (Str "Psychic phase");
+                          App
+                            (Lam ("obj",Var "obj"),
+                             Value (ParamArray [Value (Str "Zoanthrope"); Var "Target"]));
+                          Value (Str "of"); Value (Int 4);
+                          Value
+                            (Str "or more instead attempt to manifest two psychic in");
+                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                          Value
+                            (Str
+                               "friendly Psychic phase and attempt to deny one psychic power in");
+                          Lam ("obj",App (Call Count,Value (ParamArray [Var "obj"])));
+                          Var "Target"; Value (Str "Psychic phase");
+                          App
+                            (Lam ("obj",Var "obj"),
+                             Value (ParamArray [Value (Str "Zoanthrope"); Var "Target"]));
+                          Value (Str "knows");
+                          App
+                            (Lam ("obj",Var "obj"),
+                             Value
+                               (ParamArray
+                                  [Value (Str "Smite"); Value (Str "psychic");
+                                   Value (Str "power"); Value (Str "and");
+                                   Value (Str "one"); Value (Str "psychic");
+                                   Value (Str "power")])); Value (Str "from");
+                          App
+                            (Lam ("obj",Var "obj"),
+                             Value
+                               (ParamArray
+                                  [Value (Str "Hive"); Value (Str "Mind");
+                                   Value (Str "discipline")])); Value (Str "pg");
+                          Value (Int 121)]);
+                    Value
+                      (ParamArray
+                         [Value
+                            (Str
+                               "This unit contains 3 Zoanthropes. It can include up to 3 additional Zoanthropes (Power Rating +2 per model) . Each model is armed with claws and teeth.");
+                          App
+                            (Call Repeat,
+                             Value (ParamArray [Var "Target"; Lam ("obj",Var "obj")]));
+                          Value (Str "contains"); Value (Int 3);
+                          Value (Str "It include up to"); Value (Int 3);
+                          Value (Str "additional Power Rating"); Value (Int 2);
+                          Value (Str "per model");
+                          App
+                            (Call Repeat,
+                             Value
+                               (ParamArray [Value (Str "model"); Lam ("obj",Var "obj")]));
+                          Value (Str "is armed with and")])])])
     let ``VENOMTHROPES`` = 
         Value
           (ParamArray
