@@ -8,6 +8,7 @@ let normalize v =
     |> Seq.map (fun (k, vals) -> 
            if total > 1.0 then k, Seq.sumBy snd vals / total
            else k, Seq.sumBy snd vals)
+    |> Seq.sortByDescending fst
     |> Seq.toList
 
 type Probability = double
@@ -264,13 +265,13 @@ module Example =
             return sprintf "%d:%d" (2 - defensivLosses) defensivLosses
         }
 
-    <@ dist {
-        let f() = uniformDistribution [1..6]         
-        let! x = f()
-        let! y = f() 
-        let z = 
-            if x = 1 then x
-            else y
-        return z
-    } @>
+    // <@ dist {
+    //     let f() = uniformDistribution [1..6]         
+    //     let! x = f()
+    //     let! y = f() 
+    //     let z = 
+    //         if x = 1 then x
+    //         else y
+    //     return z
+    // } @>
 
