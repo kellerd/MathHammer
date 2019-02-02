@@ -578,7 +578,8 @@ let tree =
     //"Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks."
     //"If the hit result is 6, count the result as two hits, otherwise thr attack fails"
     //"You can re-roll hit rolls of 1 for this weapon."
-     "In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls."
+    //"In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls."
+     "Each time you make a wound roll of 6+ for this weapon, the target unit suffers a mortal wound in addition to any other damage."
     |> getTree
 tree
 |> Seq.toList
