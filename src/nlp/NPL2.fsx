@@ -148,14 +148,20 @@ let (|DValue|_|) s =
     | "6"  -> Some 6
     | _ -> None
 
-let (|TryInteger|_|) n = 
-    match System.Int32.TryParse(n) with 
-    | true, n -> Some n 
-    | false, _ -> None
-let (|TryFloat|_|) n = 
-    match System.Double.TryParse(n) with 
-    | true, n -> Some n 
-    | false, _ -> None
+let (|TryInteger|_|) op =
+    match op with 
+    | Value(Str(n)) -> 
+        match System.Int32.TryParse(n) with 
+        | true, n -> Some n 
+        | false, _ -> None
+    | _ -> None
+let (|TryFloat|_|) op =
+    match op with 
+    | Value(Str(n)) -> 
+        match System.Double.TryParse(n) with 
+        | true, n -> Some n 
+        | false, _ -> None
+    | _ -> None
 let (|IsOperation|_|) = fun n -> match n with 
                                        | BasicNode(_, NodeInfo(Word (t, op), _), []) -> Some (t,op) 
                                        |  BasicNode
@@ -275,12 +281,73 @@ let roll = panyUntiltag NNP "Roll"
 let a = panyUntil "a"
 let d6 = panyUntil "D6"
 let sentence = roll .>>. a .>>. d6 <?> "Roll a d6"
-let toText = function _, Some text -> Str text |> Value |> Some | _ -> None
-
-let parsedExpression = many pany
-
-run sentence trees
+type Parsed = Tag of PennTreebankIITags | Op of Operation
+let toTag = function 
+    | None, Some text -> 
+        Str text |> Value |> Op 
+    | Some tag, None -> 
+        Tag tag
+    | None, None -> 
+        NoValue |> Value |> Op
+    | Some tag, Some text -> 
+        Str text |> Value |> Op
+let reduceToOperation lst =
+    let newList, state = 
+        List.mapFold (fun (tag,prevText) parsed ->
+            printfn "Tag: %A, prevText: %A, parsed: %A" tag prevText parsed
+            let log (result,(stateTag,newState)) = printfn "Result: %A, NextTag %A, NextStage; %A" result stateTag newState; (result,(stateTag,newState))
+            match parsed with
+            | Op(op) -> Some(op), (tag, None)
+            | Tag(newTag) -> None, (Some newTag, None)
+            |> log
+        ) (Some ROOT, None) lst
+    match state with 
+    | _, Some op -> op :: newList |> List.choose id
+    | _ -> newList |> List.choose id
+    |> function 
+    | [op] -> op
+    | ops -> ops |> ParamArray |> Value
+    
+let parsedExpression =  many (pany |> mapP toTag) |> mapP (reduceToOperation)
+run parsedExpression trees
 debug it
+
+
+        // let defaultNewOp accOp = 
+        //     match tag, parsed with 
+        //     | Some CD, Op(TryInteger n) -> Value(Int n) , (tag, None)
+        //     | Some CD, Op(TryFloat n)   -> Value(Float n), (tag, None)
+        //     | _, Op(newOperation)-> Some([accOp; newOperation;]), (tag, None)
+        //     | _, Tag(newTag) -> Some([accOp]), (newTag, None)
+        // match parsed, prevText with
+        // | Tag (SentenceCloser | Comma | EQT | Punctuation ) , Some(Value(Str(acc)) as accOp) ->
+        //     match newOperation with 
+        //     | Some(Value(Str(s))) -> 
+        //         let s' = sprintf "%s%s" acc s
+        //         let newText = Value(Str(s'))
+        //         None, (tag, Some newText)
+        // | Op(Value(Str(s))), Some(Value(Str(acc))) ->
+        //     let s' = sprintf "%s%s" acc s
+        //     let newText = Value(Str(s'))
+        //     None, (tag, Some newText)
+        // | Tag EQT, Some(Value(Int(n))) -> 
+        //     None, (Some EQT,Some(Value(Distance(n))))
+        //  | _, Some(Value(Int(n)) as accOp) ->
+        //     let newDistance = 
+        //         Value(Distance(n))
+        //     Some([newDistance; defaultNewOp tag newOperation;]), (Some EQT, None)
+        // | _, Some(accOp) ->
+        //     Some([accOp;defaultNewOp tag newOperation;]), (newTag, None)
+        // | Some tag, None -> None, (Some tag, None)
+        // | None, None ->
+        //     match defaultNewOp tag newOperation with 
+        //     | Value(Int(_) | Str(_) as op) ->
+        //         None, (tag, Some (Value(op)))
+        //     | op ->
+        //         Some [op], (tag, None)
+
+
+
 
 // /// Choose any of a list of characters
 // let anyOf listOfChars = 
