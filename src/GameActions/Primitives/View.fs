@@ -32,6 +32,7 @@ let unparseDist unparseValue (dist : Distribution.Distribution<GamePrimitive>) =
         dist.Probabilities
         |> List.groupBy fst
         |> List.map (fun (f, probs) -> f, List.sumBy snd probs)
+        |> List.sortBy fst
     match result with
     | [] -> str ""
     | _ -> 
