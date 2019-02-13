@@ -308,7 +308,7 @@ let sentence = roll .>>. a .>>. d6 <?> "Roll a d6"
 
 let reduceToOperation lst =
     let newList, state = 
-        List.mapFoldBack (fun parsed (tag,prevText)  ->
+        List.mapFold (fun  (tag,prevText) parsed ->
             printfn "Tag: %A, prevText: %A, parsed: %A" tag prevText parsed
             let log (result,(stateTag,newState)) = printfn "=====> Result: %A, NextTag: %A, NextStage: %A" result stateTag newState; (result,(stateTag,newState))
             match parsed with
@@ -318,14 +318,14 @@ let reduceToOperation lst =
                     Some (SentenceCloser | Comma | EQT | Punctuation ) -> ""
                     | _ -> " "
                 match prevText with 
-                | Some acc -> [], (tag, Some (sprintf "%s%s%s" s space acc))
+                | Some acc -> [], (tag, Some (sprintf "%s%s%s" acc space s))
                 | None ->     [], (tag, Some s)
-            | Op(op) ->        op :: (Option.map(Str >> Value) prevText |> Option.toList), (tag, None)
+            | Op(op) ->        (Option.map(Str >> Value) prevText |> Option.toList) @ [op], (tag, None)
             | Tag(newTag) ->         [],  (Some newTag, prevText)
             |> log
-        ) lst (Some ROOT, None) 
+        )  (Some ROOT, None) lst
     match state with 
-    | _, Some op -> [Value(Str(op))] :: newList |> List.collect id
+    | _, Some op -> newList  @ [[Value(Str(op))]]  |> List.collect id
     | _ -> newList |> List.collect id
     |> function 
     | [op] -> op
@@ -362,6 +362,11 @@ let mapInt p = mapP (fun (f : int) -> Op(Value(Int(f)))) p
 let mapFloat p = mapP (fun (f : float) -> Op(Value(Float(f)))) p  
 let mapStr p =   mapP (fun (s : string) -> Op(Value(Str(s)))) p   
 let mapDice n p = mapP (fun _ -> Op(App(Call Dice, Value(Int n)))) p
+let mapVar v p = mapP (fun _ -> Op(Var(v))) p
+let mapText t p = mapP (fun _ -> Op(Value(Str(t)))) p
+
+
+
 let pdistance =  
     let combinedMatch = pint .>> (ppen NN <|> ppen EQT) .>> pstr "''" |> mapP (fun n -> Op(Value(Distance(n))))
 
@@ -373,6 +378,7 @@ let pdistance =
 let numbers = 
     let combinedMatch = pdistance <|> mapInt pint <|> mapFloat pfloat
     let input = [fromStr "12''" |> List.head |> advance 
+                 fromStr "12\"" |> List.head |> advance 
                  fromStr "12"   |> List.head |> advance |> advance 
                  fromStr "12.5" |> List.head |> advance |> advance ]
     let d = input |> List.map debug 
@@ -401,10 +407,31 @@ let D =
     let d = input |> List.map debug 
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
-let token = D <|> numbers <|> words
-let parsedExpression =  many token |> mapP (reduceToOperation)
+let variables = 
+    choice [
+        sequence [ ppen NN; pstr "enemy" |> mapStr ; ppen NN; pstr "unit" |> mapStr ]  |> mapVar "unit"
+        ppen NN >>. (pstr "unit" <|> pstr "enemy") |> mapVar "Target"
+    ]
+let keywords = 
+    choice [
+        sequence [ ppen JJ; pstr "mortal" |> mapStr ; ppen NN; pstr "wound" |> mapStr ]  |> mapText "Mortal Wound"
+        sequence [ ppen NN; pstr "hit" |> mapStr ; ppen NNS; (pstr "roll" <|> pstr "rolls") |> mapStr  ]  |> mapText  "Hit Roll"
+        sequence [ ppen NN; pstr "wound" |> mapStr ; ppen NNS; (pstr "roll" <|> pstr "rolls") |> mapStr  ]  |> mapText  "Wound Roll"
+        ppen NN >>. pstr "Fight" .>> ppen NN .>> pstr "phase" |> mapP (fun phase -> ParamArray[ Value(Str("Phase")); Value (Str phase)] |> Value |> Op)
+    ]    
+let dPlus = 
+    let combinedMatch = pint .>> (ppen NNS <|> ppen NNP <|> ppen NN) .>> pstr "+" |> mapP (fun i -> gte i |> Op)
+    let input = [ fromStr "4+" |> List.head |> advance 
+                  fromStr "5+" |> List.head |> advance
+                  fromStr "7+" |> List.head |> advance 
+                  fromStr "+7" |> List.head |> advance ]
+    let d = input |> List.map debug 
+    let p = input |> List.map (run combinedMatch) 
+    combinedMatch
+let gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; words ]
+let parsedExpression =  many gamePrimitive |> mapP (reduceToOperation)
 let runP t = t |> List.map (log >> run parsedExpression) 
-let runAndPrint t = runP t |> List.iter (printResult debug) 
+let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
 fromStr "Roll a D6."  |> runAndPrint
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound."  |> runAndPrint
 fromStr "Roll a D6 and count the results, then roll another D6 for each success." |> runAndPrint
