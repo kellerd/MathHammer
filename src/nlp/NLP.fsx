@@ -248,22 +248,22 @@ let scanWords (treeN:Tree) =
     let convertNode node =     
         let word op = Word(node, op) 
         match node with 
-        | IsLabeled [EQT] _ -> Distance 0 |> Value |> word , 0        
-        | IsLabeled [NNP] ("D6"|"d6") 
-        | IsLabeled [NN] ("D6"|"d6") -> App(Call Dice, Value(Int 6)) |> word, 0
-        | IsLabeled [NNP] ("D3"|"d3") 
-        | IsLabeled [NN] ("D3"|"d3") -> App(Call Dice, Value(Int 3)) |> word, 0
-        | IsLabeled [NN] ("enemy" | "unit") -> Var("Target") |> word, 0
-        | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
-        | Siblings [NN;NNS]  [(=) "hit";(=) "rolls"] skip
-        | Siblings [NN;NNS]  [(=) "hit";(=) "roll"] skip -> "Hit Roll" |> Str |> Value |> word, skip
-        | Siblings [NN;NNS]  [(=) "wound";(=) "rolls"] skip
-        | Siblings [NN;NNS]  [(=) "wound";(=) "roll"] skip -> "Wound Roll" |> Str |> Value |> word, skip
-        | Siblings [NN;NN]  [(=) "enemy";(=) "unit"] skip   -> Var("unit") |> word, skip
-        | Siblings [NN;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
-        | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
-        | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
-        | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
+   //     | IsLabeled [EQT] _ -> Distance 0 |> Value |> word , 0        
+  //      | IsLabeled [NNP] ("D6"|"d6") 
+   //     | IsLabeled [NN] ("D6"|"d6") -> App(Call Dice, Value(Int 6)) |> word, 0
+   //     | IsLabeled [NNP] ("D3"|"d3") 
+   //     | IsLabeled [NN] ("D3"|"d3") -> App(Call Dice, Value(Int 3)) |> word, 0
+   //     | IsLabeled [NN] ("enemy" | "unit") -> Var("Target") |> word, 0
+   //     | Siblings [JJ;NN]  [(=) "mortal";(=) "wound"] skip -> "Mortal Wound" |> Str |> Value |> word, skip
+   //     | Siblings [NN;NNS]  [(=) "hit";(=) "rolls"] skip
+   //     | Siblings [NN;NNS]  [(=) "hit";(=) "roll"] skip -> "Hit Roll" |> Str |> Value |> word, skip
+   //     | Siblings [NN;NNS]  [(=) "wound";(=) "rolls"] skip
+   //     | Siblings [NN;NNS]  [(=) "wound";(=) "roll"] skip -> "Wound Roll" |> Str |> Value |> word, skip
+   //     | Siblings [NN;NN]  [(=) "enemy";(=) "unit"] skip   -> Var("unit") |> word, skip
+  //      | Siblings [NN;NN]  [(=) "Fight";(=) "phase"] skip  -> (ParamArray[ Value(Str("Phase")); Value (Str "Fight")] |> Value |> word) , skip
+  //      | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
+  //      | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
+  //      | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
         | IsLabeled [DT] "a"      -> Value(Int(1)) |> word,0
         | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
         | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0

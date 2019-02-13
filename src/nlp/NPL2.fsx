@@ -277,7 +277,7 @@ let ppen tag =
     let label = sprintf "match: %A " tag
     let predicate (penTag,ch) = (penTag = Some tag && ch = None)
     satisfy predicate label
-    |> mapP toTag
+    |> mapP (fst >> Option.defaultValue ROOT)
 // /// parse a char 
 let pstr str = 
     // label is just the character
@@ -299,12 +299,12 @@ let f = Option.bind moveNext
 trees |> log
 trees.position |> Some |> f |> Option.map (fun n -> n.node.pennPrint())
 
-let panyUntiltag tag str =  manyUntil (ppen tag) (pnstr |> mapP toTag) |> mapP List.head >>. pstr str <?> (sprintf "%A : %s" tag str) 
-let panyUntil str = manyUntil (pstr str |> mapP (fun s -> None, Some s)) pnstr  |> mapP List.head <?> (sprintf ".* %s"  str) 
-let roll = panyUntiltag NNP "Roll"
-let a = panyUntil "a"
-let d6 = panyUntil "D6"
-let sentence = roll .>>. a .>>. d6 <?> "Roll a d6"
+// let panyUntiltag tag str =  manyUntil (ppen tag) (pnstr |> mapP toTag) |> mapP List.head >>. pstr str <?> (sprintf "%A : %s" tag str) 
+// let panyUntil str = manyUntil (pstr str |> mapP (fun s -> None, Some s)) pnstr  |> mapP List.head <?> (sprintf ".* %s"  str) 
+// let roll = panyUntiltag NNP "Roll"
+// let a = panyUntil "a"
+// let d6 = panyUntil "D6"
+// let sentence = roll .>>. a .>>. d6 <?> "Roll a d6"
 
 let reduceToOperation lst =
     let newList, state = 
@@ -364,8 +364,8 @@ let mapStr p =   mapP (fun (s : string) -> Op(Value(Str(s)))) p
 let mapDice n p = mapP (fun _ -> Op(App(Call Dice, Value(Int n)))) p
 let mapVar v p = mapP (fun _ -> Op(Var(v))) p
 let mapText t p = mapP (fun _ -> Op(Value(Str(t)))) p
-
-
+let mapUnit p = mapP (fun _ -> ()) p
+let mapOp op p = mapP (fun _ -> Op(op)) p
 
 let pdistance =  
     let combinedMatch = pint .>> (ppen NN <|> ppen EQT) .>> pstr "''" |> mapP (fun n -> Op(Value(Distance(n))))
@@ -376,7 +376,9 @@ let pdistance =
     let p = input |> List.map (run combinedMatch)
     combinedMatch     
 let numbers = 
-    let combinedMatch = pdistance <|> mapInt pint <|> mapFloat pfloat
+    let combinedMatch = choice [ pdistance 
+                                 mapInt pint
+                                 mapFloat pfloat ]
     let input = [fromStr "12''" |> List.head |> advance 
                  fromStr "12\"" |> List.head |> advance 
                  fromStr "12"   |> List.head |> advance |> advance 
@@ -384,8 +386,14 @@ let numbers =
     let d = input |> List.map debug 
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
+let determiner =  
+    choice [
+        ppen DT >>. pstr "a"  |> mapOp (Value(Int(1))) 
+        ppen DT >>. pstr "each" |> mapOp (Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))))
+        ppen DT |> mapOp (Lam("obj", Var "obj"))
+    ]   
 let words = 
-    let combinedMatch = pany |> mapP toTag
+    let combinedMatch = determiner <|> (pany |> mapP toTag)
     let input = [fromStr "12''" |> List.head |> advance  |> advance 
                  fromStr "12"   |> List.head |> advance  |> advance |> advance
                  fromStr "12.5" |> List.head |> advance  |> advance |> advance ]
@@ -409,18 +417,20 @@ let D =
     combinedMatch
 let variables = 
     choice [
-        sequence [ ppen NN; pstr "enemy" |> mapStr ; ppen NN; pstr "unit" |> mapStr ]  |> mapVar "unit"
+        sequence [ ppen NN |> mapP Tag; pstr "enemy" |> mapStr ; ppen NN |> mapP Tag; pstr "unit" |> mapStr ]  |> mapVar "unit"
         ppen NN >>. (pstr "unit" <|> pstr "enemy") |> mapVar "Target"
     ]
 let keywords = 
     choice [
-        sequence [ ppen JJ; pstr "mortal" |> mapStr ; ppen NN; pstr "wound" |> mapStr ]  |> mapText "Mortal Wound"
-        sequence [ ppen NN; pstr "hit" |> mapStr ; ppen NNS; (pstr "roll" <|> pstr "rolls") |> mapStr  ]  |> mapText  "Hit Roll"
-        sequence [ ppen NN; pstr "wound" |> mapStr ; ppen NNS; (pstr "roll" <|> pstr "rolls") |> mapStr  ]  |> mapText  "Wound Roll"
+        sequence [ ppen JJ |> mapUnit; pstr "mortal" |> mapUnit ; ppen NN  |> mapUnit;  pstr "wound" |> mapUnit ]  |> mapText "Mortal Wound"
+        sequence [ ppen NN |> mapUnit; pstr "hit"    |> mapUnit ; ppen NNS |> mapUnit; (pstr "roll" <|> pstr "rolls") |> mapUnit  ]  |> mapText  "Hit Roll"
+        sequence [ ppen NN |> mapUnit; pstr "wound"  |> mapUnit ; ppen NNS |> mapUnit; (pstr "roll" <|> pstr "rolls") |> mapUnit  ]  |> mapText  "Wound Roll"
         ppen NN >>. pstr "Fight" .>> ppen NN .>> pstr "phase" |> mapP (fun phase -> ParamArray[ Value(Str("Phase")); Value (Str phase)] |> Value |> Op)
     ]    
+let actions = 
+    ppen VBZ >>. pstr "suffers" |> mapOp (Call Suffer)    
 let dPlus = 
-    let combinedMatch = pint .>> (ppen NNS <|> ppen NNP <|> ppen NN) .>> pstr "+" |> mapP (fun i -> gte i |> Op)
+    let combinedMatch = pint .>> (ppen NNS <|> ppen NNP <|> ppen NN) .>> pstr "+" |> mapP (gte >> Op)
     let input = [ fromStr "4+" |> List.head |> advance 
                   fromStr "5+" |> List.head |> advance
                   fromStr "7+" |> List.head |> advance 
@@ -428,7 +438,7 @@ let dPlus =
     let d = input |> List.map debug 
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
-let gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; words ]
+let gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; actions; words ]
 let parsedExpression =  many gamePrimitive |> mapP (reduceToOperation)
 let runP t = t |> List.map (log >> run parsedExpression) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
