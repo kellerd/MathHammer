@@ -219,8 +219,9 @@ let returnP x =
     {parseFn=innerFn; label=label}
 
 /// apply a function to the value inside a parser
-let mapP f = 
-    bindP (f >> returnP)
+let mapP f p = 
+    let label = getLabel p 
+    bindP (f >> returnP) p <?> label
 
 /// infix version of mapP
 let ( <!> ) = mapP

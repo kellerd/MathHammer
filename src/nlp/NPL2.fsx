@@ -193,12 +193,13 @@ type InputState = {
 }
 
 /// Create a new InputState from a string
-let rec fromTree str = 
+let rec fromStr str = 
     getTree str
     |> Seq.map (fun t -> { position = initTree t })
+    |> List.ofSeq
 
 let tree = 
-    let t  = fromTree "Roll a D6" |> Seq.head
+    let t  = fromStr "Roll a D6" |> Seq.head
     t.position.node.children().[0]
 tree.pennPrint()
 
@@ -237,50 +238,8 @@ let nextNode input =
 // // =============================================
 // // Standard parsers 
 // // =============================================
-
-let satisfy = ParseLibrary.satisfy nextNode
-
-// // ------------------------------
-// // string parsing
-// // ------------------------------
-let pnstr = 
-    let label = sprintf "any match "
-    let predicate (_,ch) = (ch = None)
-    satisfy predicate label
-let ppen tag = 
-    let label = sprintf "match: %A " tag
-    let predicate (penTag,ch) = (penTag = Some tag && ch = None)
-    satisfy predicate label
-// /// parse a char 
-let pstr str = 
-    // label is just the character
-    let label = sprintf "%s" str 
-
-    let predicate (_,ch) = (ch = Some str) 
-    satisfy predicate label 
-
-let pany = 
-    satisfy (fun _ -> true) "any"
-
 open ParseLibrary
-let debug it = 
-    match it with 
-    | Success(_, it) -> 
-        it.position.node.pennPrint()
-    | Failure (label,err,it) ->
-        it.node.position.node.pennPrint()
 
-let trees = fromTree "Roll a D6" |> Seq.head
-trees.position.node.pennPrint()
-let f = Option.bind moveNext
-trees.position |> Some |> f |> Option.map (fun n -> n.node.pennPrint())
-
-let panyUntiltag tag str =  manyUntil (ppen tag) pnstr |> mapP List.head >>. pstr str <?> (sprintf "%A : %s" tag str) 
-let panyUntil str = manyUntil (pstr str) pnstr  |> mapP List.head <?> (sprintf ".* %s"  str) 
-let roll = panyUntiltag NNP "Roll"
-let a = panyUntil "a"
-let d6 = panyUntil "D6"
-let sentence = roll .>>. a .>>. d6 <?> "Roll a d6"
 type Parsed = Tag of PennTreebankIITags | Op of Operation
 let toTag = function 
     | None, Some text -> 
@@ -291,26 +250,153 @@ let toTag = function
         NoValue |> Value |> Op
     | Some tag, Some text -> 
         Str text |> Value |> Op
+let toSafeOp f = function 
+    | None, Some text -> 
+        f text |> Op 
+    | Some tag, None -> 
+        Tag tag
+    | None, None -> 
+        NoValue |> Value |> Op
+    | Some tag, Some text -> 
+        Str text |> Value |> Op
+let satisfy = ParseLibrary.satisfy nextNode
+
+// // ------------------------------
+// // string parsing
+// // ------------------------------
+let pnstr = 
+    let label = sprintf "any match "
+    let predicate (tag,ch) = (ch = None)
+    satisfy predicate label
+let panystr = 
+    let label = sprintf "any match "
+    let predicate (_,ch) = (Option.isSome ch)
+    satisfy predicate label
+    |> mapP (function (_,Some t) -> t | _ -> "")
+let ppen tag = 
+    let label = sprintf "match: %A " tag
+    let predicate (penTag,ch) = (penTag = Some tag && ch = None)
+    satisfy predicate label
+    |> mapP toTag
+// /// parse a char 
+let pstr str = 
+    // label is just the character
+    let label = sprintf "%s" str 
+
+    let predicate (_,ch) = (ch = Some str) 
+    satisfy predicate label 
+    |> mapP (function (_,Some t) -> t | _ -> "")
+
+let pany = 
+    satisfy (fun _ -> true) "any"
+
+let debug it = 
+        it.position.node.pennString().Trim()
+
+let trees = fromStr "Roll a D6" |> Seq.head
+let log trees = trees.position.node.pennPrint(); trees
+let f = Option.bind moveNext
+trees |> log
+trees.position |> Some |> f |> Option.map (fun n -> n.node.pennPrint())
+
+let panyUntiltag tag str =  manyUntil (ppen tag) (pnstr |> mapP toTag) |> mapP List.head >>. pstr str <?> (sprintf "%A : %s" tag str) 
+let panyUntil str = manyUntil (pstr str |> mapP (fun s -> None, Some s)) pnstr  |> mapP List.head <?> (sprintf ".* %s"  str) 
+let roll = panyUntiltag NNP "Roll"
+let a = panyUntil "a"
+let d6 = panyUntil "D6"
+let sentence = roll .>>. a .>>. d6 <?> "Roll a d6"
+
 let reduceToOperation lst =
     let newList, state = 
         List.mapFold (fun (tag,prevText) parsed ->
             printfn "Tag: %A, prevText: %A, parsed: %A" tag prevText parsed
-            let log (result,(stateTag,newState)) = printfn "Result: %A, NextTag %A, NextStage; %A" result stateTag newState; (result,(stateTag,newState))
+            let log (result,(stateTag,newState)) = printfn "=====> Result: %A, NextTag: %A, NextStage: %A" result stateTag newState; (result,(stateTag,newState))
             match parsed with
-            | Op(op) -> Some(op), (tag, None)
-            | Tag(newTag) -> None, (Some newTag, None)
+            | Op(Value(Str(s))) -> 
+                let space = 
+                    match tag with 
+                    Some (SentenceCloser | Comma | EQT | Punctuation ) -> ""
+                    | _ -> " "
+                match prevText with 
+                | Some acc -> [], (tag, Some (sprintf "%s%s%s" acc space s))
+                | None ->     [], (tag, Some s)
+            | Op(op) ->        op :: (Option.map(Str >> Value) prevText |> Option.toList), (tag, None)
+            | Tag(newTag) ->         [],  (Some newTag, prevText)
             |> log
         ) (Some ROOT, None) lst
     match state with 
-    | _, Some op -> op :: newList |> List.choose id
-    | _ -> newList |> List.choose id
+    | _, Some op -> [Value(Str(op))] :: newList |> List.collect id
+    | _ -> newList |> List.collect id
     |> function 
     | [op] -> op
     | ops -> ops |> ParamArray |> Value
-    
-let parsedExpression =  many (pany |> mapP toTag) |> mapP (reduceToOperation)
-run parsedExpression trees
-debug it
+
+let advance tree = 
+    tree.position 
+    |> Some 
+    |> f 
+    |> Option.map (fun p -> {tree with position = p})
+    |> Option.defaultValue tree
+
+let pint = 
+    let matchInteger = 
+        satisfy (function (_,Some ch) -> System.Int32.TryParse(ch) |> fst | _ -> false) "integer "
+        |> mapP (function (_,Some s) -> System.Int32.Parse(s) | _ -> 0)
+    let combinedMatch = ppen CD >>. matchInteger
+
+    let input = fromStr "12" |> List.head |> advance |> advance 
+    let d = input |> debug 
+    let p = run combinedMatch input 
+    combinedMatch 
+let pfloat = 
+    let matchFloat = 
+        satisfy (function (_,Some ch) -> System.Double.TryParse(ch) |> fst | _ -> false) "float "
+        |> mapP (function (_,Some s) -> System.Double.Parse(s) | _ -> 0.0)
+    let combinedMatch = ppen CD >>. matchFloat
+
+    let input = fromStr "12.5" |> List.head |> advance |> advance 
+    let d = input |> debug 
+    let p = run combinedMatch input 
+    combinedMatch   
+let mapInt p = mapP (fun (f : int) -> Op(Value(Int(f)))) p
+let mapFloat p = mapP (fun (f : float) -> Op(Value(Float(f)))) p  
+let mapStr p =   mapP (fun (s : string) -> Op(Value(Str(s)))) p   
+let pdistance =  
+    let combinedMatch = pint .>> ppen NN .>> pstr "''" |> mapP (fun n -> Op(Value(Distance(n))))
+
+    let input = fromStr "1''" |> List.head |> advance 
+    let d = input |> debug 
+    let p = run combinedMatch input 
+    combinedMatch     
+let numbers = 
+    let combinedMatch = pdistance <|> mapInt pint <|> mapFloat pfloat
+    let input = [fromStr "12''" |> List.head |> advance 
+                 fromStr "12"   |> List.head |> advance |> advance 
+                 fromStr "12.5" |> List.head |> advance |> advance ]
+    let d = input |> List.map debug 
+    let p = input |> List.map (run combinedMatch) 
+    combinedMatch
+let words = 
+    let combinedMatch = pany |> mapP toTag
+    let input = [fromStr "12''" |> List.head |> advance  |> advance 
+                 fromStr "12"   |> List.head |> advance  |> advance |> advance
+                 fromStr "12.5" |> List.head |> advance  |> advance |> advance ]
+    let d = input |> List.map debug 
+    let p = input |> List.map (run combinedMatch) 
+    combinedMatch
+
+
+let parsedExpression =  many (numbers <|> words) |> mapP (reduceToOperation)
+let runP t = t |> List.map (log >> run parsedExpression) 
+let runAndPrint t = runP t |> List.iter (printResult debug) 
+fromStr "Roll a D6."  |> runAndPrint
+fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound."  |> runAndPrint
+fromStr "Roll a D6 and count the results, then roll another D6 for each success." |> runAndPrint
+fromStr "Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks." |> runAndPrint
+fromStr "If the hit result is 6, count the result as two hits, otherwise thr attack fails" |> runAndPrint
+fromStr "You can re-roll hit rolls of 1 for this weapon." |> runAndPrint
+fromStr "In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls." |> runAndPrint
+fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit suffers a mortal wound in addition to any other damage." |> runAndPrint
 
 
         // let defaultNewOp accOp = 
