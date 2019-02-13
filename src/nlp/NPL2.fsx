@@ -308,7 +308,7 @@ let sentence = roll .>>. a .>>. d6 <?> "Roll a d6"
 
 let reduceToOperation lst =
     let newList, state = 
-        List.mapFold (fun (tag,prevText) parsed ->
+        List.mapFoldBack (fun parsed (tag,prevText)  ->
             printfn "Tag: %A, prevText: %A, parsed: %A" tag prevText parsed
             let log (result,(stateTag,newState)) = printfn "=====> Result: %A, NextTag: %A, NextStage: %A" result stateTag newState; (result,(stateTag,newState))
             match parsed with
@@ -318,12 +318,12 @@ let reduceToOperation lst =
                     Some (SentenceCloser | Comma | EQT | Punctuation ) -> ""
                     | _ -> " "
                 match prevText with 
-                | Some acc -> [], (tag, Some (sprintf "%s%s%s" acc space s))
+                | Some acc -> [], (tag, Some (sprintf "%s%s%s" s space acc))
                 | None ->     [], (tag, Some s)
             | Op(op) ->        op :: (Option.map(Str >> Value) prevText |> Option.toList), (tag, None)
             | Tag(newTag) ->         [],  (Some newTag, prevText)
             |> log
-        ) (Some ROOT, None) lst
+        ) lst (Some ROOT, None) 
     match state with 
     | _, Some op -> [Value(Str(op))] :: newList |> List.collect id
     | _ -> newList |> List.collect id
@@ -361,12 +361,14 @@ let pfloat =
 let mapInt p = mapP (fun (f : int) -> Op(Value(Int(f)))) p
 let mapFloat p = mapP (fun (f : float) -> Op(Value(Float(f)))) p  
 let mapStr p =   mapP (fun (s : string) -> Op(Value(Str(s)))) p   
+let mapDice n p = mapP (fun _ -> Op(App(Call Dice, Value(Int n)))) p
 let pdistance =  
-    let combinedMatch = pint .>> ppen NN .>> pstr "''" |> mapP (fun n -> Op(Value(Distance(n))))
+    let combinedMatch = pint .>> (ppen NN <|> ppen EQT) .>> pstr "''" |> mapP (fun n -> Op(Value(Distance(n))))
 
-    let input = fromStr "1''" |> List.head |> advance 
-    let d = input |> debug 
-    let p = run combinedMatch input 
+    let input = [ fromStr "1''" |> List.head |> advance 
+                  fromStr "Within 1'' of the " |> List.head |> advance |> advance|> advance|> advance|> advance ]
+    let d = input |> List.map debug 
+    let p = input |> List.map (run combinedMatch)
     combinedMatch     
 let numbers = 
     let combinedMatch = pdistance <|> mapInt pint <|> mapFloat pfloat
@@ -384,9 +386,23 @@ let words =
     let d = input |> List.map debug 
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
-
-
-let parsedExpression =  many (numbers <|> words) |> mapP (reduceToOperation)
+let D = 
+    let combinedMatch = 
+        choice [ ppen NNS
+                 ppen NNP
+                 ppen NN ] 
+        >>. 
+        choice [ pstr "D6" <|> pstr "d6" |> mapDice 6
+                 pstr "D3" <|> pstr "d3" |> mapDice 3 ] 
+    let input = [ fromStr "D6" |> List.head |> advance 
+                  fromStr "d6" |> List.head |> advance
+                  fromStr "D3" |> List.head |> advance 
+                  fromStr "d3" |> List.head |> advance ]
+    let d = input |> List.map debug 
+    let p = input |> List.map (run combinedMatch) 
+    combinedMatch
+let token = D <|> numbers <|> words
+let parsedExpression =  many token |> mapP (reduceToOperation)
 let runP t = t |> List.map (log >> run parsedExpression) 
 let runAndPrint t = runP t |> List.iter (printResult debug) 
 fromStr "Roll a D6."  |> runAndPrint
