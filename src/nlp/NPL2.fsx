@@ -179,7 +179,7 @@ type Position = { node:Tree ; queue:Tree seq }
     /// define an initial position
 let initTree t = { node= t; queue = t.children()  }
     /// increment the column number
-let moveNext p = 
+let moveNextPreOrder p = 
     let nextNode = Seq.tryHead p.queue
     nextNode 
     |> Option.map (fun nextNode -> 
@@ -213,7 +213,7 @@ let nextNode input =
     // 3) if col at line length -> 
     //       return NewLine, increment linePos
     let label n = getLabel n, getHeadText n
-    match moveNext input.position with 
+    match moveNextPreOrder input.position with 
     | None  -> 
         input, None
     | Some newPosition ->
@@ -240,7 +240,7 @@ let nextNode input =
 // // =============================================
 open ParseLibrary
 
-type Parsed = Tag of PennTreebankIITags | Op of Operation
+type Parsed = Tag of PennTreebankIITags | Ignored | Op of Operation
 let toTag = function 
     | None, Some text -> 
         Str text |> Value |> Op 
@@ -295,7 +295,7 @@ let debug it =
 
 let trees = fromStr "Roll a D6" |> Seq.head
 let log trees = trees.position.node.pennPrint(); trees
-let f = Option.bind moveNext
+let f = Option.bind moveNextPreOrder
 trees |> log
 trees.position |> Some |> f |> Option.map (fun n -> n.node.pennPrint())
 
@@ -312,6 +312,7 @@ let reduceToOperation lst =
             printfn "Tag: %A, prevText: %A, parsed: %A" tag prevText parsed
             let log (result,(stateTag,newState)) = printfn "=====> Result: %A, NextTag: %A, NextStage: %A" result stateTag newState; (result,(stateTag,newState))
             match parsed with
+            | Ignored -> [], (tag, prevText)
             | Op(Value(Str(s))) -> 
                 let space = 
                     match tag with 
@@ -364,7 +365,7 @@ let mapStr p =   mapP (fun (s : string) -> Op(Value(Str(s)))) p
 let mapDice n p = mapP (fun _ -> Op(App(Call Dice, Value(Int n)))) p
 let mapVar v p = mapP (fun _ -> Op(Var(v))) p
 let mapText t p = mapP (fun _ -> Op(Value(Str(t)))) p
-let mapUnit p = mapP (fun _ -> ()) p
+let mapIgnored p = mapP (fun _ -> Ignored) p
 let mapOp op p = mapP (fun _ -> Op(op)) p
 
 let pdistance =  
@@ -392,8 +393,11 @@ let determiner =
         ppen DT >>. pstr "each" |> mapOp (Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))))
         ppen DT |> mapOp (Lam("obj", Var "obj"))
     ]   
+let ignoreTag =
+    anyOf ppen [ SYM ; NNS; Colon; Comma; EQT; SentenceCloser ] |> mapIgnored
+let escapeTag (x,y) = x, Option.map escape_string y
 let words = 
-    let combinedMatch = determiner <|> (pany |> mapP toTag)
+    let combinedMatch = determiner <|> (pany |> mapP (escapeTag >> toTag))
     let input = [fromStr "12''" |> List.head |> advance  |> advance 
                  fromStr "12"   |> List.head |> advance  |> advance |> advance
                  fromStr "12.5" |> List.head |> advance  |> advance |> advance ]
@@ -422,9 +426,9 @@ let variables =
     ]
 let keywords = 
     choice [
-        sequence [ ppen JJ |> mapUnit; pstr "mortal" |> mapUnit ; ppen NN  |> mapUnit;  pstr "wound" |> mapUnit ]  |> mapText "Mortal Wound"
-        sequence [ ppen NN |> mapUnit; pstr "hit"    |> mapUnit ; ppen NNS |> mapUnit; (pstr "roll" <|> pstr "rolls") |> mapUnit  ]  |> mapText  "Hit Roll"
-        sequence [ ppen NN |> mapUnit; pstr "wound"  |> mapUnit ; ppen NNS |> mapUnit; (pstr "roll" <|> pstr "rolls") |> mapUnit  ]  |> mapText  "Wound Roll"
+        sequence [ ppen JJ |> mapIgnored; pstr "mortal" |> mapIgnored ; ppen NN  |> mapIgnored;  pstr "wound" |> mapIgnored ]  |> mapText "Mortal Wound"
+        sequence [ ppen NN |> mapIgnored; pstr "hit"    |> mapIgnored ; ppen NNS |> mapIgnored; (pstr "roll" <|> pstr "rolls") |> mapIgnored  ]  |> mapText  "Hit Roll"
+        sequence [ ppen NN |> mapIgnored; pstr "wound"  |> mapIgnored ; ppen NNS |> mapIgnored; (pstr "roll" <|> pstr "rolls") |> mapIgnored  ]  |> mapText  "Wound Roll"
         ppen NN >>. pstr "Fight" .>> ppen NN .>> pstr "phase" |> mapP (fun phase -> ParamArray[ Value(Str("Phase")); Value (Str phase)] |> Value |> Op)
     ]    
 let actions = 
@@ -438,7 +442,7 @@ let dPlus =
     let d = input |> List.map debug 
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
-let gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; actions; words ]
+let gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; actions; ignoreTag; words ]
 let parsedExpression =  many gamePrimitive |> mapP (reduceToOperation)
 let runP t = t |> List.map (log >> run parsedExpression) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 

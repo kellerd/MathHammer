@@ -282,7 +282,9 @@ let ( <|> ) = orElse
 /// Choose any of a list of parsers
 let choice listOfParsers = 
     List.reduce ( <|> ) listOfParsers 
-
+let anyOf p tests = 
+    List.map p tests
+    |> choice
 let rec sequence parserList =
     // define the "cons" function, which is a two parameter function
     let cons head tail = head::tail
