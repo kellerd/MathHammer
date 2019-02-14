@@ -396,8 +396,16 @@ let determiner =
 let ignoreTag =
     anyOf ppen [ SYM ; NNS; Colon; Comma; EQT; SentenceCloser ] |> mapIgnored
 let escapeTag (x,y) = x, Option.map escape_string y
+let ignored = 
+    choice [
+        ppen PRP .>> (pstr "You" <|> pstr "you")
+        ppen MD .>> pstr "can" 
+    ] |> mapP Parsed.Tag 
 let words = 
-    let combinedMatch = determiner <|> (pany |> mapP (escapeTag >> toTag))
+    let combinedMatch = 
+        choice [ ignored
+                 determiner 
+                 (pany |> mapP (escapeTag >> toTag)) ]
     let input = [fromStr "12''" |> List.head |> advance  |> advance 
                  fromStr "12"   |> List.head |> advance  |> advance |> advance
                  fromStr "12.5" |> List.head |> advance  |> advance |> advance ]
@@ -443,8 +451,8 @@ let dPlus =
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
 let gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; actions; ignoreTag; words ]
-let parsedExpression =  many gamePrimitive |> mapP (reduceToOperation)
-let runP t = t |> List.map (log >> run parsedExpression) 
+let scannedWords =  many gamePrimitive |> mapP (reduceToOperation)
+let runP t = t |> List.map (log >> run scannedWords) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
 fromStr "Roll a D6."  |> runAndPrint
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound."  |> runAndPrint
