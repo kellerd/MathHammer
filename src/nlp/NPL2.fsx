@@ -187,10 +187,11 @@ let moveNextPreOrder p =
         let newUnvisited = nextNode.children()
         { node = nextNode; queue = Seq.append newUnvisited unvisited })
 
-    /// increment the line number and set the column to 0
+/// increment the line number and set the column to 0
 type InputState = {
     position : Position 
 }
+
 
 /// Create a new InputState from a string
 let rec fromStr str = 
@@ -204,43 +205,51 @@ let tree =
 tree.pennPrint()
 
 /// used by satisfy
-let nextNode input =
-    // three cases
-    // 1) if line >= maxLine -> 
-    //       return EOF
-    // 2) if col less than line length -> 
-    //       return char at colPos, increment colPos
-    // 3) if col at line length -> 
-    //       return NewLine, increment linePos
+let nextNode moveFunction input =
     let label n = getLabel n, getHeadText n
-    match moveNextPreOrder input.position with 
+    match moveFunction input.position with 
     | None  -> 
         input, None
     | Some newPosition ->
         {input with position = newPosition}, label newPosition.node |> Some
-    // if linePos >= input.lines.Length then
-    //     input, None
-    // else
-    //     let currentLine = currentLine input
-    //     if colPos < currentLine.Length then
-    //         let char = currentLine.[colPos]
-    //         let newPos = incrCol input.position 
-    //         let newState = {input with position=newPos}
-    //         newState, Some char
-    //     else 
-    //         // end of line, so return LF and move to next line
-    //         let char = '\n'
-    //         let newPos = incrLine input.position 
-    //         let newState = {input with position=newPos}
-    //         newState, Some char
-
 
 // // =============================================
 // // Standard parsers 
 // // =============================================
 open ParseLibrary
 
-type Parsed = Tag of PennTreebankIITags | Ignored | Op of Operation
+
+let onlyChildren (p:Parser<('a * InputState), InputState>) = 
+    let label = sprintf "onlyChildrenOf %s" (getLabel p) 
+    let innerFn input =
+        //Chop off tail of input
+        let tail = Seq.tail input.position.queue
+        let newQueue = {input with position = {input.position with queue = Seq.head input.position.queue |> Seq.singleton } }
+
+        // run parser1 with the chopped off queue
+        let result1 = runOnInput p newQueue
+
+        // test the result for Failure/Success
+        match result1 with
+        | Success (result,newInput) -> 
+            // if success, return the original result with old stuff back on the queue
+            Success(result, { newInput with position = 
+                                            { newInput.position with queue = 
+                                                                     Seq.append 
+                                                                        newInput.position.queue 
+                                                                        tail } }) 
+
+        | Failure (a,b,position) -> 
+            Failure(a, b, position)
+
+    // return the inner function
+    {parseFn=innerFn; label=label}
+
+
+type Parsed = 
+    | Tag of PennTreebankIITags 
+    | Ignored 
+    | Op of Operation
 let toTag = function 
     | None, Some text -> 
         Str text |> Value |> Op 
@@ -259,7 +268,7 @@ let toSafeOp f = function
         NoValue |> Value |> Op
     | Some tag, Some text -> 
         Str text |> Value |> Op
-let satisfy = ParseLibrary.satisfy nextNode
+let satisfy = ParseLibrary.satisfy (nextNode moveNextPreOrder)
 
 // // ------------------------------
 // // string parsing
