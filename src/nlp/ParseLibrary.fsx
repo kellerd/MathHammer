@@ -282,7 +282,9 @@ let ( <|> ) = orElse
 /// Choose any of a list of parsers
 let choice listOfParsers = 
     List.reduce ( <|> ) listOfParsers 
-
+let anyOf p tests = 
+    List.map p tests
+    |> choice
 let rec sequence parserList =
     // define the "cons" function, which is a two parameter function
     let cons head tail = head::tail
@@ -327,14 +329,14 @@ let parseZeroOrMoreUntil  until parser input =
                 match innerFn inputAfterFirstParse with
                 | Success  (subsequentValues,remainingInput) ->
                     let values = firstValue::subsequentValues
-                    Success(values,remainingInput)  
+                    Success(values, remainingInput)  
                 | Failure(a,b,c) -> 
                     // Both failed return empty match
-                    Failure(a,b,c)
+                    Failure(a, b, c)
     match innerFn input with 
     | Failure(a,b,c) -> 
                     // Both failed return empty match
-                    Failure(a,b,c)
+                    Failure(a, b, c)
     | Success (a, b) -> Success(a |> List.rev, b)             
 /// matches zero or more occurences of the specified parser
 let many parser = 

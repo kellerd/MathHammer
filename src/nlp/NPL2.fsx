@@ -168,7 +168,7 @@ type Position = { node:Tree ; queue:Tree seq }
     /// define an initial position
 let initTree t = { node= t; queue = t.children()  }
     /// increment the column number
-let moveNext p = 
+let moveNextPreOrder p = 
     let nextNode = Seq.tryHead p.queue
     nextNode 
     |> Option.map (fun nextNode -> 
@@ -176,10 +176,11 @@ let moveNext p =
         let newUnvisited = nextNode.children()
         { node = nextNode; queue = Seq.append newUnvisited unvisited })
 
-    /// increment the line number and set the column to 0
+/// increment the line number and set the column to 0
 type InputState = {
     position : Position 
 }
+
 
 /// Create a new InputState from a string
 let rec fromStr str = 
@@ -193,35 +194,14 @@ let tree =
 tree.pennPrint()
 
 /// used by satisfy
-let nextNode input =
-    // three cases
-    // 1) if line >= maxLine -> 
-    //       return EOF
-    // 2) if col less than line length -> 
-    //       return char at colPos, increment colPos
-    // 3) if col at line length -> 
-    //       return NewLine, increment linePos
+let nextNode moveFunction input =
     let label n = getLabel n, getHeadText n
-    match moveNext input.position with 
+    match moveFunction input.position with 
     | None  -> 
         input, None
     | Some newPosition ->
         {input with position = newPosition}, label newPosition.node |> Some
-    // if linePos >= input.lines.Length then
-    //     input, None
-    // else
-    //     let currentLine = currentLine input
-    //     if colPos < currentLine.Length then
-    //         let char = currentLine.[colPos]
-    //         let newPos = incrCol input.position 
-    //         let newState = {input with position=newPos}
-    //         newState, Some char
-    //     else 
-    //         // end of line, so return LF and move to next line
-    //         let char = '\n'
-    //         let newPos = incrLine input.position 
-    //         let newState = {input with position=newPos}
-    //         newState, Some char
+
 
 
 // // =============================================
@@ -229,8 +209,42 @@ let nextNode input =
 // // =============================================
 open ParseLibrary
 
-type Parsed = Tag of PennTreebankIITags | Op of Operation
-let toTag = function 
+
+let onlyChildren (p:Parser<('a * InputState), InputState>) = 
+    let label = sprintf "onlyChildrenOf %s" (getLabel p) 
+    let innerFn input =
+        //Chop off tail of input
+        let tail = Seq.tail input.position.queue
+        let newQueue = {input with position = {input.position with queue = Seq.head input.position.queue |> Seq.singleton } }
+
+        // run parser1 with the chopped off queue
+        let result1 = runOnInput p newQueue
+        let updateState newInput = 
+            { newInput 
+                with position = 
+                        { newInput.position 
+                            with queue = 
+                                 Seq.append 
+                                    newInput.position.queue 
+                                    tail } }
+        // test the result for Failure/Success
+        match result1 with
+        | Success (result,newInput) -> 
+            // if success, return the original result with old stuff back on the queue
+            Success(result, updateState newInput) 
+        | Failure (a,b,position) -> 
+            //Failure  with queued input state put back on
+            Failure(a, b, { position with node = updateState position.node })
+    // return the inner function
+    {parseFn=innerFn; label=label}
+
+
+type Parsed = 
+    | Tag of PennTreebankIITags 
+    | Ignored 
+    | Op of Operation
+let toTag parsed = 
+    match parsed with
     | None, Some text -> 
         Str text |> Value |> Op 
     | Some tag, None -> 
@@ -239,7 +253,8 @@ let toTag = function
         NoValue |> Value |> Op
     | Some tag, Some text -> 
         Str text |> Value |> Op
-let toSafeOp f = function 
+let toSafeOp f parsed =  
+    match parsed with 
     | None, Some text -> 
         f text |> Op 
     | Some tag, None -> 
@@ -248,7 +263,7 @@ let toSafeOp f = function
         NoValue |> Value |> Op
     | Some tag, Some text -> 
         Str text |> Value |> Op
-let satisfy = ParseLibrary.satisfy nextNode
+let satisfy = ParseLibrary.satisfy (nextNode moveNextPreOrder)
 
 // // ------------------------------
 // // string parsing
@@ -261,12 +276,12 @@ let panystr =
     let label = sprintf "any match "
     let predicate (_,ch) = (Option.isSome ch)
     satisfy predicate label
-    |> mapP (function (_,Some t) -> t | _ -> "")
+    |>>  (function (_,Some t) -> t | _ -> "")
 let ppen tag = 
     let label = sprintf "match: %A " tag
     let predicate (penTag,ch) = (penTag = Some tag && ch = None)
     satisfy predicate label
-    |> mapP (fst >> Option.defaultValue ROOT)
+    |>>  (fst >> Option.defaultValue ROOT)
 // /// parse a char 
 let pstr str = 
     // label is just the character
@@ -274,7 +289,7 @@ let pstr str =
 
     let predicate (_,ch) = (ch = Some str) 
     satisfy predicate label 
-    |> mapP (function (_,Some t) -> t | _ -> "")
+    |>>  (function (_,Some t) -> t | _ -> "")
 
 let pany = 
     satisfy (fun _ -> true) "any"
@@ -284,12 +299,12 @@ let debug it =
 
 let trees = fromStr "Roll a D6" |> Seq.head
 let log trees = trees.position.node.pennPrint(); trees
-let f = Option.bind moveNext
+let f = Option.bind moveNextPreOrder
 trees |> log
 trees.position |> Some |> f |> Option.map (fun n -> n.node.pennPrint())
 
-// let panyUntiltag tag str =  manyUntil (ppen tag) (pnstr |> mapP toTag) |> mapP List.head >>. pstr str <?> (sprintf "%A : %s" tag str) 
-// let panyUntil str = manyUntil (pstr str |> mapP (fun s -> None, Some s)) pnstr  |> mapP List.head <?> (sprintf ".* %s"  str) 
+// let panyUntiltag tag str =  manyUntil (ppen tag) (pnstr |>>  toTag) |>>  List.head >>. pstr str <?> (sprintf "%A : %s" tag str) 
+// let panyUntil str = manyUntil (pstr str |>>  (fun s -> None, Some s)) pnstr  |>>  List.head <?> (sprintf ".* %s"  str) 
 // let roll = panyUntiltag NNP "Roll"
 // let a = panyUntil "a"
 // let d6 = panyUntil "D6"
@@ -301,24 +316,26 @@ let reduceToOperation lst =
             printfn "Tag: %A, prevText: %A, parsed: %A" tag prevText parsed
             let log (result,(stateTag,newState)) = printfn "=====> Result: %A, NextTag: %A, NextStage: %A" result stateTag newState; (result,(stateTag,newState))
             match parsed with
+            | Ignored -> ([], (tag, prevText))
             | Op(Value(Str(s))) -> 
                 let space = 
                     match tag with 
-                    Some (SentenceCloser | Comma | EQT | Punctuation ) -> ""
+                    | Some (SentenceCloser | Comma | EQT | Punctuation ) -> ""
                     | _ -> " "
                 match prevText with 
-                | Some acc -> [], (tag, Some (sprintf "%s%s%s" acc space s))
-                | None ->     [], (tag, Some s)
-            | Op(op) ->        (Option.map(Str >> Value) prevText |> Option.toList) @ [op], (tag, None)
-            | Tag(newTag) ->         [],  (Some newTag, prevText)
+                | Some acc -> ([], (tag, Some (sprintf "%s%s%s" acc space s)))
+                | None ->     ([], (tag, Some s))
+            | Op(op) ->       ((Option.map(Str >> Value) prevText |> Option.toList) @ [op], (tag, None))
+            | Tag(newTag) ->  ([], (Some newTag, prevText))
             |> log
         )  (Some ROOT, None) lst
     match state with 
     | _, Some op -> newList  @ [[Value(Str(op))]]  |> List.collect id
     | _ -> newList |> List.collect id
-    |> function 
-    | [op] -> op
-    | ops -> ops |> ParamArray |> Value
+    |> 
+    function 
+  | [op] -> op
+  | ops -> ops |> ParamArray |> Value
 
 let advance tree = 
     tree.position 
@@ -329,8 +346,12 @@ let advance tree =
 
 let pint = 
     let matchInteger = 
-        satisfy (function (_,Some ch) -> System.Int32.TryParse(ch) |> fst | _ -> false) "integer "
-        |> mapP (function (_,Some s) -> System.Int32.Parse(s) | _ -> 0)
+        satisfy (function 
+               | (_,Some ch) -> System.Int32.TryParse(ch) |> fst 
+               | _ -> false) "integer "
+        |>> (function 
+           | (_,Some s) -> System.Int32.Parse(s) 
+           | _ -> 0)
     let combinedMatch = ppen CD >>. matchInteger
 
     let input = fromStr "12" |> List.head |> advance |> advance 
@@ -339,25 +360,29 @@ let pint =
     combinedMatch 
 let pfloat = 
     let matchFloat = 
-        satisfy (function (_,Some ch) -> System.Double.TryParse(ch) |> fst | _ -> false) "float "
-        |> mapP (function (_,Some s) -> System.Double.Parse(s) | _ -> 0.0)
+        satisfy (function 
+               | (_,Some ch) -> System.Double.TryParse(ch) |> fst 
+               | _ -> false) "float "
+        |>>  (function 
+            | (_,Some s) -> System.Double.Parse(s) 
+            | _ -> 0.0)
     let combinedMatch = ppen CD >>. matchFloat
 
     let input = fromStr "12.5" |> List.head |> advance |> advance 
     let d = input |> debug 
     let p = run combinedMatch input 
     combinedMatch   
-let mapInt p = mapP (fun (f : int) -> Op(Value(Int(f)))) p
-let mapFloat p = mapP (fun (f : float) -> Op(Value(Float(f)))) p  
-let mapStr p =   mapP (fun (s : string) -> Op(Value(Str(s)))) p   
-let mapDice n p = mapP (fun _ -> Op(App(Call Dice, Value(Int n)))) p
-let mapVar v p = mapP (fun _ -> Op(Var(v))) p
-let mapText t p = mapP (fun _ -> Op(Value(Str(t)))) p
-let mapUnit p = mapP (fun _ -> ()) p
-let mapOp op p = mapP (fun _ -> Op(op)) p
+let toInt = Int >> Value >> Op
+let toFloat  = Float >> Value >> Op 
+let toStr = Str >> Value >> Op 
+let toDice n _ = Op(App(Call Dice, Value(Int n)))
+let toVar v _ = Op(Var(v))
+let toText t _ = Op(Value(Str(t)))
+let toIgnored _ = Ignored
+let toOp op  _ = Op(op)
 
 let pdistance =  
-    let combinedMatch = pint .>> (ppen NN <|> ppen EQT) .>> pstr "''" |> mapP (fun n -> Op(Value(Distance(n))))
+    let combinedMatch = pint .>> (ppen NN <|> ppen EQT) .>> pstr "''" |>> (Distance >> Value >> Op)
 
     let input = [ fromStr "1''" |> List.head |> advance 
                   fromStr "Within 1'' of the " |> List.head |> advance |> advance|> advance|> advance|> advance ]
@@ -366,8 +391,8 @@ let pdistance =
     combinedMatch     
 let numbers = 
     let combinedMatch = choice [ pdistance 
-                                 mapInt pint
-                                 mapFloat pfloat ]
+                                 mapP toInt pint
+                                 mapP toFloat pfloat ]
     let input = [fromStr "12''" |> List.head |> advance 
                  fromStr "12\"" |> List.head |> advance 
                  fromStr "12"   |> List.head |> advance |> advance 
@@ -377,21 +402,23 @@ let numbers =
     combinedMatch
 let determiner =  
     choice [
-        ppen DT >>. pstr "a"  |> mapOp (Value(Int(1))) 
-        ppen DT >>. pstr "each" |> mapOp (Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))))
-        ppen DT |> mapOp (Lam("obj", Var "obj"))
+        ppen DT >>. pstr "a"  |>> toOp (Value(Int(1))) 
+        ppen DT >>. pstr "each" |>> toOp (Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))))
+        ppen DT |>> toOp (Lam("obj", Var "obj"))
     ]   
-    
+let ignoreTag =
+    anyOf ppen [ SYM ; NNS; Colon; Comma; EQT; SentenceCloser ] |>> toIgnored
+let escapeTag (x,y) = (x, Option.map escape_string y)
 let ignored = 
     choice [
         ppen PRP .>> (pstr "You" <|> pstr "you")
         ppen MD .>> pstr "can" 
-    ] |> mapP Parsed.Tag 
+    ] |>> Parsed.Tag 
 let words = 
     let combinedMatch = 
         choice [ ignored
                  determiner 
-                 (pany |> mapP toTag) ]
+                 (pany |>> (escapeTag >> toTag)) ]
     let input = [fromStr "12''" |> List.head |> advance  |> advance 
                  fromStr "12"   |> List.head |> advance  |> advance |> advance
                  fromStr "12.5" |> List.head |> advance  |> advance |> advance ]
@@ -404,8 +431,8 @@ let D =
                  ppen NNP
                  ppen NN ] 
         >>. 
-        choice [ pstr "D6" <|> pstr "d6" |> mapDice 6
-                 pstr "D3" <|> pstr "d3" |> mapDice 3 ] 
+        choice [ pstr "D6" <|> pstr "d6" |>> toDice 6
+                 pstr "D3" <|> pstr "d3" |>> toDice 3 ] 
     let input = [ fromStr "D6" |> List.head |> advance 
                   fromStr "d6" |> List.head |> advance
                   fromStr "D3" |> List.head |> advance 
@@ -415,20 +442,20 @@ let D =
     combinedMatch
 let variables = 
     choice [
-        sequence [ ppen NN |> mapP Tag; pstr "enemy" |> mapStr ; ppen NN |> mapP Tag; pstr "unit" |> mapStr ]  |> mapVar "unit"
-        ppen NN >>. (pstr "unit" <|> pstr "enemy") |> mapVar "Target"
+        sequence [ ppen NN |>> Tag; pstr "enemy" |>> toStr ; ppen NN |>> Tag; pstr "unit" |>> toStr ]  |>> toVar "unit"
+        ppen NN >>. (pstr "unit" <|> pstr "enemy") |>> toVar "Target"
     ]
 let keywords = 
     choice [
-        sequence [ ppen JJ |> mapUnit; pstr "mortal" |> mapUnit ; ppen NN  |> mapUnit;  pstr "wound" |> mapUnit ]  |> mapText "Mortal Wound"
-        sequence [ ppen NN |> mapUnit; pstr "hit"    |> mapUnit ; ppen NNS |> mapUnit; (pstr "roll" <|> pstr "rolls") |> mapUnit  ]  |> mapText  "Hit Roll"
-        sequence [ ppen NN |> mapUnit; pstr "wound"  |> mapUnit ; ppen NNS |> mapUnit; (pstr "roll" <|> pstr "rolls") |> mapUnit  ]  |> mapText  "Wound Roll"
-        ppen NN >>. pstr "Fight" .>> ppen NN .>> pstr "phase" |> mapP (fun phase -> ParamArray[ Value(Str("Phase")); Value (Str phase)] |> Value |> Op)
+        sequence [ ppen JJ |>> toIgnored; pstr "mortal" |>> toIgnored ; ppen NN  |>> toIgnored;  pstr "wound" |>> toIgnored ]  |>> toText "Mortal Wound"
+        sequence [ ppen NN |>> toIgnored; pstr "hit"    |>> toIgnored ; ppen NNS |>> toIgnored; (pstr "roll" <|> pstr "rolls") |>> toIgnored  ]  |>> toText  "Hit Roll"
+        sequence [ ppen NN |>> toIgnored; pstr "wound"  |>> toIgnored ; ppen NNS |>> toIgnored; (pstr "roll" <|> pstr "rolls") |>> toIgnored  ]  |>> toText  "Wound Roll"
+        ppen NN >>. pstr "Fight" .>> ppen NN .>> pstr "phase" |>> (fun phase -> ParamArray[ Value(Str("Phase")); Value (Str phase)] |> Value |> Op)
     ]    
 let actions = 
-    ppen VBZ >>. pstr "suffers" |> mapOp (Call Suffer)    
+    ppen VBZ >>. pstr "suffers" |>> toOp (Call Suffer)    
 let dPlus = 
-    let combinedMatch = pint .>> (ppen NNS <|> ppen NNP <|> ppen NN) .>> pstr "+" |> mapP (gte >> Op)
+    let combinedMatch = pint .>> (ppen NNS <|> ppen NNP <|> ppen NN) .>> pstr "+" |>> (gte >> Op)
     let input = [ fromStr "4+" |> List.head |> advance 
                   fromStr "5+" |> List.head |> advance
                   fromStr "7+" |> List.head |> advance 
@@ -436,8 +463,8 @@ let dPlus =
     let d = input |> List.map debug 
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
-let gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; actions; words ]
-let scannedWords =  many gamePrimitive |> mapP (reduceToOperation)
+let gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; actions; ignoreTag; words ]
+let scannedWords =  many gamePrimitive |>> reduceToOperation
 let runP t = t |> List.map (log >> run scannedWords) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
 fromStr "Roll a D6."  |> runAndPrint
@@ -523,7 +550,7 @@ fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit 
 //     // convert to Parser<char list>
 //     |> sequence
 //     // convert Parser<char list> to Parser<string>
-//     |> mapP charListToStr 
+//     |>>  charListToStr 
 //     <?> label
 
 // // ------------------------------
@@ -571,7 +598,7 @@ fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit 
 
 //     // an "int" is optional sign + one or more digits
 //     opt (pchar '-') .>>. digits 
-//     |> mapP resultToInt
+//     |>>  resultToInt
 //     <?> label
 
 // // parse a float
@@ -590,5 +617,5 @@ fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit 
 
 //     // a float is sign, digits, point, digits (ignore exponents for now)
 //     opt (pchar '-') .>>. digits .>>. pchar '.' .>>. digits 
-//     |> mapP resultToFloat
+//     |>>  resultToFloat
 //     <?> label

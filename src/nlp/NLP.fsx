@@ -264,12 +264,12 @@ let scanWords (treeN:Tree) =
   //      | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
   //      | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
   //      | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
-  //      | IsLabeled [DT] "a"      -> Value(Int(1)) |> word,0
-  //      | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
-  //      | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0
-  //      | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
-  //     | IsLabeled [PRP] ("You" | "you") -> Ignore(node),  0
-  //      | IsLabeled [MD] "can" -> Ignore(node),  0
+        // | IsLabeled [DT] "a"      -> Value(Int(1)) |> word,0
+        // | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
+        // | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0
+        // | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
+        // | IsLabeled [PRP] ("You" | "you") -> Ignore(node),  0
+        // | IsLabeled [MD] "can" -> Ignore(node),  0
         | _ -> Node node,0   
     let rec mapTree (node:Tree) = 
         //let node = treeN
@@ -412,9 +412,9 @@ let foldToOperation (accl) (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
         //         pennTags, Value(Str(s')) :: rest
         //     | _ -> pennTags, op:: acc
         // | Word (_, (Value(Int(n)) as op)) when tag = Some EQT -> //EQT 
-            // match acc with 
-            // |  Value(Distance(0)) :: rest when tag = Some EQT ->  pennTags, Value(Distance(n)) :: rest
-            // | _ ->  pennTags, op :: acc
+        //     match acc with 
+        //     |  Value(Distance(0)) :: rest when tag = Some EQT ->  pennTags, Value(Distance(n)) :: rest
+        //     | _ ->  pennTags, op :: acc
         // | Word (_,op) ->  pennTags, op :: acc
         // | Node n ->  tag, acc
         // | Ignore _ -> tag, acc
@@ -466,11 +466,11 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
         | Ignore _ -> BasicNode(penTags, n, children')  
         | Node op -> 
             match penTags with 
-            | Some (SYM | NNS | Punctuation | EQT) -> 
-                fEmpty penTags
-            | Some WordLevel -> 
-                let word = Word(op, (getHeadText op) |> escape_string |> Str |> Value)
-                BasicNode(penTags, NodeInfo(word, skip), children')
+            // | Some (SYM | NNS | Punctuation | EQT) -> 
+            //     fEmpty penTags
+            // | Some WordLevel -> 
+            //     let word = Word(op, (getHeadText op) |> escape_string |> Str |> Value)
+            //     BasicNode(penTags, NodeInfo(word, skip), children')
             | Some NP -> 
                 match children' with 
                 | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: _ when getHeadText original = "each" ->  BasicNode(penTags, n, children') 
