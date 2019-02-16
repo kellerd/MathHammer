@@ -55,80 +55,79 @@ let getAllText (node:Tree) =
 let getChildText (node:Tree) = 
     node.yieldWords() |> Iterable.castToSeq<Word> |> Seq.skip 1 |> mapToWords
 
-type Probability = double
-type Distribution<'a when 'a : equality and 'a : comparison> =
-    { Probabilities : ('a * Probability) list }
+#load @"../Collections/Map.fs"
+#load @"../Collections/List.fs"
+#load @"../Collections/Zipper.fs"
+#load @"../Check/Check.fs"
+#load @"../Probability/Distribution.fs"
+#load @"../GameActions/Primitives/Types.fs"
+#load @"../GameActions/Primitives/GamePrimitiveOperations.fs"
+#load @"../GameActions/Primitives/TypeChecker.fs"
+#load @"../GameActions/Primitives/State.fs"
+#load @"../GameActions/Primitives/Units.fs"
 
-type Check<'a> =
-    | Pass of 'a
-    | Fail of 'a
+open GameActions.Primitives.Types
+open GameActions.Primitives.State
+
+//#load @"../GameActions/GameActionsList/State.fs"
+
+// type Probability = double
+// type Distribution<'a when 'a : equality and 'a : comparison> =
+//     { Probabilities : ('a * Probability) list }
+
+// type Check<'a> =
+//     | Pass of 'a
+//     | Fail of 'a
     
-type GamePrimitive =
-    | Int of int
-    | Distance of int
-    | Str of string
-    | Float of float
-    | Check of Check<GamePrimitive>
-    | NoValue
-    | ParamArray of Operation list
-    | Tuple of GamePrimitive * GamePrimitive
-    | Dist of Distribution<GamePrimitive>
+// type GamePrimitive =
+//     | Int of int
+//     | Distance of int
+//     | Str of string
+//     | Float of float
+//     | Check of Check<GamePrimitive>
+//     | NoValue
+//     | ParamArray of Operation list
+//     | Tuple of GamePrimitive * GamePrimitive
+//     | Dist of Distribution<GamePrimitive>
 
-and Operation =
-    | Call of Call
-    | PropertyGet of string * Operation
-    | Value of GamePrimitive
-    | Var of string
-    | App of f : Operation * value : Operation
-    | Lam of param : string * body : Operation
-    | Let of string * value : Operation * body : Operation
-    | IfThenElse of ifExpr : Operation * thenExpr : Operation * elseExpr : Operation option
-    | Choice of name : string * choices : (string * Operation) list
+// and Operation =
+//     | Call of Call
+//     | PropertyGet of string * Operation
+//     | Value of GamePrimitive
+//     | Var of string
+//     | App of f : Operation * value : Operation
+//     | Lam of param : string * body : Operation
+//     | Let of string * value : Operation * body : Operation
+//     | IfThenElse of ifExpr : Operation * thenExpr : Operation * elseExpr : Operation option
+//     | Choice of name : string * choices : (string * Operation) list
 
-and Call =
-    | Product
-    | Division
-    | Total
-    | Count
-    | Repeat
-    | Dice
-    | GreaterThan
-    | Contains
-    | Equals
-    | NotEquals
-    | LessThan
-    | ToDist
-    | And
-    | Or
-    | Not
-    | Max
-    | Min
-    | Sub
-    | Median
-    | Mean
-    | Mode
-    | Least
-    | Largest
-    | Suffer
-    | FMap
+// and Call =
+//     | Product
+//     | Division
+//     | Total
+//     | Count
+//     | Repeat
+//     | Dice
+//     | GreaterThan
+//     | Contains
+//     | Equals
+//     | NotEquals
+//     | LessThan
+//     | ToDist
+//     | And
+//     | Or
+//     | Not
+//     | Max
+//     | Min
+//     | Sub
+//     | Median
+//     | Mean
+//     | Mode
+//     | Least
+//     | Largest
+//     | Suffer
+//     | FMap
 
-type Tree<'ITag, 'INodeData> =
-    | Empty of 'ITag
-    | BasicNode of 'ITag * 'INodeData * Tree<'ITag,'INodeData> list
-    | Assignment of 'ITag * label:string * value:Tree<'ITag,'INodeData> list * inExpr:Tree<'ITag,'INodeData> list 
-    | IfThenElseBranch of 'ITag * test:Tree<'ITag,'INodeData> list * thenExpr:Tree<'ITag,'INodeData> list * elseExpr:Tree<'ITag,'INodeData> list option
-type NodeInfo<'a> = NodeInfo of 'a * int
-type Tag = PennTreebankIITags option
-type WordScanNode = 
-    | Node of Tree
-    | Word of original:Tree * Operation 
-    | Ignore  of Tree
-    | Cont of original:Tree * (Operation -> Operation)
-let findTree = function
-    | NodeInfo(Node t,_) -> t
-    | NodeInfo(Word (t,_),_) -> t
-    | NodeInfo(Cont (t, _),_) -> t
-    | NodeInfo(Ignore t, _) -> t
 
 let gt plusValue =
     App(Call GreaterThan, Value(ParamArray [ Var "roll"; Value(Int(plusValue))]))
@@ -162,16 +161,6 @@ let (|TryFloat|_|) op =
         | true, n -> Some n 
         | false, _ -> None
     | _ -> None
-let (|IsOperation|_|) = fun n -> match n with 
-                                       | BasicNode(_, NodeInfo(Word (t, op), _), []) -> Some (t,op) 
-                                       |  BasicNode
-                                            (Some VBZ,NodeInfo (Word (t,op),_),
-                                             [BasicNode (None,_,[])])  -> Some (t,op) 
-                                       | _ -> None
-let (|AllOperations|_|) children = 
-    let check =  List.choose (|IsOperation|_|) children            
-    if List.length check = List.length children then Some check
-    else None
 
 #load "ParseLibrary.fsx"
 

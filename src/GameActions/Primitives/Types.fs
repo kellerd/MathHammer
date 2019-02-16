@@ -3,6 +3,7 @@ module GameActions.Primitives.Types
 type GamePrimitive =
     | Int of int
     | Str of string
+    | Distance of int
     | Float of float
     | Check of Check.Check<GamePrimitive>
     | NoValue
@@ -45,6 +46,7 @@ and Call =
     | Least
     | Largest
     | FMap
+    | Suffer
 
 //| Reroll of (int list) * Die
 let rec (|IsDistribution|_|) =

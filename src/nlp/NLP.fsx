@@ -264,12 +264,12 @@ let scanWords (treeN:Tree) =
   //      | Siblings [CD;NNS]  [dvalue;(=) "+"] skip as n -> n |> getHeadText |> int |> gte |> word, skip
   //      | IsLabeled [CD] (TryInteger n) -> Value(Int n) |> word,0
   //      | IsLabeled [CD] (TryFloat n)   -> Value(Float n) |> word,0
-        | IsLabeled [DT] "a"      -> Value(Int(1)) |> word,0
-        | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
-        | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0
-        | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
-        | IsLabeled [PRP] ("You" | "you") -> Ignore(node),  0
-        | IsLabeled [MD] "can" -> Ignore(node),  0
+  //      | IsLabeled [DT] "a"      -> Value(Int(1)) |> word,0
+  //      | IsLabeled [DT] "each"   -> Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))) |> word,0
+  //      | IsLabeled [DT] _     -> Lam("obj", Var "obj") |> word,0
+  //      | IsLabeled [VBZ] "suffers"     -> Call Suffer |> word,0
+  //     | IsLabeled [PRP] ("You" | "you") -> Ignore(node),  0
+  //      | IsLabeled [MD] "can" -> Ignore(node),  0
         | _ -> Node node,0   
     let rec mapTree (node:Tree) = 
         //let node = treeN
@@ -402,22 +402,22 @@ let foldToOperation (accl) (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
         match node with
         | EndOfPhase (tag, acc) (phase,rest) -> 
             pennTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
-        | Word (_, (Value(Str(s)) as op) ) ->
-            match tag, acc with 
-            | (Some SentenceCloser | Some Comma | Some EQT | Some Punctuation), Value(Str(acc))::rest -> 
-                let s' = sprintf "%s%s" s acc
-                pennTags, Value(Str(s')) :: rest
-            | _, Value(Str(acc))::rest -> 
-                let s' = sprintf "%s %s" s acc
-                pennTags, Value(Str(s')) :: rest
-            | _ -> pennTags, op:: acc
-        | Word (_, (Value(Int(n)) as op)) when tag = Some EQT -> //EQT 
-            match acc with 
-            |  Value(Distance(0)) :: rest when tag = Some EQT ->  pennTags, Value(Distance(n)) :: rest
-            | _ ->  pennTags, op :: acc
-        | Word (_,op) ->  pennTags, op :: acc
-        | Node n ->  tag, acc
-        | Ignore _ -> tag, acc
+        // | Word (_, (Value(Str(s)) as op) ) ->
+        //     match tag, acc with 
+        //     | (Some SentenceCloser | Some Comma | Some EQT | Some Punctuation), Value(Str(acc))::rest -> 
+        //         let s' = sprintf "%s%s" s acc
+        //         pennTags, Value(Str(s')) :: rest
+        //     | _, Value(Str(acc))::rest -> 
+        //         let s' = sprintf "%s %s" s acc
+        //         pennTags, Value(Str(s')) :: rest
+        //     | _ -> pennTags, op:: acc
+        // | Word (_, (Value(Int(n)) as op)) when tag = Some EQT -> //EQT 
+            // match acc with 
+            // |  Value(Distance(0)) :: rest when tag = Some EQT ->  pennTags, Value(Distance(n)) :: rest
+            // | _ ->  pennTags, op :: acc
+        // | Word (_,op) ->  pennTags, op :: acc
+        // | Node n ->  tag, acc
+        // | Ignore _ -> tag, acc
         | Cont(_, cont) -> 
             match acc with 
             | [] -> pennTags, [cont (Value NoValue)] 
