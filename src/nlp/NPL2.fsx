@@ -55,78 +55,77 @@ let getAllText (node:Tree) =
 let getChildText (node:Tree) = 
     node.yieldWords() |> Iterable.castToSeq<Word> |> Seq.skip 1 |> mapToWords
 
-#load @"../Collections/Map.fs"
-#load @"../Collections/List.fs"
-#load @"../Collections/Zipper.fs"
-#load @"../Check/Check.fs"
-#load @"../Probability/Distribution.fs"
-#load @"../GameActions/Primitives/Types.fs"
-#load @"../GameActions/Primitives/GamePrimitiveOperations.fs"
-#load @"../GameActions/Primitives/TypeChecker.fs"
-#load @"../GameActions/Primitives/State.fs"
-#load @"../GameActions/Primitives/Units.fs"
+// #load @"../Collections/Map.fs"
+// #load @"../Collections/List.fs"
+// #load @"../Collections/Zipper.fs"
+// #load @"../Check/Check.fs"
+// #load @"../Probability/Distribution.fs"
+// #load @"../GameActions/Primitives/Types.fs"
+// #load @"../GameActions/Primitives/GamePrimitiveOperations.fs"
+// #load @"../GameActions/Primitives/TypeChecker.fs"
+// #load @"../GameActions/Primitives/State.fs"
+// #load @"../GameActions/Primitives/Units.fs"
 
-open GameActions.Primitives.Types
-open GameActions.Primitives.State
+// open GameActions.Primitives.Types
+// open GameActions.Primitives.State
 
-//#load @"../GameActions/GameActionsList/State.fs"
 
-// type Probability = double
-// type Distribution<'a when 'a : equality and 'a : comparison> =
-//     { Probabilities : ('a * Probability) list }
+type Probability = double
+type Distribution<'a when 'a : equality and 'a : comparison> =
+    { Probabilities : ('a * Probability) list }
 
-// type Check<'a> =
-//     | Pass of 'a
-//     | Fail of 'a
+type Check<'a> =
+    | Pass of 'a
+    | Fail of 'a
     
-// type GamePrimitive =
-//     | Int of int
-//     | Distance of int
-//     | Str of string
-//     | Float of float
-//     | Check of Check<GamePrimitive>
-//     | NoValue
-//     | ParamArray of Operation list
-//     | Tuple of GamePrimitive * GamePrimitive
-//     | Dist of Distribution<GamePrimitive>
+type GamePrimitive =
+    | Int of int
+    | Distance of int
+    | Str of string
+    | Float of float
+    | Check of Check<GamePrimitive>
+    | NoValue
+    | ParamArray of Operation list
+    | Tuple of GamePrimitive * GamePrimitive
+    | Dist of Distribution<GamePrimitive>
 
-// and Operation =
-//     | Call of Call
-//     | PropertyGet of string * Operation
-//     | Value of GamePrimitive
-//     | Var of string
-//     | App of f : Operation * value : Operation
-//     | Lam of param : string * body : Operation
-//     | Let of string * value : Operation * body : Operation
-//     | IfThenElse of ifExpr : Operation * thenExpr : Operation * elseExpr : Operation option
-//     | Choice of name : string * choices : (string * Operation) list
+and Operation =
+    | Call of Call
+    | PropertyGet of string * Operation
+    | Value of GamePrimitive
+    | Var of string
+    | App of f : Operation * value : Operation
+    | Lam of param : string * body : Operation
+    | Let of string * value : Operation * body : Operation
+    | IfThenElse of ifExpr : Operation * thenExpr : Operation * elseExpr : Operation option
+    | Choice of name : string * choices : (string * Operation) list
 
-// and Call =
-//     | Product
-//     | Division
-//     | Total
-//     | Count
-//     | Repeat
-//     | Dice
-//     | GreaterThan
-//     | Contains
-//     | Equals
-//     | NotEquals
-//     | LessThan
-//     | ToDist
-//     | And
-//     | Or
-//     | Not
-//     | Max
-//     | Min
-//     | Sub
-//     | Median
-//     | Mean
-//     | Mode
-//     | Least
-//     | Largest
-//     | Suffer
-//     | FMap
+and Call =
+    | Product
+    | Division
+    | Total
+    | Count
+    | Repeat
+    | Dice
+    | GreaterThan
+    | Contains
+    | Equals
+    | NotEquals
+    | LessThan
+    | ToDist
+    | And
+    | Or
+    | Not
+    | Max
+    | Min
+    | Sub
+    | Median
+    | Mean
+    | Mode
+    | Least
+    | Largest
+    | Suffer
+    | FMap
 
 
 let gt plusValue =
@@ -452,9 +451,18 @@ let keywords =
         sequence [ ppen NN |>> toIgnored; pstr "wound"  |>> toIgnored ; ppen NNS |>> toIgnored; (pstr "roll" <|> pstr "rolls") |>> toIgnored  ]  |>> toText  "Wound Roll"
         ppen NN >>. pstr "Fight" .>> ppen NN .>> pstr "phase" |>> (fun phase -> ParamArray[ Value(Str("Phase")); Value (Str phase)] |> Value |> Op)
     ]    
-let actions = 
+#nowarn "40"
+
+let rec actions = 
     ppen VBZ >>. pstr "suffers" |>> toOp (Call Suffer)    
-let dPlus = 
+and roll = 
+    ppen VB >>. ppen NNP >>. pstr "Roll" .>>. 
+        onlyChildren (ppen NP >>. (opt (ppen DT >>. pstr "a") >>. D)) .>>.
+        onlyChildren (many gamePrimitive)
+    |>> (fun ((label,dValue), inStr) -> 
+        Let(label, dValue, ParamArray inStr)
+    )
+and dPlus = 
     let combinedMatch = pint .>> (ppen NNS <|> ppen NNP <|> ppen NN) .>> pstr "+" |>> (gte >> Op)
     let input = [ fromStr "4+" |> List.head |> advance 
                   fromStr "5+" |> List.head |> advance
@@ -463,17 +471,18 @@ let dPlus =
     let d = input |> List.map debug 
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
-let gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; actions; ignoreTag; words ]
+and gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; actions; ignoreTag; words ]
 let scannedWords =  many gamePrimitive |>> reduceToOperation
 let runP t = t |> List.map (log >> run scannedWords) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
-fromStr "Roll a D6."  |> runAndPrint
+let eval x = runP x |> List.map (function Success (x,_) -> x |> evalOp Map.empty<_,_> | _ -> Value(NoValue))
+fromStr "Roll a D6"  |> runAndPrint 
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound."  |> runAndPrint
 fromStr "Roll a D6 and count the results, then roll another D6 for each success." |> runAndPrint
 fromStr "Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks." |> runAndPrint
 fromStr "If the hit result is 6, count the result as two hits, otherwise thr attack fails" |> runAndPrint
-fromStr "You can re-roll hit rolls of 1 for this weapon." |> runAndPrint
-fromStr "In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls." |> runAndPrint
+fromStr "You can re-roll hit rolls of 1 for this weapon." |> eval
+fromStr "In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls." |> eval
 fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit suffers a mortal wound in addition to any other damage." |> runAndPrint
 
 
