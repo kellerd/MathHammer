@@ -276,13 +276,13 @@ let panystr =
     let predicate (_,ch) = (Option.isSome ch)
     satisfy predicate label
     |>>  (function (_,Some t) -> t | _ -> "")
-let ppen tag = 
+let pos tag = 
     let label = sprintf "match: %A " tag
     let predicate (penTag,ch) = (penTag = Some tag && ch = None)
     satisfy predicate label
     |>>  (fst >> Option.defaultValue ROOT)
 // /// parse a char 
-let pstr str = 
+let text str = 
     // label is just the character
     let label = sprintf "%s" str 
 
@@ -302,8 +302,8 @@ let f = Option.bind moveNextPreOrder
 trees |> log
 trees.position |> Some |> f |> Option.map (fun n -> n.node.pennPrint())
 
-// let panyUntiltag tag str =  manyUntil (ppen tag) (pnstr |>>  toTag) |>>  List.head >>. pstr str <?> (sprintf "%A : %s" tag str) 
-// let panyUntil str = manyUntil (pstr str |>>  (fun s -> None, Some s)) pnstr  |>>  List.head <?> (sprintf ".* %s"  str) 
+// let panyUntiltag tag str =  manyUntil (pos tag) (pnstr |>>  toTag) |>>  List.head >>. text str <?> (sprintf "%A : %s" tag str) 
+// let panyUntil str = manyUntil (text str |>>  (fun s -> None, Some s)) pnstr  |>>  List.head <?> (sprintf ".* %s"  str) 
 // let roll = panyUntiltag NNP "Roll"
 // let a = panyUntil "a"
 // let d6 = panyUntil "D6"
@@ -343,7 +343,7 @@ let advance tree =
     |> Option.map (fun p -> {tree with position = p})
     |> Option.defaultValue tree
 
-let pint = 
+let integer = 
     let matchInteger = 
         satisfy (function 
                | (_,Some ch) -> System.Int32.TryParse(ch) |> fst 
@@ -351,13 +351,13 @@ let pint =
         |>> (function 
            | (_,Some s) -> System.Int32.Parse(s) 
            | _ -> 0)
-    let combinedMatch = ppen CD >>. matchInteger
+    let combinedMatch = pos CD >>. matchInteger
 
     let input = fromStr "12" |> List.head |> advance |> advance 
     let d = input |> debug 
     let p = run combinedMatch input 
     combinedMatch 
-let pfloat = 
+let double = 
     let matchFloat = 
         satisfy (function 
                | (_,Some ch) -> System.Double.TryParse(ch) |> fst 
@@ -365,23 +365,23 @@ let pfloat =
         |>>  (function 
             | (_,Some s) -> System.Double.Parse(s) 
             | _ -> 0.0)
-    let combinedMatch = ppen CD >>. matchFloat
+    let combinedMatch = pos CD >>. matchFloat
 
     let input = fromStr "12.5" |> List.head |> advance |> advance 
     let d = input |> debug 
     let p = run combinedMatch input 
     combinedMatch   
-let toInt = Int >> Value >> Op
-let toFloat  = Float >> Value >> Op 
-let toStr = Str >> Value >> Op 
-let toDice n _ = Op(App(Call Dice, Value(Int n)))
-let toVar v _ = Op(Var(v))
-let toText t _ = Op(Value(Str(t)))
+let toInt = Int >> Value 
+let toFloat  = Float >> Value  
+let toStr = Str >> Value 
+let toDice n _ = App(Call Dice, Value(Int n))
+let toVar v _ = Var(v)
+let toText t _ = Value(Str(t))
 let toIgnored _ = Ignored
-let toOp op  _ = Op(op)
+let toStatic o _ = o
 
 let pdistance =  
-    let combinedMatch = pint .>> (ppen NN <|> ppen EQT) .>> pstr "''" |>> (Distance >> Value >> Op)
+    let combinedMatch = integer .>> (pos NN <|> pos EQT) .>> text "''" |>> (Distance >> Value)
 
     let input = [ fromStr "1''" |> List.head |> advance 
                   fromStr "Within 1'' of the " |> List.head |> advance |> advance|> advance|> advance|> advance ]
@@ -390,8 +390,8 @@ let pdistance =
     combinedMatch     
 let numbers = 
     let combinedMatch = choice [ pdistance 
-                                 mapP toInt pint
-                                 mapP toFloat pfloat ]
+                                 mapP toInt integer
+                                 mapP toFloat double ]
     let input = [fromStr "12''" |> List.head |> advance 
                  fromStr "12\"" |> List.head |> advance 
                  fromStr "12"   |> List.head |> advance |> advance 
@@ -401,22 +401,22 @@ let numbers =
     combinedMatch
 let determiner =  
     choice [
-        ppen DT >>. pstr "a"  |>> toOp (Value(Int(1))) 
-        ppen DT >>. pstr "each" |>> toOp (Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))))
-        ppen DT |>> toOp (Lam("obj", Var "obj"))
+        pos DT >>. text "a"  |>> toStatic (Value(Int(1))) 
+        pos DT >>. text "each" |>> toStatic (Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))))
+        pos DT |>> toStatic (Lam("obj", Var "obj"))
     ]   
 let ignoreTag =
-    anyOf ppen [ SYM ; NNS; Colon; Comma; EQT; SentenceCloser ] |>> toIgnored
+    anyOf pos [ SYM ; NNS; Colon; Comma; EQT; SentenceCloser ] |>> toIgnored
 let escapeTag (x,y) = (x, Option.map escape_string y)
 let ignored = 
     choice [
-        ppen PRP .>> (pstr "You" <|> pstr "you")
-        ppen MD .>> pstr "can" 
+        pos PRP .>> (text "You" <|> text "you")
+        pos MD .>> text "can" 
     ] |>> Parsed.Tag 
 let words = 
     let combinedMatch = 
         choice [ ignored
-                 determiner 
+                 determiner |> mapP Op
                  (pany |>> (escapeTag >> toTag)) ]
     let input = [fromStr "12''" |> List.head |> advance  |> advance 
                  fromStr "12"   |> List.head |> advance  |> advance |> advance
@@ -426,12 +426,12 @@ let words =
     combinedMatch
 let D = 
     let combinedMatch = 
-        choice [ ppen NNS
-                 ppen NNP
-                 ppen NN ] 
+        choice [ pos NNS
+                 pos NNP
+                 pos NN ] 
         >>. 
-        choice [ pstr "D6" <|> pstr "d6" |>> toDice 6
-                 pstr "D3" <|> pstr "d3" |>> toDice 3 ] 
+        choice [ text "D6" <|> text "d6" |>> toDice 6
+                 text "D3" <|> text "d3" |>> toDice 3 ] 
     let input = [ fromStr "D6" |> List.head |> advance 
                   fromStr "d6" |> List.head |> advance
                   fromStr "D3" |> List.head |> advance 
@@ -441,29 +441,27 @@ let D =
     combinedMatch
 let variables = 
     choice [
-        sequence [ ppen NN |>> Tag; pstr "enemy" |>> toStr ; ppen NN |>> Tag; pstr "unit" |>> toStr ]  |>> toVar "unit"
-        ppen NN >>. (pstr "unit" <|> pstr "enemy") |>> toVar "Target"
+        pos NN >>.  text "enemy" >>. pos NN >>. text "unit"  |>> toVar "unit"
+        pos NN >>. (text "unit" <|> text "enemy") |>> toVar "Target"
     ]
 let keywords = 
     choice [
-        sequence [ ppen JJ |>> toIgnored; pstr "mortal" |>> toIgnored ; ppen NN  |>> toIgnored;  pstr "wound" |>> toIgnored ]  |>> toText "Mortal Wound"
-        sequence [ ppen NN |>> toIgnored; pstr "hit"    |>> toIgnored ; ppen NNS |>> toIgnored; (pstr "roll" <|> pstr "rolls") |>> toIgnored  ]  |>> toText  "Hit Roll"
-        sequence [ ppen NN |>> toIgnored; pstr "wound"  |>> toIgnored ; ppen NNS |>> toIgnored; (pstr "roll" <|> pstr "rolls") |>> toIgnored  ]  |>> toText  "Wound Roll"
-        ppen NN >>. pstr "Fight" .>> ppen NN .>> pstr "phase" |>> (fun phase -> ParamArray[ Value(Str("Phase")); Value (Str phase)] |> Value |> Op)
+        sequence [ pos JJ |>> toIgnored; text "mortal" |>> toIgnored ; pos NN  |>> toIgnored;  text "wound" |>> toIgnored ]  |>> toText "Mortal Wound"
+        sequence [ pos NN |>> toIgnored; text "hit"    |>> toIgnored ; pos NNS |>> toIgnored; (text "roll" <|> text "rolls") |>> toIgnored  ]  |>> toText  "Hit Roll"
+        sequence [ pos NN |>> toIgnored; text "wound"  |>> toIgnored ; pos NNS |>> toIgnored; (text "roll" <|> text "rolls") |>> toIgnored  ]  |>> toText  "Wound Roll"
+        pos NN >>. text "Fight" .>> pos NN .>> text "phase" |>> (fun phase -> ParamArray[ Value(Str("Phase")); Value (Str phase)] |> Value )
     ]    
 #nowarn "40"
 
 let rec actions = 
-    ppen VBZ >>. pstr "suffers" |>> toOp (Call Suffer)    
+    pos VBZ >>. text "suffers" |>> toStatic (Call Suffer)    
 and roll = 
-    ppen VB >>. ppen NNP >>. pstr "Roll" .>>. 
-        onlyChildren (ppen NP >>. (opt (ppen DT >>. pstr "a") >>. D)) .>>.
-        onlyChildren (many gamePrimitive)
-    |>> (fun ((label,dValue), inStr) -> 
-        Let(label, dValue, ParamArray inStr)
-    )
+    (pos VB <|> pos NP) >>. pos NNP >>. text "Roll" .>>. 
+        onlyChildren (pos NP >>. (opt (pos DT >>. text "a") >>. D)) .>>.
+        onlyChildren (many gamePrimitive) 
+    |>> (fun ((label,dValue), inStr) -> Let(label, dValue, Value(ParamArray inStr)))
 and dPlus = 
-    let combinedMatch = pint .>> (ppen NNS <|> ppen NNP <|> ppen NN) .>> pstr "+" |>> (gte >> Op)
+    let combinedMatch = integer .>> (pos NNS <|> pos NNP <|> pos NN) .>> text "+" |>> gte
     let input = [ fromStr "4+" |> List.head |> advance 
                   fromStr "5+" |> List.head |> advance
                   fromStr "7+" |> List.head |> advance 
@@ -471,18 +469,27 @@ and dPlus =
     let d = input |> List.map debug 
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
-and gamePrimitive = choice [ D; dPlus; numbers; variables; keywords; actions; ignoreTag; words ]
-let scannedWords =  many gamePrimitive |>> reduceToOperation
+and gamePrimitive = 
+    choice [
+        D
+        dPlus 
+        numbers
+        variables
+        keywords
+        actions
+    ]
+let scannedWords =  mapP Op gamePrimitive <|> ignoreTag <|> words 
+let expressions = many scannedWords |>> reduceToOperation
 let runP t = t |> List.map (log >> run scannedWords) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
-let eval x = runP x |> List.map (function Success (x,_) -> x |> evalOp Map.empty<_,_> | _ -> Value(NoValue))
+// let eval x = runP x |> List.map (function Success (x,_) -> x |> evalOp Map.empty<_,_> | _ -> Value(NoValue))
 fromStr "Roll a D6"  |> runAndPrint 
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound."  |> runAndPrint
 fromStr "Roll a D6 and count the results, then roll another D6 for each success." |> runAndPrint
 fromStr "Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks." |> runAndPrint
 fromStr "If the hit result is 6, count the result as two hits, otherwise thr attack fails" |> runAndPrint
-fromStr "You can re-roll hit rolls of 1 for this weapon." |> eval
-fromStr "In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls." |> eval
+fromStr "You can re-roll hit rolls of 1 for this weapon." |> runAndPrint
+fromStr "In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls." |> runAndPrint
 fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit suffers a mortal wound in addition to any other damage." |> runAndPrint
 
 
@@ -547,7 +554,7 @@ fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit 
 //     |>> charListToStr
 
 // /// parse a specific string
-// let pstring str = 
+// let texting str = 
 //     // label is just the string
 //     let label = str 
 
@@ -592,7 +599,7 @@ fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit 
 
 
 // // parse an integer
-// let pint = 
+// let integer = 
 //     let label = "integer" 
 
 //     // helper
@@ -611,7 +618,7 @@ fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit 
 //     <?> label
 
 // // parse a float
-// let pfloat = 
+// let double = 
 //     let label = "float" 
 
 //     // helper
