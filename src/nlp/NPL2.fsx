@@ -456,10 +456,20 @@ let keywords =
 let rec actions = 
     pos VBZ >>. text "suffers" |>> toStatic (Call Suffer)    
 and roll = 
-    (pos VB <|> pos NP) >>. pos NNP >>. text "Roll" .>>. 
-        onlyChildren (pos NP >>. (opt (pos DT >>. text "a") >>. D)) .>>.
-        onlyChildren (many gamePrimitive) 
-    |>> (fun ((label,dValue), inStr) -> Let(label, dValue, Value(ParamArray inStr)))
+    let combinedMatch = onlyChildren (pos NP >>. (opt (pos DT >>. text "a") >>. D)) .>>. onlyChildren (many pany) 
+     //   (pos VB <|> pos NP) >>. pos NNP >>. text "Roll" .>>. 
+ //           onlyChildren (
+            //        pos NP >>. (opt (pos DT >>. text "a") >>. D)
+                  //  ) .>>.
+//            onlyChildren (many gamePrimitive) 
+  //      |>> (fun ((label,dValue), inStr) -> Let(label, dValue, Value(ParamArray inStr)))
+
+    let input = [// fromStr "Roll a D6" |> List.head |> advance
+                  fromStr "Roll a D6 inside the house" |> List.head |> advance |> advance |> advance |> advance |> advance
+                ]
+    let d = input |> List.map debug 
+    let p = input |> List.map (run combinedMatch) 
+    combinedMatch
 and dPlus = 
     let combinedMatch = integer .>> (pos NNS <|> pos NNP <|> pos NN) .>> text "+" |>> gte
     let input = [ fromStr "4+" |> List.head |> advance 
