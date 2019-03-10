@@ -242,6 +242,7 @@ type Parsed =
     | Tag of PennTreebankIITags 
     | Ignored 
     | Op of Operation
+    | Continuation of (Operation -> Operation) 
 let toTag parsed = 
     match parsed with
     | None, Some text -> 
@@ -453,21 +454,26 @@ let keywords =
     ]    
 #nowarn "40"
 
-let rec actions = 
-    pos VBZ >>. text "suffers" |>> toStatic (Call Suffer)    
-and roll = 
-    let combinedMatch = onlyChildren (pos NP >>. (opt (pos DT >>. text "a") >>. D)) .>>. onlyChildren (many pany) 
-     //   (pos VB <|> pos NP) >>. pos NNP >>. text "Roll" .>>. 
- //           onlyChildren (
-            //        pos NP >>. (opt (pos DT >>. text "a") >>. D)
-                  //  ) .>>.
-//            onlyChildren (many gamePrimitive) 
-  //      |>> (fun ((label,dValue), inStr) -> Let(label, dValue, Value(ParamArray inStr)))
+let rec roll () = 
+    let roll' = 
+        choice [
+            pos VP >>. pos VB
+            pos NP >>. pos NNP] >>. text "Roll" 
+    let aD6 = pos NP >>. (opt (pos DT >>. text "a") >>. D)
 
-    let input = [// fromStr "Roll a D6" |> List.head |> advance
-                  fromStr "Roll a D6 inside the house" |> List.head |> advance |> advance |> advance |> advance |> advance
+    let combinedMatch = // onlyChildren (pos NP >>. (opt (pos DT >>. text "a") >>. D)) .>>. onlyChildren (many pany) 
+       roll' .>>. 
+           onlyChildren ((pos NP >>. aD6  .>>. onlyChildren (many1 scannedWords)) <|>  (aD6 |>> fun d6 -> (d6, [])))
+            
+       |>> (fun (label,(dValue, inStr)) -> Continuation(fun ops -> Let(label, dValue, ops)))
+
+    let input = [ 
+                   fromStr "Roll a D6"  |> List.head |> advance
+                   fromStr "Roll a D6 inside the house" |> List.head |> advance
+                   fromStr "Roll a D6 inside the house and kick it under the chair" |> List.head |> advance |> advance
+                   fromStr "Roll a D6 inside the house" |> List.head |> advance
                 ]
-    let d = input |> List.map debug 
+    let d = input |> List.map debug |> List.iter (printfn "%s")
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
 and dPlus = 
@@ -486,9 +492,18 @@ and gamePrimitive =
         numbers
         variables
         keywords
-        actions
     ]
-let scannedWords =  mapP Op gamePrimitive <|> ignoreTag <|> words 
+and actions = 
+    choice [
+        pos VBZ >>. text "suffers" |>> toStatic (Call Suffer)  |>> Op  
+        roll ()
+    ]
+and scannedWords = choice [
+    mapP Op gamePrimitive
+    ignoreTag
+    actions 
+    words
+]  
 let expressions = many scannedWords |>> reduceToOperation
 let runP t = t |> List.map (log >> run scannedWords) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
