@@ -242,7 +242,7 @@ type Parsed =
     | Tag of PennTreebankIITags 
     | Ignored 
     | Op of Operation
-    | Continuation of (Operation -> Operation) 
+    | Continuation of (Operation -> Operation) * Parsed list
 let toTag parsed = 
     match parsed with
     | None, Some text -> 
@@ -310,27 +310,37 @@ trees.position |> Some |> f |> Option.map (fun n -> n.node.pennPrint())
 // let d6 = panyUntil "D6"
 // let sentence = roll .>>. a .>>. d6 <?> "Roll a d6"
 
-let reduceToOperation lst =
+
+let rec reduceToOperation lst =
     let newList, state = 
-        List.mapFold (fun  (tag,prevText) parsed ->
-            printfn "Tag: %A, prevText: %A, parsed: %A" tag prevText parsed
+        List.mapFold (fun  (tag,(prevOp:string option)) parsed ->
+            printfn "Tag: %A, prevText: %A, parsed: %A" tag prevOp parsed
             let log (result,(stateTag,newState)) = printfn "=====> Result: %A, NextTag: %A, NextStage: %A" result stateTag newState; (result,(stateTag,newState))
             match parsed with
-            | Ignored -> ([], (tag, prevText))
-            | Op(Value(Str(s))) -> 
+            | Ignored -> ([], (tag, prevOp))
+            | Op(Value(Str(s)) as op) -> 
                 let space = 
                     match tag with 
                     | Some (SentenceCloser | Comma | EQT | Punctuation ) -> ""
                     | _ -> " "
-                match prevText with 
-                | Some acc -> ([], (tag, Some (sprintf "%s%s%s" acc space s)))
-                | None ->     ([], (tag, Some s))
-            | Op(op) ->       ((Option.map(Str >> Value) prevText |> Option.toList) @ [op], (tag, None))
-            | Tag(newTag) ->  ([], (Some newTag, prevText))
+                match prevOp with 
+                | Some ( acc)  -> [], (tag, Some (sprintf "%s%s%s" acc space s))
+                //| Some (Cont f) -> [f op], (tag,None)
+                | None          -> [], (tag, Some(s))
+            | Op(op) ->       
+                match prevOp with 
+                | Some (acc)  -> [Value(Str(acc)); op], (tag, None)
+                //| Some (Cont f) -> [f op], (tag,None)
+                | None          -> [op], (tag, None)
+            | Tag(newTag) ->  ([], (Some newTag, prevOp))
+            | Continuation(f, p) -> 
+                let inner = reduceToOperation p
+                ([f inner], (tag, None))
             |> log
         )  (Some ROOT, None) lst
     match state with 
-    | _, Some op -> newList  @ [[Value(Str(op))]]  |> List.collect id
+    | _, Some op  -> newList  @ [[Value(Str(op))]]  |> List.collect id
+    //| _, Some (Cont f) -> newList  @ [[f (Value(NoValue))]]  |> List.collect id
     | _ -> newList |> List.collect id
     |> 
     function 
@@ -461,21 +471,29 @@ let rec roll () =
             pos NP >>. pos NNP] >>. text "Roll" 
     let aD6 = pos NP >>. (opt (pos DT >>. text "a") >>. D)
 
-    let combinedMatch = // onlyChildren (pos NP >>. (opt (pos DT >>. text "a") >>. D)) .>>. onlyChildren (many pany) 
+    let combinedMatch = 
        roll' .>>. 
-           onlyChildren ((pos NP >>. aD6  .>>. onlyChildren (many1 scannedWords)) <|>  (aD6 |>> fun d6 -> (d6, [])))
+           onlyChildren ((pos NP 
+                          >>. aD6  
+                          .>>. onlyChildren (many1 ( scannedWords
+                                                    <?> "Any child expression")  
+                                             <?> "Many child expression")) <|>  (aD6 |>> fun d6 -> (d6, [])) <?> "Just a d6")
             
-       |>> (fun (label,(dValue, inStr)) -> Continuation(fun ops -> Let(label, dValue, ops)))
+       |>> (fun (label,(dValue, inStr)) -> 
+                Continuation((fun ops -> 
+                    match ops with 
+                    | Value(ParamArray[]) -> Let(label, dValue, Var label) 
+                    | ops -> Let(label, dValue, ops)), inStr))
 
-    let input = [ 
-                   fromStr "Roll a D6"  |> List.head |> advance
-                   fromStr "Roll a D6 inside the house" |> List.head |> advance
-                   fromStr "Roll a D6 inside the house and kick it under the chair" |> List.head |> advance |> advance
-                   fromStr "Roll a D6 inside the house" |> List.head |> advance
-                ]
-    let d = input |> List.map debug |> List.iter (printfn "%s")
-    let p = input |> List.map (run combinedMatch) 
-    combinedMatch
+    // let input = [ 
+    //                fromStr "Roll a D6"  |> List.head |> advance
+    //                fromStr "Roll a D6 inside the house" |> List.head |> advance
+    //                fromStr "Roll a D6 inside the house and kick it under the chair" |> List.head |> advance |> advance
+    //                fromStr "Roll a D6 inside the house" |> List.head |> advance
+    //             ]
+    // let d = input |> List.map debug |> List.iter (printfn "%s")
+    // let p = input |> List.map (run combinedMatch) 
+    combinedMatch  <?> "Roll a D6..."
 and dPlus = 
     let combinedMatch = integer .>> (pos NNS <|> pos NNP <|> pos NN) .>> text "+" |>> gte
     let input = [ fromStr "4+" |> List.head |> advance 
@@ -484,7 +502,7 @@ and dPlus =
                   fromStr "+7" |> List.head |> advance ]
     let d = input |> List.map debug 
     let p = input |> List.map (run combinedMatch) 
-    combinedMatch
+    combinedMatch <?> "DPlus"
 and gamePrimitive = 
     choice [
         D
@@ -492,23 +510,26 @@ and gamePrimitive =
         numbers
         variables
         keywords
-    ]
+    ] <?> "Game primitive"
 and actions = 
     choice [
         pos VBZ >>. text "suffers" |>> toStatic (Call Suffer)  |>> Op  
         roll ()
-    ]
-and scannedWords = choice [
-    mapP Op gamePrimitive
-    ignoreTag
-    actions 
-    words
-]  
+    ] <?> "action"
+and scannedWords = 
+    choice [
+        mapP Op gamePrimitive
+        ignoreTag
+        actions 
+        words 
+    ]  <?> "scanned word"
 let expressions = many scannedWords |>> reduceToOperation
-let runP t = t |> List.map (log >> run scannedWords) 
+let runP t = t |> List.map (log >> run expressions) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
 // let eval x = runP x |> List.map (function Success (x,_) -> x |> evalOp Map.empty<_,_> | _ -> Value(NoValue))
-fromStr "Roll a D6"  |> runAndPrint 
+fromStr "Roll a D6"  |> runP
+fromStr "Roll a D6 inside the house" |> runP
+fromStr "Roll a D6 inside the house and kick it under the chair" |> runP
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound."  |> runAndPrint
 fromStr "Roll a D6 and count the results, then roll another D6 for each success." |> runAndPrint
 fromStr "Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks." |> runAndPrint

@@ -145,7 +145,10 @@ let printResult debug result =
 /// get the label from a parser
 let getLabel parser = 
     // get label
-    parser.label
+    match parser.label with 
+    | null -> ""
+    | x -> x
+    
 
 /// update the label in the parser
 let setLabel parser newLabel = 
