@@ -20,7 +20,7 @@ let options = [|"-maxLength"; "500";
                 "-outputFormat"; "penn,typedDependenciesCollapsed"|]
 let parser = LexicalizedParser.loadModel(model, options)
 let tlp = PennTreebankLanguagePack()
-let w2sent = new WordToSentenceProcessor()
+let w2sent = WordToSentenceProcessor()
 let getTree question =
 
     let tokenizer = tlp.getTokenizerFactory().getTokenizer(new java.io.StringReader(question))
@@ -31,7 +31,7 @@ let getTree question =
     |> Iterable.castToSeq<ArrayList>
     |> Seq.map (parser.apply)
 
-let escape_string (str : string) =
+let escapeString (str : string) =
    let buf = System.Text.StringBuilder(str.Length)
    let replaceOrLeave c =
       match c with
@@ -226,14 +226,14 @@ let onlyChildren (p:Parser<('a * InputState), InputState>) =
                                  Seq.append 
                                     newInput.position.queue 
                                     tail } }
-        // test the result for Failure/Success
+        // test the result for Error/Ok
         match result1 with
-        | Success (result,newInput) -> 
+        | Ok (result,newInput) -> 
             // if success, return the original result with old stuff back on the queue
-            Success(result, updateState newInput) 
-        | Failure (a,b,position) -> 
-            //Failure  with queued input state put back on
-            Failure(a, b, { position with node = updateState position.node })
+            Ok(result, updateState newInput) 
+        | Error (a,b,position) -> 
+            //Error  with queued input state put back on
+            Error(a, b, { position with node = updateState position.node })
     // return the inner function
     {parseFn=innerFn; label=label}
 
@@ -310,32 +310,12 @@ trees.position |> Some |> f |> Option.map (fun n -> n.node.pennPrint())
 // let d6 = panyUntil "D6"
 // let sentence = roll .>>. a .>>. d6 <?> "Roll a d6"
 
-let reduceToOperation lst =
-    let newList, state = 
-        List.mapFold (fun  (tag,prevText) parsed ->
-            printfn "Tag: %A, prevText: %A, parsed: %A" tag prevText parsed
-            let log (result,(stateTag,newState)) = printfn "=====> Result: %A, NextTag: %A, NextStage: %A" result stateTag newState; (result,(stateTag,newState))
-            match parsed with
-            | Ignored -> ([], (tag, prevText))
-            | Op(Value(Str(s))) -> 
-                let space = 
-                    match tag with 
-                    | Some (SentenceCloser | Comma | EQT | Punctuation ) -> ""
-                    | _ -> " "
-                match prevText with 
-                | Some acc -> ([], (tag, Some (sprintf "%s%s%s" acc space s)))
-                | None ->     ([], (tag, Some s))
-            | Op(op) ->       ((Option.map(Str >> Value) prevText |> Option.toList) @ [op], (tag, None))
-            | Tag(newTag) ->  ([], (Some newTag, prevText))
-            |> log
-        )  (Some ROOT, None) lst
-    match state with 
-    | _, Some op -> newList  @ [[Value(Str(op))]]  |> List.collect id
-    | _ -> newList |> List.collect id
-    |> 
-    function 
-  | [op] -> op
-  | ops -> ops |> ParamArray |> Value
+type Reduced =
+    | Cont of (Operation -> Operation)
+    | ReducedOp of Operation
+    | ReducedStr of string
+
+
 
 let advance tree = 
     tree.position 
@@ -407,8 +387,8 @@ let determiner =
         pos DT |>> toStatic (Lam("obj", Var "obj"))
     ]   
 let ignoreTag =
-    anyOf pos [ SYM ; NNS; Colon; Comma; EQT; SentenceCloser ] |>> toIgnored
-let escapeTag (x,y) = (x, Option.map escape_string y)
+    anyOf pos [ SYM ; NNS; Colon; Comma; EQT; ] |>> toIgnored
+let escapeTag (x,y) = (x, Option.map escapeString y)
 let ignored = 
     choice [
         pos PRP .>> (text "You" <|> text "you")
@@ -454,7 +434,7 @@ let keywords =
     ]    
 #nowarn "40"
 
-let rec roll () = 
+let roll = 
     let roll' = 
         choice [
             pos VP >>. pos VB
@@ -462,10 +442,8 @@ let rec roll () =
     let aD6 = pos NP >>. (opt (pos DT >>. text "a") >>. D)
 
     let combinedMatch = // onlyChildren (pos NP >>. (opt (pos DT >>. text "a") >>. D)) .>>. onlyChildren (many pany) 
-       roll' .>>. 
-           onlyChildren ((pos NP >>. aD6  .>>. onlyChildren (many1 scannedWords)) <|>  (aD6 |>> fun d6 -> (d6, [])))
-            
-       |>> (fun (label,(dValue, inStr)) -> Continuation(fun ops -> Let(label, dValue, ops)))
+       roll' .>>. onlyChildren ((pos NP >>. aD6) <|>  (aD6 |>> fun d6 -> (d6)))
+        |>> (fun (label,dValue) -> Continuation(fun ops -> Let(label, dValue, ops)))
 
     let input = [ 
                    fromStr "Roll a D6"  |> List.head |> advance
@@ -475,8 +453,9 @@ let rec roll () =
                 ]
     let d = input |> List.map debug |> List.iter (printfn "%s")
     let p = input |> List.map (run combinedMatch) 
+    let q = p |> List.map (function Ok(_,is) -> debug is | Error (a,b,c) -> c.node |> debug)
     combinedMatch
-and dPlus = 
+let dPlus = 
     let combinedMatch = integer .>> (pos NNS <|> pos NNP <|> pos NN) .>> text "+" |>> gte
     let input = [ fromStr "4+" |> List.head |> advance 
                   fromStr "5+" |> List.head |> advance
@@ -485,7 +464,7 @@ and dPlus =
     let d = input |> List.map debug 
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
-and gamePrimitive = 
+let gamePrimitive = 
     choice [
         D
         dPlus 
@@ -493,22 +472,70 @@ and gamePrimitive =
         variables
         keywords
     ]
-and actions = 
+let actions = 
     choice [
         pos VBZ >>. text "suffers" |>> toStatic (Call Suffer)  |>> Op  
-        roll ()
+        roll
     ]
-and scannedWords = choice [
+let scannedWords = choice [
     mapP Op gamePrimitive
     ignoreTag
     actions 
     words
 ]  
-let expressions = many scannedWords |>> reduceToOperation
-let runP t = t |> List.map (log >> run scannedWords) 
+
+let reduceToOperation lst =
+    let newList, state = 
+        List.mapFold (fun  (tag,prevOp:Reduced list) parsed ->
+            printfn "Tag: %A, prevOp: %A, parsed: %A" tag prevOp parsed
+            let log (result,(stateTag,newState)) = printfn "=====> Result: %A, NextTag: %A, NextStage: %A" result stateTag newState; (result,(stateTag,newState))
+            match parsed with
+            | Ignored -> ([], (tag, prevOp))
+            | Op(Value(Str(s))) -> 
+                let space = 
+                    match tag with 
+                    | Some (SentenceCloser | Comma | EQT | Punctuation ) -> ""
+                    | _ -> " "
+                match prevOp with 
+                | [] ->    [],   (tag, [ReducedStr s])
+                | ReducedStr acc :: ops -> ([], (tag, (sprintf "%s%s%s" acc space s |> ReducedStr) :: ops))
+                | (ReducedOp op :: _) as ops -> ops |> List.rev, (tag, [ReducedStr s])
+                | Cont op :: ops -> ops |> List.rev, (tag, ReducedStr s :: [Cont op])
+            | Op(Lam ("obj",Var "obj")) -> ([], (tag, prevOp))
+            | Op(op) -> 
+                match prevOp with
+                | []-> ([], (tag, [ReducedOp op]))
+                | Cont cont :: ops -> (cont op |> ReducedOp) :: ops |> List.rev, (tag, [])
+                | ops ->  List.rev ops, (tag, [ReducedOp op])
+            | Tag(newTag) ->  ([], (Some newTag, prevOp))
+            | Continuation cont ->
+                match prevOp with
+                | [] -> [], (tag,[Cont cont])
+                | Cont(newCont) :: ops  -> [], (tag,(cont >> newCont |> Cont ):: ops)
+                | ops -> ops, (tag,[Cont cont])
+            |> log
+        )  (Some ROOT, []) lst
+    let reducedList = (newList |> List.collect id) @ (snd state)   
+
+    List.foldBack (fun item acc-> 
+        match item,acc with 
+        | Cont c, [] -> [c (Value(NoValue))]
+        | Cont c, [op] -> [c op] 
+        | Cont c, acc -> [c (Value (ParamArray(acc)))]
+        | ReducedOp op, acc -> op :: acc
+        | ReducedStr s, acc -> Value(Str(s)) :: acc
+     ) reducedList []
+    |> function 
+    | [] -> Value(NoValue) 
+    | [op] -> op
+    | ops -> ParamArray ops |> Value
+
+let expressions = many (scannedWords) |>> reduceToOperation
+let runP t = t |> List.map (fun tree -> tree |> log |> run expressions) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
-// let eval x = runP x |> List.map (function Success (x,_) -> x |> evalOp Map.empty<_,_> | _ -> Value(NoValue))
-fromStr "Roll a D6"  |> runAndPrint 
+let runS = runP >> List.map (Result.map fst)
+// let eval x = runP x |> List.map (function Ok (x,_) -> x |> evalOp Map.empty<_,_> | _ -> Value(NoValue))
+fromStr "Roll a D6"  |> runS 
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound."  |> runAndPrint
 fromStr "Roll a D6 and count the results, then roll another D6 for each success." |> runAndPrint
 fromStr "Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks." |> runAndPrint
@@ -524,7 +551,7 @@ fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit 
         //     | Some CD, Op(TryFloat n)   -> Value(Float n), (tag, None)
         //     | _, Op(newOperation)-> Some([accOp; newOperation;]), (tag, None)
         //     | _, Tag(newTag) -> Some([accOp]), (newTag, None)
-        // match parsed, prevText with
+        // match parsed, prevOp with
         // | Tag (SentenceCloser | Comma | EQT | Punctuation ) , Some(Value(Str(acc)) as accOp) ->
         //     match newOperation with 
         //     | Some(Value(Str(s))) -> 

@@ -80,7 +80,7 @@ let pchar charToMatch =
     let label = sprintf "%c" charToMatch 
     satisfy predicate label 
 
-let charListToStr (str:char list) = new String(str|>List.toArray)
+let charListToStr (str:char list) = String(str |> List.toArray)
 let matchString str = 
     // label is just the string
     let label = str 

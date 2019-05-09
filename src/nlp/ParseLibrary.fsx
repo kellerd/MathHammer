@@ -95,14 +95,14 @@ type ParserPosition<'b> = {
     // column : int
     }
 
-// Result type
-type Result<'a,'b> =
-    | Success of 'a
-    | Failure of ParserLabel * ParserError * ParserPosition<'b> 
+// // Result type
+// type Result<'a,'b> =
+//     | Ok of 'a
+//     | Error of ParserLabel * ParserError * ParserPosition<'b> 
 
 /// A Parser structure has a parsing function & label
 type Parser<'a,'b> = {
-    parseFn : ('b -> Result<'a,'b>)
+    parseFn : ('b -> Result<'a,ParserLabel * ParserError * ParserPosition<'b> >)     //Result<'a,'b>
     label:  ParserLabel 
     }
 
@@ -127,14 +127,14 @@ let parserPositionFromInputState (inputState) = {
         
 let printResult debug result =
     match result with
-    | Success (value,input) -> 
+    | Ok (value,input) -> 
         printfn "%A" value
-    | Failure (label,error,parserPos) -> 
+    | Error (label : ParserLabel,error:ParserError,parserPos) -> 
         let errorLine = debug parserPos.node
         // let colPos = parserPos.column
         // let linePos = parserPos.line
-        // let failureCaret = sprintf "%*s^%s" colPos "" error
-        // printfn "Line:%i Col:%i Error parsing %s\n%s\n%s" linePos colPos label errorLine failureCaret 
+        // let ErrorCaret = sprintf "%*s^%s" colPos "" error
+        // printfn "Line:%i Col:%i Error parsing %s\n%s\n%s" linePos colPos label errorLine ErrorCaret 
         printfn "Error parsing %s\n%s\n" label errorLine 
 
 
@@ -153,12 +153,12 @@ let setLabel parser newLabel =
     let newInnerFn input = 
         let result = parser.parseFn input
         match result with
-        | Success s ->
-            // if Success, do nothing
-            Success s 
-        | Failure (oldLabel,err,pos) -> 
-            // if Failure, return new label
-            Failure (newLabel,err,pos) 
+        | Ok s ->
+            // if Ok, do nothing
+            Ok s 
+        | Error (oldLabel,err,pos) -> 
+            // if Error, return new label
+            Error (newLabel,err,pos) 
     // return the Parser
     {parseFn=newInnerFn; label=newLabel}
 
@@ -178,14 +178,14 @@ let satisfy next predicate label =
         | None -> 
             let err = "No more input"
             let pos = parserPositionFromInputState input
-            Failure (label,err,pos)
+            Error (label,err,pos)
         | Some first -> 
             if predicate first then
-                Success (first,remainingInput)
+                Ok (first,remainingInput)
             else
                 let err = sprintf "Unexpected '%A'" first
                 let pos = parserPositionFromInputState input
-                Failure (label,err,pos)
+                Error (label,err,pos)
     // return the parser
     {parseFn=innerFn;label=label}
 
@@ -196,10 +196,10 @@ let bindP f p =
     let innerFn input =
         let result1 = runOnInput p input 
         match result1 with
-        | Failure (label,err,pos) -> 
+        | Error (label,err,pos) -> 
             // return error from parser1
-            Failure (label,err,pos)  
-        | Success (value1,remainingInput) ->
+            Error (label,err,pos)  
+        | Ok (value1,remainingInput) ->
             // apply f to get a new parser
             let p2 = f value1
             // run parser with remaining input
@@ -214,7 +214,7 @@ let returnP x =
     let label = sprintf "%A" x
     let innerFn input =
         // ignore the input and return x
-        Success (x,input)
+        Ok (x,input)
     // return the inner function
     {parseFn=innerFn; label=label}
 
@@ -232,8 +232,7 @@ let ( |>> ) x f = mapP f x
 /// apply a wrapped function to a wrapped value
 let applyP fP xP =         
     fP >>= (fun f -> 
-    xP >>= (fun x -> 
-        returnP (f x) ))
+    xP >>= (f >> returnP))
 
 /// infix version of apply
 let ( <*> ) = applyP
@@ -260,13 +259,13 @@ let orElse p1 p2 =
         // run parser1 with the input
         let result1 = runOnInput p1 input
 
-        // test the result for Failure/Success
+        // test the result for Error/Ok
         match result1 with
-        | Success result -> 
-            // if success, return the original result
+        | Ok result -> 
+            // if Ok, return the original result
             result1
 
-        | Failure _ -> 
+        | Error _ -> 
             // if failed, run parser2 with the input
             let result2 = runOnInput p2 input
 
@@ -303,12 +302,12 @@ let rec sequence parserList =
 let rec parseZeroOrMore parser input =
     // run parser with the input
     let firstResult = runOnInput parser input 
-    // test the result for Failure/Success
+    // test the result for Error/Ok
     match firstResult with
-    | Failure (_,_,_) -> 
+    | Error _ -> 
         // if parse fails, return empty list
         ([],input)  
-    | Success (firstValue,inputAfterFirstParse) -> 
+    | Ok (firstValue,inputAfterFirstParse) -> 
         // if parse succeeds, call recursively
         // to get the subsequent values
         let (subsequentValues,remainingInput) = 
@@ -318,32 +317,32 @@ let rec parseZeroOrMore parser input =
 let parseZeroOrMoreUntil  until parser input = 
     let rec innerFn input =
         match runOnInput until input with
-        | Success(untilValue,inputAfterUntil) ->
-            Success([untilValue], inputAfterUntil)
-        | Failure(_,_,_) -> 
+        | Ok(untilValue,inputAfterUntil) ->
+            Ok([untilValue], inputAfterUntil)
+        | Error _ -> 
             match runOnInput parser input with 
-            | Failure(a,b,c) -> 
+            | Error(a,b,c) -> 
                 // Both failed return empty match
-                Failure(a,b,c)
-            | Success(firstValue, inputAfterFirstParse) ->
+                Error(a,b,c)
+            | Ok(firstValue, inputAfterFirstParse) ->
                 match innerFn inputAfterFirstParse with
-                | Success  (subsequentValues,remainingInput) ->
+                | Ok  (subsequentValues,remainingInput) ->
                     let values = firstValue::subsequentValues
-                    Success(values, remainingInput)  
-                | Failure(a,b,c) -> 
+                    Ok(values, remainingInput)  
+                | Error(a,b,c) -> 
                     // Both failed return empty match
-                    Failure(a, b, c)
+                    Error(a, b, c)
     match innerFn input with 
-    | Failure(a,b,c) -> 
+    | Error(a,b,c) -> 
                     // Both failed return empty match
-                    Failure(a, b, c)
-    | Success (a, b) -> Success(a |> List.rev, b)             
+                    Error(a, b, c)
+    | Ok (a, b) -> Ok(a |> List.rev, b)             
 /// matches zero or more occurences of the specified parser
 let many parser = 
     let label = sprintf "many %s" (getLabel parser)
     let innerFn input =
-        // parse the input -- wrap in Success as it always succeeds
-        Success (parseZeroOrMore parser input)
+        // parse the input -- wrap in Ok as it always succeeds
+        Ok (parseZeroOrMore parser input)
     {parseFn=innerFn; label=label}
 let manyUntil until parser = 
     let label = sprintf "many %s until %s" (getLabel parser) (getLabel until) 
