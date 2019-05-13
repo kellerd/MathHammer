@@ -400,8 +400,8 @@ let foldToOperation (accl) (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
 
     let fNode pennTags (tag,acc) (NodeInfo(node, skip) as n)  = 
         match node with
-        | EndOfPhase (tag, acc) (phase,rest) -> 
-            pennTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
+        // | EndOfPhase (tag, acc) (phase,rest) -> 
+        //     pennTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
         // | Word (_, (Value(Str(s)) as op) ) ->
         //     match tag, acc with 
         //     | (Some SentenceCloser | Some Comma | Some EQT | Some Punctuation), Value(Str(acc))::rest -> 
@@ -418,11 +418,11 @@ let foldToOperation (accl) (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
         // | Word (_,op) ->  pennTags, op :: acc
         // | Node n ->  tag, acc
         // | Ignore _ -> tag, acc
-        | Cont(_, cont) -> 
-            match acc with 
-            | [] -> pennTags, [cont (Value NoValue)] 
-            | [item] -> pennTags, [cont item] 
-            | _ :: _ -> pennTags, [cont (Value(ParamArray(acc)))]
+        // | Cont(_, cont) -> 
+        //     match acc with 
+        //     | [] -> pennTags, [cont (Value NoValue)] 
+        //     | [item] -> pennTags, [cont item] 
+        //     | _ :: _ -> pennTags, [cont (Value(ParamArray(acc)))]
     let fAssign tag label (_, vAccum) (_, inExpr) = 
         tag, [Let(label, ParamArray vAccum |> Value, ParamArray inExpr |> Value)]    
     let ifte tag (_, test) (_,thenExpr) elseExpr = 

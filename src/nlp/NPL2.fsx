@@ -440,7 +440,7 @@ let determiner =
         pos DT |>> toStatic (Lam("obj", Var "obj"))
     ]   
 let ignoreTag =
-    anyOf pos [ SYM ; NNS; Colon; Comma; EQT; ] |>> toIgnored
+    anyOf pos [ SYM ; NNS; Colon; Comma; EQT; ] >>. opt (anyOf text [","; ";"; "\""; ":"; ";"]) |>> toIgnored
 let escapeTag (x,y) = (x, Option.map escapeString y)
 let ignored = 
     choice [
@@ -568,6 +568,7 @@ let runS = runP >> List.map (Result.map fst)
 fromStr "Roll a D6"  |> runS 
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound."  |> runAndPrint
 
+fromStr "At the end of the Fight phase, roll a D6, on a 4+ each unit suffers bacon"  |> runAndPrint
 fromStr "At the end of the Fight phase, roll a D6"  |> runAndPrint
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord."  |> runAndPrint
 fromStr "Roll a D6 and count the results, then roll another D6 for each success." |> runAndPrint
