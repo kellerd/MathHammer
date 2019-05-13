@@ -12,6 +12,8 @@ open edu.stanford.nlp.ling
 open edu.stanford.nlp.trees
 open java.util
 open Stanford.NLP.FSharp.Parser
+open System.Globalization
+let textInfo = CultureInfo("en-CA",false).TextInfo
 let modelsFolder = __SOURCE_DIRECTORY__ + @"\..\..\paket-files\nlp.stanford.edu\stanford-parser-full-2013-06-20\stanford-parser-3.2.0-models"
 let model = modelsFolder + @"\edu\stanford\nlp\models\lexparser\englishPCFG.ser.gz"
 let options = [|"-maxLength"; "500";
@@ -316,6 +318,57 @@ type Reduced =
     | ReducedStr of string
 
 
+let reduceToOperation lst =
+    let newList, state = 
+        List.mapFold (fun  (tag,prevOp:Reduced list) parsed ->
+            printfn "Tag: %A, prevOp: %A, parsed: %A" tag prevOp parsed
+            let log (result,(stateTag,newState)) = printfn "=====> Result: %A, NextTag: %A, NextStage: %A" result stateTag newState; (result,(stateTag,newState))    
+            match parsed with
+
+            // | EndOfPhase (tag, prevOp) (phase,rest) -> 
+            //     pennTags, [IfThenElse (App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))])), Value(ParamArray rest), None)] 
+
+
+            | Ignored -> ([], (tag, prevOp))
+            | Op(Value(Str(s))) -> 
+                let space = 
+                    match tag with 
+                    | Some (SentenceCloser | Comma | EQT | Punctuation ) -> ""
+                    | _ -> " "
+                match prevOp with 
+                | [] ->    [],   (tag, [ReducedStr s])
+                | ReducedStr acc :: ops -> ([], (tag, (sprintf "%s%s%s" acc space s |> ReducedStr) :: ops))
+                | (ReducedOp op :: _) as ops -> ops |> List.rev, (tag, [ReducedStr s])
+                | Cont op :: ops -> ops |> List.rev, (tag, ReducedStr s :: [Cont op])
+            | Op(Lam ("obj",Var "obj")) -> ([], (tag, prevOp))
+            | Op(op) -> 
+                match prevOp with
+                | []-> ([], (tag, [ReducedOp op]))
+                | Cont cont :: ops -> (cont op |> ReducedOp) :: ops |> List.rev, (tag, [])
+                | ops ->  List.rev ops, (tag, [ReducedOp op])
+            | Tag(newTag) ->  ([], (Some newTag, prevOp))
+            | Continuation cont ->
+                match prevOp with
+                | [] -> [], (tag,[Cont cont])
+                | Cont(newCont) :: ops  -> [], (tag,(cont >> newCont |> Cont ):: ops)
+                | ops -> ops, (tag,[Cont cont])
+            |> log
+        )  (Some ROOT, []) lst
+    let reducedList = (newList |> List.collect id) @ (snd state)   
+
+    List.foldBack (fun item acc-> 
+        match item,acc with 
+        | Cont c, [] -> [c (Value(NoValue))]
+        | Cont c, [op] -> [c op] 
+        | Cont c, acc -> [c (Value (ParamArray(acc)))]
+        | ReducedOp op, acc -> op :: acc
+        | ReducedStr s, acc -> Value(Str(s)) :: acc
+     ) reducedList []
+    |> function 
+    | [] -> Value(NoValue) 
+    | [op] -> op
+    | ops -> ParamArray ops |> Value
+    
 
 let advance tree = 
     tree.position 
@@ -432,13 +485,12 @@ let keywords =
         sequence [ pos NN |>> toIgnored; text "wound"  |>> toIgnored ; pos NNS |>> toIgnored; (text "roll" <|> text "rolls") |>> toIgnored  ]  |>> toText  "Wound Roll"
         pos NN >>. text "Fight" .>> pos NN .>> text "phase" |>> (fun phase -> ParamArray[ Value(Str("Phase")); Value (Str phase)] |> Value )
     ]    
-#nowarn "40"
 
 let roll = 
     let roll' = 
         choice [
             pos VP >>. pos VB
-            pos NP >>. pos NNP] >>. text "Roll" 
+            pos NP >>. pos NNP] >>. (text "Roll" <|> text "roll" |>> textInfo.ToTitleCase)
     let aD6 = pos NP >>. (opt (pos DT >>. text "a") >>. D)
 
     let combinedMatch = // onlyChildren (pos NP >>. (opt (pos DT >>. text "a") >>. D)) .>>. onlyChildren (many pany) 
@@ -472,10 +524,34 @@ let gamePrimitive =
         variables
         keywords
     ]
+let theItem item = pos NP >>. pos DT >>. text "the" >>. pos NN >>. item |>> textInfo.ToTitleCase
+let thephase = (pos NN >>. text "phase")  
+let theXphase = (pos NN >>. panystr .>> pos NN .>> text "phase" )
+let whichPhase = 
+    pos NP >>. 
+        (pos DT >>. text "the" >>. 
+                        (thephase <|> theXphase ))
+    |>> textInfo.ToTitleCase                        
+let endOfPhase = 
+    let input = [ fromStr "At the end of the phase, roll a D6." |> List.head |> advance 
+                  fromStr "at the end of the fight phase, the model suffers one wound." |> List.head |> advance ]
+    let d = input |> List.map debug |> List.iter (printfn "%s")
+    let combinedMatch = 
+        pos PP >>. onlyChildren (pos IN >>. (text "At" <|> text "at"))
+               >>. onlyChildren (pos NP >>.  onlyChildren (theItem panystr)
+                                        .>>. onlyChildren (pos PP >>. pos IN >>. text "of" >>. whichPhase))
+
+            |>> fun (time, phase) -> 
+                let phase = App(Call Equals, Value(ParamArray[Var "Phase"; Value(Str(phase))]))
+                let time = App(Call Equals, Value(ParamArray[Var "Time"; Value(Str(time))]))
+                Continuation (fun rest -> IfThenElse (App(Call And, Value(ParamArray [phase; time]))  , Value(ParamArray [rest]), None))                                    
+    let p = input |> List.map (run combinedMatch) 
+    combinedMatch
 let actions = 
     choice [
         pos VBZ >>. text "suffers" |>> toStatic (Call Suffer)  |>> Op  
         roll
+        endOfPhase
     ]
 let scannedWords = choice [
     mapP Op gamePrimitive
@@ -484,52 +560,6 @@ let scannedWords = choice [
     words
 ]  
 
-let reduceToOperation lst =
-    let newList, state = 
-        List.mapFold (fun  (tag,prevOp:Reduced list) parsed ->
-            printfn "Tag: %A, prevOp: %A, parsed: %A" tag prevOp parsed
-            let log (result,(stateTag,newState)) = printfn "=====> Result: %A, NextTag: %A, NextStage: %A" result stateTag newState; (result,(stateTag,newState))
-            match parsed with
-            | Ignored -> ([], (tag, prevOp))
-            | Op(Value(Str(s))) -> 
-                let space = 
-                    match tag with 
-                    | Some (SentenceCloser | Comma | EQT | Punctuation ) -> ""
-                    | _ -> " "
-                match prevOp with 
-                | [] ->    [],   (tag, [ReducedStr s])
-                | ReducedStr acc :: ops -> ([], (tag, (sprintf "%s%s%s" acc space s |> ReducedStr) :: ops))
-                | (ReducedOp op :: _) as ops -> ops |> List.rev, (tag, [ReducedStr s])
-                | Cont op :: ops -> ops |> List.rev, (tag, ReducedStr s :: [Cont op])
-            | Op(Lam ("obj",Var "obj")) -> ([], (tag, prevOp))
-            | Op(op) -> 
-                match prevOp with
-                | []-> ([], (tag, [ReducedOp op]))
-                | Cont cont :: ops -> (cont op |> ReducedOp) :: ops |> List.rev, (tag, [])
-                | ops ->  List.rev ops, (tag, [ReducedOp op])
-            | Tag(newTag) ->  ([], (Some newTag, prevOp))
-            | Continuation cont ->
-                match prevOp with
-                | [] -> [], (tag,[Cont cont])
-                | Cont(newCont) :: ops  -> [], (tag,(cont >> newCont |> Cont ):: ops)
-                | ops -> ops, (tag,[Cont cont])
-            |> log
-        )  (Some ROOT, []) lst
-    let reducedList = (newList |> List.collect id) @ (snd state)   
-
-    List.foldBack (fun item acc-> 
-        match item,acc with 
-        | Cont c, [] -> [c (Value(NoValue))]
-        | Cont c, [op] -> [c op] 
-        | Cont c, acc -> [c (Value (ParamArray(acc)))]
-        | ReducedOp op, acc -> op :: acc
-        | ReducedStr s, acc -> Value(Str(s)) :: acc
-     ) reducedList []
-    |> function 
-    | [] -> Value(NoValue) 
-    | [op] -> op
-    | ops -> ParamArray ops |> Value
-
 let expressions = many (scannedWords) |>> reduceToOperation
 let runP t = t |> List.map (fun tree -> tree |> log |> run expressions) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
@@ -537,6 +567,9 @@ let runS = runP >> List.map (Result.map fst)
 // let eval x = runP x |> List.map (function Ok (x,_) -> x |> evalOp Map.empty<_,_> | _ -> Value(NoValue))
 fromStr "Roll a D6"  |> runS 
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound."  |> runAndPrint
+
+fromStr "At the end of the Fight phase, roll a D6"  |> runAndPrint
+fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord."  |> runAndPrint
 fromStr "Roll a D6 and count the results, then roll another D6 for each success." |> runAndPrint
 fromStr "Each time the bearer fights, it can make one (and only one) attack with this weapon. Make D3 hit rolls for this attack instead of one. This is in addition to the bearer’s attacks." |> runAndPrint
 fromStr "If the hit result is 6, count the result as two hits, otherwise thr attack fails" |> runAndPrint
