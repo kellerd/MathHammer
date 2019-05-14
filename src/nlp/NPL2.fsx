@@ -462,7 +462,8 @@ let D =
     let combinedMatch = 
         choice [ pos NNS
                  pos NNP
-                 pos NN ] 
+                 pos NN
+                 pos JJ ] 
         >>. 
         choice [ text "D6" <|> text "d6" |>> toDice 6
                  text "D3" <|> text "d3" |>> toDice 3 ] 
@@ -553,10 +554,48 @@ let actions =
         roll
         endOfPhase
     ]
+let thisAttack = 
+    pos NP >>. pos NP >>. pos DT >>. panystr >>. pos NN >>. text "attack"
+let makeXHitRollsForEach = 
+    let input = [ fromStr "Make D3 hit rolls for each attack instead of one." |> List.head |> advance
+                  fromStr "Make D3 hit rolls for each attack instead of one" |> List.head |> advance
+                  fromStr "Make D3 hit rolls for this attack instead of one" |> List.head |> advance ]
+    let d = input |> List.map debug |> List.iter (printfn "%s")
+    let product hits = 
+        Lam("next", Let("Hit Rolls", App(Call Product, Value(ParamArray[Var "A"; hits])), Var "next"))
+    let combinedMatch = (    (pos NP >>. pos NNP >>. text "Make" |>> toIgnored ) 
+                         <|> (pos VP >>. pos VB >>. text "Make" >>. pos NP|>> toIgnored ) )
+                        >>.  (actions <|> mapP Op gamePrimitive)
+                        .>> ((pos VP >>. pos VBD >>. text "hit" >>. pos NP >>. pos NNS >>. text "rolls")
+                         <|> (pos NN >>. text "hit" >>. pos NNS >>. text "rolls") )
+                        .>> pos PP .>> pos IN .>> text "for" .>> thisAttack
+                        .>> onlyChildren (many pany)
+                        |>> fun d3hits -> 
+                            match d3hits with
+                            | Continuation op -> Continuation (op >> product) 
+                            | Op op -> product op |> Op
+                            | Ignored -> product (Value(NoValue)) |> Op
+                            | Tag _ -> product (Value(NoValue)) |> Op
+
+    let p = input |> List.map (run combinedMatch) 
+    combinedMatch
+
+//     | AllTagged [NP;VP] [BasicNode(_, _, AllTagged [NNP;NNP] [AsText (Some NNP) "Make"; nHits])//)
+//     BasicNode(_, _, AllTagged [VBD;NP;PP] [AsText (Some VBD) "hit"; AsText (Some NP) "rolls"; 
+//            BasicNode(_,_, AllTagged [IN;NP] [AsText (Some IN) "for"; 
+//                    BasicNode(_,_, ThisAttack :: rest) ])])] -> 
+// let children'' = BasicNode(Some S, n, [nHits] )
+// BasicNode(penTags, NodeInfo(Cont (op, product'),skip), [children''])  
+
+let combinators = 
+    choice [
+        makeXHitRollsForEach
+    ]
 let scannedWords = choice [
     mapP Op gamePrimitive
     ignoreTag
     actions 
+    combinators
     words
 ]  
 
@@ -567,7 +606,6 @@ let runS = runP >> List.map (Result.map fst)
 // let eval x = runP x |> List.map (function Ok (x,_) -> x |> evalOp Map.empty<_,_> | _ -> Value(NoValue))
 fromStr "Roll a D6"  |> runS 
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord. On a 4+ that unit suffers a mortal wound."  |> runAndPrint
-
 fromStr "At the end of the Fight phase, roll a D6, on a 4+ each unit suffers bacon"  |> runAndPrint
 fromStr "At the end of the Fight phase, roll a D6"  |> runAndPrint
 fromStr "At the end of the Fight phase, roll a D6 for each enemy unit within 1\" of the Warlord."  |> runAndPrint
@@ -577,7 +615,7 @@ fromStr "If the hit result is 6, count the result as two hits, otherwise thr att
 fromStr "You can re-roll hit rolls of 1 for this weapon." |> runAndPrint
 fromStr "In addition, each time you make a hit roll of 6+ for this weapon, you can make an additional hit roll. These additional hit rolls cannot generate further additional hit rolls." |> runAndPrint
 fromStr "Each time you make a wound roll of 6+ for this weapon, the target unit suffers a mortal wound in addition to any other damage." |> runAndPrint
-
+fromStr "Make D3 hit rolls for this attack instead of one." |> runS
 
         // let defaultNewOp accOp = 
         //     match tag, parsed with 
