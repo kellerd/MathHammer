@@ -2,8 +2,9 @@
 open ParseCodexes
 open System.IO
 open System.IO.Compression
-#load "NLP.fsx"
-open NLP
+#load "ParseLibrary.fsx"
+#load "NPL2.fsx"
+open NPL2
 let modelsFolder = __SOURCE_DIRECTORY__ + @"\..\..\paket-files\nlp.stanford.edu\stanford-parser-full-2013-06-20\stanford-parser-3.2.0-models"
 if Directory.Exists(modelsFolder) |> not then
     ZipFile.ExtractToDirectory(modelsFolder + ".jar", modelsFolder)
@@ -31,18 +32,30 @@ let options = [|"-maxLength"; "500";
 open ParseCodexes
 // open GameActions.Primitives.Types
 // open GameActions.Primitives.State    
+
+
+let nlpRule n s =
+    let convertError = Result.mapError (fun _ -> Value(Str("error parsing rule " + n)))
+    let getOp = function Ok(a) -> a | Error (a) -> a
+    let parses = fromStr s |> runS |> List.map (convertError >> getOp)
+
+    match parses with
+    | [ x ] -> [Value(Str (escapeString s)); x]  |> ParamArray |> Value   
+    | xs ->  (Value(Str (escapeString s)) :: xs) |> ParamArray |> Value   
+
 let parseRule = 
     function 
-    | LabelledRule(n,s) -> Some n, (nlpRule s)
-    | RuleOnly s -> None, nlpRule s
-    | LabelOnly n -> Some n, nlpRule ""
-let vStr s = s |> escape_string |> Str |> Value
+    | LabelledRule(n,s) -> Some n, nlpRule n s
+    | RuleOnly s -> None, nlpRule "" s
+    | LabelOnly n -> Some n, nlpRule n ""
+
+let vStr s = s |> escapeString |> Str |> Value
 let opList ops = ParamArray(ops) |> Value
 let pair x y = opList [ x; y ]
 let parseWeapon (weapon:Weapon) = 
-    List.map (fun (label,characteristic) -> 
+    List.map (fun (label,characteristic:string) -> 
         if label = "ABILITIES" then 
-            pair (vStr label) (nlpRule characteristic)
+            pair (vStr label) (nlpRule label characteristic)
         else pair (vStr label) (vStr characteristic)      
     ) weapon
     |> ParamArray 
@@ -145,7 +158,7 @@ let tableStyle = "%s"
                     "._0K8---Rule-Styles_3--Datasheet-Styles_3-7b-Datasheet-Weapon-Stat-Body-Table-408Codex" 
                     "rules"
         printfn "%s" (sprintf "%s" debugMessage)                    
-        page, [ None, g |> escape_string |> sprintf "Error parsing file: %s" |> Str |> Value ]
+        page, [ None, g |> escapeString |> sprintf "Error parsing file: %s" |> Str |> Value ]
 
 let codexPath codexName =  
     Path.Combine(__SOURCE_DIRECTORY__, sprintf "Output\\%s" codexName)

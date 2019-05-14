@@ -429,10 +429,10 @@ let foldToOperation (accl) (tree:Tree<Tag, NodeInfo<WordScanNode>>) =
         tag, [IfThenElse(ParamArray test |> Value,ParamArray thenExpr  |> Value, elseExpr |> Option.map (snd >> ParamArray >> Value))]     
     foldBack fEmpty fNode fAssign ifte tree accl
 
-let (|ThisAttack|_|) = function
-    | BasicNode(Some NP, _, [AsText (Some DT) _; AsText (Some NN) "attack"]) -> Some ()
-    | BasicNode(Some NP, NodeInfo (Word (_, App (Call Repeat, Value (ParamArray [Value (Str "attack"); Lam ("obj",Var "obj")]))),0), []) -> Some ()
-    | _ -> None
+// let (|ThisAttack|_|) = function
+//     | BasicNode(Some NP, _, [AsText (Some DT) _; AsText (Some NN) "attack"]) -> Some ()
+//     | BasicNode(Some NP, NodeInfo (Word (_, App (Call Repeat, Value (ParamArray [Value (Str "attack"); Lam ("obj",Var "obj")]))),0), []) -> Some ()
+//     | _ -> None
     
 
 let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<WordScanNode>> =
@@ -473,24 +473,24 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
             //     BasicNode(penTags, NodeInfo(word, skip), children')
             | Some NP -> 
                 match children' with 
-                | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: _ when getHeadText original = "each" ->  BasicNode(penTags, n, children') 
+                // | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: _ when getHeadText original = "each" ->  BasicNode(penTags, n, children') 
                 | BasicNode(Some DT, NodeInfo( Word (original,op), skip),_) :: AllOperations(moreChildren) -> 
                     let moreChildren = List.map snd moreChildren
                     if List.length moreChildren = 1 then 
                         BasicNode(penTags, NodeInfo(Word(original, App(Call Repeat, Value(ParamArray [List.head moreChildren;op]))), skip), []) 
                     else BasicNode(penTags, NodeInfo(Word(original, App(op, Value(ParamArray(moreChildren)))), skip), [])  
-                | _ -> BasicNode(penTags, n, children') 
+                // | _ -> BasicNode(penTags, n, children') 
             | Some S -> 
-                match children' with 
-                | AllTagged [NP;VP] [BasicNode(_, _, AllTagged [NNP;NNP] [AsText (Some NNP) "Make"; nHits])//)
-                                     BasicNode(_, _, AllTagged [VBD;NP;PP] [AsText (Some VBD) "hit"; AsText (Some NP) "rolls"; 
-                                            BasicNode(_,_, AllTagged [IN;NP] [AsText (Some IN) "for"; 
-                                                    BasicNode(_,_, ThisAttack :: rest) ])])] -> 
-                    let product' = fun d3hits -> 
-                        Lam("next", Let("Hit Rolls", App(Call Product, Value(ParamArray[Var "A"; d3hits])), Var "next"))
-                    let children'' = BasicNode(Some S, n, [nHits] )
-                    BasicNode(penTags, NodeInfo(Cont (op, product'),skip), [children''])  
-                | _ -> BasicNode(penTags, n, children')  
+                // match children' with 
+                // | AllTagged [NP;VP] [BasicNode(_, _, AllTagged [NNP;NNP] [AsText (Some NNP) "Make"; nHits])//)
+                //                      BasicNode(_, _, AllTagged [VBD;NP;PP] [AsText (Some VBD) "hit"; AsText (Some NP) "rolls"; 
+                //                             BasicNode(_,_, AllTagged [IN;NP] [AsText (Some IN) "for"; 
+                //                                     BasicNode(_,_, ThisAttack :: rest) ])])] -> 
+                //     let product' = fun d3hits -> 
+                //         Lam("next", Let("Hit Rolls", App(Call Product, Value(ParamArray[Var "A"; d3hits])), Var "next"))
+                //     let children'' = BasicNode(Some S, n, [nHits] )
+                //     BasicNode(penTags, NodeInfo(Cont (op, product'),skip), [children''])  
+                // | _ -> BasicNode(penTags, n, children')  
             | Some SBAR ->
                 let (|LabelSubjectVerbObject|_|) determiner = 
                     match determiner with 
