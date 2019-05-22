@@ -554,6 +554,14 @@ let actions =
         roll
         endOfPhase
     ]
+    
+let scannedWords = choice [
+    mapP Op gamePrimitive
+    ignoreTag
+    actions 
+    words
+]  
+
 let thisAttack = 
     pos NP >>. pos NP >>. pos DT >>. panystr >>. pos NN >>. text "attack"
 let makeXHitRollsForEach = 
@@ -565,11 +573,11 @@ let makeXHitRollsForEach =
         Lam("next", Let("Hit Rolls", App(Call Product, Value(ParamArray[Var "A"; hits])), Var "next"))
     let combinedMatch = (    (pos NP >>. pos NNP >>. text "Make" |>> toIgnored ) 
                          <|> (pos VP >>. pos VB >>. text "Make" >>. pos NP|>> toIgnored ) )
-                        >>.  (actions <|> mapP Op gamePrimitive)
+                        >>.  (scannedWords)
                         .>> ((pos VP >>. pos VBD >>. text "hit" >>. pos NP >>. pos NNS >>. text "rolls")
                          <|> (pos NN >>. text "hit" >>. pos NNS >>. text "rolls") )
                         .>> pos PP .>> pos IN .>> text "for" .>> thisAttack
-                        .>> onlyChildren (many pany)
+                        .>> onlyChildren (many scannedWords)
                         |>> fun d3hits -> 
                             match d3hits with
                             | Continuation op -> Continuation (op >> product) 
@@ -579,27 +587,78 @@ let makeXHitRollsForEach =
 
     let p = input |> List.map (run combinedMatch) 
     combinedMatch
+let repeat f n = List.init n (fun _ -> f) |> List.reduce (>>)
 
-//     | AllTagged [NP;VP] [BasicNode(_, _, AllTagged [NNP;NNP] [AsText (Some NNP) "Make"; nHits])//)
-//     BasicNode(_, _, AllTagged [VBD;NP;PP] [AsText (Some VBD) "hit"; AsText (Some NP) "rolls"; 
-//            BasicNode(_,_, AllTagged [IN;NP] [AsText (Some IN) "for"; 
-//                    BasicNode(_,_, ThisAttack :: rest) ])])] -> 
-// let children'' = BasicNode(Some S, n, [nHits] )
-// BasicNode(penTags, NodeInfo(Cont (op, product'),skip), [children''])  
+let (./>>^) p t = pos p .>> text t     
+let (/>>^.) p t = pos p >>. text t  
+let (./>>/) p t = pos p .>> pos t   
+let (.>>/) t p = t .>> pos p 
+let (/>>.) p t = pos p >>. t
+let (.>>^) p t = p .>> text t   
+
+let o = debug >> printfn "%s"
+let r r = r |> Result.map (snd >> advance >> debug) |> Result.mapError (fun(_,_,c) -> debug (advance c.node)) |> printfn "%A"
+
+let determinerNouns = pos NN >>. sepBy1 words (pos NN)
+let prepositionNoun = pos S >>. onlyChildren (pos NP >>. opt determinerNouns)
+let prepositionPhrase preposition = onlyChildren ((pos SBAR >>. pos IN) >>. preposition >>. prepositionNoun)
+let determinerPhrase determiner = 
+    (pos NP <|> pos PP <|> pos QP) >>. onlyChildren (DT />>. determiner) >>. opt determinerNouns
+    |> onlyChildren
+
+let subjectObjectVerb dt = 
+    let input = [ 
+        fromStr "Roll a D6 for each enemy unit within 1\"."  |> List.head |> repeat advance 13
+        fromStr "For every of 1, Roll a D6"  |> List.head |> repeat advance 4
+        fromStr "For each roll of 6, your Warlord regains a wound lost earlier in the battle." |> List.head |> repeat advance 4
+        fromStr "Make D3 hit rolls for each attack made with this weapon." |> List.head |> repeat advance 15
+        fromStr "Each time you make a wound roll of 6+ for the Warlord in the Fight phase, that attack inflicts 1 additional damage." |> List.head |> repeat advance 49 
+        fromStr "Each time you take damage, that damage is reduced by one." |> List.head |> repeat advance 18 
+    ]
+    
+    let d = input |> List.map (advance >> debug) |> List.iter (printfn "%s")
+
+    let combinedMatch dt = 
+        let determiner = Option.map text dt |> Option.defaultValue panystr
+
+        (opt (pos NP <|> pos S) >>. determinerPhrase determiner) 
+        <|> prepositionPhrase determiner 
+        <|> determinerPhrase determiner
+                
+    let p = input |> List.map (run (combinedMatch (None))) 
+    p |> List.iter r
+    let p = input |> List.map (run (combinedMatch (Some "each"))) 
+
+
+    combinedMatch
+
+let thatObjectDoesX = 
+    let input = [ 
+                //fromStr "Roll a D6 for each enemy unit within 1\"."  |> List.head |> repeat advance 1
+                //fromStr "For each roll of 6, your Warlord regains a wound lost earlier in the battle." |> List.head |> repeat advance 1 
+                //fromStr "Make D3 hit rolls for each attack made with this weapon." |> List.head |> repeat advance 1
+                fromStr "Each time you make a wound roll of 6+ for the Warlord in the Fight phase, that attack inflicts 1 additional damage." |> List.head |> repeat advance 50 
+                fromStr "Each time you take damage, that damage is reduced by one." |> List.head |> repeat advance 19 
+                ]
+    let d = input |> List.map debug |> List.iter (printfn "%s")
+    
+    // let fmap label = fun op -> App(Call FMap, Value(ParamArray[Lam(label, op); Var label]))
+    let callAction action = App(action, Value(ParamArray[Var "ThatSubject"; Var "ThatObject"]))
+    
+    // let for' =  (IN ./>>^ "for" ) <|> (IN ./>>^ "For") >>. subjectObjectVerb (Some "each")
+
+    let combinedMatch = (pos IN <|> pos DT) >>. (text "That" <|> text "that") >>. subjectObjectVerb (None)
+
+    let p = input |> List.map (run combinedMatch) 
+    combinedMatch
 
 let combinators = 
     choice [
         makeXHitRollsForEach
+        forEach
     ]
-let scannedWords = choice [
-    mapP Op gamePrimitive
-    ignoreTag
-    actions 
-    combinators
-    words
-]  
 
-let expressions = many (scannedWords) |>> reduceToOperation
+let expressions = many (scannedWords <|> combinators) |>> reduceToOperation
 let runP t = t |> List.map (fun tree -> tree |> log |> run expressions) 
 let runAndPrint t = let result = runP t in t |> List.iter (debug >> printfn "%s"); result |> List.iter (printResult debug) 
 let runS = runP >> List.map (Result.map fst)

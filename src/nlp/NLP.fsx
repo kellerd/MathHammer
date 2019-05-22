@@ -492,22 +492,22 @@ let scanPhrases (tree:Tree<Tag, NodeInfo<WordScanNode>>) : Tree<Tag, NodeInfo<Wo
                 //     BasicNode(penTags, NodeInfo(Cont (op, product'),skip), [children''])  
                 // | _ -> BasicNode(penTags, n, children')  
             | Some SBAR ->
-                let (|LabelSubjectVerbObject|_|) determiner = 
-                    match determiner with 
-                    | Some determiner -> 
-                        function
-                        | BasicNode(Some S, n, (BasicNode(Some NP, _,  AsText (Some DT) dt :: AllWords label) ) :: action :: object) :: rest when determiner = dt -> 
-                            Some(label, n, action, object, rest)
-                        | _ -> None                   
-                    | None -> 
-                        function 
-                        | BasicNode(Some S, n, (BasicNode(Some NP, _, AllWords label) ) :: [BasicNode(Some VP, _, action :: object)]) :: rest -> 
-                            Some(label, n, action, object, rest)
-                        | _ -> None                        
+                // let (|LabelSubjectVerbObject|_|) determiner = 
+                //     match determiner with 
+                //     | Some determiner -> 
+                //         function
+                //         | BasicNode(Some S, n, (BasicNode(Some NP, _,  AsText (Some DT) dt :: AllWords label) ) :: action :: object) :: rest when determiner = dt -> 
+                //             Some(label, n, action, object, rest)
+                //         | _ -> None                   
+                //     | None -> 
+                //         function 
+                //         | BasicNode(Some S, n, (BasicNode(Some NP, _, AllWords label) ) :: [BasicNode(Some VP, _, action :: object)]) :: rest -> 
+                //             Some(label, n, action, object, rest)
+                //         | _ -> None                        
 
                 match children' with 
                 | AsText (Some IN) ("For"|"for") :: LabelSubjectVerbObject (Some "each") (label, n, action, object, rest) -> 
-                    let for' = fun op -> App(Call FMap, Value(ParamArray[Lam(label, op); Var label]))
+                    // let for' = fun op -> App(Call FMap, Value(ParamArray[Lam(label, op); Var label]))
                     let children'' = BasicNode(Some S, n, action :: object) :: rest
                     BasicNode(penTags, NodeInfo(Cont (op, for'),skip), children'')   
                 | AsText (Some IN) ("That"|"that") :: LabelSubjectVerbObject None (label, (subject), IsOperation (actionTree,action), object, rest) ->
