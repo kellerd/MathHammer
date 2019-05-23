@@ -620,22 +620,22 @@ let subjectModifier dt =
     let d = input |> List.map (advance >> debug) |> List.iter (printfn "%s")
 
     let combinedMatch dt = 
-        let dt' = Option.map (fun t -> DT />>. text t |>> (Str >> Value)) dt |> Option.defaultValue determiner
+        let dt' = Option.map (fun t -> pos DT >>. t ) dt |> Option.defaultValue (determiner)
 
         let subject = 
-            (opt (pos NP <|> pos S) >>. determinerPhrase dt') 
-            <|> prepositionPhrase dt'
+            ((pos NP <|> pos S) >>. determinerPhrase dt') 
             <|> determinerPhrase dt'
         
         subject .>>. many words |> onlyChildren     
     let p = input |> List.map (run (combinedMatch None )) 
+    let p = input |> List.map (run (combinedMatch (Some (text "every" |>> (Str >> Value))))) 
     p |> List.iter r
-    let p = input |> List.map (run (combinedMatch (Some "every"))) 
     combinedMatch
 
 let thatObjectDoesX = 
     let input = [ 
                 //fromStr "Roll a D6 for each enemy unit within 1\"."  |> List.head |> repeat advance 1
+                //fromStr "For every of 1, Roll a D6"  |> List.head |> repeat advance 4
                 //fromStr "For each roll of 6, your Warlord regains a wound lost earlier in the battle." |> List.head |> repeat advance 1 
                 //fromStr "Make D3 hit rolls for each attack made with this weapon." |> List.head |> repeat advance 1
                 fromStr "Each time you make a wound roll of 6+ for the Warlord in the Fight phase, that attack inflicts 1 additional damage." |> List.head |> repeat advance 50 
