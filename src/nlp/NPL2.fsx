@@ -437,7 +437,7 @@ let determiner =
     choice [
         pos DT >>. text "a"  |>> toStatic (Value(Int(1))) 
         pos DT >>. text "each" |>> toStatic (Lam("obj", App(Call Count, Value(ParamArray[Var "obj";]))))
-        pos DT |>> toStatic (Lam("obj", Var "obj"))
+        pos DT >>. panystr |>> toStatic (Lam("obj", Var "obj"))
     ]   
 let ignoreTag =
     anyOf pos [ SYM ; NNS; Colon; Comma; EQT; ] >>. opt (anyOf text [","; ";"; "\""; ":"; ";"]) |>> toIgnored
@@ -499,6 +499,7 @@ let roll =
         |>> (fun (label,dValue) -> Continuation(fun ops -> Let(label, dValue, ops)))
 
     let input = [ 
+                   fromStr "Roll a D6 for each enemy unit within 1\"." |> List.head |> advance 
                    fromStr "Roll a D6"  |> List.head |> advance
                    fromStr "Roll a D6 inside the house" |> List.head |> advance
                    fromStr "Roll a D6 inside the house and kick it under the chair" |> List.head |> advance |> advance
@@ -600,36 +601,36 @@ let o = debug >> printfn "%s"
 let r r = r |> Result.map (snd >> advance >> debug) |> Result.mapError (fun(_,_,c) -> debug (advance c.node)) |> printfn "%A"
 
 let determinerNouns = pos NN >>. sepBy1 words (pos NN)
-let prepositionNoun = pos S >>. onlyChildren (pos NP >>. opt determinerNouns)
-let prepositionPhrase preposition = onlyChildren ((pos SBAR >>. pos IN) >>. preposition >>. prepositionNoun)
+let prepositionNoun = (pos NP <|> pos S) >>. onlyChildren (pos NP >>. opt determinerNouns)
+let prepositionPhrase preposition = onlyChildren (((pos PP <|> pos SBAR) >>. pos IN) >>. preposition  .>>. prepositionNoun)
 let determinerPhrase determiner = 
-    (pos NP <|> pos PP <|> pos QP) >>. onlyChildren (DT />>. determiner) >>. opt determinerNouns
+    (pos NP <|> pos PP <|> pos QP) >>. onlyChildren determiner .>>. opt determinerNouns
     |> onlyChildren
 
-let subjectObjectVerb dt = 
+let subjectModifier dt = 
     let input = [ 
-        fromStr "Roll a D6 for each enemy unit within 1\"."  |> List.head |> repeat advance 13
+        fromStr "Roll a D6 for each enemy unit within 1\"."  |> List.head |> repeat advance 13 
         fromStr "For every of 1, Roll a D6"  |> List.head |> repeat advance 4
         fromStr "For each roll of 6, your Warlord regains a wound lost earlier in the battle." |> List.head |> repeat advance 4
         fromStr "Make D3 hit rolls for each attack made with this weapon." |> List.head |> repeat advance 15
-        fromStr "Each time you make a wound roll of 6+ for the Warlord in the Fight phase, that attack inflicts 1 additional damage." |> List.head |> repeat advance 49 
-        fromStr "Each time you take damage, that damage is reduced by one." |> List.head |> repeat advance 18 
+        fromStr "Each time you make a wound roll of 6+ for the Warlord in the Fight phase, that attack inflicts 1 additional damage." |> List.head |> repeat advance 1
+        fromStr "Each time you take damage, that damage is reduced by one." |> List.head |> repeat advance 2
     ]
     
     let d = input |> List.map (advance >> debug) |> List.iter (printfn "%s")
 
     let combinedMatch dt = 
-        let determiner = Option.map text dt |> Option.defaultValue panystr
+        let dt' = Option.map (fun t -> DT />>. text t |>> (Str >> Value)) dt |> Option.defaultValue determiner
 
-        (opt (pos NP <|> pos S) >>. determinerPhrase determiner) 
-        <|> prepositionPhrase determiner 
-        <|> determinerPhrase determiner
-                
-    let p = input |> List.map (run (combinedMatch (None))) 
+        let subject = 
+            (opt (pos NP <|> pos S) >>. determinerPhrase dt') 
+            <|> prepositionPhrase dt'
+            <|> determinerPhrase dt'
+        
+        subject .>>. many words |> onlyChildren     
+    let p = input |> List.map (run (combinedMatch None )) 
     p |> List.iter r
-    let p = input |> List.map (run (combinedMatch (Some "each"))) 
-
-
+    let p = input |> List.map (run (combinedMatch (Some "every"))) 
     combinedMatch
 
 let thatObjectDoesX = 
